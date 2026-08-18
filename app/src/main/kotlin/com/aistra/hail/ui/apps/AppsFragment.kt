@@ -241,6 +241,18 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.action_select_all -> {
+                val displayedApps = model.displayApps.value.orEmpty()
+                val allChecked = displayedApps.isNotEmpty() && displayedApps.all { HailData.isChecked(it.packageName) }
+                if (allChecked) {
+                    displayedApps.forEach { HailData.removeCheckedApp(it.packageName, false) }
+                } else {
+                    displayedApps.forEach { HailData.addCheckedApp(it.packageName, 0, false) }
+                }
+                HailData.saveApps()
+                appsAdapter.notifyDataSetChanged()
+                return true
+            }
             R.id.sort_by_name -> changeAppsSort(HailData.SORT_NAME, item)
             R.id.sort_by_install -> changeAppsSort(HailData.SORT_INSTALL, item)
             R.id.sort_by_update -> changeAppsSort(HailData.SORT_UPDATE, item)
