@@ -186,9 +186,10 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
             exit 0
           fi
+          VERSION="${{ needs.build-universal.outputs.version_name }}"
           {
             echo "body<<EOF"
-            sed -n '/^## \[1\.10\.1\]/,/^## \[/p' CHANGELOG.md | sed '1d;$d' | sed '/^$/d'
+            sed -n "/^## \[${VERSION}\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' | sed '/^$/d'
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
