@@ -88,7 +88,8 @@ jobs:
           echo "${{ secrets.KEYSTORE }}" | base64 --decode > keystore.jks
           VERSION="${{ steps.version.outputs.version_name }}"
           ./gradlew assembleRelease --no-daemon --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/Hail-v${VERSION}.apk
+          FILENAME=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)
+          cp "app/build/outputs/apk/release/$FILENAME" "app/build/outputs/apk/release/Hail-v${VERSION}.apk"
           ls -la app/build/outputs/apk/release/
 
       - name: Upload universal artifact
@@ -150,7 +151,8 @@ jobs:
           echo "${{ secrets.KEYSTORE }}" | base64 --decode > keystore.jks
           VERSION="${{ steps.version.outputs.version_name }}"
           ./gradlew assembleRelease -Pabi=${{ matrix.abi }} --no-daemon --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/Hail-v${VERSION}-${{ matrix.abi }}.apk
+          FILENAME=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)
+          cp "app/build/outputs/apk/release/$FILENAME" "app/build/outputs/apk/release/Hail-v${VERSION}-${{ matrix.abi }}.apk"
           ls -la app/build/outputs/apk/release/
 
       - name: Upload ABI artifact

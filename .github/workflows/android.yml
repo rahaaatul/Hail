@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v5.7.0
         with:
           distribution: 'temurin'
-          java-version: '26'
+          java-version: '21'
       - name: Build with Gradle
         run: |
           touch signing.properties
