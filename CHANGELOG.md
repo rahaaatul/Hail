@@ -2,11 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.3] - 2026-08-18
+
+### Removed
+- About tab from bottom navigation bar
+
+### Added
+- About access from Settings tab via info icon
+- Back navigation button now appears on About page
+- Bottom navigation and nav rail hide when viewing About page
+
 ## [1.10.2] - 2026-08-18
 
 ### Added
 - "All" filter option in Apps tab to display both user and system apps
-- Removed confirmation dialog when switching to System apps filter
+
+### Removed
+Confirmation dialog when switching to System apps filter
 
 ## [1.10.1] - 2026-08-18
 
