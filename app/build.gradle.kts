@@ -21,8 +21,8 @@ android {
         applicationId = "com.aistra.hail"
         minSdk = 23
         targetSdk = 36
-        versionCode = 35
-        versionName = "1.10.1"
+        versionCode = 36
+        versionName = "1.10.2"
         ndk {
             val abi = project.findProperty("abi") as String?
             if (abi != null) abiFilters += abi

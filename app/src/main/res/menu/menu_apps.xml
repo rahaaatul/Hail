@@ -23,6 +23,9 @@
                     android:id="@+id/group_filter_apps"
                     android:checkableBehavior="single">
                 <item
+                        android:id="@+id/filter_all_apps"
+                        android:title="@string/filter_all_apps"/>
+                <item
                         android:id="@+id/filter_user_apps"
                         android:title="@string/filter_user_apps"/>
                 <item

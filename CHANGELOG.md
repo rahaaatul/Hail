@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.2] - 2026-08-18
+
+### Added
+- "All" filter option in Apps tab to display both user and system apps
+- Removed confirmation dialog when switching to System apps filter
+
 ## [1.10.1] - 2026-08-18
 
 ### Added
