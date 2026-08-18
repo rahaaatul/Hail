@@ -79,12 +79,12 @@ jobs:
       - name: Build with Gradle
         shell: bash
         run: |
-          cat > signing.properties <<EOF
-storeFile=../keystore.jks
-storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-keyAlias=${{ secrets.KEYSTORE_ALIAS }}
-keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
-EOF
+          printf '%s\n' \
+            "storeFile=../keystore.jks" \
+            "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" \
+            "keyAlias=${{ secrets.KEYSTORE_ALIAS }}" \
+            "keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" \
+            > signing.properties
           echo "${{ secrets.KEYSTORE }}" | base64 --decode > keystore.jks
           VERSION="${{ steps.version.outputs.version_name }}"
           ./gradlew assembleRelease --no-daemon --stacktrace
