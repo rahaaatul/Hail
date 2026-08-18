@@ -26,7 +26,7 @@ object AppManager {
                 || HPackages.isAppSuspended(packageName)
     }
 
-    fun setListFrozen(frozen: Boolean, vararg appInfo: AppInfo): String? {
+    suspend fun setListFrozen(frozen: Boolean, vararg appInfo: AppInfo): String? = withContext(Dispatchers.IO) {
         val excludeMe = appInfo.filter { it.packageName != BuildConfig.APPLICATION_ID }
         var i = 0
         var denied = false
@@ -47,7 +47,7 @@ object AppManager {
                 }
             }
         }
-        return if (denied && i == 0) null else if (i == 1) name else i.toString()
+        return@withContext if (denied && i == 0) null else if (i == 1) name else i.toString()
     }
 
     fun setAppFrozen(packageName: String, frozen: Boolean): Boolean =

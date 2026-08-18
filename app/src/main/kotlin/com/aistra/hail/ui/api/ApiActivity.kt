@@ -24,6 +24,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
@@ -35,14 +42,20 @@ import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork.setAutoFreeze
 
 class ApiActivity : ComponentActivity() {
+    private val mainScope = CoroutineScope(Dispatchers.Main)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runCatching {
-            if (handleAction(intent.action)) finish()
-        }.onFailure(::setErrorDialog)
+        mainScope.launch {
+            try {
+                if (handleAction(intent.action)) finish()
+            } catch (t: Throwable) {
+                setErrorDialog(t)
+            }
+        }
     }
 
-    private fun handleAction(action: String?): Boolean {
+    private suspend fun handleAction(action: String?): Boolean {
         when (action) {
             Intent.ACTION_SHOW_APP_INFO -> {
                 setContent { AppTheme { RedirectBottomSheet(requirePackage) } }
@@ -87,7 +100,7 @@ class ApiActivity : ComponentActivity() {
      * hail://lock
      * hail://lock_freeze
      */
-    private fun handleSchema(uri: Uri?): Boolean {
+    private suspend fun handleSchema(uri: Uri?): Boolean {
         if (uri?.scheme != "hail") throw IllegalArgumentException("Unknown scheme:\n${uri?.scheme}")
         return handleAction(
             when (uri.host) {
@@ -125,7 +138,7 @@ class ApiActivity : ComponentActivity() {
             )
             ClickableItem(
                 icon = Icons.AutoMirrored.Outlined.Launch, title = R.string.action_launch
-            ) { launchApp(pkg) }
+            ) { mainScope.launch { launchApp(pkg) } }
             ClickableItem(
                 icon = Icons.Rounded.AcUnit, title = R.string.action_freeze
             ) {
@@ -186,7 +199,7 @@ class ApiActivity : ComponentActivity() {
                 ?: throw IllegalStateException("Tag unavailable:\n$it")
         } ?: throw IllegalArgumentException("Tag must not be null")
 
-    private fun launchApp(pkg: String, tagId: Int? = null) {
+    private suspend fun launchApp(pkg: String, tagId: Int? = null) {
         if (tagId != null) setListFrozen(false, HailData.checkedList.filter { tagId in it.tagIdList })
         if (AppManager.isAppFrozen(pkg) && AppManager.setAppFrozen(pkg, false)) {
             app.setAutoFreezeService()
@@ -215,7 +228,7 @@ class ApiActivity : ComponentActivity() {
         }
     }
 
-    private fun setListFrozen(
+    private suspend fun setListFrozen(
         frozen: Boolean, list: List<AppInfo> = HailData.checkedList, skipWhitelisted: Boolean = false
     ) {
         val filtered =
@@ -231,7 +244,7 @@ class ApiActivity : ComponentActivity() {
         }
     }
 
-    private fun lockScreen(freezeAll: Boolean) {
+    private suspend fun lockScreen(freezeAll: Boolean) {
         if (freezeAll) setListFrozen(true)
         if (AppManager.lockScreen.not()) throw IllegalStateException(getString(R.string.permission_denied))
     }

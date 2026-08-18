@@ -9,6 +9,7 @@ import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.services.AutoFreezeService
 import com.aistra.hail.utils.HSystem
+import kotlinx.coroutines.runBlocking
 
 class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     override fun doWork(): Result {
@@ -17,7 +18,7 @@ class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(cont
             || isSkipWhileCharging(applicationContext)
         ) return Result.success() // Not stopping the AutoFreezeService here. The worker will run at some point. Then we'll stop the Service
         val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
-        val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
+        val result = runBlocking { AppManager.setListFrozen(true, *checkedList.toTypedArray()) }
         return if (result == null) {
             Result.failure()
         } else {
