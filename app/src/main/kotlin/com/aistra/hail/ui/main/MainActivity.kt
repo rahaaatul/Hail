@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     lateinit var appbar: AppBarLayout
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
+    private lateinit var appBarConfiguration: AppBarConfiguration
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,7 +73,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
         navController.addOnDestinationChangedListener(this@MainActivity)
-        val appBarConfiguration = AppBarConfiguration.Builder(
+        appBarConfiguration = AppBarConfiguration.Builder(
             R.id.nav_home, R.id.nav_apps, R.id.nav_settings
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
@@ -106,6 +107,9 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         super.onStop()
         if (HailData.biometricLogin) finishAndRemoveTask()
     } */
+
+    override fun onSupportNavigateUp(): Boolean =
+        navController.navigateUp() || super.onSupportNavigateUp()
 
     override fun onDestinationChanged(
         controller: NavController, destination: NavDestination, arguments: Bundle?
