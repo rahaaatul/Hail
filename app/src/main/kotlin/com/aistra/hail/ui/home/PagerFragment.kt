@@ -120,10 +120,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             true
         }
         activity.fab.setOnClickListener {
-            lifecycleScope.launch { setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted }) }
+            viewLifecycleOwner.lifecycleScope.launch { setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted }) }
         }
         activity.fab.setOnLongClickListener {
-            lifecycleScope.launch { setListFrozen(true) }
+            viewLifecycleOwner.lifecycleScope.launch { setListFrozen(true) }
             true
         }
     }
@@ -300,12 +300,12 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             ).map { getString(it) }.toTypedArray()
         ) { _, which ->
             when (which) {
-                0 -> lifecycleScope.launch {
+                0 -> viewLifecycleOwner.lifecycleScope.launch {
                     setListFrozen(true, selectedList, false)
                     deselect()
                 }
 
-                1 -> lifecycleScope.launch {
+                1 -> viewLifecycleOwner.lifecycleScope.launch {
                     setListFrozen(false, selectedList, false)
                     deselect()
                 }
@@ -323,7 +323,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     deselect()
                 }
 
-                5 -> lifecycleScope.launch {
+                5 -> viewLifecycleOwner.lifecycleScope.launch {
                     setListFrozen(false, selectedList, false)
                     selectedList.forEach {
                         if (!AppManager.isAppFrozen(it.packageName)) removeCheckedApp(it.packageName, false)
@@ -423,6 +423,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private suspend fun setListFrozen(
         frozen: Boolean, list: List<AppInfo> = HailData.checkedList, updateList: Boolean = true
     ) {
+        if (!isResumed) return
         if (HailData.workingMode == HailData.MODE_DEFAULT) {
             MaterialAlertDialogBuilder(activity).setMessage(R.string.msg_guide)
                 .setPositiveButton(android.R.string.ok, null).show()
@@ -438,10 +439,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
         val filtered = list.filter { AppManager.isAppFrozen(it.packageName) != frozen }
         when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
-            null -> HUI.showToast(R.string.permission_denied)
+            null -> if (isResumed) HUI.showToast(R.string.permission_denied)
             else -> {
-                if (updateList) updateCurrentList()
-                HUI.showToast(
+                if (updateList && isResumed) updateCurrentList()
+                if (isResumed) HUI.showToast(
                     if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, result
                 )
             }
@@ -559,15 +560,15 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 } else deselect()
             }
 
-            R.id.action_freeze_current -> lifecycleScope.launch { setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted }) }
+            R.id.action_freeze_current -> viewLifecycleOwner.lifecycleScope.launch { setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted }) }
 
-            R.id.action_unfreeze_current -> lifecycleScope.launch { setListFrozen(false, pagerAdapter.currentList) }
-            R.id.action_freeze_all -> lifecycleScope.launch { setListFrozen(true) }
-            R.id.action_unfreeze_all -> lifecycleScope.launch { setListFrozen(false) }
-            R.id.action_freeze_non_whitelisted -> lifecycleScope.launch { setListFrozen(true, HailData.checkedList.filterNot { it.whitelisted }) }
+            R.id.action_unfreeze_current -> viewLifecycleOwner.lifecycleScope.launch { setListFrozen(false, pagerAdapter.currentList) }
+            R.id.action_freeze_all -> viewLifecycleOwner.lifecycleScope.launch { setListFrozen(true) }
+            R.id.action_unfreeze_all -> viewLifecycleOwner.lifecycleScope.launch { setListFrozen(false) }
+            R.id.action_freeze_non_whitelisted -> viewLifecycleOwner.lifecycleScope.launch { setListFrozen(true, HailData.checkedList.filterNot { it.whitelisted }) }
 
             R.id.action_import_clipboard -> importFromClipboard()
-            R.id.action_import_frozen -> lifecycleScope.launch {
+            R.id.action_import_frozen -> viewLifecycleOwner.lifecycleScope.launch {
                 val size = importFrozenApp()
                 if (size > 0) {
                     HailData.saveApps()
