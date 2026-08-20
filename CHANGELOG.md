@@ -6,16 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Progress notifications for bulk operations** - Heads-up notifications showing current app being frozen/unfrozen, progress bar, and success/failed summary
-- **Working speed setting** - Choose between Aggressive (no delay), Balanced (pause after 4 apps), and Relaxed (pause after each app) in Settings
+- **Working speed setting** - Choose between Aggressive (200ms delay, batches of 10), Balanced (500ms delay after 4 apps), and Relaxed (sequential, no artificial delay) in Settings
 - **Cancel bulk operation** - Tap "Cancel" in notification to abort ongoing freeze/unfreeze
+- **Batched pm commands for SU modes** - Single su process executes multiple pm commands, reducing overhead 3-5x
 
 ### Changed
 - **Bulk operations run on background thread** - UI no longer freezes during freeze/unfreeze, especially with su_disable mode
-- **Throttling now configurable** - Default "Balanced" preserves previous behavior (1s pause after 4 apps)
+- **Throttling now configurable** - Default "Balanced" preserves previous behavior (pause after 4 apps), Relaxed is truly sequential
 
 ### Fixed
 - Crash when switching tabs during freeze operation
 - Toolbar up navigation on About page
+- System stuttering during bulk freeze/unfreeze with SU/Shizuku modes
 
 ## [1.10.3] - 2026-08-18
 

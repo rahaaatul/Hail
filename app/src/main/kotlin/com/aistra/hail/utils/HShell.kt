@@ -4,7 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 
 object HShell {
-    private fun getCurrentUserId(): Int = execSU("am get-current-user").second?.trim()?.toIntOrNull() ?: 0
+    internal fun getCurrentUserId(): Int = execSU("am get-current-user").second?.trim()?.toIntOrNull() ?: 0
 
     private val userArg: String
         get() = "--user ${getCurrentUserId()}"
@@ -15,6 +15,29 @@ object HShell {
             waitFor() to inputStream.bufferedReader().use { it.readText() }.also { destroy() }
         }
     }.getOrElse { 1 to it.stackTraceToString() }
+
+    fun executeBatch(commands: List<String>): List<Pair<Int, String?>> = runCatching {
+        val batches = BatchUtils.chunkCommands(commands, BatchUtils.MAX_COMMANDS_PER_SCRIPT)
+        val allResults = mutableListOf<Pair<Int, String?>>()
+
+        for (batch in batches) {
+            val script = BatchUtils.buildBatchScript(batch)
+            val results = ProcessBuilder("su", "-c", script).redirectErrorStream(true).start().run {
+                outputStream.use { out ->
+                    out.write("exit\n".toByteArray())
+                }
+                inputStream.bufferedReader().use { reader ->
+                    val output = reader.readText()
+                    BatchUtils.parseBatchOutput(output, batch.size)
+                }
+            }
+            allResults.addAll(results)
+        }
+        allResults
+    }.getOrElse {
+        HLog.e(it)
+        commands.map { 1 to it }
+    }
 
     private fun execSU(command: String) = execute(command, true)
 
