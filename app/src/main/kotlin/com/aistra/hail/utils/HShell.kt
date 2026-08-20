@@ -22,15 +22,13 @@ object HShell {
 
         for (batch in batches) {
             val script = BatchUtils.buildBatchScript(batch)
-            val results = ProcessBuilder("su", "-c", script).redirectErrorStream(true).start().run {
-                outputStream.use { out ->
-                    out.write("exit\n".toByteArray())
-                }
-                inputStream.bufferedReader().use { reader ->
-                    val output = reader.readText()
-                    BatchUtils.parseBatchOutput(output, batch.size)
-                }
+            val process = ProcessBuilder("su", "-c", script).redirectErrorStream(true).start()
+            process.outputStream.use { out ->
+                out.write("exit\n".toByteArray())
             }
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            process.waitFor() // Ensure process completes before parsing
+            val results = BatchUtils.parseBatchOutput(output, batch.size)
             allResults.addAll(results)
         }
         allResults

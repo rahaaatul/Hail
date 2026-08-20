@@ -104,10 +104,16 @@ object AppManager {
                 if (result) success++ else failed++
                 processed++
 
-                val icon = app.applicationInfo?.let { info ->
-                    AppIconCache.getOrLoadBitmap(HailApp.app, info, Process.myUserHandle().hashCode(), 128)
+                // Load icon and update notification with error handling
+                try {
+                    val icon = app.applicationInfo?.let { info ->
+                        AppIconCache.getOrLoadBitmap(HailApp.app, info, Process.myUserHandle().hashCode(), 128)
+                    }
+                    notifier?.update(processed, apps.size, app.name.toString(), icon)
+                } catch (e: Exception) {
+                    HLog.e("Error updating notification for ${app.packageName}: $e")
+                    notifier?.update(processed, apps.size, app.name.toString(), null)
                 }
-                notifier?.update(processed, apps.size, app.name.toString(), icon)
             }
 
             // STOP mode (am force-stop) is lightweight - no inter-batch delay needed
@@ -159,11 +165,16 @@ object AppManager {
             if (result) success++ else failed++
             processed++
 
-            // Load icon on IO dispatcher (already on IO)
-            val icon = appInfo.applicationInfo?.let { info ->
-                AppIconCache.getOrLoadBitmap(HailApp.app, info, Process.myUserHandle().hashCode(), 128)
+            // Load icon and update notification with error handling
+            try {
+                val icon = appInfo.applicationInfo?.let { info ->
+                    AppIconCache.getOrLoadBitmap(HailApp.app, info, Process.myUserHandle().hashCode(), 128)
+                }
+                notifier?.update(processed, apps.size, appInfo.name.toString(), icon)
+            } catch (e: Exception) {
+                HLog.e("Error updating notification for ${appInfo.packageName}: $e")
+                notifier?.update(processed, apps.size, appInfo.name.toString(), null)
             }
-            notifier?.update(processed, apps.size, appInfo.name.toString(), icon)
         }
 
         notifier?.complete(success, failed, frozen)
