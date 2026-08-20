@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.4] - 2026-08-20
+
+### Added
+- **Progress notifications for bulk operations** - Heads-up notifications showing current app being frozen/unfrozen, progress bar, and success/failed summary
+- **Working speed setting** - Choose between Aggressive (no delay), Balanced (pause after 4 apps), and Relaxed (pause after each app) in Settings
+- **Cancel bulk operation** - Tap "Cancel" in notification to abort ongoing freeze/unfreeze
+
+### Changed
+- **Bulk operations run on background thread** - UI no longer freezes during freeze/unfreeze, especially with su_disable mode
+- **Throttling now configurable** - Default "Balanced" preserves previous behavior (1s pause after 4 apps)
+
+### Fixed
+- Crash when switching tabs during freeze operation
+- Toolbar up navigation on About page
+
 ## [1.10.3] - 2026-08-18
 
 ### Removed
@@ -39,11 +54,6 @@ Confirmation dialog when switching to System apps filter
 ### Added
 - Compose Preference support
 - Pinyin search support for app filtering
-
-### Changed
-- Migrated to Android Gradle Plugin 9.x
-- Updated Kotlin to 2.3.21
-- Updated Material3 to 1.13.0
 
 ### Fixed
 - Various translation updates via Weblate

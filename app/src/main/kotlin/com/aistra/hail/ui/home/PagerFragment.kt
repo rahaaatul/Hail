@@ -438,13 +438,11 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
         }
         val filtered = list.filter { AppManager.isAppFrozen(it.packageName) != frozen }
-        when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
+        when (val result = AppManager.setListFrozen(frozen, BulkOperationNotifier, *filtered.toTypedArray())) {
+            "cancelled" -> if (isResumed) HUI.showToast(R.string.bulk_operation_cancelled)
             null -> if (isResumed) HUI.showToast(R.string.permission_denied)
             else -> {
                 if (updateList && isResumed) updateCurrentList()
-                if (isResumed) HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, result
-                )
             }
         }
     }

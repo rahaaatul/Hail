@@ -48,6 +48,11 @@
         <item>@string/mode_privapp_stop</item>
         <item>@string/mode_privapp_disable</item>
     </string-array>
+    <string-array name="working_speed_entries">
+        <item>@string/speed_aggressive</item>
+        <item>@string/speed_balanced</item>
+        <item>@string/speed_relaxed</item>
+    </string-array>
     <string-array name="app_theme_entries">
         <item>@string/follow_system</item>
         <item>@string/theme_light</item>

@@ -113,6 +113,9 @@
                 <action android:name="android.intent.action.PACKAGE_UNSUSPENDED_MANUALLY"/>
             </intent-filter>
         </receiver>
+        <receiver
+                android:name=".receiver.BulkOperationCancelReceiver"
+                android:exported="false"/>
 
         <service
                 android:name=".services.QSTileService"
