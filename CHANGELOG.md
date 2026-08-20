@@ -8,7 +8,6 @@ All notable changes to this project will be documented in this file.
 - **Progress notifications for bulk operations** - Heads-up notifications showing current app being frozen/unfrozen, progress bar, and success/failed summary
 - **Working speed setting** - Choose between Aggressive (no delay), Balanced (pause after 4 apps), and Relaxed (pause after each app) in Settings
 - **Cancel bulk operation** - Tap "Cancel" in notification to abort ongoing freeze/unfreeze
-- **Configuration cache & parallel builds** - Faster Gradle builds via configuration cache and parallel execution
 
 ### Changed
 - **Bulk operations run on background thread** - UI no longer freezes during freeze/unfreeze, especially with su_disable mode
