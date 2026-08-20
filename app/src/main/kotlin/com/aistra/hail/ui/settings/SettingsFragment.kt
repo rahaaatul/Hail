@@ -96,7 +96,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.WORKING_SPEED_VALUES,
                 entriesId = R.array.working_speed_entries,
                 titleId = R.string.working_speed,
-                icon = Icons.Outlined.Speed
+                icon = Icons.Outlined.Timer
             )
             switchPreference(
                 key = HailData.BIOMETRIC_LOGIN,

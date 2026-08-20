@@ -49,14 +49,17 @@ object AppManager {
             if (notifier?.isCancelled == true) return@withContext "cancelled"
             // Throttle based on working speed setting
             when (HailData.workingSpeed) {
-                HailData.SPEED_AGGRESSIVE -> {} // No delay
+                HailData.SPEED_AGGRESSIVE -> {
+                    // Small delay to avoid overwhelming system with su calls
+                    if (index > 0) delay(200)
+                }
                 HailData.SPEED_BALANCED -> {
-                    // Pause after every 4 apps (index 3, 7, 11...)
-                    if (index > 0 && (index + 1) % 4 == 0) delay(1000)
+                    // Pause after every 4 apps
+                    if (index > 0 && (index + 1) % 4 == 0) delay(2000)
                 }
                 HailData.SPEED_RELAXED -> {
-                    // Pause after each app
-                    if (index > 0) delay(1000)
+                    // Pause after each app - longer delay for heavy pm commands
+                    if (index > 0) delay(3000)
                 }
             }
             val result = setAppFrozen(appInfo.packageName, frozen)
