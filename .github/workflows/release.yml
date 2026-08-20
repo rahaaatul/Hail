@@ -89,7 +89,6 @@ jobs:
           VERSION="${{ steps.version.outputs.version_name }}"
           ./gradlew assembleRelease --no-daemon --stacktrace
           FILENAME=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)
-          cp "app/build/outputs/apk/release/$FILENAME" "app/build/outputs/apk/release/Hail-v${VERSION}.apk"
           ls -la app/build/outputs/apk/release/
 
       - name: Upload universal artifact
@@ -152,7 +151,6 @@ jobs:
           VERSION="${{ steps.version.outputs.version_name }}"
           ./gradlew assembleRelease -Pabi=${{ matrix.abi }} --no-daemon --stacktrace
           FILENAME=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)
-          cp "app/build/outputs/apk/release/$FILENAME" "app/build/outputs/apk/release/Hail-v${VERSION}-${{ matrix.abi }}.apk"
           ls -la app/build/outputs/apk/release/
 
       - name: Upload ABI artifact

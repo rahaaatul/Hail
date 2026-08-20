@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.4] - 2026-08-20
+
+### Added
+- **Progress notifications for bulk operations** - Heads-up notifications showing current app being frozen/unfrozen, progress bar, and success/failed summary
+- **Working speed setting** - Choose between Aggressive (no delay), Balanced (pause after 4 apps), and Relaxed (pause after each app) in Settings
+- **Cancel bulk operation** - Tap "Cancel" in notification to abort ongoing freeze/unfreeze
+- **Configuration cache & parallel builds** - Faster Gradle builds via configuration cache and parallel execution
+
+### Changed
+- **Bulk operations run on background thread** - UI no longer freezes during freeze/unfreeze, especially with su_disable mode
+- **Throttling now configurable** - Default "Balanced" preserves previous behavior (1s pause after 4 apps)
+- **Updated Kotlin to 2.4.0 and compileSdk to 37**
+- **CI workflows use Java 21** (reverted from Java 26)
+
+### Fixed
+- Crash when switching tabs during freeze operation
+- Toolbar up navigation on About page
+- APK filename resolution in release workflow
+
 ## [1.10.3] - 2026-08-18
 
 ### Removed

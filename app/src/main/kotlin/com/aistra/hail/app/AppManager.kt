@@ -1,9 +1,12 @@
 package com.aistra.hail.app
 
 import android.content.Intent
+import android.os.Process
 import com.aistra.hail.BuildConfig
+import com.aistra.hail.HailApp
 import com.aistra.hail.utils.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 object AppManager {
@@ -26,28 +29,55 @@ object AppManager {
                 || HPackages.isAppSuspended(packageName)
     }
 
-    suspend fun setListFrozen(frozen: Boolean, vararg appInfo: AppInfo): String? = withContext(Dispatchers.IO) {
+    suspend fun setListFrozen(
+        frozen: Boolean,
+        notifier: BulkOperationNotifier? = null,
+        vararg appInfo: AppInfo
+    ): String? = withContext(Dispatchers.IO) {
         val excludeMe = appInfo.filter { it.packageName != BuildConfig.APPLICATION_ID }
-        var i = 0
-        var denied = false
-        var name = String()
-        when (HailData.workingMode) {
-            // call setListFrozen for some batch-style working mode here
-            // fallback to setAppFrozen otherwise
-            else -> {
-                excludeMe.forEach {
-                    when {
-                        setAppFrozen(it.packageName, frozen) -> {
-                            i++
-                            name = it.name.toString()
-                        }
+        // Filter out uninstalled apps (no applicationInfo)
+        val validApps = excludeMe.filter { it.applicationInfo != null }
+        if (validApps.isEmpty()) return@withContext "0"
 
-                        it.applicationInfo != null -> denied = true
-                    }
+        notifier?.start(HailApp.app, validApps.size, frozen)
+
+        var processed = 0
+        var success = 0
+        var failed = 0
+
+        validApps.forEachIndexed { index, appInfo ->
+            if (notifier?.isCancelled == true) return@withContext "cancelled"
+            // Throttle based on working speed setting
+            when (HailData.workingSpeed) {
+                HailData.SPEED_AGGRESSIVE -> {} // No delay
+                HailData.SPEED_BALANCED -> {
+                    // Pause after every 4 apps (index 3, 7, 11...)
+                    if (index > 0 && (index + 1) % 4 == 0) delay(1000)
+                }
+                HailData.SPEED_RELAXED -> {
+                    // Pause after each app
+                    if (index > 0) delay(1000)
                 }
             }
+            val result = setAppFrozen(appInfo.packageName, frozen)
+            if (result) success++ else failed++
+            processed++
+
+            // Load icon on IO dispatcher (already on IO)
+            val icon = appInfo.applicationInfo?.let { info ->
+                AppIconCache.getOrLoadBitmap(HailApp.app, info, Process.myUserHandle().hashCode(), 128)
+            }
+            notifier?.update(processed, validApps.size, appInfo.name.toString(), icon)
         }
-        return@withContext if (denied && i == 0) null else if (i == 1) name else i.toString()
+
+        notifier?.complete(success, failed, frozen)
+
+        return@withContext when {
+            notifier?.isCancelled == true -> "cancelled"
+            success == 0 -> null
+            success == 1 -> validApps.first { AppManager.isAppFrozen(it.packageName) == frozen }.name.toString()
+            else -> success.toString()
+        }
     }
 
     fun setAppFrozen(packageName: String, frozen: Boolean): Boolean =

@@ -89,6 +89,15 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 icon = Icons.Outlined.Adb,
                 type = ListPreferenceType.ALERT_DIALOG
             )
+            listPreference(
+                key = HailData.WORKING_SPEED,
+                defaultValue = HailData.SPEED_BALANCED,
+                onValueChange = { _, _ -> true },
+                values = HailData.WORKING_SPEED_VALUES,
+                entriesId = R.array.working_speed_entries,
+                titleId = R.string.working_speed,
+                icon = Icons.Outlined.Speed
+            )
             switchPreference(
                 key = HailData.BIOMETRIC_LOGIN,
                 defaultValue = false,

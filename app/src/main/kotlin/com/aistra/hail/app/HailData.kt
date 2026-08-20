@@ -130,6 +130,11 @@ object HailData {
         ACTION_LOCK,
         ACTION_LOCK_FREEZE
     )
+    const val WORKING_SPEED = "working_speed"
+    const val SPEED_AGGRESSIVE = "aggressive"
+    const val SPEED_BALANCED = "balanced"
+    const val SPEED_RELAXED = "relaxed"
+    val WORKING_SPEED_VALUES = listOf(SPEED_AGGRESSIVE, SPEED_BALANCED, SPEED_RELAXED)
 
     private val sp = PreferenceManager.getDefaultSharedPreferences(app)
     val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
@@ -157,6 +162,8 @@ object HailData {
     val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
     val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
     val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
+    val workingSpeed get() = sp.getString(WORKING_SPEED, SPEED_BALANCED)!!
+    fun changeWorkingSpeed(speed: String) = sp.edit { putString(WORKING_SPEED, speed) }
 
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
