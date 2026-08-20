@@ -1,0 +1,40 @@
+name: Android CI
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - 'fastlane/**'
+      - '.github/**'
+      - '!.github/workflows/android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && github.repository_owner == 'aistra0528' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Setup Java JDK
+        uses: actions/setup-java@v5.7.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Build with Gradle
+        run: |
+          touch signing.properties
+          echo storeFile=../keystore.jks >> signing.properties
+          echo storePassword=${{ secrets.KEYSTORE_PASSWORD }} >> signing.properties
+          echo keyAlias=${{ secrets.KEYSTORE_ALIAS }} >> signing.properties
+          echo keyPassword=${{ secrets.KEYSTORE_ALIAS_PASSWORD }} >> signing.properties
+          echo ${{ secrets.KEYSTORE }} | base64 --decode > keystore.jks
+          ./gradlew assembleRelease
+          echo "filename=$(jq -r '.elements.[0].outputFile' app/build/outputs/apk/release/output-metadata.json)" >> $GITHUB_ENV
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: ${{ env.filename }}
+          path: app/build/outputs/apk/release/${{ env.filename }}
+          archive: false
