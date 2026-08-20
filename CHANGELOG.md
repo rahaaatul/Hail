@@ -12,13 +12,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **Bulk operations run on background thread** - UI no longer freezes during freeze/unfreeze, especially with su_disable mode
 - **Throttling now configurable** - Default "Balanced" preserves previous behavior (1s pause after 4 apps)
-- **Updated Kotlin to 2.4.0 and compileSdk to 37**
-- **CI workflows use Java 21** (reverted from Java 26)
 
 ### Fixed
 - Crash when switching tabs during freeze operation
 - Toolbar up navigation on About page
-- APK filename resolution in release workflow
 
 ## [1.10.3] - 2026-08-18
 
@@ -57,11 +54,6 @@ Confirmation dialog when switching to System apps filter
 ### Added
 - Compose Preference support
 - Pinyin search support for app filtering
-
-### Changed
-- Migrated to Android Gradle Plugin 9.x
-- Updated Kotlin to 2.3.21
-- Updated Material3 to 1.13.0
 
 ### Fixed
 - Various translation updates via Weblate
