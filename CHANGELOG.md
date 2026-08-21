@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.4] - 2026-08-21
+
+### Added
+- Long-press on multiselect button to select all/deselect all apps in current tab
+- Back press in multiselect mode now deselects all and exits multiselect
+- Visual feedback: icon changes from select_all to checkmark with color tint
+
 ## [1.10.3] - 2026-08-18
 
 ### Removed
