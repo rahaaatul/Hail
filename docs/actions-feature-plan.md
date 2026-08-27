@@ -267,3 +267,31 @@ Update the existing navigation resources and central activity behavior:
 - Action executor tests for already-unfrozen dependencies, sequential unfreezing, verification failure, and successful launch.
 - Shortcut intent tests confirming action ID routing rather than ordinary package launch.
 - UI tests for field order, truncation, Save/Cancel behavior, long-press menu, and Home/Apps navigation.
+
+## Backlog: Backup and Restore
+
+Out of scope for the initial Actions implementation, but reserve a future Backup/Restore feature for all user-created Hail configuration.
+
+The future backup should export a versioned logical data format containing:
+
+- Home app selections
+- Tags
+- Pin and whitelist state
+- Saved Actions and their ordered Unfreeze package lists
+- Relevant user preferences only if they are intentionally included in backup scope
+
+The backup should not include Room app metadata, cached labels, cached icons, install state, or other device-generated data. That information is cache data and should be rebuilt on the destination device.
+
+Future restore requirements:
+
+- Validate the format version before changing local data.
+- Support merge, replace, and cancel conflict policies.
+- Preserve unavailable package names so users can repair actions after restoring.
+- Preserve stable Action IDs when possible.
+- Detect duplicate actions without silently overwriting unrelated records.
+- Import HailData JSON and Room-backed Actions through one coordinated operation.
+- Apply all changes transactionally where possible, with rollback or a clear failure state.
+- Never overwrite existing data before validation succeeds.
+- Provide a summary of imported, skipped, conflicting, and unavailable entries.
+
+The export format should be independent of the raw Room schema so future Room migrations do not invalidate user backups. Add migration tests for backup format versions separately from Room schema migration tests.
