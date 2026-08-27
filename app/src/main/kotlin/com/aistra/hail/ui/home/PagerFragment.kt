@@ -518,7 +518,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
             null -> HUI.showToast(R.string.permission_denied)
             else -> {
+                AppMetaCache.invalidateState(filtered.map { it.packageName })
                 if (updateList) updateCurrentList()
+                pagerAdapter.refreshVisualState()
                 HUI.showToast(
                     if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, result
                 )
