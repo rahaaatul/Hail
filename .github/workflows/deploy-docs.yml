@@ -20,18 +20,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.24.0
+      - name: Install Node.js 26.8.1 and pnpm 11.24.0
+        shell: bash
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 26
+          echo "Node version: $(node -v)"
+          npm install -g corepack
+          corepack enable pnpm
+          echo "pnpm version: $(pnpm -v)"
+          echo "$NVM_DIR/versions/node/$(nvm version)/bin" >> $GITHUB_PATH
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 26.8.1
-          cache: pnpm
+      - name: Install dependencies
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          pnpm install
 
-      - run: pnpm install
-
-      - run: pnpm run docs:build
+      - name: Build docs
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          pnpm run docs:build
 
       - uses: actions/configure-pages@v5
 
