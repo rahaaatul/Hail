@@ -5,14 +5,16 @@ All notable changes to this project will be documented in this file.
 ## [1.11.1] - 2026-08-27
 
 ### Highlights
-- Persistent root shell support for all Root working modes without slowing launch
+- Persistent root shell support for all Root working modes
 
 ### Added
 - libsu integration for cached root-shell management
 
 ### Changed
-- Root operations now lazily acquire and reuse one cached shell while Hail's process is alive
+- Root operations now warm up and reuse one cached shell while Hail's process is alive
+- Root shell warm-up runs in the background so app launch remains responsive
 - Root shell lifecycle now follows the selected working mode and is closed when switching away from Root mode
+- Dead or failed root shells are discarded and reacquired on the next Root operation
 - Automated freezing and other Root operations use the same persistent shell
 
 ## [1.11.0] - 2026-08-26

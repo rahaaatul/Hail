@@ -30,10 +30,11 @@ class HailApp : Application() {
         // DirtyDataUpdater.update(app)
         if (!HTarget.S) setAppTheme(HailData.appTheme)
         if (HailData.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
+        syncRootShell()
     }
 
     private fun syncRootShell() {
-        if (!HailData.workingMode.startsWith(HailData.SU)) HShell.stop()
+        if (HailData.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()
     }
 
     fun setAutoFreezeService(autoFreezeAfterLock: Boolean = HailData.autoFreezeAfterLock, context: Context = app) {
