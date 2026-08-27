@@ -3,7 +3,7 @@ layout: home
 hero:
   name: 'Hail 雹'
   text: 'Freeze Android apps'
-  tagline: Free app to freeze other apps and save battery
+  tagline: Save battery by freezing apps you are not using
   actions:
     - theme: brand
       text: Get Started
@@ -13,22 +13,20 @@ hero:
       link: https://github.com/rahaaatul/Hail
 
 features:
-  - title: ⚡ Instant Root Actions
-    details: No more waiting! Hail prepares everything in the background, so root actions happen the moment you tap.
-  - title: 🚀 Smooth Every Time
-    details: Hail reuses the same connection for all operations — freeze, unfreeze, bulk actions — everything feels fast.
-  - title: 🎯 Select All in One Tap
-    details: Long-press the select button to select or deselect all apps at once. Bulk management made effortless.
-  - title: 🔍 See Every App
-    details: One filter shows all apps on your phone — both apps you installed and pre-installed system apps together.
-  - title: 🛡️ Self-Protection
-    details: Hail can never freeze itself. It protects itself so you're always in control.
-  - title: 🎨 Cleaner Design
-    details: Simpler navigation with About moved to Settings. Clear visual feedback when selecting multiple apps.
-  - title: 🔧 Always Up to Date
-    details: Built with the latest tools so Hail stays fast, secure, and compatible with newer Android versions.
-  - title: 🌐 Better Translations
-    details: Improved translations in more languages, making Hail easier to use no matter where you're from.
-  - title: 🧩 Xposed Support
-    details: Better integration with Xposed framework for advanced users who want even more control.
+  - title: 🔋 Save Battery
+    details: Stop apps from running in the background when you are not using them. Frozen apps cannot drain your battery.
+  - title: 🧹 Hide Unwanted Apps
+    details: Remove apps from your launcher and app drawer without uninstalling them. They stay on your phone but out of sight.
+  - title: ⏸️ Pause Apps Temporarily
+    details: Turn app icons gray and block notifications. You can still use the app when you want to.
+  - title: 🏷️ Organize with Tags
+    details: Group apps into tags and freeze or unfreeze them all at once. Perfect for managing lots of apps.
+  - title: 🎯 Bulk Actions
+    details: Select all apps with one tap and freeze or unfreeze them together. No need to tap each app individually.
+  - title: 🔒 Multiple Ways to Work
+    details: Works with Root, Shizuku, Device Owner, and more. Choose the method that fits your phone.
+  - title: 🤖 Automate with API
+    details: Use simple commands or links to freeze and unfreeze apps from other apps or scripts.
+  - title: 🆓 Free and Open Source
+    details: No ads, no tracking, no cost. The code is open for anyone to inspect and improve.
 ---
