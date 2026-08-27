@@ -1,6 +1,7 @@
 package com.aistra.hail.utils
 
 import android.content.pm.ApplicationInfo
+import androidx.room.Room
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
@@ -15,8 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -33,66 +32,37 @@ object AppMetaCache {
         val sourceSignature: String
     )
 
-    private const val VERSION = 1
-    private const val KEY_VERSION = "version"
-    private const val KEY_ENTRIES = "entries"
-    private const val KEY_PACKAGE = "package"
-    private const val KEY_NAME = "name"
-    private const val KEY_SYSTEM = "system"
-    private const val KEY_FIRST_INSTALL = "firstInstall"
-    private const val KEY_LAST_UPDATE = "lastUpdate"
-    private const val KEY_FLAGS = "flags"
-    private const val KEY_ENABLED = "enabled"
-    private const val KEY_SOURCE = "source"
-
     private val cache = ConcurrentHashMap<String, Entry>()
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
-    private val writeMutex = Mutex()
+    private val database by lazy {
+        Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db").build()
+    }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val metadataFile by lazy { File(HailApp.app.filesDir, "v1/app_meta.json") }
     private val _revision = MutableStateFlow(0L)
     val revision: StateFlow<Long> = _revision
 
     fun get(packageName: String): Entry? = cache[packageName]
 
-    fun seedFromDisk() {
+    fun seedFromDatabase(): Job = scope.launch {
         runCatching {
-            val root = JSONObject(metadataFile.readText())
-            if (root.optInt(KEY_VERSION) != VERSION) return
-            val entries = root.optJSONArray(KEY_ENTRIES) ?: return
-            for (index in 0 until entries.length()) {
-                val json = entries.optJSONObject(index) ?: continue
-                val entry = Entry(
-                    packageName = json.getString(KEY_PACKAGE),
-                    name = json.getString(KEY_NAME),
-                    isSystemApp = json.getBoolean(KEY_SYSTEM),
-                    firstInstallTime = json.getLong(KEY_FIRST_INSTALL),
-                    lastUpdateTime = json.getLong(KEY_LAST_UPDATE),
-                    flags = json.getInt(KEY_FLAGS),
-                    enabled = json.getBoolean(KEY_ENABLED),
-                    state = AppInfo.State.UNFROZEN,
-                    sourceSignature = json.getString(KEY_SOURCE)
-                )
-                cache[entry.packageName] = entry
+            database.appMetadataDao().loadAll().forEach { entity ->
+                cache[entity.packageName] = entity.toEntry()
             }
             _revision.value++
         }
     }
 
     fun prefetch(applicationInfo: Collection<ApplicationInfo>): Job = scope.launch {
+        val installedPackages = applicationInfo.mapTo(HashSet()) { it.packageName }
         applicationInfo.map { info ->
-            async {
-                loadIfStale(info.packageName, info)
-            }
+            async { loadIfStale(info.packageName, info) }
         }.awaitAll()
-        persist()
+        persist(installedPackages)
     }
 
     fun prefetchPackages(packageNames: Collection<String>): Job = scope.launch {
         packageNames.map { packageName ->
-            async {
-                loadIfStale(packageName)
-            }
+            async { loadIfStale(packageName) }
         }.awaitAll()
         persist()
     }
@@ -153,26 +123,38 @@ object AppMetaCache {
         else -> AppInfo.State.UNFROZEN
     }
 
-    private suspend fun persist() = writeMutex.withLock {
+    private suspend fun persist(installedPackages: Set<String>? = null) {
         runCatching {
-            val directory = metadataFile.parentFile ?: return@runCatching
-            directory.mkdirs()
-            val root = JSONObject().put(KEY_VERSION, VERSION).put(KEY_ENTRIES, JSONArray().apply {
-                cache.values.forEach { entry ->
-                    put(JSONObject()
-                        .put(KEY_PACKAGE, entry.packageName)
-                        .put(KEY_NAME, entry.name)
-                        .put(KEY_SYSTEM, entry.isSystemApp)
-                        .put(KEY_FIRST_INSTALL, entry.firstInstallTime)
-                        .put(KEY_LAST_UPDATE, entry.lastUpdateTime)
-                        .put(KEY_FLAGS, entry.flags)
-                        .put(KEY_ENABLED, entry.enabled)
-                        .put(KEY_SOURCE, entry.sourceSignature))
-                }
-            })
-            val temporary = File(metadataFile.path + ".tmp")
-            temporary.writeText(root.toString())
-            check(temporary.renameTo(metadataFile))
+            val dao = database.appMetadataDao()
+            if (installedPackages != null) {
+                cache.keys.removeIf { it !in installedPackages }
+                dao.replaceAll(cache.values.map { it.toEntity() })
+            } else {
+                dao.upsertAll(cache.values.map { it.toEntity() })
+            }
         }
+    }
+
+    private fun AppMetadataEntity.toEntry() = Entry(
+        packageName = packageName,
+        name = name,
+        isSystemApp = systemApp,
+        firstInstallTime = firstInstallTime,
+        lastUpdateTime = lastUpdateTime,
+        flags = flags,
+        enabled = enabled,
+        state = AppInfo.State.UNFROZEN,
+        sourceSignature = sourceSignature
+    )
+
+    private fun Entry.toEntity() = AppMetadataEntity().also {
+        it.packageName = packageName
+        it.name = name
+        it.systemApp = isSystemApp
+        it.firstInstallTime = firstInstallTime
+        it.lastUpdateTime = lastUpdateTime
+        it.flags = flags
+        it.enabled = enabled
+        it.sourceSignature = sourceSignature
     }
 }

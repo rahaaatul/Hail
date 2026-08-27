@@ -104,5 +104,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hiddenapibypass)
     implementation(libs.libsu.core)
+    implementation(libs.androidx.room.runtime)
+    annotationProcessor(libs.androidx.room.compiler)
     compileOnly(libs.libxposed.api)
 }

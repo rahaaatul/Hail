@@ -59,6 +59,8 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             postRefreshState(true)
             val appList = withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }
             apps.postValue(appList)
+            updateDisplayAppList()
+            postRefreshState(false)
             AppMetaCache.prefetch(appList).join()
             updateDisplayAppList()
         }

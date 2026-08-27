@@ -10,7 +10,7 @@ This branch combines the metadata/icon cache work with the latest `main` branch,
 
 Reduce repeated `PackageManager` work in home and all-apps filtering, sorting, and binding. Warm process-death starts from local cache data, keep cache warming silent, and prevent icon loading from blocking the first frame.
 
-The observed 1-2 second delay should be measured rather than attributed to JSON immediately. Likely contributors include:
+The observed 1-2 second delay should be measured rather than attributed to database loading immediately. Likely contributors include:
 
 - initial installed-application enumeration;
 - frozen-state checks and root/Shizuku IPC;
@@ -20,30 +20,31 @@ The observed 1-2 second delay should be measured rather than attributed to JSON 
 
 ## Storage decision
 
-### Keep JSON for the metadata snapshot in this phase
+### Use Room for the metadata snapshot in this phase
 
 A database is not automatically faster. The hot path should be an in-memory map regardless of whether the durable source is JSON, SQLite, or Room. A database query during every row bind would usually be slower than the current memory lookup and would not remove `PackageManager` or freeze-state IPC costs.
 
-The current metadata shape is a small key-value snapshot:
+The current metadata shape has grown into a complete installed-app inventory:
 
 - read entries by package name;
 - refresh a batch from `PackageManager`;
 - replace the snapshot atomically;
 - load it once after process creation.
 
-That is a good fit for versioned JSON under `filesDir/v1/app_meta.json`. JSON parsing is paid once at startup, while UI reads use the `ConcurrentHashMap`. The snapshot is written off the main thread using a temporary file and atomic rename.
+That is now a better fit for Room. Room provides batch upserts, transactional replacement, schema validation, and future indexing while UI reads still use the in-memory map. Room is not queried during binding. The database is opened and read on `Dispatchers.IO`, so startup does not block on parsing or database I/O.
 
-### When Room becomes the better choice
+### Why Room is the better choice now
 
-Adopt Room only when the requirements become database-shaped:
+The branch now caches all installed applications, not only checked/home apps. Room is appropriate because the inventory is durable and refreshed in batches:
 
 - complex queries across many metadata fields;
 - package history or change records;
 - multiple Android users/profiles;
 - incremental deletion and indexing of a large package inventory;
-- migrations and durable records beyond a replaceable cache.
+- migrations and durable records beyond a replaceable cache;
+- efficient replacement of the complete installed-app inventory.
 
-If Room is introduced, use it behind the same repository boundary. Read the needed packages in one batch, convert them to an immutable in-memory map, and never query Room once per adapter row. Room improves data organization and queryability, not `PackageManager` latency or icon generation.
+Room still does not improve `PackageManager` latency or icon generation. Its role is durable, transactional storage. Read all rows in one batch, convert them to the in-memory map, and never query Room once per adapter row.
 
 ## Cache architecture
 
@@ -55,10 +56,10 @@ If Room is introduced, use it behind the same repository boundary. Read the need
 - explicit `prefetch()` and `prefetchPackages()` operations on `Dispatchers.IO`;
 - per-package locking to collapse concurrent refreshes;
 - runtime state invalidation when working mode or freeze operations change;
-- a versioned JSON snapshot with atomic persistence;
+- a Room database with transactional batch replacement;
 - a revision flow used by screens to recompute their lists.
 
-Static metadata and runtime frozen state must remain conceptually separate. Frozen state depends on the current working mode and must not be treated as authoritative durable metadata.
+Static metadata and runtime frozen state must remain conceptually separate. Frozen state depends on the current working mode and is reconstructed in memory; it is not authoritative durable metadata.
 
 ### Icons
 
@@ -111,8 +112,8 @@ This distinguishes JSON parsing from the much more expensive Android framework a
 3. Use one batch metadata refresh and one filtering/sorting pass.
 4. Limit concurrent icon decoding and generation.
 5. Avoid repeated `applicationInfo` retrieval in bind paths where a prepared row model is sufficient.
-6. Do not initialize Room solely to replace a small JSON snapshot.
-7. If JSON parsing is proven to be the measured bottleneck, replace only the persistence adapter with Room or a compact binary format while preserving the in-memory cache and APIs.
+6. Do not query Room from UI getters, comparators, or adapter binds; use the in-memory map.
+7. If Room I/O is measured as a bottleneck, keep the database off the main thread and prioritize the first visible list before the full inventory refresh.
 
 ## Validation
 
@@ -127,7 +128,7 @@ This distinguishes JSON parsing from the much more expensive Android framework a
 
 ## Out of scope
 
-- Adding Room without a measured requirement.
+- Querying Room directly from UI rendering paths.
 - Replacing the existing root-shell implementation from `main`.
 - Synchronously preloading every installed app icon.
 - Persisting frozen state as permanent package metadata.
