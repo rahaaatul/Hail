@@ -4,6 +4,7 @@ import { resolve } from 'path'
 export default defineConfig({
   title: 'Hail',
   description: 'Freeze Android apps',
+  base: '/Hail/',
   lastUpdated: true,
   cleanUrls: true,
   head: [
