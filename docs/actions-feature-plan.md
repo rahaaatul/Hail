@@ -1,5 +1,59 @@
 # Actions Feature Plan
 
+## Mandatory Implementation Log Rules
+
+Any person or AI agent implementing this plan **MUST** maintain the tracker and log in this document. These rules are part of the implementation contract:
+
+1. Before starting a work slice, update the tracker status to `In progress` and name the files/symbols being changed.
+2. After each work slice, update the tracker with what was completed and the validation command/result.
+3. If blocked, immediately set the affected item to `Blocked` and record the exact blocker, evidence, and the next attempted resolution. Do not silently skip or work around an unresolved blocker.
+4. Keep the tracker truthful. Do not mark an item `Complete` until its acceptance criteria and focused validation have passed.
+5. Add newly discovered work to the tracker instead of hiding it in prose.
+6. Preserve previous entries; append notes or update the current status without deleting useful history.
+7. Before handing work to another agent, record the current branch, commit, files changed, tests run, and remaining risks.
+
+An agent that changes implementation files without updating this log is not following the plan.
+
+## Implementation Tracker
+
+| Item | Status | Owner/branch | Files or symbols | Validation/blocker |
+| --- | --- | --- | --- | --- |
+| Plan and UX specification | Complete | `plan/actions-feature` | This document | Reviewed and pushed |
+| Room Actions schema and repository | Blocked | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | Source diagnostics clean; Gradle compile blocked because Android SDK is not configured |
+| Action execution and API entry point | Not started | `feature/actions` | Action executor, `HailApi`, `ApiActivity` | Must unfreeze sequentially and launch only after verification |
+| Actions navigation and Home/App FAB behavior | Not started | `feature/actions` | Navigation resources, `MainActivity`, Home, Apps | Home FAB position must remain unchanged |
+| Actions list and Create/Edit action UI | Not started | `feature/actions` | Actions screen, row, dialog, app picker | One-line ellipsized summaries; Unfreeze is required |
+| Long-press actions | Not started | `feature/actions` | Edit, shortcut, duplicate, delete menus | Delete confirmation and stable IDs required |
+| Pinned action shortcuts | Not started | `feature/actions` | `HShortcuts`, shortcut intent handling | Launch app label/icon and action ID required |
+| Tests and acceptance validation | Not started | `feature/actions` | Unit/UI/instrumentation tests | Must cover persistence, execution, navigation, and shortcuts |
+| Backup/Restore | Backlog | Future branch | Future versioned import/export | Out of scope for initial Actions implementation |
+
+### Log Entry Format
+
+Each implementation update should append a dated entry using this format:
+
+```text
+### YYYY-MM-DD - agent/commit
+- Status: In progress | Complete | Blocked
+- Work: what changed and why
+- Validation: exact command and result
+- Blocker/next: blocker evidence or next slice
+```
+
+### 2026-08-27 - plan setup
+
+- Status: Complete
+- Work: Created `plan/actions-feature` from the main-based Actions plan, returned to `feature/actions`, and added mandatory tracker rules.
+- Validation: Branch separation and plan push completed successfully.
+- Blocker/next: Implement the Room schema first on `feature/actions`.
+
+### 2026-08-27 - Room schema slice
+
+- Status: Blocked
+- Work: Added the additive Actions schema and repository on `feature/actions`, including ordered dependencies and a 2-to-3 migration.
+- Validation: Editor diagnostics report no errors in the changed Kotlin/Java files; `git diff --check` passes. `./gradlew :app:compileDebugKotlin` could not start: SDK location not found; no `ANDROID_HOME` or `local.properties` SDK path is configured.
+- Blocker/next: Android SDK setup is required for Gradle validation. Continue with the execution/UI slices, then rerun the focused build when an SDK is available.
+
 ## Goal
 
 Add reusable launch actions for apps that require one or more companion apps to be unfrozen first. An action unfreezes its configured apps, then launches one target app.
