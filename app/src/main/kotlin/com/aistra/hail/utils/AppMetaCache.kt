@@ -39,9 +39,11 @@ object AppMetaCache {
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
     private val database by lazy {
         Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
     }
+
+    internal fun database(): AppMetadataDatabase = database
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _revision = MutableStateFlow(0L)
     val revision: StateFlow<Long> = _revision
@@ -188,6 +190,20 @@ object AppMetaCache {
     private val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
             database.execSQL("ALTER TABLE app_metadata ADD COLUMN installed INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS actions (id TEXT NOT NULL, launchPackage TEXT NOT NULL, PRIMARY KEY(id))"
+            )
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, position INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)"
+            )
+            database.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_action_dependencies_actionId ON action_dependencies(actionId)"
+            )
         }
     }
 }
