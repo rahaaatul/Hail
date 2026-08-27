@@ -4,30 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ## [1.11.0] - 2026-08-26
 
+### Highlights
+- More reliable Root mode support across Android versions
+- Safer app launching in `Island/Insular - Hide` mode, including stock ROMs with compatibility differences
+- Faster bulk app management with select all / deselect all controls and an "All" apps filter
+- Updated Xposed integration with libxposed and clearer module information
+
 ### Added
-- Select all / deselect all controls in the Apps tab, including long-press support
+- Select all / deselect all controls in the Apps tab, including long-press support and visual feedback
 - "All" filter option to display both user and system apps
-- Universal APK build script for local release builds
 
 ### Changed
 - About page access moved from bottom navigation to Settings
-- Updated Android Gradle Plugin to 9.3.1 and Kotlin to 2.4.10
-- Updated Material3, AndroidX, Compose, lifecycle, navigation, WorkManager, and other dependencies
-- Updated `androidx.biometric:biometric-ktx` to 1.4.0-alpha02
-- Improved command execution in Root and Shizuku working modes
+- Xposed integration now uses libxposed, with clearer module information
+- Root and Shizuku command execution improved for more consistent operation
 
 ### Fixed
 - Root modes not working on older Android versions, thanks to @LuoYunXi0407
 - `Island/Insular - Hide` mode unable to launch apps on some stock ROMs, thanks to @andy-math
-- A `NullPointerException` in the interface, thanks to @lerdb
-- Dynamic shortcuts removal when biometric login is enabled (#377)
-- Foreground service `specialUse` property (#409)
+- Interface crash caused by a `NullPointerException`, thanks to @lerdb
+- Dynamic shortcut removal when biometric login is enabled (#377)
+- Foreground service behavior for Android's `specialUse` requirement (#409)
 - `pm` commands failing on older Android versions due to `--user current` (#416)
 - Launch intent existence check in `Island/Insular - Hide` mode
-- Hail self-freeze through Select All, API intents, or bulk operations
+- Hail being frozen through Select All, API intents, or bulk operations
 
 ### Removed
-- Xposed API dependency in favor of libxposed API 102
 - Confirmation dialog when switching to the System apps filter
 - About tab from the bottom navigation bar
 
