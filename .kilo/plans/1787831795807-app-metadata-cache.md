@@ -2,7 +2,7 @@
 
 ## Goal
 
-Remove repeated `PackageManager` work from home and all-apps filtering, sorting, and binding. Reads on the UI path should use an immutable metadata snapshot or an in-memory cache. Missing or stale metadata may be loaded silently in the background; that work must never show a spinner, toast, snackbar, notification, progress indicator, foreground-service signal, or change `isRefreshing`.
+Remove repeated `PackageManager` work from home and all-apps filtering, sorting, and binding. Reads on the UI path should use an immutable metadata snapshot or an in-memory cache. Icons should have a disk-backed tier in addition to the existing memory cache so a cold process can display previously rendered icons without immediately asking `PackageManager` and decoding every icon again. Missing or stale metadata or icons may be loaded silently in the background; that work must never show a spinner, toast, snackbar, notification, progress indicator, foreground-service signal, or change `isRefreshing`.
 
 The cache must not hide work inside ordinary model property getters. Loading is an explicit batch operation owned by the ViewModel or screen lifecycle. This makes the behavior deterministic, prevents duplicate requests from comparators and `DiffUtil`, and keeps synchronous getters cheap.
 
@@ -18,6 +18,18 @@ Use a two-level cache:
 Keep the snapshot file as the first implementation. This feature needs point reads by package name and a full refresh, not relational queries, joins, migrations, or user-authored records. Adding a database would increase dependency size, schema/migration work, startup initialization, and test surface without improving the critical lookup operation.
 
 The file writer must be debounced and atomic: serialize an immutable snapshot on `Dispatchers.IO`, write to `app_meta.json.tmp`, then replace `app_meta.json`. Never write directly to the live file. Bound the file size and ignore corrupt or incompatible snapshots.
+
+### Disk icon cache
+
+Extend `AppIconCache` with a bounded disk cache, but keep the current memory `LruCache` as the first lookup. Store encoded PNG or WebP files under a private directory such as `filesDir/v1/icons/`; never store icons in the metadata JSON. Disk reads, bitmap decoding, and icon generation must be off the main thread. The UI should use this order:
+
+1. Memory cache: display immediately.
+2. Disk cache: decode asynchronously and display as soon as decoded.
+3. Package/icon loader: generate asynchronously, display, and enqueue a disk write.
+
+There can still be a placeholder for a genuinely new icon. “No perceptible cold-start lag” means startup must not block on icon I/O or decode; it cannot guarantee that an icon never needs a first-time load. Prewarm only the home/visible all-apps packages, not every installed icon, and limit concurrent decodes so startup remains responsive.
+
+The disk key must include package name, user ID, icon pixel size, package version/update signature, icon-pack identity/version, and rendering options such as adaptive-icon synthesis. Do not persist grayscale output because grayscale is a display state and can be applied at bind time. Remove stale files during refresh or with a bounded LRU/size-and-age cleanup. Persist failures are non-fatal and silent.
 
 ### If a database is preferred
 
@@ -71,7 +83,7 @@ Use a singleton `RoomDatabase` created from `HailApp`, but do not query Room onc
 
 ### Existing patterns to reuse
 
-- `AppIconCache` demonstrates an in-memory cache and coroutine loading, but its bitmap-specific lifecycle should not be copied wholesale for metadata.
+- `AppIconCache` already provides the memory icon cache and asynchronous loader. Add disk lookup/write around that existing pipeline; do not perform disk work from `onBindViewHolder` itself.
 - `HailData` and `HFiles` establish the `filesDir/v1/` convention and JSON helpers.
 - `AppsViewModel` already owns list refresh and uses `viewModelScope`.
 - There are currently no unit or instrumentation test directories and no Room dependency.
@@ -97,6 +109,14 @@ AppState
 - NOT_FOUND, UNFROZEN, or FROZEN
 - working-mode signature
 - memory-only
+
+Icon cache key
+- package name
+- user ID
+- icon pixel size
+- package version/update signature
+- icon-pack identity/version
+- adaptive-icon rendering signature
 ```
 
 `AppMetadata` is static-ish package data and can be persisted. `AppState` is runtime data and must be invalidated when the working mode changes, when a freeze operation succeeds, when the app resumes after external operations, and when a package disappears. `NOT_FOUND` should not be persisted as a permanent fact unless it has an expiry or is removed during package refresh.
@@ -142,13 +162,28 @@ Create `app/src/main/kotlin/com/aistra/hail/utils/AppMetaCache.kt` or, preferabl
 - Expose a `StateFlow<Long>` revision or a lifecycle-aware callback. Never retain a Fragment or View binding.
 - Deliver UI-facing emissions on `Dispatchers.Main`.
 
-### 2. Initialize storage at startup
+### 2. Add a disk-backed icon tier
+
+Refactor `AppIconCache` into explicit memory, disk, and source stages without changing its public caller contract unless needed:
+
+- Check the memory cache first.
+- On memory miss, check the disk entry on the icon dispatcher, validate its key and dimensions, decode it, place it in memory, and update the `ImageView` only if the holder still represents the same package/request.
+- On disk miss, use the existing `IconPack.loadIcon()` or `AppIconLoader`, place the result in memory, and encode it to a temporary file followed by atomic rename.
+- Deduplicate concurrent icon loads by the full icon key so several visible rows do not generate or decode the same icon.
+- Keep icon disk writes debounced or bounded by a small executor; icon generation must never delay metadata or first-frame work.
+- Delete or invalidate entries when the icon pack, adaptive-icon setting, package version, or user changes.
+- Preserve cancellation and recycled-view checks so a late result cannot appear in the wrong row.
+- Clear both memory and disk icon caches when the icon-pack setting changes; use targeted invalidation for package updates.
+
+Do not preload every installed icon synchronously at startup. After the first screen list is known, prewarm the checked/visible package set in the background. This gives warm cold starts without turning startup into a large disk decode job.
+
+### 3. Initialize storage at startup
 
 In `HailApp.onCreate()`, initialize the repository after `app = this`. Load and validate the persisted snapshot. Avoid unbounded synchronous JSON parsing or a large synchronous database query in `Application.onCreate`; if the snapshot can grow, load only the currently needed package set before the first screen and let the rest warm in the background.
 
 The startup seed is local persistence I/O and produces no user-visible signal. It must not invoke `PackageManager` or frozen-state IPC.
 
-### 3. Make `AppInfo` cheap and explicit
+### 4. Make `AppInfo` cheap and explicit
 
 Keep `applicationInfo` as a package-manager lookup for operations that genuinely need the Android object, such as icon and launch intent handling. Add explicit metadata access for display/filtering rather than making `name` or `state` perform asynchronous work.
 
@@ -160,7 +195,7 @@ Possible transitional behavior:
 
 The stronger design is for list rows to bind a `DisplayApp`/snapshot object containing label, state, and package info, so filtering, sorting, and binding use the same values from one computation.
 
-### 4. Refactor the all-apps flow
+### 5. Refactor the all-apps flow
 
 In `AppsViewModel.updateAppList()`:
 
@@ -178,7 +213,7 @@ In `filterList()`:
 
 In `AppsAdapter`, bind the prepared row snapshot or read the immutable cache only. Do not let binding start work. Update `AppsFragment` through the ViewModel's display list; do not register a global cache listener directly on the Fragment unless it is removed with `viewLifecycleOwner`.
 
-### 5. Refactor the home flow
+### 6. Refactor the home flow
 
 Before `PagerFragment.updateCurrentList()`, prefetch the packages in `HailData.checkedList`. Filter and sort using one metadata snapshot per `AppInfo`. On a metadata revision, call `updateCurrentList()` on the main thread because metadata can change list membership and order; `notifyDataSetChanged()` alone is insufficient.
 
@@ -186,13 +221,13 @@ Update `PagerAdapter` so its row model contains the metadata revision or explici
 
 Remove lifecycle observers when the view is destroyed. Do not use a listener that can retain a destroyed view or call `binding` after `onDestroyView`.
 
-### 6. Update state at the owner boundary
+### 7. Update state at the owner boundary
 
 After `AppManager.setAppFrozen()` or a successful batch operation returns, update or invalidate state for the affected packages. Do this in `AppManager` or one central operation wrapper so home, all-apps, API actions, workers, and services cannot diverge.
 
 Invalidate state when `HailData.WORKING_MODE` changes. Recheck state on screen resume if another process or system UI may have changed it. Package add/remove in `HailData` is not metadata invalidation; checked-list membership and metadata lifetime are separate concerns.
 
-### 7. Handle package changes and static metadata invalidation
+### 8. Handle package changes and static metadata invalidation
 
 On explicit all-app refresh, compare the new installed list with the cached package set, prefetch missing/stale entries, and remove entries for packages no longer present unless they are intentionally retained as home-history records. Consider a package broadcast receiver only if the app needs updates while not on screen; otherwise refresh on resume and user refresh is simpler and less error-prone.
 
@@ -208,6 +243,9 @@ Invalidate or re-fetch labels on locale/configuration changes, package replaceme
 - Stale state: state cache carries the working-mode signature and is invalidated on mode changes and successful mutations.
 - Stale UI event: include a revision/request ID and discard results for an obsolete query or installed-app list.
 - Memory pressure: prune entries using the latest installed and checked package sets; do not rely on an unbounded map.
+- Disk icon corruption or incompatible encoding: delete the individual entry and fall back to the source loader.
+- Icon cache growth: enforce a byte/file-count budget and remove least-recently-used or oldest entries; cache cleanup must be background work.
+- Recycled view race: associate each icon request with its package and key, and do not apply a late result to a different bound row.
 - Silent-operation regression: keep cache callbacks free of UI side effects and do not call the existing refresh-state methods from cache warming.
 
 ## Validation plan
@@ -224,6 +262,9 @@ There are currently no test source sets, so add focused unit tests for the repos
 6. Package version changes invalidate only the affected static entry.
 7. Revision events are delivered on the main dispatcher and obsolete requests cannot overwrite newer results.
 8. Filtering and sorting use one metadata snapshot and make zero package-manager calls after prefetch.
+9. A disk-cached icon is shown after process recreation without invoking the source icon loader for that package.
+10. A package update, icon-pack change, adaptive-icon setting change, or size change does not reuse an incompatible icon.
+11. Concurrent requests for the same icon key generate/decode it once, and recycled rows never receive another package's icon.
 
 ### Manual and build checks
 
@@ -240,6 +281,7 @@ There are currently no test source sets, so add focused unit tests for the repos
 ## Affected files
 
 - New: `app/src/main/kotlin/com/aistra/hail/utils/AppMetaCache.kt` and possibly `AppMetadataRepository.kt`.
+- `app/src/main/kotlin/com/aistra/hail/utils/AppIconCache.kt` for disk reads/writes, keying, deduplication, cleanup, and recycled-view protection.
 - `app/src/main/kotlin/com/aistra/hail/app/AppInfo.kt`.
 - `app/src/main/kotlin/com/aistra/hail/app/AppManager.kt`.
 - `app/src/main/kotlin/com/aistra/hail/HailApp.kt`.
@@ -254,11 +296,11 @@ There are currently no test source sets, so add focused unit tests for the repos
 
 ## Out of scope
 
-- Icon caching; `AppIconCache` already owns that concern.
+- Replacing the icon source loader or changing icon-pack behavior; the change adds persistence around the existing icon pipeline.
 - Changing WorkManager deferred-freeze behavior.
 - Network or remote metadata; `HRepository` is unrelated.
 - Persisting frozen state as authoritative durable metadata.
 
 ## Decision checkpoint
 
-Start with the file-backed repository unless there is a confirmed requirement for relational queries or durable package history. If the team chooses a database, choose Room, keep the same in-memory snapshot and explicit prefetch API, and treat Room as the persistence implementation only. Do not expect a database alone to remove UI latency.
+Start with the file-backed metadata repository and file-backed icon cache unless there is a confirmed requirement for relational queries or durable package history. If the team chooses a database, choose Room for metadata only, keep the same in-memory snapshot and explicit prefetch API, and keep icons as bounded files rather than database BLOBs. Do not store bitmap BLOBs in Room: that increases database size, transaction cost, and migration/backup complexity without helping bitmap decode or rendering.
