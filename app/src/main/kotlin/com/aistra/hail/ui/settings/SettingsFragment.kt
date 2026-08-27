@@ -2,7 +2,9 @@ package com.aistra.hail.ui.settings
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -272,7 +274,24 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
                 onClick = ::confirmRebuildCache
             )
+            preference(
+                key = "background_activity",
+                title = { Text(text = stringResource(R.string.allow_background_activity)) },
+                summary = { Text(text = stringResource(R.string.summary_background_activity)) },
+                icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
+                onClick = ::requestBackgroundActivity
+            )
         }
+    }
+
+    private fun requestBackgroundActivity() {
+        val powerManager = requireContext().getSystemService(PowerManager::class.java)
+        if (powerManager.isIgnoringBatteryOptimizations(requireContext().packageName)) return
+        startActivity(
+            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${requireContext().packageName}")
+            }
+        )
     }
 
     private fun confirmRebuildCache() {
