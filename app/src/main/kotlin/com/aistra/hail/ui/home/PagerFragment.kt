@@ -29,6 +29,7 @@ import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aistra.hail.HailApp.Companion.app
@@ -125,11 +126,18 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
             applyDefaultInsetter { marginRelative(isRtl, start = !isLandscape, end = true) }
         }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                AppMetaCache.revision.collect { updateCurrentList() }
+            }
+        }
         return binding.root
     }
 
     override fun onResume() {
         super.onResume()
+        AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
+        AppMetaCache.prefetchPackages(HailData.checkedList.map { it.packageName })
         updateCurrentList()
         updateBarTitle()
         activity.appbar.setLiftOnScrollTargetView(binding.recyclerView)

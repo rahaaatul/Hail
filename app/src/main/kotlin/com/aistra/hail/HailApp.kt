@@ -12,6 +12,7 @@ import androidx.core.content.getSystemService
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.services.AutoFreezeService
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
 import com.aistra.hail.utils.HTarget
 
@@ -19,6 +20,7 @@ class HailApp : Application() {
     override fun onCreate() {
         super.onCreate()
         app = this
+        AppMetaCache.seedFromDisk()
         // DirtyDataUpdater.update(app)
         if (!HTarget.S) setAppTheme(HailData.appTheme)
         if (HailData.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
