@@ -19,7 +19,7 @@ An agent that changes implementation files without updating this log is not foll
 | Item | Status | Owner/branch | Files or symbols | Validation/blocker |
 | --- | --- | --- | --- | --- |
 | Plan and UX specification | Complete | `plan/actions-feature` | This document | Reviewed and pushed |
-| Room Actions schema and repository | Blocked | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | Source diagnostics clean; Gradle compile blocked because Android SDK is not configured |
+| Room Actions schema and repository | Complete | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | `./gradlew :app:compileDebugKotlin` passed |
 | Action execution and API entry point | Not started | `feature/actions` | Action executor, `HailApi`, `ApiActivity` | Must unfreeze sequentially and launch only after verification |
 | Actions navigation and Home/App FAB behavior | Not started | `feature/actions` | Navigation resources, `MainActivity`, Home, Apps | Home FAB position must remain unchanged |
 | Actions list and Create/Edit action UI | Not started | `feature/actions` | Actions screen, row, dialog, app picker | One-line ellipsized summaries; Unfreeze is required |
@@ -49,10 +49,10 @@ Each implementation update should append a dated entry using this format:
 
 ### 2026-08-27 - Room schema slice
 
-- Status: Blocked
+- Status: Complete
 - Work: Added the additive Actions schema and repository on `feature/actions`, including ordered dependencies and a 2-to-3 migration.
-- Validation: Editor diagnostics report no errors in the changed Kotlin/Java files; `git diff --check` passes. `./gradlew :app:compileDebugKotlin` could not start: SDK location not found; no `ANDROID_HOME` or `local.properties` SDK path is configured.
-- Blocker/next: Android SDK setup is required for Gradle validation. Continue with the execution/UI slices, then rerun the focused build when an SDK is available.
+- Validation: Editor diagnostics report no errors in the changed Kotlin/Java files; `git diff --check` passes. `./gradlew :app:compileDebugKotlin` passed successfully.
+- Blocker/next: No blocker remains for this slice. Continue with the execution/UI slices.
 
 ## Goal
 
