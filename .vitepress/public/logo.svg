@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="ice-logo" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64b5f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1565c0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="90" fill="url(#ice-logo)"/>
+  <polygon points="100,30 120,70 160,70 130,95 145,135 100,110 55,135 70,95 40,70 80,70" fill="white" opacity="0.9"/>
+  <circle cx="70" cy="60" r="8" fill="white" opacity="0.6"/>
+  <circle cx="130" cy="60" r="6" fill="white" opacity="0.6"/>
+  <circle cx="100" cy="50" r="10" fill="white" opacity="0.4"/>
+</svg>

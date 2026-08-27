@@ -1,0 +1,16 @@
+{
+  "name": "hail-docs",
+  "version": "1.0.0",
+  "description": "Hail documentation site",
+  "scripts": {
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "keywords": ["hail", "android", "freeze", "documentation"],
+  "author": "Aistra",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

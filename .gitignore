@@ -1,12 +1,5 @@
-/.gradle/
-/.idea/
-/build/
-/local.properties
-/signing.properties
-*.iml
-*.jks
-*.keystore.secrets
-/.kilo/
-/.kilocode/
-/.secrets
-commits_since_v1.10.3.txt
+node_modules
+.vitepress/dist
+.vitepress/cache
+*.log
+.DS_Store
