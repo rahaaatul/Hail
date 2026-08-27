@@ -20,18 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.24.0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
+          cache: npm
 
-      - run: printf "y\n" | pnpm approve-builds && pnpm install
+      - run: npm ci
 
-      - run: pnpm run docs:build
+      - run: npm run docs:build
 
       - uses: actions/configure-pages@v5
 
