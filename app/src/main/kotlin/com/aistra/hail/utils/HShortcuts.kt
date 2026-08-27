@@ -37,6 +37,16 @@ object HShortcuts {
         }
     }
 
+    fun addActionShortcut(action: LaunchAction) {
+        val label = AppInfo(action.launchPackage).name
+        addPinShortcut(
+            AppInfo(action.launchPackage),
+            "action_${action.id}",
+            label,
+            Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id)
+        )
+    }
+
     private fun addPinShortcut(icon: IconCompat, id: String, label: CharSequence, intent: Intent) {
         if (ShortcutManagerCompat.isRequestPinShortcutSupported(app)) {
             val shortcut =

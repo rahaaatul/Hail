@@ -29,6 +29,7 @@ import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -148,12 +149,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
         }
         activity.fab.setOnClickListener {
-            setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted })
+            findNavController().navigate(R.id.nav_apps)
         }
-        activity.fab.setOnLongClickListener {
-            setListFrozen(true)
-            true
-        }
+        activity.fab.setOnLongClickListener(null)
     }
 
     private fun updateCurrentList() = HailData.checkedList.filter { it.isInstalled }.filter {

@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         navController = navHostFragment.navController
         navController.addOnDestinationChangedListener(this@MainActivity)
         appBarConfiguration = AppBarConfiguration.Builder(
-            R.id.nav_home, R.id.nav_apps, R.id.nav_settings
+            R.id.nav_home, R.id.nav_actions, R.id.nav_settings
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
         bottomNav?.setupWithNavController(navController)
@@ -114,8 +114,20 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     override fun onDestinationChanged(
         controller: NavController, destination: NavDestination, arguments: Bundle?
     ) {
-        fab.tag = destination.id == R.id.nav_home
-        if (fab.tag == true) fab.show() else fab.hide()
+        fab.tag = destination.id == R.id.nav_home || destination.id == R.id.nav_actions
+        when (destination.id) {
+            R.id.nav_home -> {
+                fab.setIconResource(R.drawable.ic_baseline_android)
+                fab.contentDescription = getString(R.string.title_apps)
+                fab.show()
+            }
+            R.id.nav_actions -> {
+                fab.setIconResource(R.drawable.ic_round_add)
+                fab.contentDescription = getString(R.string.action_create_action)
+                fab.show()
+            }
+            else -> fab.hide()
+        }
         binding.bottomNav?.isVisible = destination.id != R.id.nav_about
         binding.navRail?.isVisible = destination.id != R.id.nav_about
     }
