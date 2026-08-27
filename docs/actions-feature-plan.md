@@ -20,12 +20,12 @@ An agent that changes implementation files without updating this log is not foll
 | --- | --- | --- | --- | --- |
 | Plan and UX specification | Complete | `plan/actions-feature` | This document | Reviewed and pushed |
 | Room Actions schema and repository | Complete | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | `./gradlew :app:compileDebugKotlin` passed |
-| Action execution and API entry point | Not started | `feature/actions` | Action executor, `HailApi`, `ApiActivity` | Must unfreeze sequentially and launch only after verification |
-| Actions navigation and Home/App FAB behavior | Not started | `feature/actions` | Navigation resources, `MainActivity`, Home, Apps | Home FAB position must remain unchanged |
-| Actions list and Create/Edit action UI | Not started | `feature/actions` | Actions screen, row, dialog, app picker | One-line ellipsized summaries; Unfreeze is required |
-| Long-press actions | Not started | `feature/actions` | Edit, shortcut, duplicate, delete menus | Delete confirmation and stable IDs required |
-| Pinned action shortcuts | Not started | `feature/actions` | `HShortcuts`, shortcut intent handling | Launch app label/icon and action ID required |
-| Tests and acceptance validation | Not started | `feature/actions` | Unit/UI/instrumentation tests | Must cover persistence, execution, navigation, and shortcuts |
+| Action execution and API entry point | Complete | `feature/actions` | `ActionExecutor`, `HailApi`, `ApiActivity` | Focused Kotlin/resource build passed |
+| Actions navigation and Home/App FAB behavior | Complete | `feature/actions` | Navigation resources, `MainActivity`, Home, Apps | Focused Kotlin/resource build passed |
+| Actions list and Create/Edit action UI | Complete | `feature/actions` | Actions screen, row, dialog, app picker | Focused Kotlin/resource build passed |
+| Long-press actions | Complete | `feature/actions` | Edit, shortcut, duplicate, delete menus | Implemented with delete confirmation and stable IDs |
+| Pinned action shortcuts | Complete | `feature/actions` | `HShortcuts`, shortcut intent handling | Action shortcut route and launch app icon/label implemented |
+| Tests and acceptance validation | Partial | `feature/actions` | Build and static validation | `assembleDebug` passes; runtime/UI tests remain because no existing test suite/emulator is available |
 | Backup/Restore | Backlog | Future branch | Future versioned import/export | Out of scope for initial Actions implementation |
 
 ### Log Entry Format
@@ -53,6 +53,27 @@ Each implementation update should append a dated entry using this format:
 - Work: Added the additive Actions schema and repository on `feature/actions`, including ordered dependencies and a 2-to-3 migration.
 - Validation: Editor diagnostics report no errors in the changed Kotlin/Java files; `git diff --check` passes. `./gradlew :app:compileDebugKotlin` passed successfully.
 - Blocker/next: No blocker remains for this slice. Continue with the execution/UI slices.
+
+### 2026-08-27 - execution/API slice
+
+- Status: Complete
+- Work: Added shared sequential preparation and action-ID API execution without changing existing API actions.
+- Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed after adding the lifecycle scope import; only pre-existing AppManager warnings remain.
+- Blocker/next: Implement Actions navigation and the compact list/dialog UI.
+
+### 2026-08-27 - navigation/UI slice
+
+- Status: Complete
+- Work: Added the Actions destination, Home-to-Apps FAB navigation, compact action list, Create/Edit dialog, app picker, long-press menu, duplicate/delete behavior, and pinned shortcut creation.
+- Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed; only pre-existing PagerFragment warnings remain.
+- Blocker/next: Run full debug packaging and inspect the final acceptance checklist.
+
+### 2026-08-27 - integrated validation
+
+- Status: Partial
+- Work: Completed the initial Actions implementation across Room storage, execution/API routing, navigation, UI, long-press operations, and pinned shortcuts.
+- Validation: `./gradlew :app:assembleDebug` passed. Static diagnostics and `git diff --check` passed. Runtime/UI acceptance testing was not available because the repository has no existing test suite and no emulator/device was provided.
+- Blocker/next: Add focused Room/executor/UI tests and verify the interaction flows on an Android device or emulator before release.
 
 ## Goal
 
