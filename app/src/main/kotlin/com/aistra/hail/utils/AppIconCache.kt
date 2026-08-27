@@ -122,6 +122,15 @@ object AppIconCache : CoroutineScope {
         }
     }
 
+    fun prefetch(context: Context, applications: Collection<ApplicationInfo>, userId: Int = 0): Job = launch {
+        withContext(dispatcher) {
+            val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
+            applications.map { info ->
+                async { getOrLoadBitmap(context, info, userId, size) }
+            }.awaitAll()
+        }
+    }
+
     @SuppressLint("NewApi")
     fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap {
         val cachedBitmap = get(info.packageName, userId, size)

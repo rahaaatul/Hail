@@ -263,7 +263,28 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
                 onClick = ::resetDynamicShortcuts
             )
+            horizontalDivider()
+            preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
+            preference(
+                key = "rebuild_cache",
+                title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
+                summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
+                icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
+                onClick = ::confirmRebuildCache
+            )
         }
+    }
+
+    private fun confirmRebuildCache() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.action_rebuild_cache)
+            .setMessage(R.string.msg_confirm_rebuild_cache)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.action_rebuild_cache) { _, _ ->
+                AppIconCache.clear()
+                AppMetaCache.clearAndRebuild()
+            }
+            .show()
     }
 
     private fun LazyListScope.horizontalDivider() = item { HorizontalDivider() }

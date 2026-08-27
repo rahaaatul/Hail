@@ -156,7 +156,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
     }
 
-    private fun updateCurrentList() = HailData.checkedList.filter {
+    private fun updateCurrentList() = HailData.checkedList.filter { it.isInstalled }.filter {
         if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
         else ((HailData.nineKeySearch && NineKeySearch.search(
             query, it.packageName, it.name.toString()

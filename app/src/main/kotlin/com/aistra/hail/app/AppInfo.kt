@@ -14,6 +14,7 @@ class AppInfo(
 
     val applicationInfo: ApplicationInfo? get() = HPackages.getApplicationInfoOrNull(packageName)
     val name get() = AppMetaCache.get(packageName)?.name ?: packageName
+    val isInstalled get() = AppMetaCache.get(packageName)?.installed ?: (applicationInfo != null)
     val state get() = AppMetaCache.get(packageName)?.state ?: when {
         applicationInfo == null -> State.NOT_FOUND
         else -> State.UNFROZEN

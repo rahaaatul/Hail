@@ -15,6 +15,7 @@ public class AppMetadataEntity {
     public long lastUpdateTime;
     public int flags;
     public boolean enabled;
+    public boolean installed;
     @NonNull
     public String sourceSignature = "";
 }

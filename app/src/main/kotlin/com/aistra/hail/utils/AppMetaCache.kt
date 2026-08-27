@@ -2,6 +2,8 @@ package com.aistra.hail.utils
 
 import android.content.pm.ApplicationInfo
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
@@ -28,6 +30,7 @@ object AppMetaCache {
         val lastUpdateTime: Long,
         val flags: Int,
         val enabled: Boolean,
+        val installed: Boolean,
         val state: AppInfo.State,
         val sourceSignature: String
     )
@@ -35,7 +38,9 @@ object AppMetaCache {
     private val cache = ConcurrentHashMap<String, Entry>()
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
     private val database by lazy {
-        Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db").build()
+        Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
     }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _revision = MutableStateFlow(0L)
@@ -58,13 +63,29 @@ object AppMetaCache {
             async { loadIfStale(info.packageName, info) }
         }.awaitAll()
         persist(installedPackages)
+        AppIconCache.prefetch(HailApp.app, applicationInfo)
     }
+
+    fun refreshInstalled(): Job = prefetch(HPackages.getInstalledApplications())
 
     fun prefetchPackages(packageNames: Collection<String>): Job = scope.launch {
         packageNames.map { packageName ->
             async { loadIfStale(packageName) }
         }.awaitAll()
         persist()
+    }
+
+    fun clearAndRebuild(): Job = scope.launch {
+        cache.clear()
+        database.appMetadataDao().deleteAll()
+        _revision.value++
+        val applicationInfo = HPackages.getInstalledApplications()
+        val installedPackages = applicationInfo.mapTo(HashSet()) { it.packageName }
+        applicationInfo.map { info ->
+            async { loadIfStale(info.packageName, info) }
+        }.awaitAll()
+        persist(installedPackages)
+        AppIconCache.prefetch(HailApp.app, applicationInfo)
     }
 
     fun invalidateState(packageNames: Collection<String> = cache.keys) {
@@ -98,7 +119,7 @@ object AppMetaCache {
             }
 
             val entry = if (info == null) {
-                current?.copy(state = AppInfo.State.NOT_FOUND)
+                current?.copy(installed = false, state = AppInfo.State.NOT_FOUND)
             } else {
                 Entry(
                     packageName = packageName,
@@ -108,6 +129,7 @@ object AppMetaCache {
                     lastUpdateTime = packageInfo?.lastUpdateTime ?: 0L,
                     flags = info.flags,
                     enabled = info.enabled,
+                    installed = true,
                     state = readState(packageName),
                     sourceSignature = sourceSignature
                 )
@@ -127,7 +149,10 @@ object AppMetaCache {
         runCatching {
             val dao = database.appMetadataDao()
             if (installedPackages != null) {
-                cache.keys.removeIf { it !in installedPackages }
+                cache.replaceAll { packageName, entry ->
+                    if (packageName in installedPackages) entry.copy(installed = true)
+                    else entry.copy(installed = false, state = AppInfo.State.NOT_FOUND)
+                }
                 dao.replaceAll(cache.values.map { it.toEntity() })
             } else {
                 dao.upsertAll(cache.values.map { it.toEntity() })
@@ -143,6 +168,7 @@ object AppMetaCache {
         lastUpdateTime = lastUpdateTime,
         flags = flags,
         enabled = enabled,
+        installed = installed,
         state = AppInfo.State.UNFROZEN,
         sourceSignature = sourceSignature
     )
@@ -155,6 +181,13 @@ object AppMetaCache {
         it.lastUpdateTime = lastUpdateTime
         it.flags = flags
         it.enabled = enabled
+        it.installed = installed
         it.sourceSignature = sourceSignature
+    }
+
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("ALTER TABLE app_metadata ADD COLUMN installed INTEGER NOT NULL DEFAULT 0")
+        }
     }
 }

@@ -59,6 +59,8 @@ Room still does not improve `PackageManager` latency or icon generation. Its rol
 - a Room database with transactional batch replacement;
 - a revision flow used by screens to recompute their lists.
 
+Each row also has an `installed` flag. When a package is removed outside Hail, its last known metadata is retained for possible reinstall, but it is marked uninstalled and excluded from Home and Apps. Reinstalling the package marks it installed again and revalidates its source signature.
+
 Static metadata and runtime frozen state must remain conceptually separate. Frozen state depends on the current working mode and is reconstructed in memory; it is not authoritative durable metadata.
 
 ### Icons
@@ -71,7 +73,7 @@ Static metadata and runtime frozen state must remain conceptually separate. Froz
 
 Disk keys include package, user, size, package source signature, icon pack, and adaptive-icon mode. Disk I/O and bitmap decoding happen on the icon dispatcher. Writes use temporary files and rename. Recycled views verify their package tag before applying an asynchronous result.
 
-Do not synchronously preload every installed icon. Warm only checked or visible packages after the first list is known.
+Aggressively warm every installed icon after the first list is known, but keep this work on the background icon dispatcher and never block the first visible frame.
 
 ## Startup and UI flow
 
@@ -81,6 +83,8 @@ Do not synchronously preload every installed icon. Warm only checked or visible 
 4. Cache revisions trigger list recomputation on the main thread.
 5. Freeze operations and working-mode changes invalidate affected runtime state.
 6. Icon requests use memory first and perform disk/source work asynchronously.
+
+The Apps screen refreshes the complete installed inventory on resume and on manual refresh. The Home screen rechecks retained packages on resume, so external install, uninstall, and update operations are detected without requiring Hail to perform them.
 
 Cache warming must not toggle the existing refresh indicator or produce user-visible notifications.
 
@@ -124,11 +128,13 @@ This distinguishes JSON parsing from the much more expensive Android framework a
 - Freeze/unfreeze and working-mode changes must update both list flows.
 - Disk icon keys must change when package version, icon pack, adaptive mode, user, or size changes.
 - A recycled row must never receive another package's icon.
+- Uninstalled packages remain in Room but never appear in visible Home or Apps lists.
+- The Settings cache action requires confirmation, clears metadata and icons, and rebuilds every installed package in the background.
 - Compare measured startup and first-visible-content timings before and after each optimization.
 
 ## Out of scope
 
 - Querying Room directly from UI rendering paths.
 - Replacing the existing root-shell implementation from `main`.
-- Synchronously preloading every installed app icon.
+- Blocking first-frame rendering on installed-app icon prewarming.
 - Persisting frozen state as permanent package metadata.

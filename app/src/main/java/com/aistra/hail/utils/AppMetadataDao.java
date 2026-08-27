@@ -18,6 +18,9 @@ public interface AppMetadataDao {
     @Query("DELETE FROM app_metadata")
     void deleteAll();
 
+    @Query("UPDATE app_metadata SET installed = 0")
+    void markAllUninstalled();
+
     @androidx.room.Transaction
     default void replaceAll(List<AppMetadataEntity> entries) {
         deleteAll();

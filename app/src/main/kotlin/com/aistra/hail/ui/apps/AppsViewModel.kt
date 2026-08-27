@@ -61,6 +61,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             apps.postValue(appList)
             updateDisplayAppList()
             postRefreshState(false)
+            AppIconCache.prefetch(getApplication(), appList)
             AppMetaCache.prefetch(appList).join()
             updateDisplayAppList()
         }

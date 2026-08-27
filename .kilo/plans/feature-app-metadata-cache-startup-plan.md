@@ -18,12 +18,14 @@ Use one batch Room read at startup and one transactional batch replace after the
 
 1. Instrument application startup, installed-app enumeration, metadata prefetch, list submission, first frame, and first complete icon bind.
 2. Compare cold start with no cache, metadata snapshot, disk icons, and a warm in-memory process.
-3. Publish the first list immediately, then prefetch and persist the entire installed-app inventory in the background.
+3. Publish the first list immediately, then prefetch metadata and aggressively warm icons for the entire installed-app inventory in the background.
 4. Keep Room, disk bitmap, and icon-loader work on background dispatchers.
 5. Bound icon decode/generation concurrency and deduplicate identical icon keys.
 6. Recompute lists after cache revisions without showing a refresh indicator.
 7. Validate package/version, icon-pack, adaptive-icon, user, and size invalidation.
 8. Run `:app:assembleDebug` and record before/after timings.
+
+Retain metadata for uninstalled packages with `installed=false`, hide them from Home and Apps, and restore them automatically when the package returns. The Settings page provides a confirmed action to clear both caches and rebuild the full installed inventory.
 
 ## Completion criteria
 
