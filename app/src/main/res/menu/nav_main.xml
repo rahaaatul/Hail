@@ -6,7 +6,7 @@
         android:title="@string/title_home" />
     <item
         android:id="@+id/nav_actions"
-        android:icon="@drawable/ic_round_add"
+        android:icon="@drawable/ic_round_action_flow"
         android:title="@string/title_actions" />
     <item
         android:id="@+id/nav_settings"

@@ -50,12 +50,24 @@ object AppMetaCache {
 
     fun get(packageName: String): Entry? = cache[packageName]
 
+    fun cachedPackageNames(): List<String> = cache.values.filter { it.installed }.map { it.packageName }
+
     fun seedFromDatabase(): Job = scope.launch {
         runCatching {
             database.appMetadataDao().loadAll().forEach { entity ->
                 cache[entity.packageName] = entity.toEntry()
             }
             _revision.value++
+        }
+    }
+
+    fun warmUp(): Job = scope.launch {
+        runCatching {
+            database.appMetadataDao().loadAll().forEach { entity ->
+                cache[entity.packageName] = entity.toEntry()
+            }
+            _revision.value++
+            prefetch(HPackages.getInstalledApplications()).join()
         }
     }
 

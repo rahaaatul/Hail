@@ -56,14 +56,19 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
      * */
     fun updateAppList() {
         viewModelScope.launch {
-            postRefreshState(true)
-            val appList = withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }
-            apps.postValue(appList)
-            updateDisplayAppList()
-            postRefreshState(false)
-            AppIconCache.prefetch(getApplication(), appList)
-            AppMetaCache.prefetch(appList).join()
-            updateDisplayAppList()
+            val cachedApps = withContext(Dispatchers.IO) {
+                AppMetaCache.cachedPackageNames().mapNotNull(HPackages::getApplicationInfoOrNull)
+            }
+            if (cachedApps.isNotEmpty()) {
+                apps.postValue(cachedApps)
+                updateDisplayAppList()
+            }
+            withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }.let { appList ->
+                apps.postValue(appList)
+                updateDisplayAppList()
+                AppMetaCache.prefetch(appList)
+                AppIconCache.prefetch(getApplication(), appList)
+            }
         }
     }
 

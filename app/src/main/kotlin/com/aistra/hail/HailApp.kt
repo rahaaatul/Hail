@@ -26,7 +26,7 @@ class HailApp : Application() {
     override fun onCreate() {
         super.onCreate()
         app = this
-        AppMetaCache.seedFromDatabase()
+        AppMetaCache.warmUp()
         val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
         preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
         // DirtyDataUpdater.update(app)
