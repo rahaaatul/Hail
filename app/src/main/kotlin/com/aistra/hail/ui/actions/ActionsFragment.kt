@@ -1,18 +1,16 @@
 package com.aistra.hail.ui.actions
 
-import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.InputMethodManager
-import android.content.Context
-import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.ListView
 import android.widget.LinearLayout
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.databinding.FragmentActionsBinding
@@ -152,61 +150,61 @@ class ActionsFragment : MainFragment() {
     }
 
     private fun showAppPicker(multi: Boolean, selected: Set<String>, onSelected: (Set<String>) -> Unit) {
-        val apps = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
         val selectedPackages = selected.toMutableSet()
-        val search = EditText(activity).apply {
-            hint = getString(R.string.action_search_apps)
-            setSingleLine(true)
-            setPadding(32, 0, 32, 16)
-        }
-        val list = ListView(activity).apply {
-            choiceMode = if (multi) ListView.CHOICE_MODE_MULTIPLE else ListView.CHOICE_MODE_SINGLE
-        }
+        val search = EditText(activity).apply { hint = getString(R.string.action_search_apps); setSingleLine(true) }
+        val list = RecyclerView(activity).apply { layoutManager = GridLayoutManager(activity, 4) }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            addView(search)
+            setPadding(24, 16, 24, 16)
+            val searchContainer = com.google.android.material.card.MaterialCardView(activity).apply {
+                radius = 48f
+                cardElevation = 0f
+                setContentPadding(20, 0, 20, 0)
+                addView(search, LinearLayout.LayoutParams(-1, 56))
+            }
+            addView(searchContainer, LinearLayout.LayoutParams(-1, 64).apply { bottomMargin = 16 })
             addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
         }
-        val adapter = ArrayAdapter<String>(activity, android.R.layout.simple_list_item_multiple_choice)
+        lateinit var pickerDialog: AlertDialog
+        val adapter = AppPickerAdapter(multi, selectedPackages) { packageName ->
+            if (!multi) {
+                onSelected(setOf(packageName))
+            pickerDialog.dismiss()
+            }
+        }
         list.adapter = adapter
-        var visibleApps = apps
+        var allApps = AppMetaCache.cachedPackageNames().mapNotNull(HPackages::getApplicationInfoOrNull)
+        var visibleApps = allApps
         fun updateFilter(query: String) {
-            visibleApps = apps.filter {
+            visibleApps = allApps.filter {
                 it.loadLabel(activity.packageManager).toString().contains(query, true) ||
                     it.packageName.contains(query, true)
             }
-            adapter.clear()
-            adapter.addAll(visibleApps.map { it.loadLabel(activity.packageManager).toString() })
-            adapter.notifyDataSetChanged()
+            adapter.submitList(visibleApps)
         }
         updateFilter("")
-        val dialog = MaterialAlertDialogBuilder(activity)
+        pickerDialog = MaterialAlertDialogBuilder(activity)
             .setTitle(if (multi) R.string.action_select_unfreeze else R.string.action_select_launch)
             .setView(container)
             .setNegativeButton(android.R.string.cancel, null)
             .apply {
-                if (multi) setPositiveButton(R.string.save) { _, _ -> onSelected(selectedPackages) }
+                setPositiveButton(android.R.string.ok) { _, _ -> onSelected(selectedPackages) }
             }.create()
         search.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = updateFilter(s.toString())
             override fun afterTextChanged(s: android.text.Editable?) = Unit
         })
-        list.setOnItemClickListener { _, _, position, _ ->
-            val packageName = visibleApps[position].packageName
-            if (multi) {
-                if (!selectedPackages.add(packageName)) selectedPackages.remove(packageName)
-            } else {
-                onSelected(setOf(packageName))
-                dialog.dismiss()
+        pickerDialog.show()
+        viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val refreshed = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
+            viewLifecycleOwner.lifecycleScope.launch {
+                allApps = refreshed
+                updateFilter(search.text.toString())
             }
+            AppMetaCache.prefetch(refreshed)
+            AppIconCache.prefetch(activity, refreshed)
         }
-        dialog.setOnShowListener {
-            visibleApps.forEachIndexed { index, appInfo ->
-                list.setItemChecked(index, appInfo.packageName in selectedPackages)
-            }
-        }
-        dialog.show()
     }
 
     override fun onDestroyView() {
