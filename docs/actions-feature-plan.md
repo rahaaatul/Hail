@@ -103,6 +103,13 @@ Each implementation update should append a dated entry using this format:
 - Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` and `./gradlew :app:assembleDebug :app:testDebugUnitTest` passed; `git diff --check` passed. The resolved Material 3 artifacts do not expose the newer Compose `LoadingIndicator` API, so the Material Components indicator is used.
 - Blocker/next: Runtime visual verification on a device/emulator remains.
 
+### 2026-08-28 - official automation icon
+
+- Status: Complete
+- Work: Replacing the custom Actions navigation path with the official Material Symbols Outlined `automation` vector from Google Fonts: `https://fonts.gstatic.com/render/v1/Material+Symbols+Outlined/24dp/automation.xml?var=opsz,wght,FILL,GRAD,ROND@24,400,0,0,50`.
+- Validation: `./gradlew :app:assembleDebug :app:testDebugUnitTest` and `git diff --check` passed.
+- Blocker/next: Runtime visual verification remains; the vector resource now parses and packages successfully.
+
 ### 2026-08-28 - selector button labels
 
 - Status: Complete
