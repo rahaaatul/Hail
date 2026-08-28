@@ -5,10 +5,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.content.Context
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.ListView
 import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.core.view.isVisible
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aistra.hail.R
@@ -42,6 +44,7 @@ class ActionsFragment : MainFragment() {
 
     override fun onResume() {
         super.onResume()
+        activity.fab.setOnClickListener { showEditor(null) }
         loadActions()
     }
 
@@ -150,23 +153,60 @@ class ActionsFragment : MainFragment() {
 
     private fun showAppPicker(multi: Boolean, selected: Set<String>, onSelected: (Set<String>) -> Unit) {
         val apps = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
-        val packages = apps.map(ApplicationInfo::packageName).toTypedArray()
-        val labels = apps.map { it.loadLabel(activity.packageManager).toString() }.toTypedArray()
-        if (multi) {
-            val checked = packages.map { it in selected }.toBooleanArray()
-            MaterialAlertDialogBuilder(activity).setTitle(R.string.action_select_unfreeze)
-                .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.save) { _, _ -> onSelected(packages.filterIndexed { i, _ -> checked[i] }.toSet()) }
-                .show()
-        } else {
-            val checked = packages.indexOfFirst { it in selected }
-            MaterialAlertDialogBuilder(activity).setTitle(R.string.action_select_launch)
-                .setSingleChoiceItems(labels, checked) { dialog, which ->
-                    onSelected(setOf(packages[which]))
-                    dialog.dismiss()
-                }.setNegativeButton(android.R.string.cancel, null).show()
+        val selectedPackages = selected.toMutableSet()
+        val search = EditText(activity).apply {
+            hint = getString(R.string.action_search_apps)
+            setSingleLine(true)
+            setPadding(32, 0, 32, 16)
         }
+        val list = ListView(activity).apply {
+            choiceMode = if (multi) ListView.CHOICE_MODE_MULTIPLE else ListView.CHOICE_MODE_SINGLE
+        }
+        val container = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(search)
+            addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
+        }
+        val adapter = ArrayAdapter<String>(activity, android.R.layout.simple_list_item_multiple_choice)
+        list.adapter = adapter
+        var visibleApps = apps
+        fun updateFilter(query: String) {
+            visibleApps = apps.filter {
+                it.loadLabel(activity.packageManager).toString().contains(query, true) ||
+                    it.packageName.contains(query, true)
+            }
+            adapter.clear()
+            adapter.addAll(visibleApps.map { it.loadLabel(activity.packageManager).toString() })
+            adapter.notifyDataSetChanged()
+        }
+        updateFilter("")
+        val dialog = MaterialAlertDialogBuilder(activity)
+            .setTitle(if (multi) R.string.action_select_unfreeze else R.string.action_select_launch)
+            .setView(container)
+            .setNegativeButton(android.R.string.cancel, null)
+            .apply {
+                if (multi) setPositiveButton(R.string.save) { _, _ -> onSelected(selectedPackages) }
+            }.create()
+        search.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = updateFilter(s.toString())
+            override fun afterTextChanged(s: android.text.Editable?) = Unit
+        })
+        list.setOnItemClickListener { _, _, position, _ ->
+            val packageName = visibleApps[position].packageName
+            if (multi) {
+                if (!selectedPackages.add(packageName)) selectedPackages.remove(packageName)
+            } else {
+                onSelected(setOf(packageName))
+                dialog.dismiss()
+            }
+        }
+        dialog.setOnShowListener {
+            visibleApps.forEachIndexed { index, appInfo ->
+                list.setItemChecked(index, appInfo.packageName in selectedPackages)
+            }
+        }
+        dialog.show()
     }
 
     override fun onDestroyView() {

@@ -13,6 +13,7 @@
     <string name="action_no_dependencies">No apps to unfreeze</string>
     <string name="action_select_unfreeze">Select apps to unfreeze</string>
     <string name="action_select_launch">Select app to launch</string>
+    <string name="action_search_apps">Search apps</string>
     <string name="action_required_unfreeze">Select at least one app to unfreeze</string>
     <string name="save">Save</string>
     <string name="title_settings">Settings</string>

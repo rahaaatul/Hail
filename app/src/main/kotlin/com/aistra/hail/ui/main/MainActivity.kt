@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         fab.tag = destination.id == R.id.nav_home || destination.id == R.id.nav_actions
         when (destination.id) {
             R.id.nav_home -> {
-                fab.setIconResource(R.drawable.ic_baseline_android)
+                fab.setIconResource(R.drawable.ic_round_add)
                 fab.contentDescription = getString(R.string.title_apps)
                 fab.show()
             }

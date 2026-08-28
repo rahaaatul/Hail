@@ -104,18 +104,6 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 )
             )
             adapter = pagerAdapter
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    when (newState) {
-                        RecyclerView.SCROLL_STATE_IDLE -> activity.fab.run {
-                            postDelayed({ if (tag != null) show() }, 1000)
-                        }
-
-                        RecyclerView.SCROLL_STATE_DRAGGING -> activity.fab.hide()
-                    }
-                }
-            })
             applyDefaultInsetter { paddingRelative(isRtl, bottom = isLandscape) }
 
         }

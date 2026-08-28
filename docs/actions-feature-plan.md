@@ -21,8 +21,8 @@ An agent that changes implementation files without updating this log is not foll
 | Plan and UX specification | Complete | `plan/actions-feature` | This document | Reviewed and pushed |
 | Room Actions schema and repository | Complete | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | `./gradlew :app:compileDebugKotlin` passed |
 | Action execution and API entry point | Complete | `feature/actions` | `ActionExecutor`, `HailApi`, `ApiActivity` | Focused Kotlin/resource build passed |
-| Actions navigation and Home/App FAB behavior | Complete | `feature/actions` | Navigation resources, `MainActivity`, Home, Apps | Focused Kotlin/resource build passed |
-| Actions list and Create/Edit action UI | Complete | `feature/actions` | Actions screen, row, dialog, app picker | Focused Kotlin/resource build passed |
+| Actions navigation and Home/App FAB behavior | Complete | `feature/actions` | `PagerFragment`, `ActionsFragment`, `MainActivity` | FAB stays visible, shared icon, listener lifecycle fixed |
+| Actions list and Create/Edit action UI | Complete | `feature/actions` | `ActionsFragment` | Searchable all-app picker and dialog listener fixed |
 | Long-press actions | Complete | `feature/actions` | Edit, shortcut, duplicate, delete menus | Implemented with delete confirmation and stable IDs |
 | Pinned action shortcuts | Complete | `feature/actions` | `HShortcuts`, shortcut intent handling | Action shortcut route and launch app icon/label implemented |
 | Tests and acceptance validation | Partial | `feature/actions` | Build and static validation | `assembleDebug` passes; runtime/UI tests remain because no existing test suite/emulator is available |
@@ -74,6 +74,13 @@ Each implementation update should append a dated entry using this format:
 - Work: Completed the initial Actions implementation across Room storage, execution/API routing, navigation, UI, long-press operations, and pinned shortcuts.
 - Validation: `./gradlew :app:assembleDebug` passed. Static diagnostics and `git diff --check` passed. Runtime/UI acceptance testing was not available because the repository has no existing test suite and no emulator/device was provided.
 - Blocker/next: Add focused Room/executor/UI tests and verify the interaction flows on an Android device or emulator before release.
+
+### 2026-08-28 - FAB and dialog fix
+
+- Status: Complete
+- Work: Removed scroll-driven FAB hiding, aligned Home and Actions FAB icons, rebound the Actions FAB after Home teardown, and added searchable selection across all installed apps with package/name filtering.
+- Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed; static diagnostics and `git diff --check` passed.
+- Blocker/next: Run full debug packaging and final available unit tests.
 
 ## Goal
 
