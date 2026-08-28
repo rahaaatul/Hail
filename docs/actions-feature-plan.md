@@ -19,7 +19,7 @@ An agent that changes implementation files without updating this log is not foll
 | Item | Status | Owner/branch | Files or symbols | Validation/blocker |
 | --- | --- | --- | --- | --- |
 | Plan and UX specification | Complete | `plan/actions-feature` | This document | Reviewed and pushed |
-| Room Actions schema and repository | Complete | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | `./gradlew :app:compileDebugKotlin` passed |
+| Room Actions schema and repository | Complete | `feature/actions` | `AppMetadataDatabase`, `AppMetaCache`, `ActionDependencyEntity` | Removed undeclared 2-to-3 index and added 3-to-4 cleanup migration |
 | Action execution and API entry point | Complete | `feature/actions` | `ActionExecutor`, `HailApi`, `ApiActivity` | Focused Kotlin/resource build passed |
 | Actions navigation and Home/App FAB behavior | Complete | `feature/actions` | `PagerFragment`, `ActionsFragment`, `MainActivity` | FAB remains visible; Home/Actions plus FAB behavior retained; flow tab icon added |
 | Actions list and Create/Edit action UI | Complete | `feature/actions` | `ActionsFragment`, picker grid resources | Both selectors use Cancel/OK; parent editor uses Cancel/Save |
@@ -109,6 +109,13 @@ Each implementation update should append a dated entry using this format:
 - Work: Replacing the custom Actions navigation path with the official Material Symbols Outlined `automation` vector from Google Fonts: `https://fonts.gstatic.com/render/v1/Material+Symbols+Outlined/24dp/automation.xml?var=opsz,wght,FILL,GRAD,ROND@24,400,0,0,50`.
 - Validation: `./gradlew :app:assembleDebug :app:testDebugUnitTest` and `git diff --check` passed.
 - Blocker/next: Runtime visual verification remains; the vector resource now parses and packages successfully.
+
+### 2026-08-28 - Room migration crash
+
+- Status: Complete
+- Work: Investigating the Actions-tab crash reported after the automation icon was fixed.
+- Validation: Crash log identified Room schema validation failure: migration-created `index_action_dependencies_actionId` existed, but the entity schema expected no index. `./gradlew :app:compileDebugKotlin :app:processDebugResources :app:assembleDebug :app:testDebugUnitTest` passed.
+- Blocker/next: No blocker for this slice. Version-3 devices receive the 3-to-4 cleanup migration; fresh 2-to-3 upgrades no longer create the invalid index.
 
 ### 2026-08-28 - selector button labels
 
