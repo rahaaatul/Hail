@@ -21,11 +21,11 @@ An agent that changes implementation files without updating this log is not foll
 | Plan and UX specification | Complete | `plan/actions-feature` | This document | Reviewed and pushed |
 | Room Actions schema and repository | Complete | `feature/actions` | `ActionEntity`, `ActionDependencyEntity`, `ActionDao`, `ActionsRepository`, `AppMetadataDatabase`, `AppMetaCache` | `./gradlew :app:compileDebugKotlin` passed |
 | Action execution and API entry point | Complete | `feature/actions` | `ActionExecutor`, `HailApi`, `ApiActivity` | Focused Kotlin/resource build passed |
-| Actions navigation and Home/App FAB behavior | Complete | `feature/actions` | `PagerFragment`, `ActionsFragment`, `MainActivity` | FAB stays visible, shared icon, listener lifecycle fixed |
-| Actions list and Create/Edit action UI | Complete | `feature/actions` | `ActionsFragment` | Searchable all-app picker and dialog listener fixed |
+| Actions navigation and Home/App FAB behavior | Complete | `feature/actions` | `PagerFragment`, `ActionsFragment`, `MainActivity` | FAB remains visible; Home/Actions plus FAB behavior retained; flow tab icon added |
+| Actions list and Create/Edit action UI | Complete | `feature/actions` | `ActionsFragment`, picker grid resources | Both selectors use Cancel/OK; parent editor uses Cancel/Save |
 | Long-press actions | Complete | `feature/actions` | Edit, shortcut, duplicate, delete menus | Implemented with delete confirmation and stable IDs |
 | Pinned action shortcuts | Complete | `feature/actions` | `HShortcuts`, shortcut intent handling | Action shortcut route and launch app icon/label implemented |
-| Tests and acceptance validation | Partial | `feature/actions` | Build and static validation | `assembleDebug` passes; runtime/UI tests remain because no existing test suite/emulator is available |
+| Tests and acceptance validation | Partial | `feature/actions` | Build and static validation | Latest `assembleDebug` and `testDebugUnitTest` pass; runtime/UI tests remain |
 | Backup/Restore | Backlog | Future branch | Future versioned import/export | Out of scope for initial Actions implementation |
 
 ### Log Entry Format
@@ -81,6 +81,27 @@ Each implementation update should append a dated entry using this format:
 - Work: Removed scroll-driven FAB hiding, aligned Home and Actions FAB icons, rebound the Actions FAB after Home teardown, and added searchable selection across all installed apps with package/name filtering.
 - Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed; static diagnostics and `git diff --check` passed.
 - Blocker/next: Run full debug packaging and final available unit tests.
+
+### 2026-08-28 - cached app picker and Apps loading
+
+- Status: Complete
+- Work: Replaced blocking installed-app loads with cached-first rendering, silent background refresh, a four-column selectable app picker, Material-spaced rounded search, and a flow-style Actions tab icon.
+- Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed; editor diagnostics report no errors in the changed files.
+- Blocker/next: Run full debug packaging and available unit tests.
+
+### 2026-08-28 - cache-first UI validation
+
+- Status: Partial
+- Work: Added startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
+- Validation: `./gradlew :app:assembleDebug :app:testDebugUnitTest` passed; editor diagnostics report no errors in changed Kotlin files.
+- Blocker/next: Runtime visual verification on a device/emulator remains; inspect picker interaction and cache warm-up timing before release.
+
+### 2026-08-28 - selector button labels
+
+- Status: Complete
+- Work: Updating both Unfreeze and Launch selector dialogs to use `Cancel` and `OK`; the parent action editor remains `Cancel` and `Save`.
+- Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed.
+- Blocker/next: No blocker; single-select remains staged until OK is pressed.
 
 ## Goal
 
