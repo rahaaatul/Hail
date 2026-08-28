@@ -96,6 +96,13 @@ Each implementation update should append a dated entry using this format:
 - Validation: `./gradlew :app:assembleDebug :app:testDebugUnitTest` passed; editor diagnostics report no errors in changed Kotlin files.
 - Blocker/next: Runtime visual verification on a device/emulator remains; inspect picker interaction and cache warm-up timing before release.
 
+### 2026-08-28 - crash and loading indicator fix
+
+- Status: Complete
+- Work: Replaced the malformed Actions automation vector that crashed navigation inflation and upgraded the explicit progress dialog to Material's contiguous progress indicator. Background cache refresh remains silent.
+- Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` and `./gradlew :app:assembleDebug :app:testDebugUnitTest` passed; `git diff --check` passed. The resolved Material 3 artifacts do not expose the newer Compose `LoadingIndicator` API, so the Material Components indicator is used.
+- Blocker/next: Runtime visual verification on a device/emulator remains.
+
 ### 2026-08-28 - selector button labels
 
 - Status: Complete
