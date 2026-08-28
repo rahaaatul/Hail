@@ -39,7 +39,7 @@ object AppMetaCache {
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
     private val database by lazy {
         Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
     }
 
@@ -213,9 +213,12 @@ object AppMetaCache {
             database.execSQL(
                 "CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, position INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)"
             )
-            database.execSQL(
-                "CREATE INDEX IF NOT EXISTS index_action_dependencies_actionId ON action_dependencies(actionId)"
-            )
+        }
+    }
+
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL("DROP INDEX IF EXISTS index_action_dependencies_actionId")
         }
     }
 }

@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase;
 
 @Database(
         entities = {AppMetadataEntity.class, ActionEntity.class, ActionDependencyEntity.class},
-        version = 3,
+        version = 4,
         exportSchema = false
 )
 public abstract class AppMetadataDatabase extends RoomDatabase {
