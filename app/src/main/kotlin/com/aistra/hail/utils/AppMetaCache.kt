@@ -36,6 +36,7 @@ object AppMetaCache {
     )
 
     private val cache = ConcurrentHashMap<String, Entry>()
+    private val installedApplications = ConcurrentHashMap<String, ApplicationInfo>()
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
     private val database by lazy {
         Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
@@ -51,6 +52,8 @@ object AppMetaCache {
     fun get(packageName: String): Entry? = cache[packageName]
 
     fun cachedPackageNames(): List<String> = cache.values.filter { it.installed }.map { it.packageName }
+
+    fun cachedApplications(): List<ApplicationInfo> = installedApplications.values.toList()
 
     fun seedFromDatabase(): Job = scope.launch {
         runCatching {
@@ -72,6 +75,8 @@ object AppMetaCache {
     }
 
     fun prefetch(applicationInfo: Collection<ApplicationInfo>): Job = scope.launch {
+        installedApplications.clear()
+        applicationInfo.forEach { installedApplications[it.packageName] = it }
         val installedPackages = applicationInfo.mapTo(HashSet()) { it.packageName }
         applicationInfo.map { info ->
             async { loadIfStale(info.packageName, info) }

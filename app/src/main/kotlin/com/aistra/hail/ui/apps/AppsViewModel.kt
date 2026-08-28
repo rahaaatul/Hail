@@ -57,7 +57,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     fun updateAppList() {
         viewModelScope.launch {
             val cachedApps = withContext(Dispatchers.IO) {
-                AppMetaCache.cachedPackageNames().mapNotNull(HPackages::getApplicationInfoOrNull)
+                AppMetaCache.cachedApplications()
             }
             if (cachedApps.isNotEmpty()) {
                 apps.postValue(cachedApps)

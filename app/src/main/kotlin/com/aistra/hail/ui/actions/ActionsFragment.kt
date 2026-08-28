@@ -151,29 +151,37 @@ class ActionsFragment : MainFragment() {
 
     private fun showAppPicker(multi: Boolean, selected: Set<String>, onSelected: (Set<String>) -> Unit) {
         val selectedPackages = selected.toMutableSet()
-        val search = EditText(activity).apply { hint = getString(R.string.action_search_apps); setSingleLine(true) }
-        val list = RecyclerView(activity).apply { layoutManager = GridLayoutManager(activity, 4) }
+        val search = EditText(activity).apply {
+            hint = getString(R.string.action_search_apps)
+            setSingleLine(true)
+            background = null
+            minHeight = 64
+            setPadding(0, 0, 0, 0)
+        }
+        val list = RecyclerView(activity).apply {
+            layoutManager = GridLayoutManager(activity, 4)
+            layoutParams = LinearLayout.LayoutParams(-1, 176)
+        }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 16, 24, 16)
+            setPadding(24, 8, 24, 8)
             val searchContainer = com.google.android.material.card.MaterialCardView(activity).apply {
                 radius = 48f
                 cardElevation = 0f
                 setContentPadding(20, 0, 20, 0)
-                addView(search, LinearLayout.LayoutParams(-1, 56))
+                addView(search, LinearLayout.LayoutParams(-1, 64))
             }
-            addView(searchContainer, LinearLayout.LayoutParams(-1, 64).apply { bottomMargin = 16 })
-            addView(list, LinearLayout.LayoutParams(-1, 0, 1f))
+            addView(searchContainer, LinearLayout.LayoutParams(-1, 72).apply { bottomMargin = 16 })
+            addView(list)
         }
         lateinit var pickerDialog: AlertDialog
         val adapter = AppPickerAdapter(multi, selectedPackages) { packageName ->
             if (!multi) {
                 onSelected(setOf(packageName))
-            pickerDialog.dismiss()
             }
         }
         list.adapter = adapter
-        var allApps = AppMetaCache.cachedPackageNames().mapNotNull(HPackages::getApplicationInfoOrNull)
+        var allApps = AppMetaCache.cachedApplications()
         var visibleApps = allApps
         fun updateFilter(query: String) {
             visibleApps = allApps.filter {

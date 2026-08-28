@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
-import com.aistra.hail.app.AppInfo
 import com.aistra.hail.databinding.ItemActionPickerBinding
 import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.HPackages
@@ -34,14 +33,23 @@ class AppPickerAdapter(
             val packageName = info.packageName
             binding.appName.text = info.loadLabel(binding.root.context.packageManager)
             AppIconCache.loadIconBitmapAsync(binding.root.context, info, HPackages.myUserId, binding.appIcon, false)
-            binding.selectedIcon.isVisible = packageName in selected
+            val isSelected = packageName in selected
+            binding.selectedTint.isVisible = isSelected
+            binding.selectedIcon.isVisible = isSelected
+            binding.appIcon.alpha = if (isSelected) 0.55f else 1f
             binding.root.setOnClickListener {
-                if (multi) {
-                    if (!selected.add(packageName)) selected.remove(packageName)
-                    notifyItemChanged(bindingAdapterPosition)
+                if (multi) selected.toggle(packageName)
+                else {
+                    selected.clear()
+                    selected.add(packageName)
+                    notifyDataSetChanged()
                 }
                 onSelected(packageName)
             }
         }
+    }
+
+    private fun MutableSet<String>.toggle(value: String) {
+        if (!add(value)) remove(value)
     }
 }
