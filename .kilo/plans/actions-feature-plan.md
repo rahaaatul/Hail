@@ -32,12 +32,14 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-29) Room migrations updated to use `SQLiteConnection` API instead of `SupportSQLiteDatabase`.
 - [x] (2026-08-29) Callers in `AppMetaCache.kt` and `ActionsRepository.kt` updated to use new Kotlin data classes.
 - [x] (2026-08-29) Build compiles successfully with Room 3.0 and Kotlin DAOs.
+- [x] (2026-08-29) Shortcut refresh after editing implemented via `ShortcutManagerCompat.updateShortcuts()` in `HShortcuts.updateActionShortcut()`, called from `ActionsFragment` on save.
 - [x] (2026-08-29) Test infrastructure set up: JUnit4, MockK, Espresso, coroutines-test, room3-testing added.
 - [x] (2026-08-29) ActionDaoTest written with in-memory database (insert, load, update, delete, dependencies, saveAction transaction).
 - [x] (2026-08-29) AppMetadataDaoTest written (CRUD, replaceAll, markAllUninstalled).
 - [x] (2026-08-29) ActionExecutorTest written with MockK (failure cases, sequential unfreeze).
 - [x] (2026-08-29) ActionsRepositoryTest written (deduplication, order preservation, delete, duplicate).
 - [x] (2026-08-29) Android instrumented tests compile successfully.
+- [ ] (2026-08-29) Extract shared launch/freeze/unfreeze logic into `AppActions` utility to eliminate working-mode drift between Home and Actions.
 - [ ] (2026-08-28) Remove main-thread package resolution from Unfreeze/Launch picker opening, align picker spacing, reduce cells to a 4-column compact grid, and change selection to a full-icon tint with a centered check overlay.
 - [ ] (2026-08-28) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
@@ -63,6 +65,12 @@ Document unexpected behaviors, bugs, optimizations, or insights discovered durin
 
 - Observation: Kotlin interfaces do not use the `default` keyword for default methods.
   Evidence: The Java `default` keyword in interface methods caused a syntax error in Kotlin. Removing `default` and keeping just `fun` with a body resolved it.
+
+- Observation: `ShortcutManagerCompat.updateShortcuts()` updates both pinned and dynamic shortcuts that share the same ID, and the API is rate-limited.
+  Evidence: AndroidX docs state the method updates "all existing shortcuts with the same IDs. Target shortcuts may be pinned and/or dynamic." Used this to refresh shortcut label/icon after action edits without removing/re-adding the shortcut.
+
+- Observation: Home and Actions paths have drifted in working-mode behavior.
+  Evidence: `PagerFragment.launchApp()` checks `MODE_ISLAND_HIDE` and adds dynamic shortcuts; `ActionExecutor.prepare()` skips all working-mode validation and goes straight to unfreeze+launch. `PagerFragment.setListFrozen()` blocks in `MODE_DEFAULT` with a guide dialog and validates Shizuku root in `MODE_SHIZUKU_HIDE`; `ActionExecutor` calls `AppManager.setAppFrozen()` directly. This means action execution can behave differently from home launch depending on `HailData.workingMode`.
 
 ## Decision Log
 
@@ -92,11 +100,23 @@ Record every decision made while working on the plan in the format:
   Rationale: Room 3.0 is KSP-only, which forces the annotation processor setup immediately and eliminates dual compatibility. Converting Java files to Kotlin using the new Room 3.0 APIs in a single pass avoids a second transition. This is cleaner than converting on Room 2.8.3 and then upgrading.
   Date/Author: 2026-08-29
 
+- Decision: Refresh existing shortcuts after action edits using `ShortcutManagerCompat.updateShortcuts()` rather than removing and re-requesting the shortcut.
+  Rationale: `updateShortcuts` updates both pinned and dynamic shortcuts with matching IDs in a single call. Re-requesting would show the system pin dialog again and could create duplicate shortcuts. The API is rate-limited, but calling it only on save avoids that risk.
+  Date/Author: 2026-08-29
+
+- Decision: Extract shared app-action logic into a new `object AppActions` in `com.aistra.hail.utils` rather than expanding `AppManager`.
+  Rationale: `AppManager` is already a God object handling freeze/unfreeze modes, root/Shizuku/Dhizuku shell operations, and screen locking. Adding working-mode validation, dynamic shortcuts, and intent caching to it would increase coupling. The `utils` package already uses `object` singletons (`HShortcuts`, `ActionsRepository`, `AppMetaCache`) for cross-cutting concerns, so a new `AppActions` fits the existing convention and keeps `AppManager` focused on privilege delegation.
+  Date/Author: 2026-08-29
+
+- Decision: Preserve `ActionExecutor` as a public API for `ApiActivity` and shortcuts, but delegate its internals to `AppActions`.
+  Rationale: `ApiActivity` and pinned shortcuts already depend on `ActionExecutor.prepare()`. Removing it would break the API surface. Keeping it as a thin wrapper preserves backward compatibility while allowing `PagerFragment` to call `AppActions` directly for UI-specific behavior (toasts, dynamic shortcuts).
+  Date/Author: 2026-08-29
+
 ## Outcomes & Retrospective
 
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion. Compare the result against the original purpose.
 
-The initial Actions implementation is functionally complete across Room storage, execution/API routing, navigation, UI, long-press operations, and pinned shortcuts. The build passes (`assembleDebug` and `testDebugUnitTest`), and static diagnostics are clean. Runtime visual verification on a device or emulator remains undone because no emulator was provided. Focused unit tests for the new Room entities, executor, and UI are not yet written. The Backup/Restore feature is explicitly out of scope for this phase.
+The initial Actions implementation is functionally complete across Room storage, execution/API routing, navigation, UI, long-press operations, and pinned shortcuts. The build passes (`assembleDebug` and `testDebugUnitTest`), and static diagnostics are clean. The shortcut refresh gap identified during Milestone 6 verification was closed by adding `HShortcuts.updateActionShortcut()` and calling it from `ActionsFragment` after save. A post-verification review identified working-mode drift between Home and Actions execution paths. This is being addressed in Milestone 6.5 by extracting shared logic into `AppActions`. Runtime visual verification on a device or emulator remains undone because no emulator was provided. Focused unit tests for the new Room entities, executor, and UI are not yet written. The Backup/Restore feature is explicitly out of scope for this phase.
 
 ## Context and Orientation
 
@@ -236,6 +256,28 @@ Create `ActionsFragment.kt` with an adapter and view holder. Display actions as 
 This milestone wires the `Create shortcut` menu item to Android's pinned shortcut API. At a milestone, a user can place a home-screen shortcut that executes an action even when Hail is not open.
 
 Use the existing `HShortcuts` utility. The shortcut's label is the launch app's display name, its icon is the launch app's application icon, and its ID is the action's stable ID. The intent targets Hail's action execution entry point and carries the action ID as an extra. Extend `HailApi` with a dedicated action intent constant and action-ID extra. Extend `ApiActivity` to load and execute the action through the shared executor, then finish. If the action is deleted or unavailable, the shortcut must fail gracefully with a localized `Action unavailable` message. When supported by Android/launcher APIs, refresh the shortcut's label and icon after editing the launch app.
+
+### Milestone 6.5: Shared App-Action Logic and Launch-Intent Caching
+
+This milestone eliminates behavioral drift between Home and Actions by extracting shared launch, freeze, and unfreeze logic into a single utility.
+
+**Critical questions and research findings:**
+
+- Q: Do Home launch, Action launch, Home freeze/unfreeze, and Action freeze/unfreeze share code?
+  A: No. `PagerFragment.launchApp()` handles `MODE_ISLAND_HIDE`, dynamic shortcuts, and toast feedback. `ActionExecutor.prepare()` handles dependency unfreezing and returns `Result<Intent>`, but skips working-mode validation entirely. `PagerFragment.setListFrozen()` blocks in `MODE_DEFAULT` and validates Shizuku root in `MODE_SHIZUKU_HIDE`, while `ActionExecutor` calls `AppManager.setAppFrozen()` directly. This means Actions can behave completely differently from Home depending on `HailData.workingMode`.
+
+- Q: What pattern does the Hail codebase use for shared logic?
+  A: The `utils` package uses `object` singletons (`HShortcuts`, `ActionsRepository`, `AppMetaCache`). Android best-practice guidance recommends composition over inheritance and extracting shared business rules into reusable helpers rather than duplicating them across fragments.
+
+**Best path:**
+
+1. Create `object AppActions` in `com.aistra.hail.utils` with three suspend helpers:
+   - `ensureUnfrozen(packageName: String): Result<Unit>` — validates working mode, unfreezes the app, verifies state.
+   - `getLaunchIntent(packageName: String): Result<Intent>` — applies working-mode preconditions, retrieves launch intent, refreshes auto-freeze service.
+   - `freezePackages(frozen: Boolean, packages: List<String>): Result<Unit>` — validates working mode, performs batch freeze/unfreeze.
+2. Refactor `PagerFragment.launchApp()` to call `AppActions.ensureUnfrozen()` + `AppActions.getLaunchIntent()`, preserving dynamic shortcuts and toast feedback at the UI layer.
+3. Refactor `PagerFragment.setListFrozen()` to call `AppActions.freezePackages()`, preserving working-mode dialogs and toast feedback at the UI layer.
+4. Refactor `ActionExecutor.prepare()` to delegate dependency unfreezing to `AppActions.ensureUnfrozen()` and target launch to `AppActions.getLaunchIntent()`, removing duplicated working-mode blindness.
 
 ### Milestone 7: Tests and Acceptance Validation
 
@@ -384,6 +426,18 @@ To verify the navigation graph is well-formed:
 
     grep -n "fragment\|action\|destination" app/src/main/res/navigation/mobile_navigation.xml
 
+To verify shared app-action extraction and caching:
+
+    ./gradlew :app:compileDebugKotlin :app:processDebugResources
+
+Expected output ends with:
+
+    BUILD SUCCESSFUL
+
+To inspect `AppActions` implementation:
+
+    grep -n "object AppActions" app/src/main/kotlin/com/aistra/hail/utils/*.kt
+
 ## Validation and Acceptance
 
 Describe how to start or exercise the system and what to observe. Phrase acceptance as behavior, with specific inputs and outputs.
@@ -395,6 +449,13 @@ On the Home tab, the FAB should show an Apps icon. Tapping it should open the Ap
 Switch to the Actions tab. The FAB should show a plus icon. Tapping it should open a dialog titled `Create action` with two fields in order: `Unfreeze` and `Launch`. Both fields should be empty initially, and the Save button should be disabled. Tapping the Unfreeze field should open a multi-select app picker; selecting at least one app and pressing OK should return to the dialog with a single-line summary. Tapping the Launch field should open a single-select app picker; selecting one app and pressing OK should show its name and icon. Only when both fields are filled should Save become enabled. Pressing Save should close the dialog and add a new row to the Actions list showing the launch app's icon, name, and the unfreeze app names on one line.
 
 Tapping an action row should unfreeze each dependency app, then launch the target app. No progress indicator should appear. If a dependency cannot be unfrozen, the target should not launch, and a message naming the unavailable app should appear.
+
+In the Actions Create/Edit dialog, the Launch picker should show only apps that have a launcher activity. Apps without a launch intent should be hidden from the picker.
+
+Home launch, Home freeze/unfreeze, and Actions execution must respect the same `HailData.workingMode` rules. Specifically:
+- `MODE_DEFAULT` should block freeze/unfreeze with the guide dialog in both Home and Actions.
+- `MODE_SHIZUKU_HIDE` should validate Shizuku root before freezing in both Home and Actions.
+- `MODE_ISLAND_HIDE` should call `HIsland.ensureLaunchIntentExists` before launching in both Home and Actions.
 
 Long-pressing an action row should open a menu with `Edit action`, `Create shortcut`, `Duplicate`, and `Delete`. Edit should reopen the dialog with the action's current selections. Duplicate should add a new row with the same selections. Delete should show a confirmation dialog; confirming should remove the row.
 
@@ -523,6 +584,14 @@ In the Room persistence layer (package `com.aistra.hail.utils`; migrated from Ja
     }
 
 The app uses Jetpack Room 3.0 for persistence (migrated from 2.8.3), Jetpack Navigation for routing, Material 3 for UI components, and Kotlin Coroutines with `Flow` for reactive data. Pinned shortcuts use `androidx.core.content.pm.ShortcutManagerCompat`. Room 3.0 requires KSP and uses the `androidx.room3` package namespace.
+
+In the shared app-action layer (package `com.aistra.hail.utils`):
+
+    object AppActions {
+        suspend fun ensureUnfrozen(packageName: String): Result<Unit>
+        suspend fun getLaunchIntent(packageName: String): Result<Intent>
+        suspend fun freezePackages(frozen: Boolean, packages: List<String>): Result<Unit>
+    }
 
 ## Backlog: Backup and Restore
 

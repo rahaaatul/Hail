@@ -47,6 +47,20 @@ object HShortcuts {
         )
     }
 
+    fun updateActionShortcut(action: LaunchAction) {
+        val label = AppInfo(action.launchPackage).name
+        val icon = AppInfo(action.launchPackage).applicationInfo?.let {
+            IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+        }
+        val builder = ShortcutInfoCompat.Builder(app, "action_${action.id}")
+            .setShortLabel(label)
+            .setIntent(Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id))
+        if (icon != null) {
+            builder.setIcon(IconCompat.createWithBitmap(icon))
+        }
+        ShortcutManagerCompat.updateShortcuts(app, listOf(builder.build()))
+    }
+
     private fun addPinShortcut(icon: IconCompat, id: String, label: CharSequence, intent: Intent) {
         if (ShortcutManagerCompat.isRequestPinShortcutSupported(app)) {
             val shortcut =

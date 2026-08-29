@@ -136,9 +136,6 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 true
             }
         }
-        activity.fab.setOnClickListener {
-            findNavController().navigate(R.id.nav_apps)
-        }
         activity.fab.setOnLongClickListener(null)
     }
 
@@ -678,8 +675,6 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     override fun onDestroyView() {
         _menu = null
-        activity?.fab?.setOnClickListener(null)
-        activity?.fab?.setOnLongClickListener(null)
         pagerAdapter.onDestroy()
         super.onDestroyView()
         _binding = null

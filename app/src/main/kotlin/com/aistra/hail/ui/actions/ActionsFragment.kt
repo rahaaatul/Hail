@@ -137,7 +137,8 @@ class ActionsFragment : MainFragment() {
                     return@setOnClickListener
                 }
                 viewLifecycleOwner.lifecycleScope.launch {
-                    ActionsRepository.save(existing?.id ?: java.util.UUID.randomUUID().toString(), selectedLaunch!!, finalDependencies)
+                    val savedAction = ActionsRepository.save(existing?.id ?: java.util.UUID.randomUUID().toString(), selectedLaunch!!, finalDependencies)
+                    HShortcuts.updateActionShortcut(savedAction)
                     dialog.dismiss()
                     loadActions()
                 }
@@ -179,7 +180,7 @@ class ActionsFragment : MainFragment() {
             }
         }
         list.adapter = adapter
-        var allApps = AppMetaCache.cachedApplications()
+        var allApps = AppMetaCache.cachedApplications().let { if (multi) it else it.filter { appInfo -> activity.packageManager.getLaunchIntentForPackage(appInfo.packageName) != null } }
         var visibleApps = allApps
         fun updateFilter(query: String) {
             visibleApps = allApps.filter {
@@ -205,7 +206,7 @@ class ActionsFragment : MainFragment() {
         viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             val refreshed = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
             viewLifecycleOwner.lifecycleScope.launch {
-                allApps = refreshed
+                allApps = refreshed.let { if (multi) it else it.filter { appInfo -> activity.packageManager.getLaunchIntentForPackage(appInfo.packageName) != null } }
                 updateFilter(search.text.toString())
             }
             AppMetaCache.prefetch(refreshed)
