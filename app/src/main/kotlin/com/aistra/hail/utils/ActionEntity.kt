@@ -9,19 +9,3 @@ data class ActionEntity(
     @PrimaryKey val id: String = "",
     val launchPackage: String = ""
 )
-
-@Entity(
-    tableName = "action_dependencies",
-    primaryKeys = ["actionId", "packageName"],
-    foreignKeys = [ForeignKey(
-        entity = ActionEntity::class,
-        parentColumns = ["id"],
-        childColumns = ["actionId"],
-        onDelete = ForeignKey.CASCADE
-    )]
-)
-data class ActionDependencyEntity(
-    val actionId: String = "",
-    val packageName: String = "",
-    val ordering: Int = 0
-)
