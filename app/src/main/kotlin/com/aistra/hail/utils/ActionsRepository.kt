@@ -17,7 +17,7 @@ object ActionsRepository {
             LaunchAction(
                 id = entity.id,
                 launchPackage = entity.launchPackage,
-                unfreezePackages = dao.loadDependencies(entity.id).sortedBy { it.position }
+                unfreezePackages = dao.loadDependencies(entity.id).sortedBy { it.ordering }
                     .map { it.packageName }
             )
         }
@@ -34,15 +34,8 @@ object ActionsRepository {
             unfreezePackages = unfreezePackages.distinct()
         )
         val dao = AppMetaCache.database().actionDao()
-        dao.saveAction(ActionEntity().also {
-                it.id = action.id
-                it.launchPackage = action.launchPackage
-            }, action.unfreezePackages.mapIndexed { position, packageName ->
-                ActionDependencyEntity().also {
-                    it.actionId = action.id
-                    it.packageName = packageName
-                    it.position = position
-                }
+        dao.saveAction(ActionEntity(id = action.id, launchPackage = action.launchPackage), action.unfreezePackages.mapIndexed { position, packageName ->
+                ActionDependencyEntity(actionId = action.id, packageName = packageName, ordering = position)
             })
         action
     }

@@ -1,9 +1,10 @@
 package com.aistra.hail.utils
 
 import android.content.pm.ApplicationInfo
-import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room3.Room
+import androidx.room3.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.execSQL
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
@@ -192,38 +193,38 @@ object AppMetaCache {
         sourceSignature = sourceSignature
     )
 
-    private fun Entry.toEntity() = AppMetadataEntity().also {
-        it.packageName = packageName
-        it.name = name
-        it.systemApp = isSystemApp
-        it.firstInstallTime = firstInstallTime
-        it.lastUpdateTime = lastUpdateTime
-        it.flags = flags
-        it.enabled = enabled
-        it.installed = installed
-        it.sourceSignature = sourceSignature
-    }
+    private fun Entry.toEntity() = AppMetadataEntity(
+        packageName = packageName,
+        name = name,
+        systemApp = isSystemApp,
+        firstInstallTime = firstInstallTime,
+        lastUpdateTime = lastUpdateTime,
+        flags = flags,
+        enabled = enabled,
+        installed = installed,
+        sourceSignature = sourceSignature
+    )
 
     private val MIGRATION_1_2 = object : Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("ALTER TABLE app_metadata ADD COLUMN installed INTEGER NOT NULL DEFAULT 0")
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("ALTER TABLE app_metadata ADD COLUMN installed INTEGER NOT NULL DEFAULT 0")
         }
     }
 
     private val MIGRATION_2_3 = object : Migration(2, 3) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL(
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
                 "CREATE TABLE IF NOT EXISTS actions (id TEXT NOT NULL, launchPackage TEXT NOT NULL, PRIMARY KEY(id))"
             )
-            database.execSQL(
+            connection.execSQL(
                 "CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, position INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)"
             )
         }
     }
 
     private val MIGRATION_3_4 = object : Migration(3, 4) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL("DROP INDEX IF EXISTS index_action_dependencies_actionId")
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("DROP INDEX IF EXISTS index_action_dependencies_actionId")
         }
     }
 }

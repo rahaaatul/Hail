@@ -6,7 +6,7 @@ Hail is an Android application written in Kotlin. It manages other installed app
 
 The project uses:
 - Jetpack Navigation for screen routing
-- Room for local persistence
+- Room 3.0 for local persistence (migrated from 2.8.3)
 - Material 3 for UI components
 - Kotlin Coroutines with `Flow` for reactive data
 - Jetpack Compose (with View Binding also enabled)
@@ -51,7 +51,6 @@ To check for merge conflicts or whitespace issues:
 ## Source Structure
 
 - Kotlin sources: `app/src/main/kotlin/com/aistra/hail/`
-- Java sources: `app/src/main/java/com/aistra/hail/utils/` (legacy Room classes; to be converted to Kotlin)
 - Resources: `app/src/main/res/`
 - Navigation graph: `app/src/main/res/navigation/mobile_navigation.xml`
 - Bottom nav menu: `app/src/main/res/menu/nav_main.xml`
@@ -67,9 +66,11 @@ Key packages:
 
 ## Room Conventions
 
-Room classes currently live as Java files in `app/src/main/java/com/aistra/hail/utils/`:
-- `ActionEntity.java`, `ActionDao.java`, `ActionDependencyEntity.java`
-- `AppMetadataEntity.java`, `AppMetadataDao.java`, `AppMetadataDatabase.java`
+Room classes live as Kotlin files in `app/src/main/kotlin/com/aistra/hail/utils/`:
+- `ActionEntity.kt`, `ActionDao.kt`, `ActionDependencyEntity.kt`
+- `AppMetadataEntity.kt`, `AppMetadataDao.kt`, `AppMetadataDatabase.kt`
+
+Room 3.0 uses the `androidx.room3` package namespace and requires KSP (Kotlin Symbol Processing) for code generation.
 
 When working with Room:
 - Use `data class` for entities in Kotlin

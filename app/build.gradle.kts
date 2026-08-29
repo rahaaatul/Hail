@@ -108,5 +108,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.sqlite.wrapper)
     ksp(libs.androidx.room.compiler)
+    implementation("androidx.sqlite:sqlite:2.7.0")
     compileOnly(libs.libxposed.api)
 }
