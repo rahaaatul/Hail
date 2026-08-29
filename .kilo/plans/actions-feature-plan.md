@@ -27,10 +27,14 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-28) Custom Actions navigation path replaced with the official Material Symbols Outlined `automation` vector.
 - [x] (2026-08-28) Room migration crash fixed: migration-created `index_action_dependencies_actionId` existed but the entity schema expected no index. Added a 3-to-4 cleanup migration.
 - [x] (2026-08-28) Both Unfreeze and Launch selector dialogs updated to use `Cancel` and `OK`; parent action editor remains `Cancel` and `Save`.
+- [x] (2026-08-29) Room 2.8.3 upgraded to 3.0.1 with KSP annotation processor.
+- [x] (2026-08-29) Six Java Room classes converted to Kotlin (`ActionEntity`, `ActionDependencyEntity`, `AppMetadataEntity`, `ActionDao`, `AppMetadataDao`, `AppMetadataDatabase`).
+- [x] (2026-08-29) Room migrations updated to use `SQLiteConnection` API instead of `SupportSQLiteDatabase`.
+- [x] (2026-08-29) Callers in `AppMetaCache.kt` and `ActionsRepository.kt` updated to use new Kotlin data classes.
+- [x] (2026-08-29) Build compiles successfully with Room 3.0 and Kotlin DAOs.
 - [ ] (2026-08-28) Remove main-thread package resolution from Unfreeze/Launch picker opening, align picker spacing, reduce cells to a 4-column compact grid, and change selection to a full-icon tint with a centered check overlay.
 - [ ] (2026-08-28) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
 - [ ] Add focused Room, executor, and UI tests; verify interaction flows on an Android device or emulator before release.
-- [ ] Convert the six Java Room classes to Kotlin for consistency with the rest of the codebase.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 
 ## Surprises & Discoveries
@@ -45,6 +49,15 @@ Document unexpected behaviors, bugs, optimizations, or insights discovered durin
 
 - Observation: Six Room persistence classes (`ActionEntity`, `ActionDao`, `ActionDependencyEntity`, `AppMetadataEntity`, `AppMetadataDao`, `AppMetadataDatabase`) were written in Java despite the rest of the codebase being Kotlin.
   Evidence: All six files live in `app/src/main/java/com/aistra/hail/utils/`, while the 21 other files in the same package are `.kt`. Room fully supports Kotlin, so this is a consistency issue rather than a technical requirement.
+
+- Observation: Room 3.0 introduces breaking API changes that affect the migration path.
+  Evidence: The `Migration.migrate()` method now takes `SQLiteConnection` instead of `SupportSQLiteDatabase`, and the method becomes a `suspend` function. The `execSQL` extension function requires `androidx.sqlite:sqlite` artifact (version 2.7.0). The `androidx.room3:room3-ktx` artifact does not exist — coroutines support is built into `room3-runtime`.
+
+- Observation: A latent bug existed in the Java code where the SQL query referenced column `position` but the entity field was named `ordering`.
+  Evidence: KSP processing error: `no such column: position`. Fixed by aligning the SQL query with the actual field name `ordering`.
+
+- Observation: Kotlin interfaces do not use the `default` keyword for default methods.
+  Evidence: The Java `default` keyword in interface methods caused a syntax error in Kotlin. Removing `default` and keeping just `fun` with a body resolved it.
 
 ## Decision Log
 
@@ -68,6 +81,10 @@ Record every decision made while working on the plan in the format:
 
 - Decision: Convert the six Java Room classes to Kotlin.
   Rationale: The rest of the Hail codebase is Kotlin. The Java files were an artifact of the implementing agent's default, not a technical requirement. Room fully supports Kotlin, and converting eliminates the inconsistency and simplifies future maintenance.
+  Date/Author: 2026-08-29
+
+- Decision: Upgrade Room from 2.8.3 to 3.0.1 before converting Java classes to Kotlin.
+  Rationale: Room 3.0 is KSP-only, which forces the annotation processor setup immediately and eliminates dual compatibility. Converting Java files to Kotlin using the new Room 3.0 APIs in a single pass avoids a second transition. This is cleaner than converting on Room 2.8.3 and then upgrading.
   Date/Author: 2026-08-29
 
 ## Outcomes & Retrospective
