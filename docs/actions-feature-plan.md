@@ -89,6 +89,13 @@ Each implementation update should append a dated entry using this format:
 - Validation: `./gradlew :app:compileDebugKotlin :app:processDebugResources` passed; editor diagnostics report no errors in the changed files.
 - Blocker/next: Run full debug packaging and available unit tests.
 
+### 2026-08-28 - picker responsiveness and selection styling
+
+- Status: In progress
+- Work: Removing main-thread package resolution from Unfreeze/Launch picker opening, aligning picker spacing, reducing cells to a 4-column compact grid, and changing selection to a full-icon tint with a centered check overlay.
+- Validation: Pending focused build and test validation.
+- Blocker/next: Preserve all-app eligibility and refresh cached app data silently after the picker is visible.
+
 ### 2026-08-28 - cache-first UI validation
 
 - Status: Partial
