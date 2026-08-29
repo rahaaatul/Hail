@@ -114,16 +114,24 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     override fun onDestinationChanged(
         controller: NavController, destination: NavDestination, arguments: Bundle?
     ) {
+        fab.setOnClickListener(null)
         fab.tag = destination.id == R.id.nav_home || destination.id == R.id.nav_actions
         when (destination.id) {
             R.id.nav_home -> {
-                fab.setIconResource(R.drawable.ic_round_add)
+                fab.setIconResource(R.drawable.ic_round_apps)
                 fab.contentDescription = getString(R.string.title_apps)
+                fab.setOnClickListener { controller.navigate(R.id.nav_apps) }
                 fab.show()
             }
             R.id.nav_actions -> {
                 fab.setIconResource(R.drawable.ic_round_add)
                 fab.contentDescription = getString(R.string.action_create_action)
+                fab.setOnClickListener {
+                    (supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment)
+                        ?.childFragmentManager?.primaryNavigationFragment?.let { fragment ->
+                            (fragment as? com.aistra.hail.ui.actions.ActionsFragment)?.showEditor(null)
+                        }
+                }
                 fab.show()
             }
             else -> fab.hide()

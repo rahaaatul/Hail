@@ -36,13 +36,11 @@ class ActionsFragment : MainFragment() {
         binding.recyclerView.layoutManager = LinearLayoutManager(activity)
         binding.recyclerView.adapter = adapter
         binding.recyclerView.applyDefaultInsetter { paddingRelative(isRtl, bottom = isLandscape) }
-        activity.fab.setOnClickListener { showEditor(null) }
         return binding.root
     }
 
     override fun onResume() {
         super.onResume()
-        activity.fab.setOnClickListener { showEditor(null) }
         loadActions()
     }
 
@@ -89,7 +87,7 @@ class ActionsFragment : MainFragment() {
             }.show()
     }
 
-    private fun showEditor(existing: LaunchAction?) {
+    fun showEditor(existing: LaunchAction?) {
         val selectedDependencies = existing?.unfreezePackages?.toMutableSet() ?: mutableSetOf()
         var selectedLaunch = existing?.launchPackage
         val content = LinearLayout(activity).apply {
@@ -216,7 +214,6 @@ class ActionsFragment : MainFragment() {
     }
 
     override fun onDestroyView() {
-        activity.fab.setOnClickListener(null)
         super.onDestroyView()
         _binding = null
     }
