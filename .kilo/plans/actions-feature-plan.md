@@ -30,8 +30,8 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [ ] (2026-08-28) Remove main-thread package resolution from Unfreeze/Launch picker opening, align picker spacing, reduce cells to a 4-column compact grid, and change selection to a full-icon tint with a centered check overlay.
 - [ ] (2026-08-28) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
 - [ ] Add focused Room, executor, and UI tests; verify interaction flows on an Android device or emulator before release.
-- [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 - [ ] Convert the six Java Room classes to Kotlin for consistency with the rest of the codebase.
+- [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 
 ## Surprises & Discoveries
 
@@ -94,37 +94,128 @@ This plan touches four layers of the app: the Room persistence layer (new entiti
 
 The work is broken into milestones. Each milestone is independently verifiable and incrementally builds toward the full feature. The milestones are ordered so that each one produces a working, testable state before the next begins.
 
-### Milestone 1: Room Schema and Repository
+### Milestone 1: Upgrade Room to 3.0 and Convert Java Classes to Kotlin
+
+The six Room persistence classes were written in Java using Room 2.8.3 with the legacy `annotationProcessor`. The rest of the Hail codebase is Kotlin. This milestone upgrades Room to 3.0 (which requires KSP and is Kotlin-first) and converts the six Java files to Kotlin in a single pass. This is the first priority because all subsequent milestones (schema, executor, tests) depend on the persistence layer.
+
+Upgrading Room first is cleaner than converting on Room 2.8.3 because Room 3.0 is KSP-only — it forces the KSP setup immediately and eliminates dual compatibility. The Java-to-Kotlin conversion then uses the new Room 3.0 APIs directly, avoiding a second transition.
+
+**Step 1: Upgrade Room dependencies**
+
+The project currently uses `androidx.room:room-runtime:2.8.3` with `annotationProcessor(libs.androidx.room.compiler)`. Replace these with Room 3.0:
+
+```kotlin
+// build.gradle.kts (project-level)
+plugins {
+    id("com.google.devtools.ksp") version "<ksp-version>" apply false
+}
+
+// build.gradle.kts (app-level)
+plugins {
+    id("com.google.devtools.ksp")
+}
+
+dependencies {
+    val roomVersion = "3.0.1"
+    implementation("androidx.room3:room3-runtime:$roomVersion")
+    implementation("androidx.room3:room3-ktx:$roomVersion")
+    ksp("androidx.room3:room3-compiler:$roomVersion")
+    implementation("androidx.room3:room3-sqlite-wrapper:$roomVersion")
+}
+```
+
+The KSP version must match the project's Kotlin version (2.4.10). Check the [KSP releases page](https://github.com/google/ksp/releases) for the exact compatible version.
+
+Note the package rename: `androidx.room` becomes `androidx.room3`. The `room3-ktx` artifact provides coroutine extensions (suspend functions, Flow). The `room3-sqlite-wrapper` artifact provides the `SupportSQLite` compatibility API.
+
+**Step 2: Convert Java entities to Kotlin**
+
+The files live in `app/src/main/java/com/aistra/hail/utils/`. Convert each to Kotlin using Room 3.0 imports:
+
+- `ActionEntity.java` — Maps to the `actions` table. Has a `@PrimaryKey` string `id` and a `launchPackage` column. Becomes:
+  ```kotlin
+  @Entity(tableName = "actions")
+  data class ActionEntity(
+      @PrimaryKey val id: String = "",
+      val launchPackage: String = ""
+  )
+  ```
+- `ActionDependencyEntity.java` — Maps to the `action_dependencies` table. Has a composite primary key, foreign key with cascade, and `ordering` column. Becomes:
+  ```kotlin
+  @Entity(
+      tableName = "action_dependencies",
+      primaryKeys = ["actionId", "packageName"],
+      foreignKeys = [ForeignKey(
+          entity = ActionEntity::class,
+          parentColumns = ["id"],
+          childColumns = ["actionId"],
+          onDelete = ForeignKey.CASCADE
+      )]
+  )
+  data class ActionDependencyEntity(
+      val actionId: String = "",
+      val packageName: String = "",
+      val ordering: Int = 0
+  )
+  ```
+- `AppMetadataEntity.java` — Maps to the `app_metadata` table. Has a `@PrimaryKey` string `packageName` plus 8 other columns. Becomes a `data class` with all fields and appropriate defaults.
+
+**Step 3: Convert Java DAOs to Kotlin**
+
+- `ActionDao.java` — Interface with `@Query`, `@Insert`, `@Delete` methods and a `@Transaction` default method `saveAction`. The default method becomes a Kotlin `default` method. Add `suspend` modifiers to functions that perform IO.
+- `AppMetadataDao.java` — Interface with `@Query`, `@Insert`, `@Delete` methods and a `@Transaction` default method `replaceAll`. Same treatment as ActionDao.
+
+**Step 4: Convert the database class**
+
+- `AppMetadataDatabase.java` — Abstract `RoomDatabase` subclass at version 4. Update imports to `androidx.room3` and ensure the `entities` array references the converted Kotlin classes.
+
+**Step 5: Update all callers**
+
+The Java classes are used by `AppMetaCache.kt` and `ActionsRepository.kt`. Update:
+- All imports from `androidx.room` to `androidx.room3`
+- Entity instantiation from `ActionEntity().also { it.id = ... }` to `ActionEntity(id = ..., launchPackage = ...)`
+- The `toEntry()` and `toEntity()` extension methods in `AppMetaCache.kt`
+- Any direct `SupportSQLite` usage to use `roomDatabase.getSupportWrapper()` instead of `openHelper.writableDatabase`
+
+**Step 6: Clean up**
+
+Move the converted files to `app/src/main/kotlin/com/aistra/hail/utils/` and delete the Java originals from `app/src/main/java/com/aistra/hail/utils/`. Remove the old `annotationProcessor(libs.androidx.room.compiler)` dependency.
+
+**SQL preservation:** The exact SQL queries must not change: `SELECT * FROM actions ORDER BY rowid`, `SELECT * FROM action_dependencies WHERE actionId = :actionId ORDER BY position`, `DELETE FROM action_dependencies WHERE actionId = :actionId`, `DELETE FROM actions WHERE id = :actionId`, `SELECT * FROM app_metadata`, `DELETE FROM app_metadata`, and `UPDATE app_metadata SET installed = 0`.
+
+Verify by running `./gradlew :app:compileDebugKotlin :app:processDebugResources` and confirm KSP generates the `_Impl` classes.
+
+### Milestone 2: Room Schema and Repository
 
 This milestone adds the persistence layer for actions. At the end, the database can store and retrieve actions with their ordered dependency lists, and the existing app metadata cache is untouched.
 
 Start by inspecting the current `AppMetadataDatabase` to understand the existing schema version, entity conventions, and DAO patterns. Add an `ActionEntity` with a stable string ID (a unique identifier that does not change for the life of the action), a launch package name, and timestamps if the existing conventions use them. Add an `ActionDependencyEntity` child table to store the ordered list of unfreeze package names for each action, with a foreign key back to the parent action that cascades on delete. Add DAO methods for observing all actions, inserting, updating, duplicating, and deleting. Expose these through a repository or use-case layer so that fragments never call DAOs directly. Increment the existing Room schema version and write an explicit migration that preserves the existing app metadata tables. If the checked-out branch does not yet include the metadata-cache work, integrate it first so the database version is consistent.
 
-### Milestone 2: Action Executor
+### Milestone 3: Action Executor
 
 This milestone adds the shared logic that unfreezes dependencies and launches the target app. At the end, an action can be executed programmatically, and the result is success or a named failure.
 
 Create a single executor class (for example, `ActionExecutor`) used by both the Actions screen and launcher shortcuts. The executor loads the action by ID, validates that the target and all dependencies are present, unfreezes each dependency sequentially (one at a time, off the main thread), verifies each one is unfrozen, then launches the target. If any dependency cannot be unfrozen or verified, do not launch the target and return a failure naming the unavailable app. Prevent duplicate execution while the same action is already running. Do not show a progress indicator. Do not automatically refreeze dependencies -- the existing auto-freeze behavior remains responsible for cleanup. Refresh auto-freeze service state after successful unfreezing, matching existing launch behavior.
 
-### Milestone 3: Navigation and FAB Reconfiguration
+### Milestone 4: Navigation and FAB Reconfiguration
 
 This milestone restructures the app's navigation to accommodate the Actions tab and repurpose the Home FAB. At the end, the bottom navigation shows Home, Actions, and Settings in that order, and Apps is reachable only from Home.
 
 Update `mobile_navigation.xml` to add an Actions destination immediately after Home. Update `nav_main.xml` to remove the Apps item and add an Actions item. In `MainActivity.kt`, configure the FAB centrally by destination: on Home, the FAB shows an Apps icon and opens the Apps destination; on Actions, the FAB shows a plus icon and opens the Create action dialog; on Apps and Settings, the FAB is hidden. Remove the Home fragment's direct freeze-FAB click handler without removing access to existing freeze operations (preserve an existing menu or action path for freezing). Treat Home, Actions, and Settings as top-level destinations for toolbar navigation. Treat Apps as a child destination with a back arrow that returns to Home through both toolbar back and system back.
 
-### Milestone 4: Actions UI
+### Milestone 5: Actions UI
 
 This milestone builds the user-facing Actions screen, including the list, creation/editing dialog, app pickers, and long-press menu. At the end, a user can create, view, edit, duplicate, and delete actions through the UI.
 
 Create `ActionsFragment.kt` with an adapter and view holder. Display actions as a vertical list of slim Material 3 list items with a small gap between rows. Each row shows the launch app's icon and name on the primary line, and the comma-separated unfreeze app names on a single secondary line that end-truncates with an ellipsis. Tapping a row executes the action. Long-pressing opens a menu with `Edit action`, `Create shortcut`, `Duplicate`, and `Delete`. The Create and Edit flows use a dialog with two fields in order: `Unfreeze` (multi-select picker, at least one required) and `Launch` (single-select picker, exactly one required). Both pickers show a single-line summary of selected app names with end ellipsizing. Save is disabled until both fields are valid. On Save only, remove the Launch package from the Unfreeze list if present, then deduplicate while preserving order. Buttons are exactly `Cancel` and `Save`. Delete shows a confirmation dialog with `Delete` and `Cancel`. Duplicate creates a new action with a new stable ID and the same package selections.
 
-### Milestone 5: Pinned Shortcuts
+### Milestone 6: Pinned Shortcuts
 
 This milestone wires the `Create shortcut` menu item to Android's pinned shortcut API. At a milestone, a user can place a home-screen shortcut that executes an action even when Hail is not open.
 
 Use the existing `HShortcuts` utility. The shortcut's label is the launch app's display name, its icon is the launch app's application icon, and its ID is the action's stable ID. The intent targets Hail's action execution entry point and carries the action ID as an extra. Extend `HailApi` with a dedicated action intent constant and action-ID extra. Extend `ApiActivity` to load and execute the action through the shared executor, then finish. If the action is deleted or unavailable, the shortcut must fail gracefully with a localized `Action unavailable` message. When supported by Android/launcher APIs, refresh the shortcut's label and icon after editing the launch app.
 
-### Milestone 6: Tests and Acceptance Validation
+### Milestone 7: Tests and Acceptance Validation
 
 This milestone adds the test coverage that proves the feature works. At the end, there are unit tests for the Room DAO, the executor's edge cases, and the save-validation logic, plus a plan for manual UI verification.
 
@@ -132,9 +223,24 @@ Write Room DAO tests for insert, read, update, delete, and duplicate operations.
 
 ### Milestone 7: Convert Java Room Classes to Kotlin
 
-The six Room persistence classes (`ActionEntity`, `ActionDao`, `ActionDependencyEntity`, `AppMetadataEntity`, `AppMetadataDao`, `AppMetadataDatabase`) were written in Java by the implementing agent. The rest of the Hail codebase is Kotlin. This milestone converts those six files to Kotlin so the persistence layer matches the project's language convention.
+The six Room persistence classes were written in Java by the implementing agent. The rest of the Hail codebase is Kotlin. This milestone converts those six files to Kotlin so the persistence layer matches the project's language convention.
 
-The files live in `app/src/main/java/com/aistra/hail/utils/`. After conversion, move them to `app/src/main/kotlin/com/aistra/hail/utils/` (or the existing Kotlin source directory) and delete the Java originals. Preserve all annotations (`@Entity`, `@Dao`, `@Database`, `@PrimaryKey`, `@ForeignKey`, `@Query`, `@Insert`, `@Transaction`) and the exact table names, column names, and SQL queries. The DAO default methods (`saveAction` in `ActionDao`, `replaceAll` in `AppMetadataDao`) should become Kotlin default methods in the interface. Verify the build after conversion by running `./gradlew :app:compileDebugKotlin :app:processDebugResources` and confirm no behavior changes.
+The files live in `app/src/main/java/com/aistra/hail/utils/`. They are currently used by Kotlin code in `AppMetaCache.kt` and `ActionsRepository.kt`, which instantiate the Java entities directly (for example, `ActionEntity().also { it.id = ... }` and `AppMetadataEntity().also { it.packageName = ... }`). After conversion, these classes will become Kotlin `data class` types with immutable `val` properties, and callers will be updated to use the `copy()` constructor or named arguments instead of mutable property assignment.
+
+The exact files to convert are:
+
+- `ActionEntity.java` — Maps to the `actions` table. Has a `@PrimaryKey` string `id` and a `launchPackage` column. Becomes a `data class` with `val id: String` and `val launchPackage: String`.
+- `ActionDependencyEntity.java` — Maps to the `action_dependencies` table. Has a composite primary key of `actionId` and `packageName`, a foreign key to `actions(id)` with cascading delete, and an `ordering` column. Becomes a `data class` with all three properties.
+- `ActionDao.java` — Interface with `@Query` methods for loading all actions and loading dependencies by action ID, `@Insert` methods for upserting, `@Delete` methods for removing dependencies and actions, and a `@Transaction` default method `saveAction` that upserts the action, deletes old dependencies, and inserts new ones. The default method becomes a Kotlin `default` method in the interface.
+- `AppMetadataEntity.java` — Maps to the `app_metadata` table. Has a `@PrimaryKey` string `packageName`, plus `name`, `systemApp`, `firstInstallTime`, `lastUpdateTime`, `flags`, `enabled`, `installed`, and `sourceSignature` columns. Becomes a `data class`.
+- `AppMetadataDao.java` — Interface with `@Query` methods for loading all entries and marking all uninstalled, `@Insert` for bulk upsert, `@Delete` for clearing all, and a `@Transaction` default method `replaceAll` that deletes all then upserts. The default method becomes a Kotlin `default` method.
+- `AppMetadataDatabase.java` — Abstract `RoomDatabase` subclass at version 4, declaring `appMetadataDao()` and `actionDao()` accessors. The `entities` array in `@Database` must continue to reference the converted Kotlin classes using `KotlinClass::class`.
+
+After conversion, move the files to `app/src/main/kotlin/com/aistra/hail/utils/` and delete the Java originals from `app/src/main/java/com/aistra/hail/utils/`. Preserve all annotations (`@Entity`, `@Dao`, `@Database`, `@PrimaryKey`, `@ForeignKey`, `@Query`, `@Insert`, `@Delete`, `@Transaction`) and the exact table names, column names, and SQL queries. The SQL in particular must not change: `SELECT * FROM actions ORDER BY rowid`, `SELECT * FROM action_dependencies WHERE actionId = :actionId ORDER BY position`, `DELETE FROM action_dependencies WHERE actionId = :actionId`, `DELETE FROM actions WHERE id = :actionId`, `SELECT * FROM app_metadata`, `DELETE FROM app_metadata`, and `UPDATE app_metadata SET installed = 0`.
+
+Update the callers in `AppMetaCache.kt` and `ActionsRepository.kt` to use the new Kotlin data classes. Replace patterns like `ActionEntity().also { it.id = ... }` with `ActionEntity(id = ..., launchPackage = ...)`. Update the `toEntry()` and `toEntity()` extension methods in `AppMetaCache.kt` to work with the new data class types.
+
+Verify the build after conversion by running `./gradlew :app:compileDebugKotlin :app:processDebugResources` and confirm no behavior changes. The Room annotation processor (`kapt` or `annotationProcessor`) must successfully generate the `_Impl` classes from the Kotlin DAOs.
 
 ## Concrete Steps
 
@@ -216,20 +322,19 @@ The Room migration crash was caused by a mismatch between the migration script (
 
 Be prescriptive. Name the libraries, modules, and services to use and why. Specify the types, traits/interfaces, and function signatures that must exist at the end of the milestone.
 
-The following new classes and signatures should exist after implementation. Names are illustrative; match the existing project conventions for casing and package layout.
+The following classes should exist after Milestone 7 converts the Java Room classes to Kotlin. These signatures match the current Java implementations exactly, preserving table names, column names, SQL queries, and behavior.
 
-In the Room persistence layer (package `com.aistra.hail.utils`; currently Java, to be converted to Kotlin in Milestone 7):
+In the Room persistence layer (package `com.aistra.hail.utils`; migrated from Java to Kotlin using Room 3.0):
 
     @Entity(tableName = "actions")
     data class ActionEntity(
         @PrimaryKey val id: String,
-        val launchPackage: String,
-        val createdAt: Long,
-        val updatedAt: Long
+        val launchPackage: String
     )
 
     @Entity(
         tableName = "action_dependencies",
+        primaryKeys = ["actionId", "packageName"],
         foreignKeys = [ForeignKey(
             entity = ActionEntity::class,
             parentColumns = ["id"],
@@ -238,7 +343,6 @@ In the Room persistence layer (package `com.aistra.hail.utils`; currently Java, 
         )]
     )
     data class ActionDependencyEntity(
-        @PrimaryKey val id: String,
         val actionId: String,
         val packageName: String,
         val ordering: Int
@@ -246,39 +350,77 @@ In the Room persistence layer (package `com.aistra.hail.utils`; currently Java, 
 
     @Dao
     interface ActionDao {
-        @Query("SELECT * FROM actions ORDER BY createdAt DESC")
-        fun observeAll(): Flow<List<ActionEntity>>
+        @Query("SELECT * FROM actions ORDER BY rowid")
+        fun loadAll(): List<ActionEntity>
 
-        @Insert
-        suspend fun insert(action: ActionEntity)
+        @Query("SELECT * FROM action_dependencies WHERE actionId = :actionId ORDER BY position")
+        fun loadDependencies(actionId: String): List<ActionDependencyEntity>
 
-        @Update
-        suspend fun update(action: ActionEntity)
+        @Insert(onConflict = OnConflictStrategy.REPLACE)
+        fun upsert(action: ActionEntity)
 
-        @Delete
-        suspend fun delete(action: ActionEntity)
+        @Insert(onConflict = OnConflictStrategy.REPLACE)
+        fun upsertDependencies(dependencies: List<ActionDependencyEntity>)
 
-        @Query("SELECT * FROM action_dependencies WHERE actionId = :actionId ORDER BY ordering")
-        suspend fun getDependencies(actionId: String): List<ActionDependencyEntity>
+        @Query("DELETE FROM action_dependencies WHERE actionId = :actionId")
+        fun deleteDependencies(actionId: String)
+
+        @Query("DELETE FROM actions WHERE id = :actionId")
+        fun delete(actionId: String)
+
+        @Transaction
+        default fun saveAction(action: ActionEntity, dependencies: List<ActionDependencyEntity>) {
+            upsert(action)
+            deleteDependencies(action.id)
+            upsertDependencies(dependencies)
+        }
     }
 
-In the execution layer (package `com.aistra.hail.action` or similar):
+    @Entity(tableName = "app_metadata")
+    data class AppMetadataEntity(
+        @PrimaryKey val packageName: String,
+        val name: String,
+        val systemApp: Boolean,
+        val firstInstallTime: Long,
+        val lastUpdateTime: Long,
+        val flags: Int,
+        val enabled: Boolean,
+        val installed: Boolean,
+        val sourceSignature: String
+    )
 
-    sealed class ActionResult {
-        object Success : ActionResult()
-        data class Failure(val appName: String) : ActionResult()
+    @Dao
+    interface AppMetadataDao {
+        @Query("SELECT * FROM app_metadata")
+        fun loadAll(): List<AppMetadataEntity>
+
+        @Insert(onConflict = OnConflictStrategy.REPLACE)
+        fun upsertAll(entries: List<AppMetadataEntity>)
+
+        @Query("DELETE FROM app_metadata")
+        fun deleteAll()
+
+        @Query("UPDATE app_metadata SET installed = 0")
+        fun markAllUninstalled()
+
+        @Transaction
+        default fun replaceAll(entries: List<AppMetadataEntity>) {
+            deleteAll()
+            upsertAll(entries)
+        }
     }
 
-    class ActionExecutor {
-        suspend fun execute(actionId: String): ActionResult
+    @Database(
+        entities = [AppMetadataEntity::class, ActionEntity::class, ActionDependencyEntity::class],
+        version = 4,
+        exportSchema = false
+    )
+    abstract class AppMetadataDatabase : RoomDatabase() {
+        abstract fun appMetadataDao(): AppMetadataDao
+        abstract fun actionDao(): ActionDao
     }
 
-In the API layer, extend `HailApi` with:
-
-    const val ACTION_EXECUTE = "com.aistra.hail.action.EXECUTE"
-    const val EXTRA_ACTION_ID = "com.aistra.hail.extra.ACTION_ID"
-
-The app uses Jetpack Room for persistence, Jetpack Navigation for routing, Material 3 for UI components, and Kotlin Coroutines with `Flow` for reactive data. Pinned shortcuts use `androidx.core.content.pm.ShortcutManagerCompat`. No new external dependencies are required.
+The app uses Jetpack Room 3.0 for persistence (migrated from 2.8.3), Jetpack Navigation for routing, Material 3 for UI components, and Kotlin Coroutines with `Flow` for reactive data. Pinned shortcuts use `androidx.core.content.pm.ShortcutManagerCompat`. Room 3.0 requires KSP and uses the `androidx.room3` package namespace.
 
 ## Backlog: Backup and Restore
 
