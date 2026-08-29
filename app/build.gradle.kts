@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -105,6 +106,7 @@ dependencies {
     implementation(libs.hiddenapibypass)
     implementation(libs.libsu.core)
     implementation(libs.androidx.room.runtime)
-    annotationProcessor(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.sqlite.wrapper)
+    ksp(libs.androidx.room.compiler)
     compileOnly(libs.libxposed.api)
 }
