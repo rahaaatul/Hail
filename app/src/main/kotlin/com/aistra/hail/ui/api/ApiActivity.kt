@@ -58,7 +58,7 @@ class ApiActivity : ComponentActivity() {
                 lifecycleScope.launch {
                     val actionId = intent.getStringExtra(HailApi.EXTRA_ACTION_ID)
                         ?: throw IllegalArgumentException(getString(R.string.action_unavailable))
-                    val action = ActionsRepository.loadAll().find { it.id == actionId }
+                    val action = ActionsRepository.loadById(actionId)
                         ?: throw IllegalArgumentException(getString(R.string.action_unavailable))
                     ActionExecutor.prepare(action).onSuccess {
                         startActivity(it)

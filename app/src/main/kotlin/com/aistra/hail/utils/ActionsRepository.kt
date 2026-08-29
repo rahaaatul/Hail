@@ -23,6 +23,18 @@ object ActionsRepository {
         }
     }
 
+    suspend fun loadById(id: String): LaunchAction? = withContext(Dispatchers.IO) {
+        val dao = AppMetaCache.database().actionDao()
+        dao.loadAll().find { it.id == id }?.let { entity ->
+            LaunchAction(
+                id = entity.id,
+                launchPackage = entity.launchPackage,
+                unfreezePackages = dao.loadDependencies(entity.id).sortedBy { it.ordering }
+                    .map { it.packageName }
+            )
+        }
+    }
+
     suspend fun save(
         id: String = UUID.randomUUID().toString(),
         launchPackage: String,
