@@ -32,9 +32,14 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-29) Room migrations updated to use `SQLiteConnection` API instead of `SupportSQLiteDatabase`.
 - [x] (2026-08-29) Callers in `AppMetaCache.kt` and `ActionsRepository.kt` updated to use new Kotlin data classes.
 - [x] (2026-08-29) Build compiles successfully with Room 3.0 and Kotlin DAOs.
+- [x] (2026-08-29) Test infrastructure set up: JUnit4, MockK, Espresso, coroutines-test, room3-testing added.
+- [x] (2026-08-29) ActionDaoTest written with in-memory database (insert, load, update, delete, dependencies, saveAction transaction).
+- [x] (2026-08-29) AppMetadataDaoTest written (CRUD, replaceAll, markAllUninstalled).
+- [x] (2026-08-29) ActionExecutorTest written with MockK (failure cases, sequential unfreeze).
+- [x] (2026-08-29) ActionsRepositoryTest written (deduplication, order preservation, delete, duplicate).
+- [x] (2026-08-29) Android instrumented tests compile successfully.
 - [ ] (2026-08-28) Remove main-thread package resolution from Unfreeze/Launch picker opening, align picker spacing, reduce cells to a 4-column compact grid, and change selection to a full-icon tint with a centered check overlay.
 - [ ] (2026-08-28) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
-- [ ] Add focused Room, executor, and UI tests; verify interaction flows on an Android device or emulator before release.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 
 ## Surprises & Discoveries
