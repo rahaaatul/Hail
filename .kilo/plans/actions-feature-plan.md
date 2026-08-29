@@ -234,30 +234,110 @@ Use the existing `HShortcuts` utility. The shortcut's label is the launch app's 
 
 ### Milestone 7: Tests and Acceptance Validation
 
-This milestone adds the test coverage that proves the feature works. At the end, there are unit tests for the Room DAO, the executor's edge cases, and the save-validation logic, plus a plan for manual UI verification.
+This milestone adds the test coverage that proves the feature works. The project currently has no test suite, so this milestone also sets up the testing infrastructure (dependencies, test directories, base classes).
 
-Write Room DAO tests for insert, read, update, delete, and duplicate operations. Write save-validation tests for empty Unfreeze, empty Launch, and Launch-overlap scenarios. Write executor tests for already-unfrozen dependencies, sequential unfreezing, verification failure, and successful launch. Write shortcut intent tests confirming action-ID routing rather than ordinary package launch. For UI tests, cover field order, truncation, Save/Cancel behavior, long-press menu, and Home/Apps navigation. Manual verification on a device or emulator should confirm that tapping a card unfreezes dependencies before launching the target, that no progress indicator appears, and that failure prevents launch and identifies the failing app.
+**Testing infrastructure setup:**
 
-### Milestone 7: Convert Java Room Classes to Kotlin
+Add test dependencies to `app/build.gradle.kts`:
 
-The six Room persistence classes were written in Java by the implementing agent. The rest of the Hail codebase is Kotlin. This milestone converts those six files to Kotlin so the persistence layer matches the project's language convention.
+```kotlin
+dependencies {
+    // Existing dependencies...
 
-The files live in `app/src/main/java/com/aistra/hail/utils/`. They are currently used by Kotlin code in `AppMetaCache.kt` and `ActionsRepository.kt`, which instantiate the Java entities directly (for example, `ActionEntity().also { it.id = ... }` and `AppMetadataEntity().also { it.packageName = ... }`). After conversion, these classes will become Kotlin `data class` types with immutable `val` properties, and callers will be updated to use the `copy()` constructor or named arguments instead of mutable property assignment.
+    // Unit testing
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.test:core:1.7.0")
+    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("androidx.test.ext:junit:1.3.0")
+    testImplementation("androidx.test.ext:truth:1.7.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
+    testImplementation("androidx.room3:room3-testing:3.0.1")
+    testImplementation("io.mockk:mockk:1.13.12")
 
-The exact files to convert are:
+    // Instrumented testing
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+}
+```
 
-- `ActionEntity.java` — Maps to the `actions` table. Has a `@PrimaryKey` string `id` and a `launchPackage` column. Becomes a `data class` with `val id: String` and `val launchPackage: String`.
-- `ActionDependencyEntity.java` — Maps to the `action_dependencies` table. Has a composite primary key of `actionId` and `packageName`, a foreign key to `actions(id)` with cascading delete, and an `ordering` column. Becomes a `data class` with all three properties.
-- `ActionDao.java` — Interface with `@Query` methods for loading all actions and loading dependencies by action ID, `@Insert` methods for upserting, `@Delete` methods for removing dependencies and actions, and a `@Transaction` default method `saveAction` that upserts the action, deletes old dependencies, and inserts new ones. The default method becomes a Kotlin `default` method in the interface.
-- `AppMetadataEntity.java` — Maps to the `app_metadata` table. Has a `@PrimaryKey` string `packageName`, plus `name`, `systemApp`, `firstInstallTime`, `lastUpdateTime`, `flags`, `enabled`, `installed`, and `sourceSignature` columns. Becomes a `data class`.
-- `AppMetadataDao.java` — Interface with `@Query` methods for loading all entries and marking all uninstalled, `@Insert` for bulk upsert, `@Delete` for clearing all, and a `@Transaction` default method `replaceAll` that deletes all then upserts. The default method becomes a Kotlin `default` method.
-- `AppMetadataDatabase.java` — Abstract `RoomDatabase` subclass at version 4, declaring `appMetadataDao()` and `actionDao()` accessors. The `entities` array in `@Database` must continue to reference the converted Kotlin classes using `KotlinClass::class`.
+Create the test directory structure:
+```
+app/src/test/kotlin/com/aistra/hail/
+  utils/
+    ActionDaoTest.kt
+    AppMetadataDaoTest.kt
+    ActionExecutorTest.kt
+    ActionsRepositoryTest.kt
+  ui/
+    (UI tests go in androidTest)
+```
 
-After conversion, move the files to `app/src/main/kotlin/com/aistra/hail/utils/` and delete the Java originals from `app/src/main/java/com/aistra/hail/utils/`. Preserve all annotations (`@Entity`, `@Dao`, `@Database`, `@PrimaryKey`, `@ForeignKey`, `@Query`, `@Insert`, `@Delete`, `@Transaction`) and the exact table names, column names, and SQL queries. The SQL in particular must not change: `SELECT * FROM actions ORDER BY rowid`, `SELECT * FROM action_dependencies WHERE actionId = :actionId ORDER BY position`, `DELETE FROM action_dependencies WHERE actionId = :actionId`, `DELETE FROM actions WHERE id = :actionId`, `SELECT * FROM app_metadata`, `DELETE FROM app_metadata`, and `UPDATE app_metadata SET installed = 0`.
+**Room DAO tests (`ActionDaoTest.kt`, `AppMetadataDaoTest.kt`):**
 
-Update the callers in `AppMetaCache.kt` and `ActionsRepository.kt` to use the new Kotlin data classes. Replace patterns like `ActionEntity().also { it.id = ... }` with `ActionEntity(id = ..., launchPackage = ...)`. Update the `toEntry()` and `toEntity()` extension methods in `AppMetaCache.kt` to work with the new data class types.
+Use `Room.inMemoryDatabaseBuilder()` to create a transient database for each test. This ensures tests don't interfere with the production database and provides a clean state per test. Use `runTest` (not the deprecated `runBlockingTest`) for coroutine testing. Use `@Before` to initialize the database and DAO, `@After` to close the database.
 
-Verify the build after conversion by running `./gradlew :app:compileDebugKotlin :app:processDebugResources` and confirm no behavior changes. The Room annotation processor (`kapt` or `annotationProcessor`) must successfully generate the `_Impl` classes from the Kotlin DAOs.
+Tests for `ActionDao`:
+- Insert an action with dependencies and verify it can be read back
+- Load all actions returns inserted actions
+- Load dependencies returns ordered dependencies
+- Upsert updates an existing action
+- Delete removes the action and cascades to dependencies
+- `saveAction` transaction: upsert + delete old deps + insert new deps
+- Duplicate: insert two actions, verify both exist
+
+Tests for `AppMetadataDao`:
+- Insert entries and verify they can be read back
+- Upsert updates existing entries
+- Delete all clears the table
+- Mark all uninstalled updates all entries
+- `replaceAll` transaction: delete all + upsert new entries
+
+**ActionExecutor tests (`ActionExecutorTest.kt`):**
+
+Use MockK to mock the dependencies (package manager, freeze/unfreeze service). Test:
+- Already-unfrozen dependencies: executor skips already-unfrozen apps
+- Sequential unfreeze: dependencies are unfrozen one at a time
+- Verification failure: if an app cannot be verified as unfrozen, return failure
+- Successful launch: all deps unfrozen, target launched
+- Duplicate execution prevention: second call while first is running returns failure or waits
+- Failure case: dependency not installed returns failure naming the missing app
+
+**ActionsRepository tests (`ActionsRepositoryTest.kt`):**
+
+Use the in-memory database. Test:
+- Empty Unfreeze list: save fails or produces action with no unfreeze packages
+- Empty Launch: save fails or produces action with no target
+- Launch overlap: Launch package also in Unfreeze list gets removed from Unfreeze
+- Deduplication: duplicate packages in Unfreeze list get removed while preserving order
+
+**Shortcut intent tests (instrumented, in `androidTest`):**
+
+Use Espresso-Intents (`Intents.init()` / `Intents.release()`) to verify intent routing. Test:
+- Action ID in intent extra routes to the correct action
+- Missing or invalid action ID shows "Action unavailable" message
+- Shortcut intent does NOT launch the target package directly (it goes through Hail's executor)
+
+**UI tests (instrumented, in `androidTest`):**
+
+Use Espresso for UI interaction tests. Test:
+- Field order: Unfreeze field appears before Launch field in Create dialog
+- Truncation: long app names are truncated with ellipsis
+- Save/Cancel: Save is disabled until both fields are valid; Cancel closes dialog
+- Long-press menu: shows Edit, Create shortcut, Duplicate, Delete
+- Home/Apps navigation: tapping Home FAB opens Apps; back returns to Home
+
+**Manual verification checklist (device or emulator):**
+
+- Tapping an action card unfreezes dependencies before launching the target
+- No progress indicator appears during execution
+- If a dependency cannot be unfrozen, the target does not launch and a message names the failing app
+- Creating a pinned shortcut and tapping it from the home screen executes the action
+- Deleting an action and then tapping its shortcut shows "Action unavailable"
+- Existing app launch, freeze, auto-freeze, and shortcut features continue to work unchanged
+
+Verify by running `./gradlew :app:testDebugUnitTest` for unit tests and `./gradlew :app:connectedDebugAndroidTest` for instrumented tests.
 
 ## Concrete Steps
 
