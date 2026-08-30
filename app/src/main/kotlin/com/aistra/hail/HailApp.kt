@@ -20,9 +20,6 @@ import com.aistra.hail.utils.HTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 class HailApp : Application() {
     private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
