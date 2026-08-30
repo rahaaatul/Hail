@@ -7,11 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 
 object ActionExecutor {
-    private val mutex = Mutex()
+    private val mutexes = ConcurrentHashMap<String, Mutex>()
 
     suspend fun prepare(action: LaunchAction): Result<Intent> = withContext(Dispatchers.IO) {
+        val mutex = mutexes.computeIfAbsent(action.id) { Mutex() }
         mutex.withLock {
             action.unfreezePackages.forEach { packageName ->
                 AppActions.ensureUnfrozen(packageName).onFailure {
