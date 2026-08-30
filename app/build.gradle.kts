@@ -34,6 +34,14 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-g$commitHash"
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            )
+            ndk {
+                abiFilters += "arm64-v8a"
+            }
         }
         release {
             isMinifyEnabled = true
