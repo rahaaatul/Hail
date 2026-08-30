@@ -46,7 +46,7 @@ object AppMetaCache {
     }
 
     internal fun database(): AppMetadataDatabase = database
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = HailApp.app.applicationScope
     private val _revision = MutableStateFlow(0L)
     val revision: StateFlow<Long> = _revision
 

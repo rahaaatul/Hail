@@ -139,26 +139,31 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         activity.fab.setOnLongClickListener(null)
     }
 
-    private fun updateCurrentList() = HailData.checkedList.filter { it.isInstalled }.filter {
-        if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
-        else ((HailData.nineKeySearch && NineKeySearch.search(
-            query, it.packageName, it.name.toString()
-        )) || FuzzySearch.search(it.packageName, query) || FuzzySearch.search(
-            it.name.toString(), query
-        ) || PinyinSearch.searchPinyinAll(it.name.toString(), query))
-    }.sortedWith(NameComparator).let {
-        binding.empty.isVisible = it.isEmpty()
-        pagerAdapter.submitList(it)
-        app.setAutoFreezeService()
+    private fun updateCurrentList() {
+        val binding = _binding ?: return
+        HailData.checkedList.filter { it.isInstalled }.filter {
+            if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
+            else ((HailData.nineKeySearch && NineKeySearch.search(
+                query, it.packageName, it.name.toString()
+            )) || FuzzySearch.search(it.packageName, query) || FuzzySearch.search(
+                it.name.toString(), query
+            ) || PinyinSearch.searchPinyinAll(it.name.toString(), query))
+        }.sortedWith(NameComparator).let {
+            binding.empty.isVisible = it.isEmpty()
+            pagerAdapter.submitList(it)
+            app.setAutoFreezeService()
+        }
     }
 
     private fun updateBarTitle() {
+        if (!isAdded) return
         activity.supportActionBar?.title =
             if (multiselect) getString(R.string.msg_selected, selectedList.size.toString())
             else getString(R.string.app_name)
     }
 
     override fun onItemClick(info: AppInfo) {
+        if (!isAdded) return
         if (multiselect) {
             if (info in selectedList) selectedList.remove(info)
             else selectedList.add(info)
@@ -346,6 +351,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun onMultiSelect() {
+        if (!isAdded) return
         MaterialAlertDialogBuilder(activity).setTitle(
             getString(
                 R.string.msg_selected, selectedList.size.toString()
@@ -396,10 +402,11 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }.setNegativeButton(R.string.action_deselect) { _, _ ->
             deselect()
         }.setNeutralButton(R.string.action_select_all) { _, _ ->
-            selectedList.addAll(pagerAdapter.currentList.filterNot { it in selectedList })
+            val toAdd = pagerAdapter.currentList.filterNot { it in selectedList }
+            selectedList.addAll(toAdd)
             updateCurrentList()
             updateBarTitle()
-            onMultiSelect()
+            if (toAdd.isNotEmpty()) onMultiSelect()
         }.show()
     }
 
@@ -469,16 +476,19 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun launchApp(packageName: String) {
-        if (AppManager.isAppFrozen(packageName) && AppManager.setAppFrozen(packageName, false)) {
-            updateCurrentList()
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (AppManager.isAppFrozen(packageName)) {
+                AppActions.ensureUnfrozen(packageName).onSuccess {
+                    updateCurrentList()
+                }
+            }
+            AppActions.getLaunchIntent(packageName).onSuccess { intent ->
+                HShortcuts.addDynamicShortcut(packageName)
+                startActivity(intent)
+            }.onFailure {
+                HUI.showToast(R.string.activity_not_found)
+            }
         }
-        if (HailData.workingMode == HailData.MODE_ISLAND_HIDE) {
-            HIsland.ensureLaunchIntentExists(packageName)
-        }
-        app.packageManager.getLaunchIntentForPackage(packageName)?.let {
-            HShortcuts.addDynamicShortcut(packageName)
-            startActivity(it)
-        } ?: HUI.showToast(R.string.activity_not_found)
     }
 
     private fun setListFrozen(
@@ -498,15 +508,16 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
         }
         val filtered = list.filter { AppManager.isAppFrozen(it.packageName) != frozen }
-        when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
-            null -> HUI.showToast(R.string.permission_denied)
-            else -> {
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppActions.freezePackages(frozen, filtered.map { it.packageName }).onSuccess {
                 AppMetaCache.invalidateState(filtered.map { it.packageName })
                 if (updateList) updateCurrentList()
                 pagerAdapter.refreshVisualState()
                 HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, result
+                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, filtered.size.toString()
                 )
+            }.onFailure {
+                HUI.showToast(R.string.permission_denied)
             }
         }
     }

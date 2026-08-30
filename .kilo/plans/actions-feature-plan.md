@@ -39,7 +39,7 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-29) ActionExecutorTest written with MockK (failure cases, sequential unfreeze).
 - [x] (2026-08-29) ActionsRepositoryTest written (deduplication, order preservation, delete, duplicate).
 - [x] (2026-08-29) Android instrumented tests compile successfully.
-- [ ] (2026-08-29) Extract shared launch/freeze/unfreeze logic into `AppActions` utility to eliminate working-mode drift between Home and Actions.
+- [x] (2026-08-29) Extract shared launch/freeze/unfreeze logic into `AppActions` utility to eliminate working-mode drift between Home and Actions.
 - [ ] (2026-08-28) Remove main-thread package resolution from Unfreeze/Launch picker opening, align picker spacing, reduce cells to a 4-column compact grid, and change selection to a full-icon tint with a centered check overlay.
 - [ ] (2026-08-28) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).

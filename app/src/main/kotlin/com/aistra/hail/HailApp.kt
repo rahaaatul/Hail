@@ -35,6 +35,8 @@ class HailApp : Application() {
         syncRootShell()
     }
 
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private fun syncRootShell() {
         if (HailData.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()
     }
