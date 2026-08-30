@@ -12,8 +12,8 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "kilocode.Kilo-Code",
-        "GitHub.github-vscode-theme"
+        "GitHub.github-vscode-theme",
+        "kilocode.kilo-code"
       ]
     }
   },
