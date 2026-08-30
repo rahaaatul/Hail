@@ -183,10 +183,10 @@ class ActionsFragment : MainFragment() {
         list.adapter = adapter
         var allApps: List<ApplicationInfo> = emptyList()
         var visibleApps: List<ApplicationInfo> = emptyList()
+        var labelMap: Map<String, String> = emptyMap()
         fun updateFilter(query: String) {
-            visibleApps = allApps.filter {
-                it.loadLabel(activity.packageManager).toString().contains(query, true) ||
-                        it.packageName.contains(query, true)
+            visibleApps = if (query.isBlank()) allApps else allApps.filter {
+                labelMap[it.packageName]?.contains(query, true) == true || it.packageName.contains(query, true)
             }
             adapter.submitList(visibleApps)
         }
@@ -204,24 +204,16 @@ class ActionsFragment : MainFragment() {
         })
         pickerDialog.show()
         viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val launchFilter: (List<ApplicationInfo>) -> List<ApplicationInfo> = { apps ->
-                if (multi) apps else apps.filter { appInfo ->
-                    activity.packageManager.getLaunchIntentForPackage(appInfo.packageName) != null
-                }
+            val apps = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                AppMetaCache.getInstalledApplicationsCacheFirst()
             }
-            val cached = launchFilter(AppMetaCache.cachedApplications())
+            val sortedApps = apps.sortedBy { it.loadLabel(activity.packageManager).toString() }
+            val labels = sortedApps.associate { it.packageName to it.loadLabel(activity.packageManager).toString() }
             viewLifecycleOwner.lifecycleScope.launch {
-                allApps = cached
+                allApps = sortedApps
+                labelMap = labels
                 updateFilter(search.text.toString())
             }
-            val refreshed = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
-            val refreshedFiltered = launchFilter(refreshed)
-            viewLifecycleOwner.lifecycleScope.launch {
-                allApps = refreshedFiltered
-                updateFilter(search.text.toString())
-            }
-            AppMetaCache.prefetch(refreshed)
-            AppIconCache.prefetch(activity, refreshed)
         }
     }
 

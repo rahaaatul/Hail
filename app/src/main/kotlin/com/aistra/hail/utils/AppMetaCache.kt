@@ -90,6 +90,14 @@ object AppMetaCache {
 
     fun refreshInstalled(): Job = prefetch(HPackages.getInstalledApplications())
 
+    suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List<ApplicationInfo> {
+        val cached = cachedApplications()
+        if (cached.isNotEmpty() && !forceRefresh) return cached
+        val refreshed = HPackages.getInstalledApplications()
+        prefetch(refreshed)
+        return refreshed
+    }
+
     fun prefetchPackages(packageNames: Collection<String>): Job = scope.launch {
         packageNames.map { packageName ->
             async { loadIfStale(packageName) }
