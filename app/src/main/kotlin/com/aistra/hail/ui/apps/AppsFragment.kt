@@ -89,7 +89,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             onItemCheckedChangeListener = this@AppsFragment
         }
         binding.refresh.apply {
-            setOnRefreshListener { updateAppList() }
+            setOnRefreshListener { model.updateAppList(true) }
             applyDefaultInsetter { marginRelative(isRtl, start = !isLandscape, end = true) }
         }
         binding.recyclerView.apply {
@@ -126,7 +126,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
 
     override fun onResume() {
         super.onResume()
-        updateAppList()
+        model.updateAppList()
     }
 
     override fun onItemClick(buttonView: CompoundButton) {
@@ -162,7 +162,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             R.id.action_extract_apk -> extractApk(pkg)
             R.id.action_uninstall -> uninstallApp(name, pkg)
             R.id.action_reinstall -> {
-                if (AppManager.reinstallApp(pkg)) updateAppList()
+                if (AppManager.reinstallApp(pkg)) updateAppList(true)
                 else HUI.showToast(R.string.operation_failed, name)
             }
 
@@ -197,7 +197,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
     private fun showUninstallDialog(name: CharSequence, pkg: String) {
         MaterialAlertDialogBuilder(activity).setTitle(name).setMessage(R.string.msg_uninstall)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                if (AppManager.uninstallApp(pkg)) updateAppList()
+                if (AppManager.uninstallApp(pkg)) updateAppList(true)
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
@@ -313,6 +313,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
     }
 
     private fun updateAppList() = model.updateAppList()
+    private fun updateAppList(forceRefresh: Boolean) = model.updateAppList(forceRefresh)
     private fun updateDisplayAppList() = model.updateDisplayAppList()
 
     override fun onDestroy() {
