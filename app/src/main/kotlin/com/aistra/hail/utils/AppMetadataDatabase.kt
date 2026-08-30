@@ -5,7 +5,7 @@ import androidx.room3.RoomDatabase
 
 @Database(
     entities = [AppMetadataEntity::class, ActionEntity::class, ActionDependencyEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppMetadataDatabase : RoomDatabase() {

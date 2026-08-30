@@ -13,5 +13,6 @@ data class AppMetadataEntity(
     val flags: Int = 0,
     val enabled: Boolean = false,
     val installed: Boolean = false,
+    val frozen: Boolean = false,
     val sourceSignature: String = ""
 )

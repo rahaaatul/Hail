@@ -41,7 +41,7 @@ object AppMetaCache {
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
     private val database by lazy {
         Room.databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 
@@ -195,7 +195,7 @@ object AppMetaCache {
         flags = flags,
         enabled = enabled,
         installed = installed,
-        state = readState(packageName),
+        state = if (frozen) AppInfo.State.FROZEN else AppInfo.State.UNFROZEN,
         sourceSignature = sourceSignature
     )
 
@@ -208,6 +208,7 @@ object AppMetaCache {
         flags = flags,
         enabled = enabled,
         installed = installed,
+        frozen = state == AppInfo.State.FROZEN,
         sourceSignature = sourceSignature
     )
 
@@ -231,6 +232,12 @@ object AppMetaCache {
     private val MIGRATION_3_4 = object : Migration(3, 4) {
         override suspend fun migrate(connection: SQLiteConnection) {
             connection.execSQL("DROP INDEX IF EXISTS index_action_dependencies_actionId")
+        }
+    }
+
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("ALTER TABLE app_metadata ADD COLUMN frozen INTEGER NOT NULL DEFAULT 0")
         }
     }
 }
