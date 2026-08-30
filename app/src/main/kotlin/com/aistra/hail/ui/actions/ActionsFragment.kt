@@ -204,9 +204,7 @@ class ActionsFragment : MainFragment() {
         })
         pickerDialog.show()
         viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val apps = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                AppMetaCache.getInstalledApplicationsCacheFirst()
-            }
+            val apps = AppMetaCache.getInstalledApplicationsCacheFirst()
             val sortedApps = apps.sortedBy { it.loadLabel(activity.packageManager).toString() }
             val labels = sortedApps.associate { it.packageName to it.loadLabel(activity.packageManager).toString() }
             viewLifecycleOwner.lifecycleScope.launch {
