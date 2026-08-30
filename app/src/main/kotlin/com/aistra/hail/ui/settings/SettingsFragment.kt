@@ -80,6 +80,17 @@ class SettingsFragment : MainFragment(), MenuProvider {
     @Composable
     private fun SettingsScreen() {
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
+        val iconPackValues by remember {
+            mutableStateOf(
+                mutableListOf(HailData.ACTION_NONE).apply {
+                    addAll(Intent(Intent.ACTION_MAIN).addCategory("com.anddoes.launcher.THEME").let {
+                        if (HTarget.T) app.packageManager.queryIntentActivities(
+                            it, PackageManager.ResolveInfoFlags.of(0)
+                        ) else app.packageManager.queryIntentActivities(it, 0)
+                    }.map { it.activityInfo.packageName })
+                }
+            )
+        }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             listPreference(
                 key = HailData.WORKING_MODE,
@@ -122,16 +133,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     AppIconCache.clear()
                     true
                 },
-                values = mutableListOf(HailData.ACTION_NONE).apply {
-                    addAll(Intent(Intent.ACTION_MAIN).addCategory("com.anddoes.launcher.THEME").let {
-                        if (HTarget.T) app.packageManager.queryIntentActivities(
-                            it, PackageManager.ResolveInfoFlags.of(0)
-                        ) else app.packageManager.queryIntentActivities(it, 0)
-                    }.map { it.activityInfo.packageName })
-                },
+                values = iconPackValues,
                 titleId = R.string.icon_pack,
                 icon = Icons.Outlined.Palette,
-                summary = { iconPackName(it) },
+                summary = ::iconPackName,
                 valueToText = ::iconPackName
             )
             switchPreference(
