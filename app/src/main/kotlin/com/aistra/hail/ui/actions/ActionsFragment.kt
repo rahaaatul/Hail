@@ -1,5 +1,6 @@
 package com.aistra.hail.ui.actions
 
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -180,16 +181,15 @@ class ActionsFragment : MainFragment() {
             }
         }
         list.adapter = adapter
-        var allApps = AppMetaCache.cachedApplications().let { if (multi) it else it.filter { appInfo -> activity.packageManager.getLaunchIntentForPackage(appInfo.packageName) != null } }
-        var visibleApps = allApps
+        var allApps: List<ApplicationInfo> = emptyList()
+        var visibleApps: List<ApplicationInfo> = emptyList()
         fun updateFilter(query: String) {
             visibleApps = allApps.filter {
                 it.loadLabel(activity.packageManager).toString().contains(query, true) ||
-                    it.packageName.contains(query, true)
+                        it.packageName.contains(query, true)
             }
             adapter.submitList(visibleApps)
         }
-        updateFilter("")
         pickerDialog = MaterialAlertDialogBuilder(activity)
             .setTitle(if (multi) R.string.action_select_unfreeze else R.string.action_select_launch)
             .setView(container)
@@ -204,9 +204,20 @@ class ActionsFragment : MainFragment() {
         })
         pickerDialog.show()
         viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val refreshed = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
+            val launchFilter: (List<ApplicationInfo>) -> List<ApplicationInfo> = { apps ->
+                if (multi) apps else apps.filter { appInfo ->
+                    activity.packageManager.getLaunchIntentForPackage(appInfo.packageName) != null
+                }
+            }
+            val cached = launchFilter(AppMetaCache.cachedApplications())
             viewLifecycleOwner.lifecycleScope.launch {
-                allApps = refreshed.let { if (multi) it else it.filter { appInfo -> activity.packageManager.getLaunchIntentForPackage(appInfo.packageName) != null } }
+                allApps = cached
+                updateFilter(search.text.toString())
+            }
+            val refreshed = HPackages.getInstalledApplications().sortedBy { it.loadLabel(activity.packageManager).toString() }
+            val refreshedFiltered = launchFilter(refreshed)
+            viewLifecycleOwner.lifecycleScope.launch {
+                allApps = refreshedFiltered
                 updateFilter(search.text.toString())
             }
             AppMetaCache.prefetch(refreshed)
