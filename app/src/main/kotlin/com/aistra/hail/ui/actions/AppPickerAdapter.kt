@@ -38,8 +38,10 @@ class AppPickerAdapter(
             binding.selectedIcon.isVisible = isSelected
             binding.appIcon.alpha = if (isSelected) 0.55f else 1f
             binding.root.setOnClickListener {
-                if (multi) selected.toggle(packageName)
-                else {
+                if (multi) {
+                    selected.toggle(packageName)
+                    notifyDataSetChanged()
+                } else {
                     selected.clear()
                     selected.add(packageName)
                     notifyDataSetChanged()
