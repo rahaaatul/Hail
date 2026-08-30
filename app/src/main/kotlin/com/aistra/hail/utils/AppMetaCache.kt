@@ -82,6 +82,8 @@ object AppMetaCache {
         applicationInfo.map { info ->
             async { loadIfStale(info.packageName, info) }
         }.awaitAll()
+        val toRemove = packageLocks.keys.filterNot { it in installedPackages }
+        toRemove.forEach { packageLocks.remove(it) }
         persist(installedPackages)
         AppIconCache.prefetch(HailApp.app, applicationInfo)
     }
@@ -97,6 +99,7 @@ object AppMetaCache {
 
     fun clearAndRebuild(): Job = scope.launch {
         cache.clear()
+        packageLocks.clear()
         database.appMetadataDao().deleteAll()
         _revision.value++
         val applicationInfo = HPackages.getInstalledApplications()
@@ -104,6 +107,8 @@ object AppMetaCache {
         applicationInfo.map { info ->
             async { loadIfStale(info.packageName, info) }
         }.awaitAll()
+        val toRemove = packageLocks.keys.filterNot { it in installedPackages }
+        toRemove.forEach { packageLocks.remove(it) }
         persist(installedPackages)
         AppIconCache.prefetch(HailApp.app, applicationInfo)
     }
@@ -119,6 +124,7 @@ object AppMetaCache {
 
     fun invalidateAll() {
         cache.clear()
+        packageLocks.clear()
         _revision.value++
     }
 
@@ -189,7 +195,7 @@ object AppMetaCache {
         flags = flags,
         enabled = enabled,
         installed = installed,
-        state = AppInfo.State.UNFROZEN,
+        state = readState(packageName),
         sourceSignature = sourceSignature
     )
 
