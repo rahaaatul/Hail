@@ -8,8 +8,8 @@ readonly ANDROID_SDK_ROOT="${LOCAL_TOOLS_DIR}/android-sdk"
 readonly CMDLINE_TOOLS_DIR="${ANDROID_SDK_ROOT}/cmdline-tools/latest"
 readonly JDK_ARCHIVE="/tmp/temurin26-jdk.tar.gz"
 readonly SDK_ARCHIVE="/tmp/android-commandline-tools.zip"
-readonly JDK_URL="https://github.com/adoptium/temurin26-binaries/releases/download/jdk-26.0.2.1%2B1/OpenJDK26U-jdk_x64_linux_hotspot_26.0.2.1_1.tar.gz"
-readonly SDK_URL="https://dl.google.com/android/repository/commandlinetools-linux-14742923_latest.zip"
+readonly JDK_URL="https://github.com/adoptium/temurin26-binaries/releases/download/jdk-26.0.2%2B10/OpenJDK26U-jdk_x64_linux_hotspot_26.0.2_10.tar.gz"
+readonly SDK_URL="https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
 
 mkdir -p "${LOCAL_TOOLS_DIR}" "${ANDROID_SDK_ROOT}/cmdline-tools" "${HOME}/.gradle"
 
@@ -57,6 +57,11 @@ fi
 
 git config --global user.name "rahaaatul"
 git config --global user.email "rahatulghazi@gmail.com"
+
+if ! command -v ollama >/dev/null 2>&1; then
+    echo "Installing Ollama..."
+    curl -fsSL https://ollama.com/install.sh | sh
+fi
 
 printf 'Build environment ready: Java %s, Android SDK %s\n' \
     "$(${JAVA_HOME}/bin/java -version 2>&1 | sed -n 's/.*version "\([^"]*\)".*/\1/p' | head -1)" \

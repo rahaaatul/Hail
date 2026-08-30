@@ -6,9 +6,6 @@
     "memory": "16gb",
     "storage": "32gb"
   },
-  "containerEnv": {
-    "GH_TOKEN": "${localEnv:GH_TOKEN}"
-  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -19,6 +16,5 @@
   },
   "onCreateCommand": "bash .devcontainer/setup.sh",
   "updateContentCommand": "bash .devcontainer/prefetch.sh",
-  "postCreateCommand": "git config --global credential.helper '!f() { printf \"username=oauth2\\npassword=%s\\n\" \"$GH_TOKEN\"; }; f'",
   "postStartCommand": "bash .devcontainer/start.sh"
 }
