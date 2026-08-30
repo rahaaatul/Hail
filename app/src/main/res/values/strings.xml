@@ -104,6 +104,7 @@
     <string name="action_unavailable">Action unavailable</string>
     <string name="action_app_unavailable">App unavailable: %s</string>
     <string name="action_unfreeze_failed">Could not unfreeze: %s</string>
+    <string name="action_freeze_failed">Could not freeze: %s</string>
     <string name="shizuku_missing">Shizuku missing :(</string>
     <string name="operation_failed">Operation failed: %s</string>
     <string name="msg_selected">Selected: %s</string>
