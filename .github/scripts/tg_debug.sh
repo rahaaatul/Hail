@@ -71,11 +71,15 @@ Version: ${version_name} (${version_code})
 Commit: <code>${commit_hash}</code> - ${commit_subject_esc}
 Built: ${build_date}"
 
+caption_file="$(mktemp)"
+trap 'rm -f "${caption_file}"' EXIT
+printf '%s' "${caption}" > "${caption_file}"
+
 echo "==> Uploading to Telegram"
 curl -sS --fail \
     -F "chat_id=${TG_DEBUG}" \
     -F "document=@${zip_path}" \
-    -F "caption=${caption}" \
+    -F "caption=<${caption_file}" \
     -F "parse_mode=HTML" \
     "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" >/dev/null
 
