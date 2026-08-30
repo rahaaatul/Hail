@@ -242,3 +242,19 @@ jobs:
             artifacts/armeabi-v7a/Hail-v${{ needs.build-universal.outputs.version_name }}-armeabi-v7a.apk
             artifacts/x86/Hail-v${{ needs.build-universal.outputs.version_name }}-x86.apk
             artifacts/x86_64/Hail-v${{ needs.build-universal.outputs.version_name }}-x86_64.apk
+
+      - name: Notify Telegram
+        shell: bash
+        continue-on-error: true
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_RELEASE: ${{ secrets.TG_RELEASE }}
+          VERSION: ${{ needs.build-universal.outputs.version_name }}
+          RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.build-universal.outputs.tag }}
+        run: |
+          bash .github/scripts/tg_release.sh \
+            "artifacts/universal/Hail-v${VERSION}.apk" \
+            "artifacts/arm64-v8a/Hail-v${VERSION}-arm64-v8a.apk" \
+            "artifacts/armeabi-v7a/Hail-v${VERSION}-armeabi-v7a.apk" \
+            "artifacts/x86/Hail-v${VERSION}-x86.apk" \
+            "artifacts/x86_64/Hail-v${VERSION}-x86_64.apk"

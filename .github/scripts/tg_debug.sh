@@ -24,61 +24,60 @@ readonly AAPT="${ANDROID_HOME}/build-tools/${BUILD_TOOLS_VERSION}/aapt"
 
 if ! command -v zip >/dev/null 2>&1; then
     sudo apt-get update -qq
-        sudo apt-get install -y -qq zip
-        fi
+    sudo apt-get install -y -qq zip
+fi
 
-        echo "==> Building debug APK"
-        chmod +x ./gradlew
-        ./gradlew :app:assembleDebug --console=plain
+echo "==> Building debug APK"
+chmod +x ./gradlew
+./gradlew :app:assembleDebug --console=plain
 
-        apk_path="$(find "${APK_DIR}" -maxdepth 1 -name '*.apk' | head -1)"
-        if [[ -z "${apk_path}" ]]; then
-            echo "No APK found in ${APK_DIR}" >&2
-                exit 1
-                fi
+apk_path="$(find "${APK_DIR}" -maxdepth 1 -name '*.apk' | head -1)"
+if [[ -z "${apk_path}" ]]; then
+    echo "No APK found in ${APK_DIR}" >&2
+    exit 1
+fi
 
-                echo "==> Reading APK metadata"
-                if [[ ! -x "${AAPT}" ]]; then
-                    echo "aapt not found at ${AAPT} - check BUILD_TOOLS_VERSION matches your installed build-tools" >&2
-                        exit 1
-                        fi
-                        badging="$("${AAPT}" dump badging "${apk_path}")"
-                        version_name="$(grep -oP "versionName='\K[^']+" <<<"${badging}")"
-                        version_code="$(grep -oP "versionCode='\K[^']+" <<<"${badging}")"
-                        commit_hash="$(git rev-parse --short HEAD)"
-                        commit_subject="$(git log -1 --pretty=%s)"
-                        build_date="$(date '+%Y-%m-%d %H:%M %Z')"
+echo "==> Reading APK metadata"
+if [[ ! -x "${AAPT}" ]]; then
+    echo "aapt not found at ${AAPT} - check BUILD_TOOLS_VERSION matches your installed build-tools" >&2
+    exit 1
+fi
+badging="$("${AAPT}" dump badging "${apk_path}")"
+version_name="$(grep -oP "versionName='\K[^']+" <<<"${badging}")"
+version_code="$(grep -oP "versionCode='\K[^']+" <<<"${badging}")"
+commit_hash="$(git rev-parse --short HEAD)"
+commit_subject="$(git log -1 --pretty=%s)"
+build_date="$(date '+%Y-%m-%d %H:%M %Z')"
 
-                        escape_html() {
-                            sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"
-                            }
-                            commit_subject_esc="$(escape_html "${commit_subject}")"
+escape_html() {
+    sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"
+}
+commit_subject_esc="$(escape_html "${commit_subject}")"
 
-                            echo "==> Compressing APK"
-                            zip_name="Hail-debug-v${version_name}-${commit_hash}.zip"
-                            zip_path="/tmp/${zip_name}"
-                            rm -f "${zip_path}"
-                            zip -j -9 "${zip_path}" "${apk_path}" >/dev/null
-                            zip_size_mb="$(du -m "${zip_path}" | cut -f1)"
-                            echo "Zip size: ${zip_size_mb} MB"
+echo "==> Compressing APK"
+zip_name="Hail-debug-v${version_name}-${commit_hash}.zip"
+zip_path="/tmp/${zip_name}"
+rm -f "${zip_path}"
+zip -j -9 "${zip_path}" "${apk_path}" >/dev/null
+zip_size_mb="$(du -m "${zip_path}" | cut -f1)"
+echo "Zip size: ${zip_size_mb} MB"
 
-                            if (( zip_size_mb >= 50 )); then
-                                echo "Warning: ${zip_size_mb}MB is at/over Telegram's 50MB bot upload limit; the send may fail." >&2
-                                fi
+if (( zip_size_mb >= 50 )); then
+    echo "Warning: ${zip_size_mb}MB is at/over Telegram's 50MB bot upload limit; the send may fail." >&2
+fi
 
-                                caption="<b>Hail Debug Build</b>
-                                Version: ${version_name} (${version_code})
-                                Commit: <code>${commit_hash}</code> - ${commit_subject_esc}
-                                Built: ${build_date}"
+caption="<b>Hail Debug Build</b>
+Version: ${version_name} (${version_code})
+Commit: <code>${commit_hash}</code> - ${commit_subject_esc}
+Built: ${build_date}"
 
-                                echo "==> Uploading to Telegram"
-                                curl -sS --fail \
-                                    -F "chat_id=${TG_DEBUG}" \
-                                        -F "document=@${zip_path}" \
-                                            -F "caption=${caption}" \
-                                                -F "parse_mode=HTML" \
-                                                    "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" >/dev/null
+echo "==> Uploading to Telegram"
+curl -sS --fail \
+    -F "chat_id=${TG_DEBUG}" \
+    -F "document=@${zip_path}" \
+    -F "caption=${caption}" \
+    -F "parse_mode=HTML" \
+    "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" >/dev/null
 
-                                                    rm -f "${zip_path}"
-                                                    echo "==> Done: sent ${zip_name} (${zip_size_mb} MB)"
-                                                    
+rm -f "${zip_path}"
+echo "==> Done: sent ${zip_name} (${zip_size_mb} MB)"

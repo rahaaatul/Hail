@@ -1,8 +1,24 @@
 {
   "name": "Hail",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb",
+    "storage": "32gb"
+  },
   "containerEnv": {
     "GH_TOKEN": "${localEnv:GH_TOKEN}"
   },
-  "postCreateCommand": "bash .devcontainer/setup-build-environment.sh && git config --global credential.helper '!f() { printf \"username=oauth2\\npassword=%s\\n\" \"$GH_TOKEN\"; }; f'"
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "kilocode.Kilo-Code",
+        "GitHub.github-vscode-theme"
+      ]
+    }
+  },
+  "onCreateCommand": "bash .devcontainer/setup.sh",
+  "updateContentCommand": "bash .devcontainer/prefetch.sh",
+  "postCreateCommand": "git config --global credential.helper '!f() { printf \"username=oauth2\\npassword=%s\\n\" \"$GH_TOKEN\"; }; f'",
+  "postStartCommand": "bash .devcontainer/start.sh"
 }
