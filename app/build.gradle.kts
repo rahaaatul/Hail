@@ -66,6 +66,11 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+    testOptions {
+        unitTests.all {
+            it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+        }
+    }
 }
 java {
     toolchain {
