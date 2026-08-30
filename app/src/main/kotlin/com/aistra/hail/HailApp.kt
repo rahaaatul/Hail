@@ -86,5 +86,9 @@ class HailApp : Application() {
 
     companion object {
         lateinit var app: HailApp private set
+
+        fun setAppForTest(testApp: HailApp) {
+            app = testApp
+        }
     }
 }
