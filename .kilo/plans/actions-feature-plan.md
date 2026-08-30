@@ -42,6 +42,12 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-29) Extract shared launch/freeze/unfreeze logic into `AppActions` utility to eliminate working-mode drift between Home and Actions.
 - [x] (2026-08-30) Remove main-thread package resolution from Unfreeze/Launch picker opening, align picker spacing, reduce cells to a 4-column compact grid, and change selection to a full-icon tint with a centered check overlay.
 - [x] (2026-08-30) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
+- [x] (2026-08-30) Change Home FAB to use the add icon while still opening the Apps page for adding apps to Home.
+- [x] (2026-08-30) Speed up app picker by precomputing display labels and avoiding redundant list reloads when the installed package set has not changed.
+- [x] (2026-08-30) Precompute icon-pack values in Settings to remove tab-switch jank.
+- [x] (2026-08-30) Confirm `synthesizeAdaptiveIcons` defaults to false and both home and action shortcuts share the same original icon loader, so shortcut icons match the exact app icons.
+- [x] (2026-08-30) Extract `AppMetaCache.getInstalledApplicationsCacheFirst()` as a single shared cache-first loader for Home, Apps, and Actions, eliminating duplicated cached-or-refresh logic.
+- [x] (2026-08-30) Make `AppsViewModel.updateAppList()` show cached apps instantly, do silent background refresh only when the package set actually changes, and show the loader exclusively on pull-to-refresh; added cancelable `appListRefreshJob` so pull-to-refresh aborts any in-flight background refresh.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 
 ## Surprises & Discoveries
@@ -71,6 +77,27 @@ Document unexpected behaviors, bugs, optimizations, or insights discovered durin
 
 - Observation: Home and Actions paths have drifted in working-mode behavior.
   Evidence: `PagerFragment.launchApp()` checks `MODE_ISLAND_HIDE` and adds dynamic shortcuts; `ActionExecutor.prepare()` skips all working-mode validation and goes straight to unfreeze+launch. `PagerFragment.setListFrozen()` blocks in `MODE_DEFAULT` with a guide dialog and validates Shizuku root in `MODE_SHIZUKU_HIDE`; `ActionExecutor` calls `AppManager.setAppFrozen()` directly. This means action execution can behave differently from home launch depending on `HailData.workingMode`.
+
+- Observation: The Home FAB click handler on the Home destination cast the current fragment to `ActionsFragment`, which always fails because the primary navigation fragment is `HomeFragment`.
+  Evidence: The safe-cast `(fragment as? ActionsFragment)?.showEditor(null)` returned null on Home, so the FAB was effectively dead. Fixed by changing the Home FAB to use the add icon (`ic_round_add`) and navigate directly to the Apps page for adding apps to Home, while keeping the Actions FAB on the add icon opening the action editor.
+
+- Observation: The app picker updated its list twice on every open — once with cached apps, then again with a freshly loaded installed-app list — causing visual jank and redundant main-thread filtering.
+  Evidence: `showAppPicker()` posted two `updateFilter` calls back-to-back. Fixed by using cached apps immediately, precomputing a `packageName -> label` map, and only replacing the list if the installed package set actually changed.
+
+- Observation: The Settings icon-pack preference queried the package manager on every recomposition instead of once.
+  Evidence: `mutableListOf(HailData.ACTION_NONE).apply { addAll(...queryIntentActivities...) }` was inside the Composable lambda. Fixed by precomputing `iconPackValues` outside the `SettingsScreen` composable.
+
+- Observation: Home, Apps, and Actions each implemented their own cache-first installed-app loading, duplicating the same cached-or-refresh orchestration.
+  Evidence: `AppsViewModel.updateAppList()` and `ActionsFragment.showAppPicker()` both checked `AppMetaCache.cachedApplications()`, fell back to `HPackages.getInstalledApplications()`, and called `AppMetaCache.prefetch()` plus `AppIconCache.prefetch()`. Extracted the shared logic into `AppMetaCache.getInstalledApplicationsCacheFirst()` so all three tabs use one code path.
+
+- Observation: The previous `AppsViewModel.updateDisplayAppList()` always showed the refresh spinner, so even silent cache updates appeared as a loader to the user.
+  Evidence: `postRefreshState(true)` was called inside `updateDisplayAppList()` on every display update. Fixed by removing the spinner from display updates and only showing it when `updateAppList(forceRefresh = true)` is called from pull-to-refresh.
+
+- Observation: Pull-to-refresh did not cancel any in-flight background app-list refresh, so a user gesture could race with an ongoing silent cache update.
+  Evidence: `AppsViewModel` had no handle to the background refresh coroutine. Added `appListRefreshJob` and cancel it at the top of `updateAppList(forceRefresh = true)` before starting a fresh fetch.
+
+- Observation: `synthesizeAdaptiveIcons` already defaults to false, and both home and action shortcuts share the same `AppIconLoader`/`AppIconCache` path.
+  Evidence: `HailData.synthesizeAdaptiveIcons` returns `false` by default. `HShortcuts.iconLoader`, `AppIconCache`, and `PagerFragment` all initialize their icon loaders with this same flag, so home shortcuts and action shortcuts use identical original icons without adaptive synthesis.
 
 ## Decision Log
 
