@@ -123,13 +123,8 @@ jobs:
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
         with:
-<<<<<<< HEAD
-          name: universal
-          path: app/build/outputs/apk/release/Hail-v${{ steps.version.outputs.version_name }}.apk
-=======
           name: release
           path: app/build/outputs/apk/release/Hail-v${{ steps.version.outputs.version_name }}-${{ github.event.inputs.release_type }}.apk
->>>>>>> main
           retention-days: 7
 
   create-release:
@@ -190,38 +185,23 @@ jobs:
           prerelease: ${{ github.event.inputs.release_type == 'pre-release' }}
           overwrite_files: true
           files: |
-<<<<<<< HEAD
-            artifacts/universal/Hail-v${{ needs.build-universal.outputs.version_name }}.apk
-=======
             artifacts/Hail-v${{ needs.build-universal.outputs.version_name }}-${{ needs.build-universal.outputs.release_type }}.apk
->>>>>>> main
 
       - name: Notify Telegram
         shell: bash
         continue-on-error: true
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
-<<<<<<< HEAD
-          TG_RELEASE: ${{ secrets.TG_RELEASE }}
-=======
           TG_GROUP: ${{ secrets.TG_GROUP }}
->>>>>>> main
-          TG_LOGO: app/src/main/ic_launcher-playstore.png
           RELEASE_TYPE: ${{ github.event.inputs.release_type }}
           VERSION: ${{ needs.build-universal.outputs.version_name }}
           RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.build-universal.outputs.tag }}
         run: |
-<<<<<<< HEAD
-          bash .github/scripts/tg_release.sh \
-            "artifacts/universal/Hail-v${VERSION}.apk"
-=======
           echo "==> Starting Telegram notification"
           echo "==> TG_GROUP: ${TG_GROUP}"
           echo "==> RELEASE_TYPE: ${RELEASE_TYPE}"
-          echo "==> TG_LOGO: ${TG_LOGO}"
           echo "==> VERSION: ${VERSION}"
           echo "==> RELEASE_URL: ${RELEASE_URL}"
           bash .github/scripts/tg_release.sh \
             "artifacts/Hail-v${VERSION}-${RELEASE_TYPE}.apk"
           echo "==> Telegram notification completed"
->>>>>>> main
