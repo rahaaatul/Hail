@@ -9,6 +9,7 @@ import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 class AppsViewModel(application: Application) : AndroidViewModel(application) {
     val apps = MutableLiveData<List<ApplicationInfo>>()
@@ -17,6 +18,10 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     val displayApps = MutableLiveData<List<ApplicationInfo>>()
 
     init {
+        viewModelScope.launch {
+            AppMetaCache.installedApplicationsReady.first { it }
+            updateAppList()
+        }
         updateAppList()
     }
 

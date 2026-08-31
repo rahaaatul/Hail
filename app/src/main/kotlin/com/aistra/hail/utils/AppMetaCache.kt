@@ -49,12 +49,21 @@ object AppMetaCache {
     private val scope = HailApp.app.applicationScope
     private val _revision = MutableStateFlow(0L)
     val revision: StateFlow<Long> = _revision
+    private val _installedApplicationsReady = MutableStateFlow(false)
+    val installedApplicationsReady: StateFlow<Boolean> = _installedApplicationsReady
 
     fun get(packageName: String): Entry? = cache[packageName]
 
     fun cachedPackageNames(): List<String> = cache.values.filter { it.installed }.map { it.packageName }
 
     fun cachedApplications(): List<ApplicationInfo> = installedApplications.values.toList()
+
+    fun cachedDisplayApplications(): List<ApplicationInfo> = cache.values.filter { it.installed }.map { entry ->
+        ApplicationInfo().apply {
+            packageName = entry.packageName
+            flags = entry.flags
+        }
+    }
 
     fun seedFromDatabase(): Job = scope.launch {
         runCatching {
@@ -76,16 +85,20 @@ object AppMetaCache {
     }
 
     fun prefetch(applicationInfo: Collection<ApplicationInfo>): Job = scope.launch {
-        installedApplications.clear()
-        applicationInfo.forEach { installedApplications[it.packageName] = it }
-        val installedPackages = applicationInfo.mapTo(HashSet()) { it.packageName }
+        val newPackageMap = applicationInfo.associateBy { it.packageName }
+        newPackageMap.forEach { (packageName, info) ->
+            installedApplications[packageName] = info
+        }
+        val toRemove = installedApplications.keys.filterNot { it in newPackageMap.keys }
+        toRemove.forEach { installedApplications.remove(it) }
         applicationInfo.map { info ->
             async { loadIfStale(info.packageName, info) }
         }.awaitAll()
-        val toRemove = packageLocks.keys.filterNot { it in installedPackages }
-        toRemove.forEach { packageLocks.remove(it) }
-        persist(installedPackages)
+        val toRemoveLocks = packageLocks.keys.filterNot { it in newPackageMap.keys }
+        toRemoveLocks.forEach { packageLocks.remove(it) }
+        persist(newPackageMap.keys)
         AppIconCache.prefetch(HailApp.app, applicationInfo)
+        _installedApplicationsReady.value = true
     }
 
     fun refreshInstalled(): Job = prefetch(HPackages.getInstalledApplications())
@@ -93,6 +106,7 @@ object AppMetaCache {
     suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List<ApplicationInfo> {
         val cached = cachedApplications()
         if (cached.isNotEmpty() && !forceRefresh) return cached
+        if (!forceRefresh && cache.isNotEmpty()) return cachedDisplayApplications()
         val refreshed = HPackages.getInstalledApplications()
         prefetch(refreshed)
         return refreshed
@@ -119,9 +133,10 @@ object AppMetaCache {
         toRemove.forEach { packageLocks.remove(it) }
         persist(installedPackages)
         AppIconCache.prefetch(HailApp.app, applicationInfo)
+        _installedApplicationsReady.value = true
     }
 
-    fun invalidateState(packageNames: Collection<String> = cache.keys) {
+    fun invalidateState(packageNames: Collection<String>) {
         packageNames.forEach { packageName ->
             cache.computeIfPresent(packageName) { _, entry ->
                 entry.copy(state = readState(packageName))
@@ -183,14 +198,11 @@ object AppMetaCache {
         runCatching {
             val dao = database.appMetadataDao()
             if (installedPackages != null) {
-                cache.replaceAll { packageName, entry ->
-                    if (packageName in installedPackages) entry.copy(installed = true)
-                    else entry.copy(installed = false, state = AppInfo.State.NOT_FOUND)
+                cache.values.forEach { entry ->
+                    cache[entry.packageName] = entry.copy(installed = entry.packageName in installedPackages)
                 }
-                dao.replaceAll(cache.values.map { it.toEntity() })
-            } else {
-                dao.upsertAll(cache.values.map { it.toEntity() })
             }
+            dao.upsertAll(cache.values.map { it.toEntity() })
         }
     }
 
