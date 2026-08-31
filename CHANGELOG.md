@@ -27,6 +27,9 @@ All notable changes to this project will be documented in this file.
 - App list stays up to date when switching between screens
 - Clearer message when freezing an app fails
 
+### Translations
+- Updated Spanish, Chinese (Simplified), and Ukrainian translations via Weblate
+
 ## [1.11.2] - 2026-08-27
 
 ### Highlights
