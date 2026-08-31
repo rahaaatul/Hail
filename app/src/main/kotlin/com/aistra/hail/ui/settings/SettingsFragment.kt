@@ -65,10 +65,18 @@ import rikka.shizuku.Shizuku
 
 class SettingsFragment : MainFragment(), MenuProvider {
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    private var iconPackValues: List<String> = emptyList()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        iconPackValues = mutableListOf(HailData.ACTION_NONE).apply {
+            addAll(Intent(Intent.ACTION_MAIN).addCategory("com.anddoes.launcher.THEME").let {
+                if (HTarget.T) app.packageManager.queryIntentActivities(
+                    it, PackageManager.ResolveInfoFlags.of(0)
+                ) else app.packageManager.queryIntentActivities(it, 0)
+            }.map { it.activityInfo.packageName })
+        }
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
@@ -84,17 +92,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
     @Composable
     private fun SettingsScreen() {
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
-        val iconPackValues by remember {
-            mutableStateOf(
-                mutableListOf(HailData.ACTION_NONE).apply {
-                    addAll(Intent(Intent.ACTION_MAIN).addCategory("com.anddoes.launcher.THEME").let {
-                        if (HTarget.T) app.packageManager.queryIntentActivities(
-                            it, PackageManager.ResolveInfoFlags.of(0)
-                        ) else app.packageManager.queryIntentActivities(it, 0)
-                    }.map { it.activityInfo.packageName })
-                }
-            )
-        }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             listPreference(
                 key = HailData.WORKING_MODE,
