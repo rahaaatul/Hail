@@ -50,6 +50,8 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-30) Make `AppsViewModel.updateAppList()` show cached apps instantly, do silent background refresh only when the package set actually changes, and show the loader exclusively on pull-to-refresh; added cancelable `appListRefreshJob` so pull-to-refresh aborts any in-flight background refresh.
 - [x] (2026-08-31) Milestone 8: Move Settings icon-pack query, HShortcuts bitmap decode, and IconPack.loadIcon off the main thread; fix cold-start cache gap so Apps tab shows cached data instantly without redundant PackageManager scans; add StrictMode for debug detection.
 - [x] (2026-08-31) Milestone 9: Remove group cache invalidation in `AppMetaCache` so per-app state changes do not clear or rewrite unrelated app caches. Replace full-map `prefetch()` with incremental updates, replace `dao.replaceAll()` with per-app upserts, and remove the default `cache.keys` parameter from `invalidateState()`.
+- [x] (2026-08-31) Upgrade `me.zhanghai.compose.preference` from `1.1.1` to `2.2.0` for the 1.11.3 release. Artifact ID changed from `library` to `preference`; no source changes required because `ProvidePreferenceLocals` and preference APIs remain backward compatible for our usage.
+- [x] (2026-08-31) Add debug-only recomposition diagnostics to `SettingsFragment` to measure cold-start and recomposition overhead.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 
 ## Surprises & Discoveries
@@ -177,6 +179,10 @@ Record every decision made while working on the plan in the format:
 - Decision: Require explicit package lists for cache invalidation; reserve full-wipe methods for explicit user action only.
   Rationale: `invalidateState(cache.keys)` is a latent risk: a future caller can accidentally invalidate 100+ apps by omitting the argument. Keeping `invalidateAll()` and `clearAndRebuild()` for explicit full-wipe scenarios preserves safety while preventing accidental broad invalidation.
   Date/Author: 2026-08-30
+
+- Decision: Upgrade `me.zhanghai.compose.preference` from `1.1.1` to `2.2.0` for the 1.11.3 release.
+  Rationale: The latest stable release includes bug fixes and performance improvements. The upgrade path is low-risk because our usage is limited to `ProvidePreferenceLocals`, `rememberPreferenceState`, and the built-in preference helpers, all of which retain backward-compatible signatures. The artifact ID changed from `library` to `preference`, but no source changes were required.
+  Date/Author: 2026-08-31
 
 ## Outcomes & Retrospective
 
