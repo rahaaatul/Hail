@@ -67,21 +67,29 @@ fi
 
 echo "==> Sent logo photo to Telegram"
 
-# Message 2: APK files as media group (no caption)
-curl_args=()
-media_items=()
-for i in "${!apk_files[@]}"; do
-    field="f${i}"
-    curl_args+=(-F "${field}=@${apk_files[$i]}")
-    media_items+=("{\"type\":\"document\",\"media\":\"attach://${field}\"}")
-done
-media_json="[$(IFS=,; echo "${media_items[*]}")]"
+# Message 2: APK files (sendDocument for 1 file, sendMediaGroup for 2+)
+if [[ ${#apk_files[@]} -eq 1 ]]; then
+    # sendMediaGroup requires 2-10 items; fall back to a single document
+    response="$(curl -sS -w '\n%{http_code}' \
+        -F "chat_id=${TG_RELEASE}" \
+        -F "document=@${apk_files[0]}" \
+        "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" 2>&1)" || true
+else
+    curl_args=()
+    media_items=()
+    for i in "${!apk_files[@]}"; do
+        field="f${i}"
+        curl_args+=(-F "${field}=@${apk_files[$i]}")
+        media_items+=("{\"type\":\"document\",\"media\":\"attach://${field}\"}")
+    done
+    media_json="[$(IFS=,; echo "${media_items[*]}")]"
 
-response="$(curl -sS -w '\n%{http_code}' \
-    -F "chat_id=${TG_RELEASE}" \
-    -F "media=${media_json}" \
-    "${curl_args[@]}" \
-    "https://api.telegram.org/bot${TG_TOKEN}/sendMediaGroup" 2>&1)" || true
+    response="$(curl -sS -w '\n%{http_code}' \
+        -F "chat_id=${TG_RELEASE}" \
+        -F "media=${media_json}" \
+        "${curl_args[@]}" \
+        "https://api.telegram.org/bot${TG_TOKEN}/sendMediaGroup" 2>&1)" || true
+fi
 
 http_code="$(tail -n1 <<<"${response}")"
 body="$(sed '$d' <<<"${response}")"
