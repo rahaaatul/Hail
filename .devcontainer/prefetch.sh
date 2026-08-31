@@ -12,9 +12,19 @@
 
 set -euo pipefail
 
-readonly LOCAL_TOOLS_DIR="${HOME}/.local"
-export JAVA_HOME="${JAVA_HOME:-${LOCAL_TOOLS_DIR}/jdk-26}"
-export ANDROID_HOME="${ANDROID_HOME:-${LOCAL_TOOLS_DIR}/android-sdk}"
+if [[ -f ~/.android_env ]]; then
+    source ~/.android_env
+fi
+
+if [[ -z "${JAVA_HOME:-}" ]]; then
+    readonly LOCAL_TOOLS_DIR="${HOME}/.local"
+    export JAVA_HOME="${JAVA_HOME:-${LOCAL_TOOLS_DIR}/jdk-26}"
+fi
+
+if [[ -z "${ANDROID_HOME:-}" ]]; then
+    export ANDROID_HOME="/opt/android-sdk"
+fi
+
 export ANDROID_SDK_ROOT="${ANDROID_HOME}"
 export PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
 

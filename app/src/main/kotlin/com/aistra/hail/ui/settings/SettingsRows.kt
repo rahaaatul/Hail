@@ -22,10 +22,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.min
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 
 enum class ListPreferenceType { ALERT_DIALOG, DROPDOWN_MENU }
@@ -39,20 +48,27 @@ fun SettingsSwitch(
     enabled: Boolean = true,
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
-) = ListItem(
-    modifier = modifier.toggleable(
-        value = checked,
-        role = Role.Switch,
-        enabled = enabled,
-        onValueChange = onCheckedChange
-    ),
-    headlineContent = headlineContent,
-    supportingContent = supportingContent,
-    leadingContent = leadingContent,
-    trailingContent = {
-        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+) {
+    val toggleableModifier = if (enabled) {
+        modifier.toggleable(
+            value = checked,
+            role = Role.Switch,
+            enabled = true,
+            onValueChange = onCheckedChange
+        )
+    } else {
+        modifier
     }
-)
+    ListItem(
+        modifier = toggleableModifier,
+        headlineContent = headlineContent,
+        supportingContent = supportingContent,
+        leadingContent = leadingContent,
+        trailingContent = {
+            Switch(checked = checked, onCheckedChange = null, enabled = enabled)
+        }
+    )
+}
 
 @Composable
 fun SettingsSlider(
@@ -65,23 +81,35 @@ fun SettingsSlider(
     enabled: Boolean = true,
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
-) = ListItem(
-    modifier = modifier,
-    headlineContent = {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            headlineContent()
-            Slider(
-                value = value,
-                onValueChange = onValueChange,
-                valueRange = valueRange,
-                steps = valueSteps,
-                enabled = enabled
-            )
-        }
-    },
-    supportingContent = supportingContent,
-    leadingContent = leadingContent
-)
+) {
+    var sliderValue by remember { mutableStateOf(value) }
+    // Update local state when parent value changes
+    if (sliderValue != value) {
+        sliderValue = value
+    }
+
+    ListItem(
+        modifier = modifier
+            .fillMaxWidth(),
+        headlineContent = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                headlineContent()
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { newValue ->
+                        sliderValue = newValue
+                        onValueChange(newValue)
+                    },
+                    valueRange = valueRange,
+                    steps = valueSteps,
+                    enabled = enabled
+                )
+            }
+        },
+        supportingContent = supportingContent,
+        leadingContent = leadingContent
+    )
+}
 
 @Composable
 private fun SettingsListInternal(
@@ -101,7 +129,9 @@ private fun SettingsListInternal(
     when (type) {
         ListPreferenceType.ALERT_DIALOG -> {
             ListItem(
-                modifier = modifier.clickable(enabled = enabled) { expanded = true },
+                modifier = modifier
+                    .clickable(enabled = enabled) { expanded = true }
+                    .fillMaxWidth(),
                 headlineContent = headlineContent,
                 supportingContent = supportingContent,
                 leadingContent = leadingContent
@@ -135,7 +165,8 @@ private fun SettingsListInternal(
                         TextButton(onClick = { expanded = false }) {
                             Text(text = stringResource(android.R.string.cancel))
                         }
-                    }
+                    },
+                    properties = DialogProperties(usePlatformDefaultWidth = false)
                 )
             }
         }
@@ -143,7 +174,9 @@ private fun SettingsListInternal(
         ListPreferenceType.DROPDOWN_MENU -> {
             Box {
                 ListItem(
-                    modifier = modifier.clickable(enabled = enabled) { expanded = !expanded },
+                    modifier = modifier
+                        .clickable(enabled = enabled) { expanded = !expanded }
+                        .fillMaxWidth(),
                     headlineContent = headlineContent,
                     supportingContent = supportingContent,
                     leadingContent = leadingContent

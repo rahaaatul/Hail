@@ -122,7 +122,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.WORKING_MODE_VALUES,
                 entriesId = R.array.working_mode_entries,
                 leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
-                type = ListPreferenceType.ALERT_DIALOG
+                type = ListPreferenceType.ALERT_DIALOG,
+                supportingContent = { Text(getString(R.array.working_mode_entries, HailData.WORKING_MODE_VALUES.indexOf(workingMode))) }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.action_biometric)) },
@@ -145,7 +146,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 },
                 values = HailData.APP_THEME_VALUES,
                 entriesId = R.array.app_theme_entries,
-                leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) }
+                leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
+                supportingContent = { Text(getString(R.array.app_theme_entries, HailData.APP_THEME_VALUES.indexOf(HailData.appTheme))) }
             )
             SettingsList(
                 headlineContent = { Text(stringResource(R.string.icon_pack)) },
@@ -203,7 +205,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 onValueChange = { value -> HailData.tileAction = value; true },
                 values = HailData.TILE_ACTION_VALUES,
                 entriesId = R.array.tile_action_entries,
-                leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) }
+                leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) },
+                supportingContent = { Text(getString(R.array.tile_action_entries, HailData.TILE_ACTION_VALUES.indexOf(HailData.tileAction))) }
             )
             SettingsHorizontalDivider()
             SettingsSectionHeader(stringResource(R.string.auto_freeze))
@@ -283,7 +286,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 },
                 values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
                 entriesId = R.array.dynamic_shortcut_entries,
-                leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) }
+                leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) },
+                supportingContent = { Text(getString(R.array.dynamic_shortcut_entries, HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(HailData.dynamicShortcutAction))) }
             )
             SettingsClickable(
                 headlineContent = { Text(stringResource(R.string.action_clear_dynamic_shortcuts)) },

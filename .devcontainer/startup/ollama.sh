@@ -2,6 +2,11 @@
 
 set -euo pipefail
 
+if ! command -v ollama >/dev/null 2>&1; then
+    echo "[ollama.sh] ollama not installed; skipping"
+    exit 0
+fi
+
 LOG_FILE="${HOME}/.ollama/ollama-serve.log"
 
 mkdir -p "$(dirname "${LOG_FILE}")"
