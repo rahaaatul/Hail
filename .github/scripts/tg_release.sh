@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 #
-# Sends built release APKs to Telegram as a single grouped album message
-# (sendMediaGroup). Called from release.yml with the APK paths as args.
+# Sends release notification to Telegram:
+#   1. Logo as photo with title + "See changelog" link
+#   2. APK files as grouped album (no caption)
+# Called from release.yml with APK paths as args.
 #
-# Never fails the calling workflow: any problem (missing file, bad
-# response, network error) prints a GitHub Actions warning and exits 0,
+# Environment variables:
+#   TG_TOKEN      - bot token
+#   TG_RELEASE    - chat ID
+#   VERSION       - version string (e.g. 1.11.3)
+#   RELEASE_URL   - GitHub release URL
+#   TG_LOGO       - path to logo image
+#   RELEASE_TYPE  - "release" or "pre-release"
+#
+# Never fails the calling workflow: any problem prints a warning and exits 0,
 # since a failed notification shouldn't block a successful release.
 
 set -uo pipefail
@@ -13,6 +22,7 @@ set -uo pipefail
 : "${TG_RELEASE:?TG_RELEASE is not set}"
 : "${VERSION:?VERSION is not set}"
 : "${RELEASE_URL:?RELEASE_URL is not set}"
+: "${TG_LOGO:?TG_LOGO is not set}"
 
 apk_files=("$@")
 
@@ -28,46 +38,56 @@ for f in "${apk_files[@]}"; do
     fi
 done
 
-# plain-text version (real newline) for the sendDocument fallback,
-# JSON-escaped version (literal \n) for the sendMediaGroup caption field
-caption="<b>Hail v${VERSION}</b>
-${RELEASE_URL}"
-caption_json="${caption//$'\n'/\\n}"
-
-if [[ ${#apk_files[@]} -eq 1 ]]; then
-    # sendMediaGroup requires 2-10 items; fall back to a single document
-    response="$(curl -sS -w '\n%{http_code}' \
-        -F "chat_id=${TG_RELEASE}" \
-        -F "document=@${apk_files[0]}" \
-        --form-string "caption=${caption}" \
-        --form-string "parse_mode=HTML" \
-        "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" 2>&1)" || true
+# Determine title prefix
+RELEASE_TYPE="${RELEASE_TYPE:-release}"
+if [[ "$RELEASE_TYPE" == "pre-release" ]]; then
+    title="Pre-release v${VERSION}"
 else
-    curl_args=()
-    media_items=()
-    for i in "${!apk_files[@]}"; do
-        field="f${i}"
-        curl_args+=(-F "${field}=@${apk_files[$i]}")
-        if [[ "$i" -eq 0 ]]; then
-            media_items+=("{\"type\":\"document\",\"media\":\"attach://${field}\",\"caption\":\"${caption_json}\",\"parse_mode\":\"HTML\"}")
-        else
-            media_items+=("{\"type\":\"document\",\"media\":\"attach://${field}\"}")
-        fi
-    done
-    media_json="[$(IFS=,; echo "${media_items[*]}")]"
-
-    response="$(curl -sS -w '\n%{http_code}' \
-        -F "chat_id=${TG_RELEASE}" \
-        -F "media=${media_json}" \
-        "${curl_args[@]}" \
-        "https://api.telegram.org/bot${TG_TOKEN}/sendMediaGroup" 2>&1)" || true
+    title="Release v${VERSION}"
 fi
+
+# Message 1: Logo photo with title + "See changelog" link
+caption="<b>${title}</b>
+<a href=\"${RELEASE_URL}\">See changelog</a>"
+
+response="$(curl -sS -w '\n%{http_code}' \
+    -F "chat_id=${TG_RELEASE}" \
+    -F "photo=@${TG_LOGO}" \
+    --form-string "caption=${caption}" \
+    --form-string "parse_mode=HTML" \
+    "https://api.telegram.org/bot${TG_TOKEN}/sendPhoto" 2>&1)" || true
 
 http_code="$(tail -n1 <<<"${response}")"
 body="$(sed '$d' <<<"${response}")"
 
 if [[ "${http_code}" != "200" ]]; then
-    echo "::warning::tg_release.sh: Telegram notification failed (HTTP ${http_code:-unknown}): ${body}"
+    echo "::warning::tg_release.sh: Telegram photo notification failed (HTTP ${http_code:-unknown}): ${body}"
+    exit 0
+fi
+
+echo "==> Sent logo photo to Telegram"
+
+# Message 2: APK files as media group (no caption)
+curl_args=()
+media_items=()
+for i in "${!apk_files[@]}"; do
+    field="f${i}"
+    curl_args+=(-F "${field}=@${apk_files[$i]}")
+    media_items+=("{\"type\":\"document\",\"media\":\"attach://${field}\"}")
+done
+media_json="[$(IFS=,; echo "${media_items[*]}")]"
+
+response="$(curl -sS -w '\n%{http_code}' \
+    -F "chat_id=${TG_RELEASE}" \
+    -F "media=${media_json}" \
+    "${curl_args[@]}" \
+    "https://api.telegram.org/bot${TG_TOKEN}/sendMediaGroup" 2>&1)" || true
+
+http_code="$(tail -n1 <<<"${response}")"
+body="$(sed '$d' <<<"${response}")"
+
+if [[ "${http_code}" != "200" ]]; then
+    echo "::warning::tg_release.sh: Telegram APK notification failed (HTTP ${http_code:-unknown}): ${body}"
     exit 0
 fi
 
