@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.3] - 2026-08-31
+
+### Highlights
+- New Actions tab for creating and managing launch shortcuts with two or multiple apps
+- Home and Actions screens now have dedicated add FABs
+
+### Added
+- Actions screen with Room-backed storage for launch actions
+- Create, edit, duplicate, and delete actions
+- Home screen shortcut creation for actions
+- Silent background app list refresh with cancelable pull-to-refresh
+- Cache-first app picker loading
+
+### Changed
+- Apps access moved from bottom navigation to Home FAB
+- Bottom navigation now shows Home, Actions, and Settings
+- Home FAB navigates to Apps with add icon
+- Actions FAB opens action editor with add icon
+- Settings icon-pack values precomputed for smoother display
+
+### Fixed
+- Ensure launch app is unfrozen before Actions execution
+- AppMetaCache lifecycle and PagerFragment lifecycle guards
+- Action freeze failure messaging
+
 ## [1.11.2] - 2026-08-27
 
 ### Highlights

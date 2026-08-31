@@ -44,12 +44,12 @@ Use a list with checkboxes to summarize granular steps. Every stopping point mus
 - [x] (2026-08-30) Add startup cache warming for all app metadata/icons, cached-first Apps loading with silent refresh, and a four-column searchable picker with rounded Material spacing and selected check indicators.
 - [x] (2026-08-30) Change Home FAB to use the add icon while still opening the Apps page for adding apps to Home.
 - [x] (2026-08-30) Speed up app picker by precomputing display labels and avoiding redundant list reloads when the installed package set has not changed.
-- [ ] (2026-08-30) Precompute icon-pack values in Settings to remove tab-switch jank. Current code still runs `queryIntentActivities()` on the main thread inside Compose composition; needs to be moved to a `ViewModel` or precomputed before `setContent`.
+- [x] (2026-08-31) Precompute icon-pack values in Settings to remove tab-switch jank. Moved `queryIntentActivities()` from Composable lambda into `onCreateView` before `setContent`.
 - [x] (2026-08-30) Confirm `synthesizeAdaptiveIcons` defaults to false and both home and action shortcuts share the same original icon loader, so shortcut icons match the exact app icons.
 - [x] (2026-08-30) Extract `AppMetaCache.getInstalledApplicationsCacheFirst()` as a single shared cache-first loader for Home, Apps, and Actions, eliminating duplicated cached-or-refresh logic.
 - [x] (2026-08-30) Make `AppsViewModel.updateAppList()` show cached apps instantly, do silent background refresh only when the package set actually changes, and show the loader exclusively on pull-to-refresh; added cancelable `appListRefreshJob` so pull-to-refresh aborts any in-flight background refresh.
-- [ ] (2026-08-30) Milestone 8: Move Settings icon-pack query, HShortcuts bitmap decode, and IconPack.loadIcon off the main thread; fix cold-start cache gap so Apps tab shows cached data instantly without redundant PackageManager scans; add StrictMode for debug detection.
-- [ ] (2026-08-30) Milestone 9: Remove group cache invalidation in `AppMetaCache` so per-app state changes do not clear or rewrite unrelated app caches. Replace full-map `prefetch()` with incremental updates, replace `dao.replaceAll()` with per-app upserts, and remove the default `cache.keys` parameter from `invalidateState()`.
+- [x] (2026-08-31) Milestone 8: Move Settings icon-pack query, HShortcuts bitmap decode, and IconPack.loadIcon off the main thread; fix cold-start cache gap so Apps tab shows cached data instantly without redundant PackageManager scans; add StrictMode for debug detection.
+- [x] (2026-08-31) Milestone 9: Remove group cache invalidation in `AppMetaCache` so per-app state changes do not clear or rewrite unrelated app caches. Replace full-map `prefetch()` with incremental updates, replace `dao.replaceAll()` with per-app upserts, and remove the default `cache.keys` parameter from `invalidateState()`.
 - [ ] Backup/Restore feature (out of scope for initial Actions implementation; reserved for a future branch).
 
 ## Surprises & Discoveries
@@ -179,7 +179,7 @@ Record every decision made while working on the plan in the format:
 
 Summarize outcomes, gaps, and lessons learned at major milestones or at completion. Compare the result against the original purpose.
 
-The initial Actions implementation is functionally complete across Room storage, execution/API routing, navigation, UI, long-press operations, and pinned shortcuts. The build passes (`assembleDebug` and `testDebugUnitTest`), and static diagnostics are clean. The shortcut refresh gap identified during Milestone 6 verification was closed by adding `HShortcuts.updateActionShortcut()` and calling it from `ActionsFragment` after save. A post-verification review identified working-mode drift between Home and Actions execution paths. This was addressed in Milestone 6.5 by extracting shared logic into `AppActions`. Runtime visual verification on a device or emulator remains undone because no emulator was provided. Focused unit tests for the new Room entities, executor, and UI are not yet written. The Backup/Restore feature is explicitly out of scope for this phase. A later performance review identified cache invalidation patterns that could affect unrelated apps on devices with many installed apps; Milestone 8 and Milestone 9 were added to address main-thread blockers and enforce per-app cache isolation.
+The initial Actions implementation is functionally complete across Room storage, execution/API routing, navigation, UI, long-press operations, and pinned shortcuts. The build passes (`assembleDebug` and `testDebugUnitTest`), and static diagnostics are clean. The shortcut refresh gap identified during Milestone 6 verification was closed by adding `HShortcuts.updateActionShortcut()` and calling it from `ActionsFragment` after save. A post-verification review identified working-mode drift between Home and Actions execution paths. This was addressed in Milestone 6.5 by extracting shared logic into `AppActions`. Runtime visual verification on a device or emulator remains undone because no emulator was provided. Focused unit tests for the new Room entities, executor, and UI are not yet written. The Backup/Restore feature is explicitly out of scope for this phase. A later performance review identified cache invalidation patterns that could affect unrelated apps on devices with many installed apps; Milestone 8 and Milestone 9 were added to address main-thread blockers and enforce per-app cache isolation. Both milestones are now complete: Milestone 8 moved Settings icon-pack queries, shortcut bitmap decode, and `IconPack.loadIcon` off the main thread, added `StrictMode` for debug detection, and fixed the cold-start cache gap so Apps shows cached data instantly. Milestone 9 replaced `prefetch()` full-map clears with incremental merges, replaced `dao.replaceAll()` with per-app `upsertAll()`, and removed the default `cache.keys` parameter from `invalidateState()`.
 
 ## Context and Orientation
 
@@ -465,29 +465,36 @@ This milestone addresses cold-start and tab-switch delays caused by main-thread 
 - Move all `PackageManager` queries, Room initialization, and bitmap decode off the main thread.
 - Show cached or placeholder content immediately; refresh silently after the first frame.
 - Use `StrictMode.ThreadPolicy` in debug builds to catch accidental main-thread disk/network/PM access.
-- Consider Baseline Profiles or Startup Profiles for 15-30% cold-start improvement.
+- Add a Baseline Profile for critical user journeys; Startup Profiles are optional for this project size.
 - Avoid Binder calls during startup; cache results or move them to background threads.
 
 **Step 1: Move SettingsFragment icon-pack query off the main thread**
 
-Move the `queryIntentActivities()` call out of the Composable lambda. Precompute the icon-pack list once and expose it as a simple `List<String>` that Compose reads without triggering package-manager work.
+Move the `queryIntentActivities()` call out of the Composable lambda and into `onCreateView`, before `setContent`. Compute it once there and expose it as a simple `List<String>` that Compose reads without triggering package-manager work.
 
-Caveat: Do not wrap the query in `mutableStateOf` inside the composable. Compute it before `setContent` or in a `ViewModel`, then read it in Compose as a plain value.
+Rationale: For static, fragment-scoped configuration data, computing it before `setContent` is simpler and safer than introducing a ViewModel. Compose then reads a plain value instead of executing Binder IPC during composition.
+
+Caveat: Do not wrap the query in `mutableStateOf` inside the composable. Compute it once in `onCreateView` and pass the resulting list into Compose as a plain value.
 
 **Step 2: Make HShortcuts and IconPack bitmap work asynchronous**
 
-- Make `IconPack.loadIcon()` a `suspend` function and call it from `withContext(Dispatchers.IO)`.
+- Make `IconPack.loadIcon()` a `suspend` function that internally uses `withContext(Dispatchers.IO)`, making it main-safe by contract.
 - Make `HShortcuts.getBitmapFromDrawable()` run on `Dispatchers.IO`.
-- Update all callers in `HShortcuts` (`addPinShortcut`, `updateActionShortcut`, `addDynamicShortcut`) to launch a coroutine on `Dispatchers.IO` for icon preparation, then post the shortcut on the main thread.
+- Update all callers in `HShortcuts` (`addPinShortcut`, `updateActionShortcut`, `addDynamicShortcut`) to launch a coroutine for icon preparation, then post the shortcut on the main thread.
+
+Rationale: A main-safe suspend function is the recommended Kotlin coroutines pattern. Callers do not need to know the implementation detail that bitmap decode happens on IO.
 
 Caveat: Shortcut creation is user-initiated, but the icon decode can still jank the UI if done synchronously. Moving it to IO preserves responsiveness.
 
 **Step 3: Fix AppMetaCache cold-start cache gap**
 
-- Add a fallback in `getInstalledApplicationsCacheFirst()`: if `cachedApplications()` is empty, first check whether `seedFromDatabase()` has populated the in-memory `cache` and reconstruct `ApplicationInfo` objects from cached package names, or wait for the existing `warmUp()` job to finish before falling back to a full scan.
-- Ensure `warmUp()` is the single source of truth for initial app-list population and that `updateAppList()` does not trigger a redundant full scan on cold start.
+- In `AppsViewModel` or `AppsFragment`, immediately show cached app metadata from Room-backed cache entries with placeholder icons, even when `installedApplications` is empty.
+- Let `warmUp()` continue populating `installedApplications` in the background, then subtly update the list when fresh data arrives.
+- Do not block the UI waiting for `warmUp()` or trigger a redundant full scan if cached metadata is already available.
 
-Caveat: Reconstructing `ApplicationInfo` objects from package names still requires PackageManager calls. The goal is to reduce the number of full scans, not eliminate all PM access.
+Rationale: Android app-startup guidance recommends showing cached content immediately and refreshing silently after the first frame. Reconstructing full `ApplicationInfo` objects from package names still requires PackageManager calls, so the goal is to reduce full scans, not eliminate all PM access.
+
+Caveat: If the cache is truly empty on first launch, the user will see an empty list. That is acceptable if it appears instantly, because the background scan will populate it shortly after.
 
 **Step 4: Show cached data instantly on Apps cold start**
 
@@ -536,7 +543,9 @@ This keeps existing `ApplicationInfo` cache entries stable when only a subset of
 
 **Step 2: Make `persist()` use per-app writes**
 
-Replace `dao.replaceAll()` with `dao.upsertAll()` for full cache persistence, and for incremental updates, upsert only the changed entries. This avoids a full table delete/rewrite on every refresh.
+Replace `dao.replaceAll()` with `dao.upsertAll()` for full cache persistence. For incremental updates, upsert only the changed entries. Also switch the existing `upsertAll` DAO method from `@Insert(onConflict = OnConflictStrategy.REPLACE)` to `@Upsert`, which performs an actual UPDATE when the row exists and avoids DELETE/INSERT overhead.
+
+This avoids a full table delete/rewrite on every refresh and follows current Room best practices.
 
 **Step 3: Remove broad default from `invalidateState()`**
 

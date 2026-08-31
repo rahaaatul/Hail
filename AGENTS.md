@@ -105,6 +105,13 @@ When creating new plans for future features, adhere to the OpenAI ExecPlan templ
 - Name files with full repository-relative paths; show exact commands and expected outputs
 - Make steps idempotent and safe; include retry or rollback paths for risky operations
 
+## Research-First Decision Policy
+
+Before deciding, coding, or answering:
+- Run `semantic_search` on the codebase for existing patterns.
+- Run `websearch` for current syntax, changelogs, or best practices.
+- Use Context7 docs lookup for any library/framework/SDK in scope.
+
 ## Behavioral Guidelines
 
 These principles reduce common LLM coding mistakes. Bias toward caution over speed; for trivial tasks, use judgment.

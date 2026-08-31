@@ -1,5 +1,6 @@
 {
   "$schema": "https://app.kilo.ai/config.json",
+  "instructions": [".kilo/instructions/tool-use.md"],
   "mcp": {
     "stack-mcp-server": {
       "type": "remote",
