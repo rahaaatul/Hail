@@ -79,7 +79,7 @@ echo "==> Uploading to Telegram"
 curl -sS --fail \
     -F "chat_id=${TG_DEBUG}" \
     -F "document=@${zip_path}" \
-    -F "caption=<${caption_file}" \
+    -F "caption=@${caption_file}" \
     -F "parse_mode=HTML" \
     "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" >/dev/null
 
