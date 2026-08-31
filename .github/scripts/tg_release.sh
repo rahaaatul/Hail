@@ -39,8 +39,8 @@ if [[ ${#apk_files[@]} -eq 1 ]]; then
     response="$(curl -sS -w '\n%{http_code}' \
         -F "chat_id=${TG_RELEASE}" \
         -F "document=@${apk_files[0]}" \
-        -F "caption=${caption}" \
-        -F "parse_mode=HTML" \
+        --form-string "caption=${caption}" \
+        --form-string "parse_mode=HTML" \
         "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" 2>&1)" || true
 else
     curl_args=()
