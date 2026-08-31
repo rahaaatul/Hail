@@ -3,15 +3,10 @@
 # Manually run inside the Codespace to build a debug APK and send it to
 # the Telegram debug chat for testing.
 #
-<<<<<<< HEAD
-# Requires TG_TOKEN and TG_DEBUG as Codespace secrets (same TG_TOKEN bot
-# used by the release workflow; TG_DEBUG is the debug-chat destination).
-=======
 # Requires TG_TOKEN and TG_GROUP as Codespace secrets (same TG_TOKEN bot
 # used by the release workflow; TG_GROUP is the chat destination).
 #
 # Hardcoded debug topic: 84
->>>>>>> main
 
 set -euo pipefail
 
@@ -23,11 +18,7 @@ export ANDROID_SDK_ROOT="${ANDROID_HOME}"
 export PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
 
 : "${TG_TOKEN:?TG_TOKEN is not set}"
-<<<<<<< HEAD
-: "${TG_DEBUG:?TG_DEBUG is not set}"
-=======
 : "${TG_GROUP:?TG_GROUP is not set}"
->>>>>>> main
 
 readonly APK_DIR="app/build/outputs/apk/debug"
 readonly BUILD_TOOLS_VERSION="37.0.0"
@@ -57,10 +48,7 @@ badging="$("${AAPT}" dump badging "${apk_path}")"
 version_name="$(grep -oP "versionName='\K[^']+" <<<"${badging}")"
 version_code="$(grep -oP "versionCode='\K[^']+" <<<"${badging}")"
 commit_hash="$(git rev-parse --short HEAD)"
-<<<<<<< HEAD
-=======
 commit_hash_full="$(git rev-parse HEAD)"
->>>>>>> main
 commit_subject="$(git log -1 --pretty=%s)"
 build_date="$(date '+%Y-%m-%d %H:%M %Z')"
 
@@ -70,12 +58,6 @@ escape_html() {
 commit_subject_esc="$(escape_html "${commit_subject}")"
 
 echo "==> Compressing APK"
-<<<<<<< HEAD
-zip_name="Hail-debug-v${version_name}-${commit_hash}.zip"
-zip_path="/tmp/${zip_name}"
-rm -f "${zip_path}"
-zip -j -9 "${zip_path}" "${apk_path}" >/dev/null
-=======
 debug_apk_name="Hail-v${version_name}-g${commit_hash}-debug.apk"
 debug_apk_path="/tmp/${debug_apk_name}"
 cp "${apk_path}" "${debug_apk_path}"
@@ -83,7 +65,6 @@ zip_name="Hail-v${version_name}-g${commit_hash}-debug.zip"
 zip_path="/tmp/${zip_name}"
 rm -f "${zip_path}"
 zip -j -9 "${zip_path}" "${debug_apk_path}" >/dev/null
->>>>>>> main
 zip_size_mb="$(du -m "${zip_path}" | cut -f1)"
 echo "Zip size: ${zip_size_mb} MB"
 
@@ -91,26 +72,6 @@ if (( zip_size_mb >= 50 )); then
     echo "Warning: ${zip_size_mb}MB is at/over Telegram's 50MB bot upload limit; the send may fail." >&2
 fi
 
-<<<<<<< HEAD
-caption="<b>Hail Debug Build</b>
-Version: ${version_name} (${version_code})
-Commit: <code>${commit_hash}</code> - ${commit_subject_esc}
-Built: ${build_date}"
-
-caption_file="$(mktemp)"
-trap 'rm -f "${caption_file}"' EXIT
-printf '%s' "${caption}" > "${caption_file}"
-
-echo "==> Uploading to Telegram"
-curl -sS --fail \
-    -F "chat_id=${TG_DEBUG}" \
-    -F "document=@${zip_path}" \
-    -F "caption=@${caption_file}" \
-    -F "parse_mode=HTML" \
-    "https://api.telegram.org/bot${TG_TOKEN}/sendDocument" >/dev/null
-
-rm -f "${zip_path}"
-=======
 commit_url="https://github.com/rahaaatul/Hail/commit/${commit_hash_full}"
 echo "==> Commit URL: ${commit_url}"
 echo "==> TG_GROUP: ${TG_GROUP}"
@@ -158,5 +119,4 @@ send_debug_notification() {
 send_debug_notification "84" "debug topic"
 
 rm -f "${zip_path}" "${debug_apk_path}"
->>>>>>> main
 echo "==> Done: sent ${zip_name} (${zip_size_mb} MB)"
