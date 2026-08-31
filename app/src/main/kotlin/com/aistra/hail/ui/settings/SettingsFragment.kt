@@ -6,35 +6,32 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
-import android.util.Log
 import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.SideEffect
-import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.fragment.findNavController
 import androidx.core.view.MenuHost
@@ -42,7 +39,6 @@ import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.aistra.hail.HailApp.Companion.app
-import com.aistra.hail.BuildConfig
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
@@ -63,7 +59,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.*
 import rikka.shizuku.Shizuku
 
 class SettingsFragment : MainFragment(), MenuProvider {
@@ -97,9 +92,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AppTheme {
-                    ProvidePreferenceLocals {
-                        SettingsScreen()
-                    }
+                    SettingsScreen()
                 }
             }
         }
@@ -107,207 +100,209 @@ class SettingsFragment : MainFragment(), MenuProvider {
 
     @Composable
     private fun SettingsScreen() {
-        if (BuildConfig.DEBUG) {
-            SideEffect {
-                Log.d("SettingsRecompose", "SettingsScreen recomposed")
-            }
-        }
+        val context = LocalContext.current
+        var workingMode by remember { mutableStateOf(HailData.workingMode) }
+        var autoFreezeAfterLock by remember { mutableStateOf(HailData.autoFreezeAfterLock) }
         val iconPackValues by _iconPackValues
-        val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            listPreference(
-                key = HailData.WORKING_MODE,
-                defaultValue = HailData.MODE_DEFAULT,
-                onValueChange = ::onWorkingModeChange,
+        val scrollState = rememberScrollState()
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+        ) {
+            SettingsList(
+                headlineContent = { Text(stringResource(R.string.working_mode)) },
+                selectedValue = workingMode,
+                onValueChange = { mode ->
+                    val accepted = onWorkingModeChange(mode) { workingMode = it }
+                    if (accepted) HailData.workingMode = mode
+                    accepted
+                },
                 values = HailData.WORKING_MODE_VALUES,
                 entriesId = R.array.working_mode_entries,
-                titleId = R.string.working_mode,
-                icon = Icons.Outlined.Adb,
+                leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
                 type = ListPreferenceType.ALERT_DIALOG
             )
-            switchPreference(
-                key = HailData.BIOMETRIC_LOGIN,
-                defaultValue = false,
-                onValueChange = { _, value ->
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.action_biometric)) },
+                checked = HailData.biometricLogin,
+                onCheckedChange = { value ->
                     if (value) resetDynamicShortcuts()
-                    true
+                    HailData.biometricLogin = value
                 },
-                titleId = R.string.action_biometric,
-                icon = Icons.Outlined.Fingerprint
+                leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) }
             )
-            horizontalDivider()
-            preferenceCategory(key = "customize", title = { Text(text = stringResource(R.string.title_customize)) })
-            listPreference(
-                key = HailData.APP_THEME,
-                defaultValue = HailData.FOLLOW_SYSTEM,
-                onValueChange = { _, value ->
+            SettingsHorizontalDivider()
+            SettingsSectionHeader(stringResource(R.string.title_customize))
+            SettingsList(
+                headlineContent = { Text(stringResource(R.string.app_theme)) },
+                selectedValue = HailData.appTheme,
+                onValueChange = { value ->
+                    HailData.appTheme = value
                     app.setAppTheme(value)
                     true
                 },
                 values = HailData.APP_THEME_VALUES,
                 entriesId = R.array.app_theme_entries,
-                titleId = R.string.app_theme,
-                icon = Icons.Outlined.DarkMode
+                leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) }
             )
-            listPreference(
-                key = HailData.ICON_PACK,
-                defaultValue = HailData.ACTION_NONE,
-                onValueChange = { _, _ ->
+            SettingsList(
+                headlineContent = { Text(stringResource(R.string.icon_pack)) },
+                selectedValue = HailData.iconPack,
+                onValueChange = { value ->
                     AppIconCache.clear()
+                    HailData.iconPack = value
                     true
                 },
                 values = iconPackValues,
-                titleId = R.string.icon_pack,
-                icon = Icons.Outlined.Palette,
-                summary = { iconPackName(it) },
-                valueToText = { iconPackName(it) }
+                entries = iconPackValues.map { iconPackName(it) },
+                leadingContent = { Icon(Icons.Outlined.Palette, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.GRAYSCALE_ICON,
-                defaultValue = true,
-                titleId = R.string.grayscale_icon,
-                icon = Icons.Outlined.FilterBAndW
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.grayscale_icon)) },
+                checked = HailData.grayscaleIcon,
+                onCheckedChange = { HailData.grayscaleIcon = it },
+                leadingContent = { Icon(Icons.Outlined.FilterBAndW, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.COMPACT_ICON,
-                defaultValue = false,
-                titleId = R.string.compact_icon,
-                icon = Icons.Outlined.Apps
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.compact_icon)) },
+                checked = HailData.compactIcon,
+                onCheckedChange = { HailData.compactIcon = it },
+                leadingContent = { Icon(Icons.Outlined.Apps, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.SYNTHESIZE_ADAPTIVE_ICONS,
-                defaultValue = false,
-                titleId = R.string.synthesize_adaptive_icons,
-                icon = Icons.Outlined.Layers
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.synthesize_adaptive_icons)) },
+                checked = HailData.synthesizeAdaptiveIcons,
+                onCheckedChange = { HailData.synthesizeAdaptiveIcons = it },
+                leadingContent = { Icon(Icons.Outlined.Layers, contentDescription = null) }
             )
-            sliderPreference(
-                key = HailData.HOME_FONT_SIZE,
-                defaultValue = 14f,
-                title = { Text(text = stringResource(R.string.home_font_size)) },
+            SettingsSlider(
+                headlineContent = { Text(stringResource(R.string.home_font_size)) },
+                value = HailData.homeFontSize,
+                onValueChange = { HailData.homeFontSize = it },
                 valueRange = 11f..16f,
                 valueSteps = 4,
-                icon = { Icon(imageVector = Icons.Outlined.TextFields, contentDescription = null) },
-                valueText = { Text(text = "%.0f".format(it)) },
+                leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.FUZZY_SEARCH,
-                defaultValue = false,
-                titleId = R.string.fuzzy_search,
-                icon = Icons.AutoMirrored.Outlined.ManageSearch
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.fuzzy_search)) },
+                checked = HailData.fuzzySearch,
+                onCheckedChange = { HailData.fuzzySearch = it },
+                leadingContent = { Icon(Icons.AutoMirrored.Outlined.ManageSearch, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.NINE_KEY_SEARCH,
-                defaultValue = false,
-                titleId = R.string.nine_key,
-                icon = Icons.Outlined.Dialpad
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.nine_key)) },
+                checked = HailData.nineKeySearch,
+                onCheckedChange = { HailData.nineKeySearch = it },
+                leadingContent = { Icon(Icons.Outlined.Dialpad, contentDescription = null) }
             )
-            listPreference(
-                key = HailData.TILE_ACTION,
-                defaultValue = HailData.tileAction,
+            SettingsList(
+                headlineContent = { Text(stringResource(R.string.tile_action)) },
+                selectedValue = HailData.tileAction,
+                onValueChange = { value -> HailData.tileAction = value; true },
                 values = HailData.TILE_ACTION_VALUES,
                 entriesId = R.array.tile_action_entries,
-                titleId = R.string.tile_action,
-                icon = Icons.Outlined.DashboardCustomize
+                leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) }
             )
-            horizontalDivider()
-            preferenceCategory(key = "auto_freeze", title = { Text(text = stringResource(R.string.auto_freeze)) })
-            switchPreference(
-                rememberState = { autoFreezeAfterLock },
-                onValueChange = { _, value ->
+            SettingsHorizontalDivider()
+            SettingsSectionHeader(stringResource(R.string.auto_freeze))
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.auto_freeze_after_lock)) },
+                checked = autoFreezeAfterLock,
+                onCheckedChange = { value ->
+                    autoFreezeAfterLock = value
+                    HailData.autoFreezeAfterLock = value
                     app.setAutoFreezeService(value)
-                    true
                 },
-                titleId = R.string.auto_freeze_after_lock,
-                icon = Icons.Outlined.ScreenLockPortrait
+                leadingContent = { Icon(Icons.Outlined.ScreenLockPortrait, contentDescription = null) }
             )
-            sliderPreference(
-                key = HailData.AUTO_FREEZE_DELAY,
-                defaultValue = 0f,
-                title = { Text(text = stringResource(R.string.auto_freeze_delay)) },
+            SettingsSlider(
+                headlineContent = { Text(stringResource(R.string.auto_freeze_delay)) },
+                value = HailData.autoFreezeDelay.toFloat(),
+                onValueChange = { HailData.autoFreezeDelay = it.toLong() },
                 valueRange = 0f..30f,
                 valueSteps = 29,
-                enabled = { autoFreezeAfterLock.value },
-                icon = { Icon(imageVector = Icons.Outlined.LockClock, contentDescription = null) },
-                valueText = { Text(text = "%.0f".format(it)) },
+                enabled = autoFreezeAfterLock,
+                leadingContent = { Icon(Icons.Outlined.LockClock, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.SKIP_WHILE_CHARGING,
-                defaultValue = false,
-                titleId = R.string.skip_while_charging,
-                enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.BatteryChargingFull
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.skip_while_charging)) },
+                checked = HailData.skipWhileCharging,
+                onCheckedChange = { HailData.skipWhileCharging = it },
+                enabled = autoFreezeAfterLock,
+                leadingContent = { Icon(Icons.Outlined.BatteryChargingFull, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.SKIP_FOREGROUND_APP,
-                defaultValue = false,
-                onValueChange = { _, value ->
-                    if (value && !HSystem.checkOpUsageStats(requireContext())) {
-                        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.skip_foreground_app)) },
+                checked = HailData.skipForegroundApp,
+                onCheckedChange = { value ->
+                    if (value && !HSystem.checkOpUsageStats(context)) {
+                        context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                         false
-                    } else true
+                    } else {
+                        HailData.skipForegroundApp = value
+                        true
+                    }
                 },
-                titleId = R.string.skip_foreground_app,
-                enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.Android
+                enabled = autoFreezeAfterLock,
+                leadingContent = { Icon(Icons.Outlined.Android, contentDescription = null) }
             )
-            switchPreference(
-                key = HailData.SKIP_NOTIFYING_APP,
-                defaultValue = false,
-                onValueChange = { _, value ->
-                    val isGranted = NotificationManagerCompat.getEnabledListenerPackages(requireContext())
-                        .contains(requireContext().packageName)
+            SettingsSwitch(
+                headlineContent = { Text(stringResource(R.string.skip_notifying_app)) },
+                checked = HailData.skipNotifyingApp,
+                onCheckedChange = { value ->
+                    val isGranted = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
                     if (value && !isGranted) {
                         app.setAutoFreezeServiceEnabled(true)
-                        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                         false
-                    } else true
+                    } else {
+                        HailData.skipNotifyingApp = value
+                        true
+                    }
                 },
-                titleId = R.string.skip_notifying_app,
-                enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.NotificationsActive
+                enabled = autoFreezeAfterLock,
+                leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null) }
             )
-            horizontalDivider()
-            preferenceCategory(key = "shortcuts", title = { Text(text = stringResource(R.string.title_shortcuts)) })
-            preference(
-                key = "add_pin_shortcut",
-                title = { Text(text = stringResource(R.string.action_add_pin_shortcut)) },
-                icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
-                onClick = ::addPinShortcut
+            SettingsHorizontalDivider()
+            SettingsSectionHeader(stringResource(R.string.title_shortcuts))
+            SettingsClickable(
+                headlineContent = { Text(stringResource(R.string.action_add_pin_shortcut)) },
+                onClick = ::addPinShortcut,
+                leadingContent = { Icon(Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) }
             )
-            listPreference(
-                key = HailData.DYNAMIC_SHORTCUT_ACTION,
-                defaultValue = HailData.ACTION_NONE,
-                onValueChange = { _, action ->
+            SettingsList(
+                headlineContent = { Text(stringResource(R.string.dynamic_shortcut_action)) },
+                selectedValue = HailData.dynamicShortcutAction,
+                onValueChange = { action ->
                     HShortcuts.removeAllDynamicShortcuts()
                     HShortcuts.addDynamicShortcutAction(action)
+                    HailData.dynamicShortcutAction = action
                     true
                 },
                 values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
                 entriesId = R.array.dynamic_shortcut_entries,
-                titleId = R.string.dynamic_shortcut_action,
-                icon = Icons.Outlined.AppShortcut
+                leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) }
             )
-            preference(
-                key = "clear_dynamic_shortcuts",
-                title = { Text(text = stringResource(R.string.action_clear_dynamic_shortcuts)) },
-                icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
-                onClick = ::resetDynamicShortcuts
+            SettingsClickable(
+                headlineContent = { Text(stringResource(R.string.action_clear_dynamic_shortcuts)) },
+                onClick = ::resetDynamicShortcuts,
+                leadingContent = { Icon(Icons.Outlined.CleaningServices, contentDescription = null) }
             )
-            horizontalDivider()
-            preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
-            preference(
-                key = "rebuild_cache",
-                title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
-                summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
-                icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
-                onClick = ::confirmRebuildCache
+            SettingsHorizontalDivider()
+            SettingsSectionHeader(stringResource(R.string.title_cache))
+            SettingsClickable(
+                headlineContent = { Text(stringResource(R.string.action_rebuild_cache)) },
+                onClick = ::confirmRebuildCache,
+                supportingContent = { Text(stringResource(R.string.summary_rebuild_cache)) },
+                leadingContent = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) }
             )
-            preference(
-                key = "background_activity",
-                title = { Text(text = stringResource(R.string.allow_background_activity)) },
-                summary = { Text(text = stringResource(R.string.summary_background_activity)) },
-                icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
-                onClick = ::requestBackgroundActivity
+            SettingsClickable(
+                headlineContent = { Text(stringResource(R.string.allow_background_activity)) },
+                onClick = ::requestBackgroundActivity,
+                supportingContent = { Text(stringResource(R.string.summary_background_activity)) },
+                leadingContent = { Icon(Icons.Outlined.BatterySaver, contentDescription = null) }
             )
         }
     }
@@ -333,95 +328,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
             }
             .show()
     }
-
-    private fun LazyListScope.horizontalDivider() = item { HorizontalDivider() }
-
-    private fun LazyListScope.switchPreference(
-        rememberState: @Composable () -> MutableState<Boolean>,
-        onValueChange: (MutableState<Boolean>, Boolean) -> Boolean = { _, _ -> true },
-        @StringRes titleId: Int,
-        enabled: Boolean = true,
-        icon: ImageVector,
-    ) = item(key = titleId, contentType = "SwitchPreference") {
-        if (BuildConfig.DEBUG) {
-            SideEffect {
-                Log.d("SettingsRecompose", "switchPreference(${app.getString(titleId)}) recomposed")
-            }
-        }
-        val state = rememberState()
-        SwitchPreference(
-            value = state.value,
-            onValueChange = { if (onValueChange(state, it)) state.value = it },
-            title = { Text(text = stringResource(titleId)) },
-            enabled = enabled,
-            icon = { Icon(imageVector = icon, contentDescription = null) })
-    }
-
-    private fun LazyListScope.switchPreference(
-        key: String,
-        defaultValue: Boolean,
-        onValueChange: (MutableState<Boolean>, Boolean) -> Boolean = { _, _ -> true },
-        @StringRes titleId: Int,
-        enabled: Boolean = true,
-        icon: ImageVector,
-    ) = switchPreference(
-        rememberState = { rememberPreferenceState(key, defaultValue) },
-        onValueChange = onValueChange,
-        titleId = titleId,
-        enabled = enabled,
-        icon = icon
-    )
-
-    private fun LazyListScope.listPreference(
-        key: String,
-        defaultValue: String,
-        onValueChange: (MutableState<String>, String) -> Boolean = { _, _ -> true },
-        values: List<String>,
-        @StringRes titleId: Int,
-        icon: ImageVector,
-        summary: @Composable (String) -> String,
-        type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
-        valueToText: (String) -> String
-    ) = item(key = key, contentType = "ListPreference") {
-        if (BuildConfig.DEBUG) {
-            SideEffect {
-                Log.d("SettingsRecompose", "listPreference(${app.getString(titleId)}) recomposed")
-            }
-        }
-        val state = rememberPreferenceState(key, defaultValue)
-        ListPreference(
-            value = state.value,
-            onValueChange = { if (onValueChange(state, it)) state.value = it },
-            values = values,
-            title = { Text(text = stringResource(titleId)) },
-            icon = { Icon(imageVector = icon, contentDescription = null) },
-            summary = { Text(text = summary(state.value)) },
-            type = type,
-            valueToText = { AnnotatedString(valueToText(it)) })
-    }
-
-    private fun LazyListScope.listPreference(
-        key: String,
-        defaultValue: String,
-        onValueChange: (MutableState<String>, String) -> Boolean = { _, _ -> true },
-        values: List<String>,
-        @ArrayRes entriesId: Int,
-        @StringRes titleId: Int,
-        icon: ImageVector,
-        type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU
-    ) = listPreference(
-        key = key,
-        defaultValue = defaultValue,
-        onValueChange = onValueChange,
-        values = values,
-        titleId = titleId,
-        icon = icon,
-        summary = { it.toEntry(values, entriesId) },
-        type = type,
-        valueToText = { it.toEntry(values, entriesId) })
-
-    private fun String.toEntry(values: List<String>, @ArrayRes entriesId: Int): String =
-        resources.getStringArray(entriesId)[values.indexOf(this)]
 
     private fun resetDynamicShortcuts() {
         HShortcuts.removeAllDynamicShortcuts()
@@ -506,7 +412,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
-    fun onWorkingModeChange(rememberState: MutableState<String>, mode: String): Boolean {
+    fun onWorkingModeChange(mode: String, setState: (String) -> Unit): Boolean {
         // Show/hide terminal menu.
         activity.invalidateOptionsMenu()
         when {
@@ -534,7 +440,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                                 awaitClose()
                             }.first()
                             if (result) {
-                                rememberState.value = mode
+                                setState(mode)
                                 if (HTarget.O) HDhizuku.setDelegatedScopes()
                             }
                         }
@@ -575,7 +481,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                                     Shizuku.removeRequestPermissionResultListener(listener)
                                 }
                             }.first()
-                            if (result) rememberState.value = mode
+                            if (result) setState(mode)
                         }
                         false
                     }

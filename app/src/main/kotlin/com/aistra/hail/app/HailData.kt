@@ -138,25 +138,57 @@ object HailData {
     val filterAllApps get() = sp.getBoolean(FILTER_ALL_APPS, true)
     val filterFrozenApps get() = sp.getBoolean(FILTER_FROZEN_APPS, true)
     val filterUnfrozenApps get() = sp.getBoolean(FILTER_UNFROZEN_APPS, true)
-    val workingMode get() = sp.getString(WORKING_MODE, MODE_DEFAULT)!!
-    val biometricLogin get() = sp.getBoolean(BIOMETRIC_LOGIN, false)
-    val appTheme get() = sp.getString(APP_THEME, FOLLOW_SYSTEM)!!
-    val iconPack get() = sp.getString(ICON_PACK, ACTION_NONE)!!
-    val grayscaleIcon get() = sp.getBoolean(GRAYSCALE_ICON, true)
-    val compactIcon get() = sp.getBoolean(COMPACT_ICON, false)
-    val synthesizeAdaptiveIcons get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
-    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, 14f)
-    val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, false)
-    val nineKeySearch get() = sp.getBoolean(NINE_KEY_SEARCH, false)
-    val tileAction get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
+    var workingMode
+        get() = sp.getString(WORKING_MODE, MODE_DEFAULT)!!
+        set(value) = sp.edit { putString(WORKING_MODE, value) }
+    var biometricLogin
+        get() = sp.getBoolean(BIOMETRIC_LOGIN, false)
+        set(value) = sp.edit { putBoolean(BIOMETRIC_LOGIN, value) }
+    var appTheme
+        get() = sp.getString(APP_THEME, FOLLOW_SYSTEM)!!
+        set(value) = sp.edit { putString(APP_THEME, value) }
+    var iconPack
+        get() = sp.getString(ICON_PACK, ACTION_NONE)!!
+        set(value) = sp.edit { putString(ICON_PACK, value) }
+    var grayscaleIcon
+        get() = sp.getBoolean(GRAYSCALE_ICON, true)
+        set(value) = sp.edit { putBoolean(GRAYSCALE_ICON, value) }
+    var compactIcon
+        get() = sp.getBoolean(COMPACT_ICON, false)
+        set(value) = sp.edit { putBoolean(COMPACT_ICON, value) }
+    var synthesizeAdaptiveIcons
+        get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
+        set(value) = sp.edit { putBoolean(SYNTHESIZE_ADAPTIVE_ICONS, value) }
+    var homeFontSize
+        get() = sp.getFloat(HOME_FONT_SIZE, 14f)
+        set(value) = sp.edit { putFloat(HOME_FONT_SIZE, value) }
+    var fuzzySearch
+        get() = sp.getBoolean(FUZZY_SEARCH, false)
+        set(value) = sp.edit { putBoolean(FUZZY_SEARCH, value) }
+    var nineKeySearch
+        get() = sp.getBoolean(NINE_KEY_SEARCH, false)
+        set(value) = sp.edit { putBoolean(NINE_KEY_SEARCH, value) }
+    var tileAction
+        get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
+        set(value) = sp.edit { putString(TILE_ACTION, value) }
     var autoFreezeAfterLock
         get() = sp.getBoolean(AUTO_FREEZE_AFTER_LOCK, false)
         set(value) = sp.edit { putBoolean(AUTO_FREEZE_AFTER_LOCK, value) }
-    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, 0f).toLong()
-    val skipWhileCharging get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
-    val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
-    val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
-    val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
+    var autoFreezeDelay
+        get() = sp.getFloat(AUTO_FREEZE_DELAY, 0f).toLong()
+        set(value) = sp.edit { putFloat(AUTO_FREEZE_DELAY, value.toFloat()) }
+    var skipWhileCharging
+        get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
+        set(value) = sp.edit { putBoolean(SKIP_WHILE_CHARGING, value) }
+    var skipForegroundApp
+        get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
+        set(value) = sp.edit { putBoolean(SKIP_FOREGROUND_APP, value) }
+    var skipNotifyingApp
+        get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
+        set(value) = sp.edit { putBoolean(SKIP_NOTIFYING_APP, value) }
+    var dynamicShortcutAction
+        get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
+        set(value) = sp.edit { putString(DYNAMIC_SHORTCUT_ACTION, value) }
 
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
