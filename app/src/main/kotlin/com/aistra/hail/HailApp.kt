@@ -30,7 +30,7 @@ class HailApp : Application() {
     override fun onCreate() {
         super.onCreate()
         app = this
-        if (BuildConfig.DEBUG) {
+        if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
             StrictMode.setThreadPolicy(
                 StrictMode.ThreadPolicy.Builder()
                     .detectAll()
