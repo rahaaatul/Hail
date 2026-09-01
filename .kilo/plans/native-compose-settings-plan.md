@@ -16,6 +16,8 @@ The Settings screen in Hail is currently implemented with the third-party `me.zh
 - [x] (2026-09-01) Created native Compose Settings row composables (`SettingsSwitch`, `SettingsSlider`, `SettingsList`, `SettingsClickable`) in `SettingsRows.kt`.
 - [x] (2026-09-01) Migrated `SettingsFragment` off `me.zhanghai.compose.preference` and removed the dependency.
 - [x] (2026-09-01) Fixed runtime crashes: `getString(array, index)` API misuse, `.enabled()` modifier removal, `DialogProperties` import path, slider state management, AlertDialog width constraints.
+- [x] (2026-09-01) Fixed critical UI bug: toggles not visually updating — switched from reading `HailData.xxx` directly to using local `mutableStateOf` state holders that trigger recomposition.
+- [x] (2026-09-01) Fixed AlertDialog issues: added `widthIn(280dp, 560dp)` constraints, `verticalScroll` for long lists, proper radio button selection.
 - [x] (2026-09-01) Verified build, ran unit tests, confirmed Settings opens without crashes. Debug APK sent to Telegram for device testing.
 - [ ] (Pending) Device testing: verify cold-start performance improvement, toggle responsiveness, slider functionality, dialog positioning on actual device.
 
@@ -27,26 +29,31 @@ The Settings screen in Hail is currently implemented with the third-party `me.zh
 - Observation: Settings cold-start jank persists after moving PackageManager work off the main thread because `rememberPreferenceState()` creates a Flow + `collectAsStateWithLifecycle` per preference item.
   Evidence: `SettingsFragment` declares ~21 preferences. Each `rememberPreferenceState(key, defaultValue)` internally builds `flow.map { key -> it[key] ?: defaultValue }` and collects it with `collectAsStateWithLifecycle`. Decompiling `PreferenceStateKt.class` from the 1.1.1 AAR confirmed each preference instantiates a `map` operator and a `Flow` collector. On cold start this launches ~21 coroutine collectors on the main thread, each reading from SharedPreferences via `createDefaultPreferenceFlow()`. This Flow-per-preference architecture is the dominant remaining cost.
 
-- Observation: `_iconPackValues` state update causes a full `SettingsScreen()` recomposition, which re-executes the entire `LazyColumn` scope and all visible preference items.
-  Evidence: `_iconPackValues` starts as `[ACTION_NONE]` and updates to the full icon-pack list on `Dispatchers.IO`. When posted back to `Main`, Compose recomposes `SettingsScreen()`. Because the `LazyColumn` content lambda is inside `SettingsScreen()`, every `item()` and `switchPreference`/`listPreference` call is re-executed. This means all visible preference items see a new lambda instance, which can defeat key-based skipping even when their displayed value has not changed.
-
-- Observation: Custom `switchPreference` and `listPreference` extension functions create new lambda instances on every `SettingsScreen` recomposition.
-  Evidence: The `rememberState: @Composable () -> MutableState<Boolean>` parameter in `switchPreference` is re-evaluated as a new lambda on each `SettingsScreen()` pass. Similarly, `summary: @Composable (String) -> String` and `valueToText: (String) -> String` in `listPreference` are recreated. These new lambdas are passed into `item(key = ..., contentType = ...)` inside the `LazyColumn` scope, increasing recomposition pressure.
+- Observation: `_iconPackValues` state update causes a full `SettingsScreen()` recomposition.
+  Evidence: `_iconPackValues` starts as `[ACTION_NONE]` and updates to the full icon-pack list on `Dispatchers.IO`. When posted back to `Main`, Compose recomposes `SettingsScreen()`.
 
 - Observation: Most `HailData` properties are read-only (`val` with getter only), so they cannot be written back to directly when migrating away from `rememberPreferenceState`.
-  Evidence: `HailData.workingMode`, `HailData.biometricLogin`, `HailData.appTheme`, `HailData.iconPack`, `HailData.grayscaleIcon`, `HailData.compactIcon`, `HailData.synthesizeAdaptiveIcons`, `HailData.homeFontSize`, `HailData.fuzzySearch`, `HailData.nineKeySearch`, `HailData.tileAction`, `HailData.autoFreezeDelay`, `HailData.skipWhileCharging`, `HailData.skipForegroundApp`, `HailData.skipNotifyingApp`, and `HailData.dynamicShortcutAction` all lack setters. Only `HailData.autoFreezeAfterLock` has a getter/setter pair. The library's `rememberPreferenceState` writes back to SharedPreferences internally by key, so the migration must add setters to `HailData` for every property the UI modifies.
+  Evidence: 16 of 17 UI-modified properties lacked setters. Only `autoFreezeAfterLock` had a getter/setter pair.
 
-- Observation: Material 3 Expressive introduces `SegmentedListItem`, the component used in modern Android Settings for the connected, rounded-group look.
-  Evidence: `SegmentedListItem` supports click, single-selection, and multi-selection overloads with `ListItemDefaults.segmentedShapes(index, count)` and `ListItemDefaults.segmentedColors()`. It requires `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`. While this is the direction Google is heading, the standard `ListItem` is stable, broadly compatible, and sufficient for this migration. `SegmentedListItem` can be adopted later as a visual enhancement.
+- Observation: Material 3 Expressive introduces `SegmentedListItem`, but it requires an experimental opt-in; standard `ListItem` is the pragmatic choice.
 
-- Observation: Google now recommends DataStore over SharedPreferences for new code, but acknowledges synchronous SharedPreferences reads are acceptable for first-frame-critical values like theme.
-  Evidence: The official Android documentation states "If you're using SharedPreferences to store data, consider migrating to DataStore instead." However, for theme selection and similar values that must be resolved before the first frame to avoid flicker, a synchronous `SharedPreferences` read remains the pragmatic choice. Since `HailData` already wraps `PreferenceManager.getDefaultSharedPreferences`, continuing to use it keeps the diff focused on the UI layer.
+- Observation: Google now recommends DataStore over SharedPreferences for new code, but synchronous SharedPreferences reads are acceptable for first-frame-critical values like theme.
 
-- Observation: The codebase already contains patterns that the native migration should follow.
-  Evidence: `AboutFragment.kt:59` uses `var openLicenseDialog by remember { mutableStateOf(false) }` — the exact state-hoisting idiom needed. `AboutFragment.kt:150-174` (`LicenseDialog`) and `ApiActivity.kt:173-181` (`ErrorDialog`) demonstrate the Compose `AlertDialog` pattern with `title`, `text`, `onDismissRequest`, `confirmButton` that the radio-button list dialog should follow. `ApiActivity.kt:156-171` and `AboutFragment.kt:131-148` (`ClickableItem`) demonstrate the clickable-row-with-icon pattern. `PagerFragment.kt:448-476` (`TriStateTagList`) demonstrates a stateless composable with hoisted state passed in. No `ListItem`, `DropdownMenu`, or `SegmentedListItem` usage exists anywhere — these are entirely new to the codebase.
+- Observation: The codebase already contains patterns that the native migration should follow (`remember { mutableStateOf(...) }` in `AboutFragment`, `AlertDialog` with custom content in `LicenseDialog`, etc.).
 
-- Observation: Material 3 `ListItem` handles accessibility announcement merging automatically, but interactive controls need explicit semantic modifiers.
-  Evidence: Per Google's Compose accessibility documentation and the `cvs-health/android-compose-accessibility-techniques` reference, `ListItem` applies `Modifier.semantics(mergeDescendants = true)` internally. For toggleable rows, `Modifier.toggleable(role = Role.Switch)` must be applied to the `ListItem` with `onCheckedChange = null` on the inner `Switch`. For `Slider`, `Modifier.semantics { contentDescription = labelText }` is required because `Slider` has no text label. These patterns ensure TalkBack announces each settings row as a single unified control.
+- Observation: Material 3 `ListItem` handles accessibility announcement merging automatically, but interactive controls need explicit semantic modifiers (`toggleable`, `selectable`).
+
+- Observation: `Modifier.enabled()` is not available in the Compose version used (composeBom `2026.08.00`). Disabled state handled via conditional modifier application.
+
+- Observation: `DialogProperties` for AlertDialog width control is in `androidx.compose.ui.window`, not `androidx.compose.material3`.
+
+- Observation: `getString(R.array.xxx, index)` is not a valid Android API — crashes with `Resources$NotFoundException`. Use `stringArrayResource(R.array.xxx)[index]`.
+
+- Observation: Replaced `LazyColumn` with `Column` + `verticalScroll` for simpler code. `LazyColumn` caused `@Composable invocations` scope errors.
+
+- Observation: **CRITICAL** — Reading from `HailData.xxx` directly in composables does NOT trigger recomposition. All switches/sliders/lists must use local `mutableStateOf` state holders, and update both local state AND `HailData` in `onValueChange` callbacks. This was the root cause of toggles not visually updating.
+
+- Observation: AlertDialog needs explicit width constraints (`Modifier.widthIn(min = 280.dp, max = 560.dp)`) and `DialogProperties(usePlatformDefaultWidth = false)` to prevent full-screen display. Long lists need `verticalScroll(rememberScrollState())`.
 
 - Observation: `Modifier.enabled()` is not available in the Compose version used by this project (composeBom `2026.08.00`).
   Evidence: Attempting to use `.enabled(enabled)` on a Modifier resulted in `Unresolved reference 'enabled'`. The standard approach is to conditionally apply `.toggleable()` or `.clickable()` modifiers based on the enabled state, or to use `ListItem`'s built-in `enabled` parameter (available in Material 3 Expressive API). Disabled state for dependent toggles is handled by not applying the interactive modifier when disabled.
@@ -134,13 +141,15 @@ Post-implementation discoveries that changed the approach from the original plan
 3. `getString(R.array.xxx, index)` is not valid — use `stringArrayResource()` instead.
 4. `LazyColumn` caused `@Composable invocations` scope errors — replaced with `Column` + `verticalScroll`.
 5. Slider required local state management (`var sliderValue by remember { mutableStateOf(value) }`) to properly track drag changes.
-6. AlertDialog needed `DialogProperties(usePlatformDefaultWidth = false)` to respect Material Design width constraints.
+6. AlertDialog needed `DialogProperties(usePlatformDefaultWidth = false)` + `Modifier.widthIn(280dp, 560dp)` to prevent full-screen display.
+7. **CRITICAL**: Reading from `HailData.xxx` directly in composables does NOT trigger recomposition. All switches/sliders/lists must use local `mutableStateOf` state holders. This was the root cause of toggles not visually updating on tap.
 
 **Known remaining issues (device testing pending):**
-- Toggles in Customize section may still not respond correctly to taps.
+- Toggles in Customize section may still not respond correctly to taps (needs verification).
 - Home font size slider drag behavior needs verification.
 - Dialog positioning on actual device needs verification.
 - Cold-start performance improvement needs quantitative measurement.
+- Radio button selection in working mode dialog needs verification.
 
 ## Context and Orientation
 
@@ -774,3 +783,34 @@ Add focused tests in `app/src/test/kotlin/com/aistra/hail/ui/settings/`:
 3. **Persistence tests**: Verify `HailData` setters write correct values.
 
 These run on JVM via Robolectric (fast, no emulator needed).
+
+## Remaining Work
+
+### Must Fix (from device testing feedback)
+
+1. **Toggles not visually updating** — Root cause was reading `HailData.xxx` directly instead of `mutableStateOf`. Now fixed by adding local `mutableStateOf` state for all 17 values. **Needs device verification.**
+
+2. **Working mode dialog full screen / not scrollable** — Fixed by adding `Modifier.widthIn(min = 280.dp, max = 560.dp)` and `verticalScroll(rememberScrollState())`. **Needs device verification.**
+
+3. **Quick settings tile dialog doesn't select** — Radio button selection may not be updating parent state. **Needs investigation and fix.**
+
+4. **Buttons registered but not visually showing** — Same root cause as #1 (missing `mutableStateOf`). The click handler fired and wrote to `HailData`, but Compose didn't recompose because the state wasn't observable. Now fixed. **Needs device verification.**
+
+### Nice to Have
+
+5. **Cold-start performance measurement** — Profile cold start with and without the library to quantify improvement.
+
+6. **Unit tests** — Add focused tests for composables, validation logic, and persistence.
+
+7. **SegmentedListItem migration** — Future visual enhancement using Material 3 Expressive.
+
+### Done
+
+- ✅ Removed `me.zhanghai.compose.preference` dependency
+- ✅ Added writable setters to `HailData`
+- ✅ Created native Compose row composables
+- ✅ Migrated `SettingsFragment` to native composables
+- ✅ Fixed runtime crashes (`getString`, `.enabled()`, `DialogProperties`)
+- ✅ Fixed toggle visual update bug (local `mutableStateOf` state)
+- ✅ Fixed dialog width and scrollability
+- ✅ Build compiles, unit tests pass, debug APK sent to Telegram
