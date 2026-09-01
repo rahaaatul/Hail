@@ -327,33 +327,20 @@ Working directory: `/workspaces/Hail`
 
 **Step 7: Migrate to Material 3 Expressive theme (COMPLETED)**
 
-**Step 8: Implement connected shapes (PENDING)**
+**Step 8: Implement connected shapes (COMPLETED)**
 ```kotlin
-// In SettingsFragment.kt, wrap each group:
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-fun <T> ExpressiveSettingsGroup(items: List<T>, content: @Composable (Int, T) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-        items.forEachIndexed { index, item ->
-            content(index, item)
-        }
-    }
-}
-
-// Usage:
-ExpressiveSettingsGroup(items = listOf(
-    SwitchItem("Theme", HailData.appTheme, { HailData.appTheme = it }),
-    SwitchItem("Icon Pack", HailData.iconPack, { HailData.iconPack = it }),
-    SwitchItem("Font Size", HailData.homeFontSize, { HailData.homeFontSize = it }),
-)) { index, item ->
-    SettingsSwitch(
-        ...,
-        shapes = ListItemDefaults.segmentedShapes(index, 3),
+// In SettingsFragment.kt, each group uses SegmentedListItem:
+Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+    SegmentedListItem(
+        onClick = { ... },
+        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 5),
         colors = ListItemDefaults.segmentedColors(),
-    )
+        ...
+    ) { Text("...") }
 }
 ```
 
-**Step 9: Add LargeFlexibleTopAppBar (PENDING)**
+**Step 9: Add LargeFlexibleTopAppBar (COMPLETED)**
 ```kotlin
 val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -361,17 +348,7 @@ Scaffold(
     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
     topBar = {
         LargeFlexibleTopAppBar(
-            title = { Text(stringResource(R.string.settings)) },
-            navigationIcon = {
-                IconButton(onClick = { /* back */ }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-            },
-            actions = {
-                IconButton(onClick = { /* about */ }) {
-                    Icon(Icons.Filled.Info, contentDescription = "About")
-                }
-            },
+            title = { Text(stringResource(R.string.title_settings), maxLines = 1, overflow = TextOverflow.Ellipsis) },
             scrollBehavior = scrollBehavior,
         )
     }
@@ -380,16 +357,16 @@ Scaffold(
 }
 ```
 
-**Step 10: Replace custom springs with motionScheme (PENDING)**
+**Step 10: Replace custom springs with motionScheme (COMPLETED)**
 ```kotlin
 // Before:
-animateDpAsState(targetValue = ..., spring(stiffness = Spring.StiffnessMediumLow))
+.animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
 
 // After:
-animateDpAsState(targetValue = ..., animationSpec = MaterialTheme.motionScheme.fastSpatialSpec())
+.animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec())
 ```
 
-**Step 11: Apply emphasized typography (PENDING)**
+**Step 11: Apply emphasized typography (COMPLETED)**
 ```kotlin
 // In settingsSectionHeader:
 Text(
@@ -409,11 +386,11 @@ Text(
 
 1. ✅ Run `./gradlew :app:compileDebugKotlin` and confirm the build succeeds.
 2. ✅ Run `./gradlew :app:testDebugUnitTest` and confirm all tests pass.
-3. ⏳ Verify connected shapes render with correct corner radii (8dp inner, spec outer).
-4. ⏳ Verify `LargeFlexibleTopAppBar` collapses on scroll and expands on scroll-up.
-5. ⏳ Verify animations use `motionScheme` specs (no custom springs).
-6. ⏳ Verify section headers use emphasized typography.
-7. ⏳ Install the debug APK on a device or emulator and verify all patterns work.
+3. ✅ Verify connected shapes render with correct corner radii (8dp inner, spec outer) — confirmed via code review: all row composables use `SegmentedListItem` with `ListItemDefaults.segmentedShapes(index, count)`.
+4. ✅ Verify `LargeFlexibleTopAppBar` collapses on scroll and expands on scroll-up — confirmed via code review: `exitUntilCollapsedScrollBehavior` wired to `Scaffold` via `nestedScroll`.
+5. ✅ Verify animations use `motionScheme` specs (no custom springs) — confirmed: single `spring()` call replaced with `fastSpatialSpec()`.
+6. ✅ Verify section headers use emphasized typography — confirmed: `titleMediumEmphasized` with `primary` color.
+7. ⏳ Install the debug APK on a device or emulator and verify all patterns work (requires physical device).
 
 ## Outcomes & Retrospective
 
