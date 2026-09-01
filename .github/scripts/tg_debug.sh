@@ -31,6 +31,17 @@ fi
 
 echo "==> Building debug APK"
 chmod +x ./gradlew
+
+# Read description from debug.md
+DEBUG_MD="debug.md"
+if [[ ! -f "${DEBUG_MD}" ]] || [[ ! -s "${DEBUG_MD}" ]]; then
+    echo "debug.md not found or empty, please populate it with the summary of your latest changes on this build then rerun this script." >&2
+    echo "Format: start each line with emoji:" >&2
+    echo "  ✨ Add, 🗑️ Remove, 🐛 Fix, 💄 Style, ♻️ Refactor, 📝 Docs, 🔧 Chore, 🚀 Perf" >&2
+    exit 1
+fi
+commit_subject="$(cat "${DEBUG_MD}")"
+
 ./gradlew :app:assembleDebug --console=plain
 
 apk_path="$(find "${APK_DIR}" -maxdepth 1 -name '*.apk' | head -1)"
@@ -49,13 +60,25 @@ version_name="$(grep -oP "versionName='\K[^']+" <<<"${badging}")"
 version_code="$(grep -oP "versionCode='\K[^']+" <<<"${badging}")"
 commit_hash="$(git rev-parse --short HEAD)"
 commit_hash_full="$(git rev-parse HEAD)"
-commit_subject="$(git log -1 --pretty=%s)"
-build_date="$(date '+%Y-%m-%d %H:%M %Z')"
 
 escape_html() {
     sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"
 }
-commit_subject_esc="$(escape_html "${commit_subject}")"
+
+# Process emoji prefixes: replace text markers with emojis
+process_emoji() {
+    sed -E \
+        -e 's/^[[:space:]]*[+][[:space:]]/✨ /' \
+        -e 's/^[[:space:]]*-[[:space:]]/🗑️ /' \
+        -e 's/^[[:space:]]*[x][[:space:]]/🐛 /' \
+        -e 's/^[[:space:]]*[~][[:space:]]/♻️ /' \
+        -e 's/^[[:space:]]*[!][[:space:]]/🚀 /' \
+        -e 's/^[[:space:]]*[=][[:space:]]/💄 /' \
+        -e 's/^[[:space:]]*[\^][[:space:]]/📝 /' \
+        -e 's/^[[:space:]]*[#][[:space:]]/🔧 /' \
+        <<<"$1"
+}
+commit_subject_esc="$(escape_html "$(process_emoji "${commit_subject}")")"
 
 echo "==> Compressing APK"
 debug_apk_name="Hail-v${version_name}-g${commit_hash}-debug.apk"
@@ -118,5 +141,6 @@ send_debug_notification() {
 
 send_debug_notification "84" "debug topic"
 
-rm -f "${zip_path}" "${debug_apk_path}"
+# Clean up temp files and debug.md after successful send
+rm -f "${zip_path}" "${debug_apk_path}" "${DEBUG_MD}"
 echo "==> Done: sent ${zip_name} (${zip_size_mb} MB)"
