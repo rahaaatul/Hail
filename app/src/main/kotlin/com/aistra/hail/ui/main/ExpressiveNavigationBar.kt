@@ -71,9 +71,9 @@ fun ExpressiveNavigationBar(
 
     if (useFloating) {
         val floatingNavItems = listOf(
-            FloatingNavItem(icon = Icons.Filled.Home, contentDescription = null),
-            FloatingNavItem(icon = Icons.Filled.AutoAwesome, contentDescription = null),
-            FloatingNavItem(icon = Icons.Filled.Settings, contentDescription = null),
+            FloatingNavItem(icon = Icons.Filled.Home, label = "Home", contentDescription = null),
+            FloatingNavItem(icon = Icons.Filled.AutoAwesome, label = "Actions", contentDescription = null),
+            FloatingNavItem(icon = Icons.Filled.Settings, label = "Settings", contentDescription = null),
         )
         val selectedIndex = navItems.indexOfFirst { it.id == selectedId }.coerceAtLeast(0)
         FloatingBottomBar(
