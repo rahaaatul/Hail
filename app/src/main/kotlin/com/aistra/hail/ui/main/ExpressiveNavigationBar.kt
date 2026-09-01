@@ -20,7 +20,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,10 +34,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -50,6 +52,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,15 +66,14 @@ import com.aistra.hail.HailApp
 
 private data class NavItem(
     val route: String,
-    val filledIcon: ImageVector,
-    val outlinedIcon: ImageVector,
+    val icon: ImageVector,
     val label: String,
 )
 
 private val navItems = listOf(
-    NavItem("nav_home", Icons.Filled.Home, Icons.Outlined.Home, "Home"),
-    NavItem("nav_actions", Icons.Filled.SmartToy, Icons.Outlined.SmartToy, "Actions"),
-    NavItem("nav_settings", Icons.Filled.Settings, Icons.Outlined.Settings, "Settings"),
+    NavItem("nav_home", Icons.Filled.Home, "Home"),
+    NavItem("nav_actions", Icons.Filled.Automation, "Actions"),
+    NavItem("nav_settings", Icons.Filled.Settings, "Settings"),
 )
 
 @Composable
@@ -150,7 +153,9 @@ private fun TraditionalNavBar(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
@@ -219,7 +224,7 @@ private fun TraditionalNavItem(
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+                    imageVector = item.icon,
                     contentDescription = item.label,
                     tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
                            else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -246,7 +251,9 @@ private fun FloatingPillNavBar(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
         Surface(
@@ -296,14 +303,14 @@ private fun NavPill(
     )
 
     val bgColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer
                   else Color.Transparent,
         animationSpec = tween(300, easing = FastOutSlowInEasing),
         label = "bgColor"
     )
 
     val contentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primary
+        targetValue = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
                       else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(300, easing = FastOutSlowInEasing),
         label = "contentColor"
@@ -331,26 +338,16 @@ private fun NavPill(
         horizontalArrangement = Arrangement.Center
     ) {
         Icon(
-            imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+            imageVector = item.icon,
             contentDescription = item.label,
             tint = contentColor,
             modifier = Modifier.size(24.dp)
         )
-        AnimatedVisibility(
-            visible = selected,
-            enter = expandHorizontally(
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                expandFrom = Alignment.Start
-            ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
-            exit = shrinkHorizontally(
-                animationSpec = tween(300, easing = FastOutSlowInEasing),
-                shrinkTowards = Alignment.Start
-            ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
-        ) {
+        if (selected) {
             Text(
                 text = item.label,
                 fontSize = 14.sp,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                fontWeight = FontWeight.SemiBold,
                 color = contentColor,
                 maxLines = 1,
                 softWrap = false,
