@@ -45,6 +45,7 @@ private val navItems = listOf(
 fun ExpressiveNavigationBar(
     navController: NavController,
     modifier: Modifier = Modifier,
+    useFloating: Boolean = false,
 ) {
     var currentDestination by remember {
         mutableStateOf<NavDestination?>(navController.currentDestination)
@@ -62,32 +63,57 @@ fun ExpressiveNavigationBar(
 
     val currentRoute = currentDestination?.route
 
-    ShortNavigationBar(
-        modifier = modifier.fillMaxWidth(),
-        windowInsets = ShortNavigationBarDefaults.windowInsets,
-        arrangement = ShortNavigationBarArrangement.EqualWeight,
-    ) {
-        navItems.forEach { item ->
-            val selected = item.route == currentRoute
-            ShortNavigationBarItem(
-                selected = selected,
-                onClick = {
-                    if (!selected) {
-                        navController.navigate(item.route) {
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                },
-                icon = {
-                    Icon(
-                        imageVector = if (selected) item.filledIcon else item.outlinedIcon,
-                        contentDescription = item.label,
-                    )
-                },
-                label = { Text(item.label) },
-                iconPosition = NavigationItemIconPosition.Top,
+    if (useFloating) {
+        val selectedIndex = navItems.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
+        val floatingNavItems = navItems.map {
+            FloatingNavItem(
+                icon = if (it.route == currentRoute) it.filledIcon else it.outlinedIcon,
+                label = it.label,
+                contentDescription = it.label,
             )
+        }
+        FloatingBottomBar(
+            items = floatingNavItems,
+            selectedIndex = selectedIndex,
+            onSelected = { index ->
+                val item = navItems[index]
+                if (item.route != currentRoute) {
+                    navController.navigate(item.route) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            },
+            modifier = modifier,
+        )
+    } else {
+        ShortNavigationBar(
+            modifier = modifier.fillMaxWidth(),
+            windowInsets = ShortNavigationBarDefaults.windowInsets,
+            arrangement = ShortNavigationBarArrangement.EqualWeight,
+        ) {
+            navItems.forEach { item ->
+                val selected = item.route == currentRoute
+                ShortNavigationBarItem(
+                    selected = selected,
+                    onClick = {
+                        if (!selected) {
+                            navController.navigate(item.route) {
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+                            contentDescription = item.label,
+                        )
+                    },
+                    label = { Text(item.label) },
+                    iconPosition = NavigationItemIconPosition.Top,
+                )
+            }
         }
     }
 }

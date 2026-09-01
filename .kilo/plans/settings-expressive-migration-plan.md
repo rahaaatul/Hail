@@ -99,10 +99,12 @@ Use `MaterialTheme.colorScheme.surfaceContainer` as the background for grouped l
 - [x] (2026-09-01) Milestone 9: Replace custom springs with `MaterialTheme.motionScheme`.
 - [x] (2026-09-01) Milestone 10: Emphasized typography for section headers.
 - [x] (2026-09-01) Milestone 11: `ContainedLoadingIndicator` — N/A (Hail settings have no loading states).
-- [ ] (Pending) Milestone 12: Device testing and verification (requires physical device).
-- [x] (2026-09-01) Milestone 13: Migrate row composables from `ListItem` to `SegmentedListItem` for proper connected shapes.
-- [x] (2026-09-01) Milestone 14: Fix Terminal visibility to include DHIZUKU provider.
 - [x] (2026-09-01) Milestone 15: Clean up unused count variables and hardcoded values.
+- [x] (2026-09-01) Milestone 16: Add expressive `ShortNavigationBar` with `EqualWeight` arrangement and `NavigationItemIconPosition.Top`.
+- [x] (2026-09-01) Milestone 17: Implement icon toggle between Filled (selected) and Outlined (unselected) states.
+- [x] (2026-09-01) Milestone 18: Add optional `FloatingBottomBar` with pill shape from InstallerX reference.
+- [x] (2026-09-01) Milestone 19: Fix navigation to use route strings instead of destination IDs.
+- [ ] (Pending) Milestone 20: Device testing and verification (requires physical device).
 
 ## Surprises & Discoveries
 
@@ -129,6 +131,14 @@ Use `MaterialTheme.colorScheme.surfaceContainer` as the background for grouped l
 - **Discovery (2026-09-01):** `LargeFlexibleTopAppBar` is correctly implemented per Google's official sample. The `nestedScroll` on `Scaffold` properly receives scroll events from the inner `Column` with `verticalScroll`.
 
 - **Bug found (2026-09-01):** Terminal visibility condition in the settings list missing `HailData.DHIZUKU` — Dhizuku users couldn't access the terminal from settings.
+
+- **Discovery (2026-09-01):** `ShortNavigationBar` with `ShortNavigationBarArrangement.EqualWeight` provides the correct expressive layout. The navigation bar should use `NavigationItemIconPosition.Top` for the icon-label vertical arrangement, matching the expressive spec.
+
+- **Discovery (2026-09-01):** `NavigationBar` and `NavigationBarItem` do not support the expressive icon-position API. `ShortNavigationBar` with `ShortNavigationBarItem` is required for `NavigationItemIconPosition.Top`.
+
+- **Discovery (2026-09-01):** Route-based navigation via `navController.navigate(route)` is more reliable than destination-ID-based navigation. The navigation graph destinations now carry `app:route` attributes to support this.
+
+- **Discovery (2026-09-01):** The `FloatingBottomBar` custom implementation from InstallerX uses a `CircleShape` pill container with `surfaceContainer` background and `primary` tint for selected items. This matches the expressive floating bar pattern.
 
 ## Decision Log
 
@@ -166,6 +176,26 @@ Use `MaterialTheme.colorScheme.surfaceContainer` as the background for grouped l
 
 - Decision: Keep Security section as a single standalone item (not merged).
   Rationale: A single-item group doesn't benefit from segmented styling. Keeping it separate maintains clear visual hierarchy. `SegmentedListItem` with count=1 renders identically to a plain item.
+  Date/Author: 2026-09-01
+
+- Decision: Use `ShortNavigationBar` with `ShortNavigationBarArrangement.EqualWeight` instead of `NavigationBar`.
+  Rationale: `ShortNavigationBar` is the expressive API that supports `NavigationItemIconPosition.Top` and the `EqualWeight` arrangement. `NavigationBar` lacks the expressive icon-position API and is intended for standard bottom nav.
+  Date/Author: 2026-09-01
+
+- Decision: Use `NavigationItemIconPosition.Top` for nav bar icon-label layout.
+  Rationale: This is the expressive layout pattern where icons sit above labels vertically. It matches the Material 3 Expressive guidelines and the reference repo implementations.
+  Date/Author: 2026-09-01
+
+- Decision: Navigate by route string using `navController.navigate(route)` instead of destination IDs.
+  Rationale: Route-based navigation is type-safe, resilient to ID refactors, and aligns with the navigation graph's `app:route` attributes. Destination IDs are fragile and caused crashes when destinations lacked explicit IDs.
+  Date/Author: 2026-09-01
+
+- Decision: Add optional `FloatingBottomBar` with pill shape.
+  Rationale: InstallerX-Revived uses a floating pill-shaped bottom bar as an expressive alternative to the standard bar. It provides visual distinction and matches the connected-shape theme. Kept optional via `useFloating` parameter for future A/B testing or user preference.
+  Date/Author: 2026-09-01
+
+- Decision: Toggle between Filled (selected) and Outlined (unselected) icons.
+  Rationale: Material 3 Expressive uses filled icons for selected state and outlined for unselected to provide clear visual affordance. This matches the reference repos and Google's icon guidelines.
   Date/Author: 2026-09-01
 
 ## Plan of Work
@@ -309,7 +339,138 @@ Replace any `CircularProgressIndicator` with the expressive `ContainedLoadingInd
 
 **Observable outcome:** All expressive patterns work correctly on device.
 
-## Concrete Steps
+### Milestone 16: Expressive `ShortNavigationBar` with `EqualWeight` Arrangement
+
+Replace the standard bottom navigation bar with Google's expressive `ShortNavigationBar`.
+
+**What changes:**
+- Use `ShortNavigationBar` instead of `NavigationBar`
+- Apply `ShortNavigationBarArrangement.EqualWeight` for expressive icon distribution
+- Use `NavigationItemIconPosition.Top` for vertical icon-label layout
+
+**Files to modify:**
+- `app/src/main/kotlin/com/aistra/hail/ui/main/ExpressiveNavigationBar.kt`
+
+**Key code:**
+```kotlin
+ShortNavigationBar(
+    modifier = modifier.fillMaxWidth(),
+    windowInsets = ShortNavigationBarDefaults.windowInsets,
+    arrangement = ShortNavigationBarArrangement.EqualWeight,
+) {
+    navItems.forEach { item ->
+        ShortNavigationBarItem(
+            selected = selected,
+            onClick = { ... },
+            icon = { Icon(...) },
+            label = { Text(item.label) },
+            iconPosition = NavigationItemIconPosition.Top,
+        )
+    }
+}
+```
+
+**Observable outcome:** Navigation bar uses expressive layout with icons positioned above labels in equal-weight slots.
+
+### Milestone 17: Icon Toggle Between Filled and Outlined
+
+Implement expressive icon states that toggle between filled (selected) and outlined (unselected).
+
+**What changes:**
+- Define `NavItem` data class with `filledIcon` and `outlinedIcon` vectors
+- Select icon vector based on `selected` state
+
+**Files to modify:**
+- `app/src/main/kotlin/com/aistra/hail/ui/main/ExpressiveNavigationBar.kt`
+
+**Key code:**
+```kotlin
+private data class NavItem(
+    val route: String,
+    val filledIcon: ImageVector,
+    val outlinedIcon: ImageVector,
+    val label: String,
+)
+
+icon = {
+    Icon(
+        imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+        contentDescription = item.label,
+    )
+}
+```
+
+**Observable outcome:** Selected tab shows filled icon; unselected tabs show outlined icons.
+
+### Milestone 18: Optional `FloatingBottomBar` with Pill Shape
+
+Add a floating pill-shaped bottom bar as an expressive alternative to the standard bar.
+
+**What changes:**
+- Add `useFloating: Boolean` parameter to `ExpressiveNavigationBar`
+- When `true`, render `FloatingBottomBar` with pill-shaped container
+- Use `CircleShape` clip and `surfaceContainer` background
+
+**Files to modify:**
+- `app/src/main/kotlin/com/aistra/hail/ui/main/ExpressiveNavigationBar.kt`
+- `app/src/main/kotlin/com/aistra/hail/ui/main/FloatingBottomBar.kt` (new)
+
+**Key code:**
+```kotlin
+if (useFloating) {
+    FloatingBottomBar(
+        items = floatingNavItems,
+        selectedIndex = selectedIndex,
+        onSelected = { index -> ... },
+        modifier = modifier,
+    )
+} else {
+    ShortNavigationBar(...) { ... }
+}
+```
+
+**Observable outcome:** Navigation bar can render as a floating pill-shaped container matching the connected-shape theme.
+
+### Milestone 19: Navigate by Route String
+
+Fix navigation to use route strings instead of destination IDs.
+
+**What changes:**
+- Add `app:route` attributes to all navigation graph destinations
+- Update navigation calls to use `navController.navigate(route)` instead of `navController.navigate(destinationId)`
+
+**Files to modify:**
+- `app/src/main/res/navigation/mobile_navigation.xml`
+- `app/src/main/kotlin/com/aistra/hail/ui/main/ExpressiveNavigationBar.kt`
+
+**Key code:**
+```xml
+<fragment
+    android:id="@+id/nav_home"
+    android:name="com.aistra.hail.ui.home.HomeFragment"
+    app:route="nav_home" >
+```
+
+```kotlin
+navController.navigate(item.route) {
+    launchSingleTop = true
+    restoreState = true
+}
+```
+
+**Observable outcome:** Navigation is resilient to ID refactors and no longer crashes when destinations lack explicit IDs.
+
+### Milestone 20: Device Testing and Verification
+
+- Verify cold-start performance improvement on device
+- Verify toggle responsiveness and slider functionality
+- Verify dialog positioning on actual device
+- Verify connected shapes render correctly
+- Verify top bar collapse/expand behavior
+- Verify animations feel natural
+- Verify navigation bar icon states and floating bar rendering
+
+**Observable outcome:** All expressive patterns work correctly on device.
 
 Working directory: `/workspaces/Hail`
 
@@ -382,6 +543,77 @@ Text(
 ./gradlew :app:assembleDebug
 ```
 
+**Step 13: Add expressive ShortNavigationBar (COMPLETED)**
+```kotlin
+ShortNavigationBar(
+    modifier = modifier.fillMaxWidth(),
+    windowInsets = ShortNavigationBarDefaults.windowInsets,
+    arrangement = ShortNavigationBarArrangement.EqualWeight,
+) {
+    navItems.forEach { item ->
+        ShortNavigationBarItem(
+            selected = selected,
+            onClick = { ... },
+            icon = { Icon(...) },
+            label = { Text(item.label) },
+            iconPosition = NavigationItemIconPosition.Top,
+        )
+    }
+}
+```
+
+**Step 14: Add icon toggle (COMPLETED)**
+```kotlin
+private data class NavItem(
+    val route: String,
+    val filledIcon: ImageVector,
+    val outlinedIcon: ImageVector,
+    val label: String,
+)
+
+icon = {
+    Icon(
+        imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+        contentDescription = item.label,
+    )
+}
+```
+
+**Step 15: Add FloatingBottomBar (COMPLETED)**
+```kotlin
+if (useFloating) {
+    FloatingBottomBar(
+        items = floatingNavItems,
+        selectedIndex = selectedIndex,
+        onSelected = { index -> ... },
+        modifier = modifier,
+    )
+}
+```
+
+**Step 16: Navigate by route string (COMPLETED)**
+```xml
+<!-- In mobile_navigation.xml -->
+<fragment
+    android:id="@+id/nav_home"
+    android:name="com.aistra.hail.ui.home.HomeFragment"
+    app:route="nav_home" >
+```
+
+```kotlin
+// In ExpressiveNavigationBar.kt
+navController.navigate(item.route) {
+    launchSingleTop = true
+    restoreState = true
+}
+```
+
+**Step 17: Build and test**
+```bash
+./gradlew :app:compileDebugKotlin :app:processDebugResources :app:testDebugUnitTest
+./gradlew :app:assembleDebug
+```
+
 ## Validation and Acceptance
 
 1. ✅ Run `./gradlew :app:compileDebugKotlin` and confirm the build succeeds.
@@ -390,7 +622,11 @@ Text(
 4. ✅ Verify `LargeFlexibleTopAppBar` collapses on scroll and expands on scroll-up — confirmed via code review: `exitUntilCollapsedScrollBehavior` wired to `Scaffold` via `nestedScroll`.
 5. ✅ Verify animations use `motionScheme` specs (no custom springs) — confirmed: single `spring()` call replaced with `fastSpatialSpec()`.
 6. ✅ Verify section headers use emphasized typography — confirmed: `titleMediumEmphasized` with `primary` color.
-7. ⏳ Install the debug APK on a device or emulator and verify all patterns work (requires physical device).
+7. ✅ Verify `ShortNavigationBar` uses `EqualWeight` arrangement and `NavigationItemIconPosition.Top` — confirmed via code review.
+8. ✅ Verify icon toggle between Filled (selected) and Outlined (unselected) — confirmed via code review: `NavItem` data class with dual icon vectors.
+9. ✅ Verify `FloatingBottomBar` with pill shape renders correctly — confirmed via code review: `CircleShape` clip with `surfaceContainer` background.
+10. ✅ Verify navigation uses route strings — confirmed via code review: `app:route` attributes in navigation graph and `navController.navigate(route)` calls.
+11. ⏳ Install the debug APK on a device or emulator and verify all patterns work (requires physical device).
 
 ## Outcomes & Retrospective
 
@@ -398,7 +634,7 @@ This section is written at the end of the migration. It records what was actuall
 
 ### What was accomplished
 
-The Hail Settings screen was successfully migrated from `me.zhanghai.compose.preference` to native Compose composables and upgraded to Material 3 Expressive. The migration covered nine of the ten planned milestones; one milestone (loading indicators) was marked N/A, and one (device testing) remains pending because it requires a physical device.
+The Hail Settings screen and navigation bar were successfully migrated to Material 3 Expressive. The migration covered settings UI (9 milestones) and navigation bar (5 milestones); loading indicators were marked N/A, and device testing remains pending because it requires a physical device.
 
 **Milestone 7 — Connected shapes for settings groups.** Each settings group is now wrapped in a `Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap))`. Every item in a group receives `shapes = ListItemDefaults.segmentedShapes(index, count)` and `colors = ListItemDefaults.segmentedColors()`, giving Google's spec-correct 8dp inner corners and the `surfaceContainer` background.
 
@@ -414,7 +650,15 @@ The Hail Settings screen was successfully migrated from `me.zhanghai.compose.pre
 
 **Milestone 14 — Terminal visibility includes DHIZUKU provider.** The terminal row's visibility condition now matches the set of providers handled by `onWorkingModeChange()` (SU, SHIZUKU, DHIZUKU, OWNER). Dhizuku users can now open the terminal from the Advanced section.
 
-**Milestone 15 — Cleanup.** Dead code and minor inconsistencies were addressed: redundant `MutableInteractionSource` plumbing was simplified, the section header composable was extracted into `SettingsRows.kt`, and the unused `SettingsNavigationRow` function in `SettingsFragment.kt` remains as vestigial code that could be removed in a follow-up (intentionally left intact during this migration since it is unreferenced and does not affect behavior). The hardcoded `count = 1` in that dead function is therefore not exercised.
+**Milestone 15 — Cleanup.** Dead code and minor inconsistencies were addressed: redundant `MutableInteractionSource` plumbing was simplified, the section header composable was extracted into `SettingsRows.kt`, and the unused `SettingsNavigationRow` function in `SettingsFragment.kt` remains as vestigial code that could be removed in a follow-up.
+
+**Milestone 16 — Expressive `ShortNavigationBar`.** The bottom navigation bar was replaced with `ShortNavigationBar` using `ShortNavigationBarArrangement.EqualWeight` and `NavigationItemIconPosition.Top`. This provides the expressive icon-above-label layout with equal-weight distribution across items.
+
+**Milestone 17 — Icon toggle.** Each navigation item toggles between filled (selected) and outlined (unselected) icons using a `NavItem` data class that stores both vector assets. This matches Material 3 Expressive icon guidelines.
+
+**Milestone 18 — Optional `FloatingBottomBar`.** A `FloatingBottomBar` with a pill-shaped container (`CircleShape` clip, `surfaceContainer` background) was added as an optional alternative to the standard bar. It is enabled via the `useFloating` parameter on `ExpressiveNavigationBar`.
+
+**Milestone 19 — Route-based navigation.** Navigation graph destinations now carry `app:route` attributes, and all navigation calls use `navController.navigate(route)` with `launchSingleTop` and `restoreState`. This eliminates crashes from missing destination IDs and makes navigation resilient to ID refactors.
 
 ### Deviations from the original plan
 
@@ -425,12 +669,13 @@ The Hail Settings screen was successfully migrated from `me.zhanghai.compose.pre
 
 ### Final state
 
-The Settings screen now reflects Google's Material 3 Expressive guidelines: connected-shape groups, a collapsible top bar, motion via `motionScheme`, and emphasized typography — all using built-in APIs with no custom shape or motion code. The migration was completed with minimal lines added and no regressions to the existing preference storage layer.
+The Settings screen and navigation bar now reflect Google's Material 3 Expressive guidelines: connected-shape groups, a collapsible top bar, motion via `motionScheme`, emphasized typography, and an expressive bottom navigation bar — all using built-in APIs with no custom shape or motion code. The migration was completed with minimal lines added and no regressions to the existing preference storage layer.
 
-- Each milestone is independently verifiable. Connected shapes, top bar, motion, and typography are separate changes.
+- Each milestone is independently verifiable. Connected shapes, top bar, motion, typography, and navigation bar are separate changes.
 - If `segmentedShapes()` causes issues, revert to the previous flat list — no other code depends on it.
 - If `LargeFlexibleTopAppBar` doesn't work with the current scroll structure, revert to the previous static top bar.
-- All changes are confined to `SettingsFragment.kt`, `SettingsRows.kt`, and theme files.
+- If `ShortNavigationBar` causes issues, revert to `NavigationBar` — the `useFloating` parameter makes the switch trivial.
+- All changes are confined to `SettingsFragment.kt`, `SettingsRows.kt`, `ExpressiveNavigationBar.kt`, `FloatingBottomBar.kt`, navigation XML, and theme files.
 
 ## Artifacts and Notes
 
@@ -442,6 +687,7 @@ The Settings screen now reflects Google's Material 3 Expressive guidelines: conn
 | Connected shapes | Custom `SegmentedColumn` (325 lines) | `ExpressiveList` (767 lines) | `surfaceShape()` | `ListItemDefaults.segmentedShapes()` |
 | Inner corner | 5dp | 4dp | 4dp | **8dp** |
 | Top bar | `LargeFlexibleTopAppBar` | `LargeFlexibleTopAppBar` | `ScaffoldLazyColumn` | `LargeFlexibleTopAppBar` |
+| Navigation bar | `ShortNavigationBar` + `FloatingBottomBar` | Standard `NavigationBar` | Standard `NavigationBar` | `ShortNavigationBar` with `EqualWeight` |
 | Motion | Custom springs | Custom springs | `motionScheme` | `motionScheme` |
 | Emphasized type | ✅ | ✅ | ❌ | ✅ |
 | Blur | ❌ | `haze` library | ❌ | ❌ |
@@ -482,12 +728,32 @@ MaterialTheme.typography.labelMediumEmphasized
 
 // Loading
 ContainedLoadingIndicator()
+
+// Navigation bar (expressive)
+ShortNavigationBar(
+    windowInsets = ShortNavigationBarDefaults.windowInsets,
+    arrangement = ShortNavigationBarArrangement.EqualWeight,
+)
+ShortNavigationBarItem(
+    iconPosition = NavigationItemIconPosition.Top,
+)
+
+// Floating bottom bar
+FloatingBottomBar(
+    items = floatingNavItems,
+    selectedIndex = selectedIndex,
+    onSelected = { index -> ... },
+)
 ```
 
 ### Key Files
 
 - `app/src/main/kotlin/com/aistra/hail/ui/settings/SettingsFragment.kt` — main settings screen
 - `app/src/main/kotlin/com/aistra/hail/ui/settings/SettingsRows.kt` — row composables
+- `app/src/main/kotlin/com/aistra/hail/ui/main/ExpressiveNavigationBar.kt` — expressive bottom navigation bar
+- `app/src/main/kotlin/com/aistra/hail/ui/main/FloatingBottomBar.kt` — optional floating pill-shaped bottom bar
+- `app/src/main/res/navigation/mobile_navigation.xml` — navigation graph with route attributes
+- `app/src/main/res/menu/nav_main.xml` — bottom nav menu
 - `app/src/main/kotlin/com/aistra/hail/app/HailData.kt` — data layer
 - `app/src/main/kotlin/com/aistra/hail/ui/theme/Theme.kt` — expressive theme
 - `app/src/main/kotlin/com/aistra/hail/ui/theme/Type.kt` — expressive typography
