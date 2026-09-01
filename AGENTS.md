@@ -13,6 +13,18 @@ The project uses:
 - Shizuku/Dhizuku for privileged operations
 - LSPosed/Xposed hooks for system-level app management
 
+## Skills
+
+Project skills live in `.kilo/skills/`. Load the relevant one before starting work in its area:
+
+- **`.kilo/skills/material3-expressive/SKILL.md`** — Material 3 Expressive in Jetpack Compose (`MotionScheme.expressive()`, `LoadingIndicator`, `DockedToolbar`, `FlexibleBottomAppBar`, `ButtonGroup`, morphing shapes, 48-role color system, Android 16+ edge-to-edge/predictive back). **Required reference for any Compose UI work.** Hail already pins `material3 1.5.0-alpha27` and `compose-bom 2026.08.00`; every API in the skill is available without new dependencies.
+- **`.kilo/skills/multi-agent-coordination/SKILL.md`** — fan-out/fan-in, pipeline, hierarchical, blackboard, handoff, and consensus patterns across CrewAI, LangGraph, AG2, OpenAI Agents SDK, Google ADK, and Claude Code. **Required reference whenever a task is large enough to be split.** Use it to deploy as many agents as needed and delegate work from start to finish: break the task into independent pieces, fan out to parallel sub-agents (or worktrees), then fan in to merge/verify.
+- **`.kilo/skills/exec-plan-template/SKILL.md`** — OpenAI ExecPlan template; required structure for new feature plans.
+- **`.kilo/skills/android-build-setup/SKILL.md`** — JDK 26, Android SDK, Gradle wrapper setup.
+- **`.kilo/skills/ollama-lancedb-indexing/SKILL.md`** — semantic search indexing setup.
+
+For UI work, **read `material3-expressive/SKILL.md` first** and follow it for theme setup, component selection, motion, shape, color, accessibility, and Android 16+ requirements.
+
 ## Build and Test Commands
 
 All commands assume the working directory is the repository root (`/workspaces/Hail`).

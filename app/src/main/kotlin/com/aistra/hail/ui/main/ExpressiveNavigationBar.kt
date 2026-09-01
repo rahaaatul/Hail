@@ -31,7 +31,7 @@ data class NavItem(
 private val navItems = listOf(
     NavItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home),
     NavItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
-    NavItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings),
+    NavItem(R.id.nav_settings, R.drawable.ic_outline_settings, R.string.title_settings),
 )
 
 @Composable
