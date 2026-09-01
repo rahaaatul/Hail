@@ -953,6 +953,188 @@ The Settings screen and navigation bar now reflect Google's Material 3 Expressiv
 - If `ShortNavigationBar` causes issues, revert to `NavigationBar` — the `useFloating` parameter makes the switch trivial.
 - All changes are confined to `SettingsFragment.kt`, `SettingsRows.kt`, `ExpressiveNavigationBar.kt`, `FloatingBottomBar.kt`, navigation XML, and theme files.
 
+---
+
+## Navigation Bar: Implementation Best Practices
+
+This section provides concrete implementation guidance based on Google's official documentation, the three reference repos, and Compose animation best practices.
+
+### Animation API Selection Guide
+
+From [Google's Choose an Animation API](https://developer.android.com/develop/ui/compose/animation/choose-api):
+
+| Need | API | Why |
+|------|-----|-----|
+| Icon swap (Filled ↔ Outlined) | `Crossfade` | Simplest content swap, keeps both compositions alive during transition |
+| Label appear/disappear | `AnimatedVisibility` + `expandHorizontally` | Removes from composition when hidden, smooth expand |
+| Press feedback | `graphicsLayer { scaleX/Y }` | GPU-accelerated, no recomposition |
+| Color transitions | `animateColorAsState` | Single property animation |
+| Shape morphing | `clip(shape)` with conditional | Simple, no animation needed |
+
+### Implementation Patterns
+
+#### Pattern 1: Crossfade for Icon Transitions (KeyGuard style)
+
+```kotlin
+@Composable
+private fun NavigationIcon(
+    selected: Boolean,
+    filledIcon: ImageVector,
+    outlinedIcon: ImageVector,
+    contentDescription: String?
+) {
+    Crossfade(targetState = selected, label = "iconCrossfade") { isSelected ->
+        Icon(
+            imageVector = if (isSelected) filledIcon else outlinedIcon,
+            contentDescription = contentDescription,
+        )
+    }
+}
+```
+
+**Why Crossfade:**
+- Simplest content swap API
+- Keeps both compositions alive during transition (no flicker)
+- Pure opacity transition (no slide/scale)
+- `animationSpec` controls the feel: `tween(150)` for UI, `tween(300)` for content
+
+#### Pattern 2: AnimatedVisibility for Label Reveal (AZenith style)
+
+```kotlin
+AnimatedVisibility(
+    visible = selected,
+    enter = expandHorizontally(
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        expandFrom = Alignment.Start
+    ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+    exit = shrinkHorizontally(
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        shrinkTowards = Alignment.Start
+    ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
+) {
+    Text(
+        text = item.label,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = contentColor,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(start = 5.dp)
+    )
+}
+```
+
+**Why AnimatedVisibility:**
+- Removes content from composition when hidden (accessibility)
+- Combines `expandHorizontally` + `fadeIn` for smooth reveal
+- `expandFrom = Alignment.Start` expands from the start edge
+- `FastOutSlowInEasing` for natural deceleration
+
+#### Pattern 3: graphicsLayer for Press Feedback
+
+```kotlin
+val interactionSource = remember { MutableInteractionSource() }
+val isPressed by interactionSource.collectIsPressedAsState()
+val pressScale by animateFloatAsState(
+    targetValue = if (isPressed) 0.95f else 1f,
+    animationSpec = spring(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    ),
+    label = "pressScale"
+)
+
+// Apply to modifier:
+Modifier.graphicsLayer {
+    scaleX = pressScale
+    scaleY = pressScale
+}
+```
+
+**Why graphicsLayer:**
+- Runs on GPU (RenderThread)
+- Does NOT trigger recomposition or relayout
+- Spring physics for natural feel
+
+#### Pattern 4: enableEdgeToEdge for Edge-to-Edge
+
+```kotlin
+// In MainActivity.onCreate():
+override fun onCreate(savedInstanceState: Bundle?) {
+    enableEdgeToEdge()
+    super.onCreate(savedInstanceState)
+    // ...
+}
+
+// Disable navigation bar contrast (Android 10+):
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    window.isNavigationBarContrastEnforced = false
+}
+```
+
+**Why enableEdgeToEdge:**
+- Official Google API for edge-to-edge rendering
+- Automatically handles status bar and navigation bar insets
+- Required for proper expressive UI
+
+#### Pattern 5: Window Insets for Navigation Bar
+
+```kotlin
+// Option A: Modifier approach (preferred)
+Surface(
+    modifier = Modifier
+        .fillMaxWidth()
+        .windowInsetsPadding(WindowInsets.navigationBars)
+) { /* content */ }
+
+// Option B: Padding values approach
+val navBarHeight = WindowInsets.navigationBars
+    .asPaddingValues()
+    .calculateBottomPadding()
+
+Column(
+    modifier = Modifier.padding(bottom = navBarHeight)
+) { /* content */ }
+```
+
+**Why windowInsetsPadding:**
+- Respects 3-button nav, gesture nav, and different nav bar heights
+- Automatically adapts to device configuration
+- Works with edge-to-edge enabled
+
+### Performance Rules
+
+From [Compose Performance](https://developer.android.com/develop/ui/compose/performance):
+
+1. **Use `graphicsLayer` for transforms** — runs on GPU, no recomposition
+2. **Use `deferred reads`** — read animated values in lambdas, not composable body
+3. **Use `rememberUpdatedState` for callbacks** — prevents restarting animations
+4. **Use `derivedStateOf` for computed values** — avoids unnecessary recompositions
+5. **Keep animated composables small** — extract into focused composables
+
+### Anti-Patterns to Avoid
+
+| Anti-Pattern | Fix |
+|--------------|-----|
+| `Modifier.scale()` for press feedback | Use `graphicsLayer { scaleX/Y }` |
+| `tween(300)` for all animations | Use `motionScheme.fastEffectsSpec()` for spring physics |
+| `if (selected) Text(...)` without animation | Use `AnimatedVisibility` for smooth reveal |
+| Hardcoded `padding(bottom = 80.dp)` | Use `windowInsetsPadding(WindowInsets.navigationBars)` |
+| Reading animated value in composable body | Read in lambda: `Modifier.graphicsLayer { scaleX = anim.value }` |
+
+### Implementation Checklist for Hail
+
+- [ ] Add `enableEdgeToEdge()` to `MainActivity.onCreate()`
+- [ ] Add `window.isNavigationBarContrastEnforced = false` (Android 10+)
+- [ ] Add `Crossfade` for icon transitions (Filled ↔ Outlined)
+- [ ] Add `AnimatedVisibility` + `expandHorizontally` for label reveal
+- [ ] Use `graphicsLayer` for press feedback (already done)
+- [ ] Use `motionScheme.fastEffectsSpec()` for color transitions
+- [ ] Add `semantics` for accessibility (screen reader support)
+- [ ] Add `consumeWindowInsets` to prevent double-padding
+- [ ] Test on device with 3-button nav, gesture nav, and different screen sizes
+
 ## Artifacts and Notes
 
 ### Reference Repo Analysis
