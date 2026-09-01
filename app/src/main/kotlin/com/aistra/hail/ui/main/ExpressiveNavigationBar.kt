@@ -24,12 +24,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -64,7 +64,7 @@ private data class NavItem(
 
 private val navItems = listOf(
     NavItem("nav_home", Icons.Filled.Home, Icons.Outlined.Home, "Home"),
-    NavItem("nav_actions", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome, "Actions"),
+    NavItem("nav_actions", Icons.Filled.SmartToy, Icons.Outlined.SmartToy, "Actions"),
     NavItem("nav_settings", Icons.Filled.Settings, Icons.Outlined.Settings, "Settings"),
 )
 
@@ -191,7 +191,7 @@ private fun TraditionalNavItem(
 
     Column(
         modifier = modifier
-            .height(64.dp)
+            .height(72.dp)
             .scale(pressScale)
             .clip(RoundedCornerShape(16.dp))
             .clickable(

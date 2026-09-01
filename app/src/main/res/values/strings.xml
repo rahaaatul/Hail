@@ -204,6 +204,6 @@
     <string name="settings_color_spec">Color Spec</string>
     <string name="settings_dynamic_color">Dynamic Color</string>
     <string name="settings_seed_color">Seed Color</string>
-    <string name="use_floating_bottom_bar">Floating Bottom Bar</string>
+    <string name="use_floating_bottom_bar">Floating bar</string>
     <string name="use_floating_bottom_bar_desc">Use a floating pill-shaped navigation bar</string>
 </resources>
