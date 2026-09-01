@@ -100,6 +100,9 @@ Use `MaterialTheme.colorScheme.surfaceContainer` as the background for grouped l
 - [ ] (Pending) Milestone 10: Emphasized typography for section headers.
 - [ ] (Pending) Milestone 11: `ContainedLoadingIndicator` where applicable.
 - [ ] (Pending) Milestone 12: Device testing and verification.
+- [ ] (Pending) Milestone 13: Migrate row composables from `ListItem` to `SegmentedListItem` for proper connected shapes.
+- [ ] (Pending) Milestone 14: Fix Terminal visibility to include DHIZUKU provider.
+- [ ] (Pending) Milestone 15: Clean up unused count variables and hardcoded values.
 
 ## Surprises & Discoveries
 
@@ -118,6 +121,14 @@ Use `MaterialTheme.colorScheme.surfaceContainer` as the background for grouped l
 - Observation: Reading from `HailData.xxx` directly in composables does NOT trigger recomposition. All switches/sliders/lists must use local `mutableStateOf` state holders.
 
 - Observation: `ListItemDefaults.segmentedShapes()` requires `@OptIn(ExperimentalMaterial3ExpressiveApi::class)`.
+
+- **Discovery (2026-09-01):** `ListItemDefaults.segmentedShapes()` returns `ListItemShapes`, NOT `Shape`. It only works with `SegmentedListItem`, NOT `ListItem`. The initial implementation incorrectly used `ListItem` with shape/colors parameters that don't exist in material3 1.5.0-alpha27. This caused compilation errors and the connected shapes were never visually applied.
+
+- **Discovery (2026-09-01):** `SegmentedListItem` has 4 overloads: non-interactive, click (onClick), single-selection (selected + onClick), and multi-selection (checked + onCheckedChange). All accept `shapes: ListItemShapes` and `colors: ListItemColors` parameters.
+
+- **Discovery (2026-09-01):** `LargeFlexibleTopAppBar` is correctly implemented per Google's official sample. The `nestedScroll` on `Scaffold` properly receives scroll events from the inner `Column` with `verticalScroll`.
+
+- **Bug found (2026-09-01):** Terminal visibility condition in the settings list missing `HailData.DHIZUKU` — Dhizuku users couldn't access the terminal from settings.
 
 ## Decision Log
 
@@ -145,6 +156,18 @@ Use `MaterialTheme.colorScheme.surfaceContainer` as the background for grouped l
   Rationale: Settings is a simple read/write surface with no async loading or cross-fragment coordination. A ViewModel would add indirection without benefit.
   Date/Author: 2026-08-31
 
+- Decision: Migrate all row composables from `ListItem` to `SegmentedListItem` for proper connected shapes.
+  Rationale: `ListItemDefaults.segmentedShapes()` returns `ListItemShapes` which only works with `SegmentedListItem`. Using it with `ListItem` has no visual effect. This is Google's official API for expressive connected groups.
+  Date/Author: 2026-09-01
+
+- Decision: Add `HailData.DHIZUKU` to Terminal visibility condition.
+  Rationale: Dhizuku is a root-like provider that should grant terminal access, consistent with `onWorkingModeChange()` which handles DHIZUKU as a first-class provider.
+  Date/Author: 2026-09-01
+
+- Decision: Keep Security section as a single standalone item (not merged).
+  Rationale: A single-item group doesn't benefit from segmented styling. Keeping it separate maintains clear visual hierarchy. `SegmentedListItem` with count=1 renders identically to a plain item.
+  Date/Author: 2026-09-01
+
 ## Plan of Work
 
 ### Milestone 7: Connected Shapes for Settings Groups
@@ -153,9 +176,12 @@ Replace the current `Column`-based settings list with connected-shape groups usi
 
 **What changes:**
 - Wrap each settings group in a `Column` with `Arrangement.spacedBy(ListItemDefaults.SegmentedGap)`
+- Use `SegmentedListItem` instead of `ListItem` for all row composables
 - Apply `ListItemDefaults.segmentedShapes(index, count)` to each item
 - Apply `ListItemDefaults.segmentedColors()` for proper surface container background
 - Add `@OptIn(ExperimentalMaterial3ExpressiveApi::class)` to the file
+
+**Important:** `segmentedShapes()` returns `ListItemShapes` which only works with `SegmentedListItem`. Using `ListItem` has no visual effect. This is why Milestone 13 (migration) is required.
 
 **Files to modify:**
 - `app/src/main/kotlin/com/aistra/hail/ui/settings/SettingsFragment.kt`
