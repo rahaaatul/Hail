@@ -1,203 +1,176 @@
 # Kotlin & Android Ultimate Skill
 
-This is the definitive reference for idiomatic Kotlin, Coroutines, Flow, Jetpack Compose, Ktor, and Kotlin Multiplatform (KMP) development. It synthesizes official documentation, 2026 best practices, and production patterns.
+Comprehensive reference for idiomatic Kotlin, coroutines, Flow, Ktor, and Android development. Combines best practices from official documentation, community patterns, and production-tested conventions current as of 2026.
 
-## Scope
-
-Use this skill when:
-- Writing or reviewing Kotlin code for Android, KMP, or Ktor backends
-- Designing asynchronous architectures with Coroutines and Flow
-- Structuring multiplatform shared code
-- Implementing server-side Ktor applications
-- Migrating legacy Java or callback-based code to Kotlin
+**Use this skill when:**
+- Writing or reviewing Kotlin code (Android, KMP, or server-side)
+- Designing asynchronous architectures with coroutines and Flow
+- Building Ktor backend services
+- Implementing Kotlin Multiplatform (KMP) shared logic
+- Reviewing code quality, testing strategies, or structured concurrency
 
 ---
 
-## 1. Coroutine Fundamentals
+## Table of Contents
 
-### 1.1 Structured Concurrency
+1. [Kotlin Fundamentals](#1-kotlin-fundamentals)
+2. [Coroutines & Structured Concurrency](#2-coroutines--structured-concurrency)
+3. [Flow & Reactive Streams](#3-flow--reactive-streams)
+4. [Dispatcher Selection](#4-dispatcher-selection)
+5. [Error Handling & Cancellation](#5-error-handling--cancellation)
+6. [Android Patterns](#6-android-patterns)
+7. [Ktor Server Patterns](#7-ktor-server-patterns)
+8. [Kotlin Multiplatform (KMP)](#8-kotlin-multiplatform-kmp)
+9. [Testing](#9-testing)
+10. [Detekt & Ktlint Standards](#10-detekt--ktlint-standards)
+11. [Java-to-Kotlin Migration](#11-java-to-kotlin-migration)
+12. [Anti-Patterns Checklist](#12-anti-patterns-checklist)
 
-Coroutines form a tree hierarchy. A parent waits for all children. If a parent fails or is cancelled, all children are recursively cancelled.
+---
 
+## 1. Kotlin Fundamentals
+
+### Core Principles
+- **Null safety**: Prefer nullable types (`T?`) over `@Nullable` annotations. Use safe calls (`?.`), Elvis (`?:`), and `let` over explicit null checks.
+- **Immutability**: Prefer `val` over `var`, `List` over `MutableList`, `copy()` over mutation.
+- **Expression-oriented**: Prefer `if`/`when` expressions over statements; use `runCatching { }` for safe fallible operations.
+- **Scope functions**: Use `let` (transform + null-check), `apply` (configure + return self), `run` (compute + return result), `also` (side-effect + return self), `with` (operate on non-null receiver).
+- **Sealed classes/interfaces** for state models — exhaustive `when` without `else`.
+
+### Idiomatic Patterns
 ```kotlin
-// ✅ CORRECT: Structured concurrency with coroutineScope
-suspend fun fetchAllData(): CombinedData = coroutineScope {
-    val user = async { repository.getUser() }
-    val orders = async { repository.getOrders() }
-    CombinedData(user.await(), orders.await())
+// Data class with copy()
+data class User(val id: String, val name: val email: String)
+
+// Sealed state model
+sealed interface UiState<out T> {
+    data object Loading : UiState<Nothing>
+    data class Success<T>(val data: T) : UiState<T>
+    data class Error(val cause: Throwable) : UiState<Nothing>
 }
 
-// ❌ WRONG: GlobalScope breaks structured concurrency
-fun loadData(): Job = GlobalScope.launch {
-    // Orphaned coroutine — no lifecycle management
-}
+// Extension functions over utility classes
+fun String.isEmailValid(): Boolean = contains("@") && contains(".")
+
+// Type-safe builders / DSL
+fun user(block: UserBuilder.() -> Unit): User = UserBuilder().apply(block).build()
 ```
 
-### 1.2 Scope Selection Guide
+### Collections
+```kotlin
+// Prefer read-only operations
+val active = users.filter { it.isActive }.map { it.name }
 
-| Context | Scope | Cancellation Trigger |
-|---------|-------|---------------------|
-| ViewModel | `viewModelScope` | `ViewModel.onCleared()` |
-| Activity / Fragment / LifecycleOwner | `lifecycleScope` | `Lifecycle.State.DESTROYED` |
-| Suspend function (fail-together) | `coroutineScope { }` | First child failure cancels all siblings |
-| Suspend function (independent failures) | `supervisorScope { }` | One child failure does not cancel siblings |
+// Use sequence() for chained operations on large collections
+val result = largeList.asSequence()
+    .filter { it.isValid }
+    .map { it.transform() }
+    .take(10)
+    .toList()
+
+// Destructuring
+val (first, second) = pair
+for ((key, value) in map) { }
+```
+
+---
+
+## 2. Coroutines & Structured Concurrency
+
+### The Golden Rule
+Coroutines form a **tree hierarchy** of parent/child tasks with linked lifecycles. A parent waits for children; parent cancellation cancels all children recursively.
+
+### Scope Selection Decision Table
+
+| Context | Scope | Cancellation point |
+|---------|-------|-------------------|
+| ViewModel | `viewModelScope` | `onCleared()` |
+| Fragment/Activity | `viewLifecycleOwner.lifecycleScope` | `Lifecycle.State.DESTROYED` |
+| Suspend function (fail-together) | `coroutineScope { }` | First child failure cancels all |
+| Suspend function (independent failures) | `supervisorScope { }` | One failure doesn't cancel siblings |
+| Compose composable | `rememberCoroutineScope()` | Composition disposal |
 | Tests | `runTest` | Virtual time, deterministic |
-| Entry points only (`main()`) | `runBlocking` | Blocks current thread |
-| **NEVER in production** | `GlobalScope` | No lifecycle — causes leaks |
+| App-wide background | Custom `CoroutineScope` (DI) | Managed by owner |
+| **NEVER in production** | `GlobalScope` | No lifecycle → leaks |
 
-**Decision tree:**
+### Structured Concurrency Patterns
+```kotlin
+// FAIL-TOGETHER: first exception cancels siblings
+suspend fun loadDashboard(): Dashboard = coroutineScope {
+    val user = async { repo.getUser() }
+    val orders = async { repo.getOrders() }
+    Dashboard(user.await(), orders.await())  // if user fails, orders cancelled
+}
+
+// INDEPENDENT FAILURES: each sibling isolated
+suspend fun loadAll(): Combined = supervisorScope {
+    val a = async { riskyCallA() }
+    val b = async { riskyCallB() }
+    Combined(a.awaitCatching().getOrNull(), b.awaitCatching().getOrNull())
+}
+
+// PARALLEL DECOMPOSITION with coroutineScope
+suspend fun processItems(items: List<Item>): List<Result> = coroutineScope {
+    items.map { async { process(it) } }.awaitAll()
+}
 ```
-Are you in a ViewModel?
-├── Yes → viewModelScope
-└── No
-    ├── Are you in a Fragment/Activity/LifecycleOwner?
-    │   ├── Yes → lifecycleScope (+ repeatOnLifecycle for Flow collection)
-    │   └── No
-    │       ├── Is this test code?
-    │       │   ├── Yes → runTest { }
-    │       │   └── No
-    │       │       ├── Failures should cancel siblings?
-    │       │       │   ├── Yes → coroutineScope { }
-    │       │       │   └── No → supervisorScope { }
-```
 
-### 1.3 Coroutine Builders
+### launch vs async
 
-| Builder | Returns | Use When |
+| Builder | Returns | Use when |
 |---------|---------|----------|
-| `launch` | `Job` | Fire-and-forget work; no result needed |
-| `async` | `Deferred<T>` | Parallel computation with a result; call `.await()` |
-| `coroutineScope` | Result of block | Suspend function that needs child coroutines |
-| `supervisorScope` | Result of block | Like `coroutineScope` but child failures are independent |
-| `withContext` | Result of block | Switch dispatcher for a section of code |
-| `runBlocking` | Result of block | Bridging sync/async code in `main()` or tests only |
+| `launch` | `Job` | Fire-and-forget; no result needed |
+| `async` | `Deferred<T>` | Parallel computation; result needed via `await()` |
 
-```kotlin
-// Parallel decomposition
-suspend fun loadDashboard(): Dashboard = supervisorScope {
-    val profile = async { api.getProfile() }
-    val feed = async { api.getFeed() }
-    val notifications = async { api.getNotifications() }
-    Dashboard(profile.await(), feed.await(), notifications.await())
-}
-```
-
-### 1.4 Dispatchers
-
-| Dispatcher | Use For | Thread Pool |
-|------------|---------|-------------|
-| `Dispatchers.Main` | UI updates, Compose state mutations | Main/UI thread |
-| `Dispatchers.Main.immediate` | Immediate UI work when already on main | Main/UI thread |
-| `Dispatchers.IO` | Network, file I/O, database queries | Expanded thread pool |
-| `Dispatchers.Default` | CPU-intensive work, data processing | Fixed to CPU core count |
-| `Dispatchers.Unconfined` | Not recommended for production | No thread confinement |
-
-**Rule:** Inject dispatchers rather than hardcoding them. This enables testability with `TestDispatcher`.
-
-```kotlin
-// ✅ CORRECT: Injected dispatchers
-class UserRepository(
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
-    suspend fun getUser(): User = withContext(ioDispatcher) {
-        api.fetchUser()
-    }
-}
-
-// ❌ WRONG: Hardcoded dispatcher
-class UserRepository {
-    suspend fun getUser(): User = withContext(Dispatchers.IO) {
-        api.fetchUser()  // Not testable
-    }
-}
-```
-
-### 1.5 Cancellation
-
-Cancellation is **cooperative**. A coroutine is only cancelled when it suspends or checks for cancellation.
-
-```kotlin
-// ✅ CORRECT: Ensure cancellation in blocking loops
-suspend fun readFiles(files: List<File>) = withContext(Dispatchers.IO) {
-    for (file in files) {
-        ensureActive() // Throws CancellationException if cancelled
-        processFile(file)
-    }
-}
-
-// ✅ CORRECT: All kotlinx.coroutines suspend functions are cancellable
-suspend fun fetchData(): Data {
-    delay(1000)  // Cancellable
-    return withContext(Dispatchers.IO) {
-        api.getData()  // If api uses suspend functions, this is cancellable
-    }
-}
-
-// ❌ WRONG: Never swallow CancellationException
-try {
-    fetchData()
-} catch (e: Exception) {  // Catches CancellationException — BAD
-    // Cancellation won't propagate properly
-}
-
-// ✅ CORRECT: Rethrow CancellationException
-try {
-    fetchData()
-} catch (e: CancellationException) {
-    throw e  // Always rethrow
-} catch (e: IOException) {
-    // Handle actual error
-}
-```
+**Rule**: Every `async` must have a corresponding `await`. Unawaited `async` silently drops exceptions.
 
 ---
 
-## 2. Flow & Reactive Streams
+## 3. Flow & Reactive Streams
 
-### 2.1 Cold vs Hot Flows
+### Cold vs Hot Decision Table
 
-| Type | Variant | Execution | Current Value | Use Case |
-|------|---------|-----------|---------------|----------|
-| Cold `Flow` | `flow { }` | Starts on each `collect` | None | One-shot streams, repository queries |
-| Hot | `StateFlow` | Always active | Yes (replay=1) | UI state in ViewModel |
-| Hot | `SharedFlow` | Always active | Configurable replay | One-shot events, notifications |
+| Type | Has current value | Replays to new collectors | Use for |
+|------|-------------------|---------------------------|---------|
+| Cold `Flow` | No | No (re-executes) | One-shot data, repository queries |
+| `StateFlow` | Yes | Yes (replay = 1) | UI state, ViewModel state |
+| `SharedFlow` | No | Configurable | One-shot events, notifications |
 
-### 2.2 StateFlow Patterns
-
+### StateFlow Pattern (ViewModel)
 ```kotlin
-// ✅ CORRECT: Private mutable, public immutable
-class NewsViewModel(
-    private val repository: NewsRepository
+class OrderViewModel(
+    private val repo: OrderRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
-    val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
+    // Private mutable backing property
+    private val _uiState = MutableStateFlow<OrderUiState>(OrderUiState.Loading)
+    // Public read-only exposure
+    val uiState: StateFlow<OrderUiState> = _uiState.asStateFlow()
 
-    fun loadNews() {
+    // Cold Flow → hot StateFlow conversion
+    val orders: StateFlow<List<Order>> = repo.ordersFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    fun loadOrders() {
         viewModelScope.launch {
-            repository.getNews()
-                .catch { _uiState.value = NewsUiState.Error(it.message) }
-                .collect { _uiState.value = NewsUiState.Success(it) }
+            _uiState.value = OrderUiState.Loading
+            repo.fetchOrders()
+                .catch { _uiState.value = OrderUiState.Error(it) }
+                .collect { _uiState.value = OrderUiState.Success(it) }
         }
     }
 }
-
-// ✅ CORRECT: stateIn for cold-to-hot conversion
-val newsState: StateFlow<List<NewsItem>> = repository.newsFlow()
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList()
-    )
 ```
 
-### 2.3 SharedFlow Patterns
-
+### SharedFlow Pattern (One-shot Events)
 ```kotlin
-// ✅ CORRECT: SharedFlow for one-shot events (navigation, snackbar)
 class EventViewModel : ViewModel() {
     private val _events = MutableSharedFlow<UiEvent>(
-        replay = 0,
+        replay = 0,  // Late collectors don't get past events
         extraBufferCapacity = 10,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
@@ -210,493 +183,402 @@ class EventViewModel : ViewModel() {
     }
 }
 
-// ✅ CORRECT: Collect in Compose with LaunchedEffect
+// Collecting one-shot events in Compose
 @Composable
-fun EventScreen(viewModel: EventViewModel) {
+fun MyScreen(viewModel: EventViewModel) {
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is UiEvent.NavigateToDetail -> navigate(event.id)
-                is UiEvent.ShowSnackbar -> showSnackbar(event.message)
+                is UiEvent.ShowSnackbar -> snackbarHost.show(event.message)
             }
         }
     }
 }
 ```
 
-### 2.4 Essential Flow Operators
-
+### Essential Flow Operators
 ```kotlin
-repository.getUsers()
-    .map { users -> users.filter { it.isActive } }
-    .distinctUntilChanged()
-    .debounce(300)                      // Debounce user input
-    .flatMapLatest { users ->           // Cancel previous on new emission
-        fetchUserDetails(users)
-    }
-    .catch { e ->
-        emit(emptyList())               // Provide fallback on error
-    }
-    .onEach { users ->
-        analytics.logUserCount(users.size)
-    }
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList()
-    )
+flow
+    .map { transform(it) }                    // Transform each value
+    .filter { it.isValid }                     // Keep only matching
+    .filterNot { it.isExpired }                // Remove matching
+    .distinctUntilChanged()                    // Dedup consecutive duplicates
+    .debounce(300)                             // Wait for pause (search input)
+    .flatMapLatest { fetchDetails(it) }        // Cancel previous on new value
+    .catch { emit(emptyList()) }               // Handle upstream errors
+    .onEach { analytics.track(it) }             // Side effect without transforming
+    .stateIn(viewModelScope, WhileSubscribed(5000), emptyList())
 ```
 
-### 2.5 Flow Collection in UI
+### Flow Collection in UI (Android/Compose)
 
+| Scenario | Pattern |
+|----------|---------|
+| Activity/Fragment collecting StateFlow | `repeatOnLifecycle(Lifecycle.State.STARTED) { flow.collect { } }` |
+| Compose collecting StateFlow | `val state by flow.collectAsStateWithLifecycle()` |
+| Compose collecting one-shot events | `LaunchedEffect(Unit) { flow.collect { handleEvent(it) } }` |
+
+**collectAsStateWithLifecycle()** automatically starts/stops collection based on lifecycle, reducing recompositions when UI is not visible.
+
+### Flow Anti-Patterns
 ```kotlin
-// ✅ CORRECT: Lifecycle-aware collection with repeatOnLifecycle
-class MyFragment : Fragment() {
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state -> render(state) }
-            }
-        }
-    }
-}
+// WRONG: blocking in flow builder
+flow { emit blockingApiCall() }
 
-// ✅ CORRECT: Compose with collectAsStateWithLifecycle
-@Composable
-fun MyScreen(viewModel: MyViewModel) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    // Automatically stops collecting when lifecycle is STOPPED
-}
-```
+// RIGHT: use flowOn to shift context
+flow { suspendApiCall() }.flowOn(Dispatchers.IO)
 
-### 2.6 Flow Anti-Patterns
+// WRONG: cold Flow as shared state (each collector triggers new execution)
+val users: Flow<List<User>> = flow { emit(api.fetchUsers()) }
 
-```kotlin
-// ❌ WRONG: Blocking inside flow builder
-val data = flow {
-    Thread.sleep(1000)  // Blocks collector's thread!
-    emit(repository.getData())
-}
-
-// ✅ CORRECT: Use flowOn or suspend functions
-val data = flow {
-    emit(repository.getData())
-}.flowOn(Dispatchers.IO)
-
-// ❌ WRONG: Using collectLatest when work must complete
-searchQuery.collectLatest { query ->
-    performExpensiveOperation(query)  // Cancelled on every new query
-}
-
-// ✅ CORRECT: Use collect when work must complete
-searchQuery.collect { query ->
-    performExpensiveOperation(query)  // Always completes
-}
+// RIGHT: hot StateFlow for shared state
+val users: StateFlow<List<User>> = repo.usersFlow().stateIn(viewModelScope, WhileSubscribed(5000), emptyList())
 ```
 
 ---
 
-## 3. Error Handling
+## 4. Dispatcher Selection
 
-### 3.1 Exception Patterns
+### Decision Table
 
+| Dispatcher | Thread Pool | Use for |
+|------------|-------------|---------|
+| `Dispatchers.Main` | Single main thread | UI updates, Compose state mutations, lightweight work |
+| `Dispatchers.Main.immediate` | Main (no dispatch if already on main) | When you must run synchronously on main |
+| `Dispatchers.IO` | Elastic thread pool (64+ threads) | Network calls, file I/O, database queries, blocking APIs |
+| `Dispatchers.Default` | CPU-core-sized pool | CPU-intensive computation, sorting large lists, JSON parsing |
+| `Dispatchers.Unconfined` | No confinement | Rare; testing or `withContext` internals only |
+
+### Dispatcher Injection for Testability
 ```kotlin
-// ✅ CORRECT: Catch specific exceptions, never CancellationException
-viewModelScope.launch {
-    try {
-        val data = repository.fetchData()
-        _uiState.value = UiState.Success(data)
-    } catch (e: CancellationException) {
-        throw e  // Always rethrow to preserve cancellation
-    } catch (e: IOException) {
-        _uiState.value = UiState.Error("Network error")
-    } catch (e: HttpException) {
-        _uiState.value = UiState.Error("Server error: ${e.code()}")
-    }
-}
-```
-
-### 3.2 CoroutineExceptionHandler
-
-```kotlin
-// ✅ CORRECT: Top-level exception handler with SupervisorJob
-val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + CoroutineExceptionHandler { _, throwable ->
-    // Log to crash reporting
-    FirebaseCrashlytics.getInstance().recordException(throwable)
-})
-
-// Note: ExceptionHandler only works on top-level coroutines launched with launch
-// It does NOT work with async — those surface exceptions on .await()
-```
-
-### 3.3 Result Wrapper Pattern
-
-```kotlin
-// ✅ CORALLEL: Sealed result type for explicit error handling
-sealed class Result<out T> {
-    data class Success<T>(val data: T) : Result<T>()
-    data class Error(val exception: Throwable) : Result<Nothing>()
-    data object Loading : Result<Nothing>()
+// DON'T hardcode dispatchers
+class UserRepository {
+    suspend fun getUser(): User = withContext(Dispatchers.IO) { api.fetchUser() }
 }
 
-suspend fun fetchUser(): Result<User> = runCatching {
-    api.getUser()
-}.fold(
-    onSuccess = { Result.Success(it) },
-    onFailure = { Result.Error(it) }
-)
-```
-
----
-
-## 4. Testing Coroutines & Flow
-
-### 4.1 TestDispatcher Injection
-
-```kotlin
-// ✅ CORRECT: Inject TestDispatcher for testing
-class UserViewModelTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
-
-    @Test
-    fun `loadUser success updates state to Success`() = runTest(testDispatcher) {
-        // Given
-        val repository = mockk<UserRepository>()
-        coEvery { repository.getUser() } returns User("test")
-        val viewModel = UserViewModel(repository, testDispatcher)
-
-        // When
-        viewModel.loadUser()
-
-        // Then
-        viewModel.uiState.test {
-            assertThat(awaitItem()).isInstanceOf(UiState.Success::class.java)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
+// DO inject dispatchers via constructor
+class UserRepository(
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+    suspend fun getUser(): User = withContext(dispatcher) { api.fetchUser() }
 }
-```
 
-### 4.2 Turbine for Flow Testing
-
-```kotlin
-// ✅ CORRECT: Use Turbine to test Flow emissions
+// Test with UnconfinedTestDispatcher
 @Test
-fun `newsFlow emits items`() = runTest {
-    val repository = mockk<NewsRepository>()
-    every { repository.newsFlow() } returns flowOf(
-        NewsItem("1"),
-        NewsItem("2")
-    )
+fun getUser_returnsUser() = runTest {
+    val repo = UserRepository(dispatcher = UnconfinedTestDispatcher(testScheduler))
+    val user = repo.getUser()
+    assertEquals(expected, user)
+}
+```
 
-    val viewModel = NewsViewModel(repository)
+### Main-Safe Suspend Functions
+All suspend functions should be safe to call from the main thread. The class doing the work (not the caller) is responsible for switching dispatchers:
 
-    viewModel.newsState.test {
-        assertThat(awaitItem()).isEmpty()  // initial
-        assertThat(awaitItem()).containsExactly(NewsItem("1"), NewsItem("2"))
-        cancelAndIgnoreRemainingEvents()
+```kotlin
+// Repository owns the dispatcher switch
+class AppRepository(
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+    // Main-safe: internally switches to IO
+    suspend fun fetchData(): Data = withContext(ioDispatcher) { blockingCall() }
+}
+```
+
+---
+
+## 5. Error Handling & Cancellation
+
+### Exception Handling Patterns
+```kotlin
+// ViewModel with try/catch
+fun loadData() {
+    viewModelScope.launch {
+        _uiState.value = UiState.Loading
+        try {
+            val data = repository.getData()
+            _uiState.value = UiState.Success(data)
+        } catch (e: CancellationException) {
+            throw e  // ALWAYS rethrow CancellationException
+        } catch (e: Exception) {
+            _uiState.value = UiState.Error(e)
+        }
+    }
+}
+
+// runCatching for fallible operations
+val result = runCatching { riskyCall() }.getOrDefault(defaultValue)
+
+// Result<T> wrapper
+suspend fun fetchUser(): Result<User> = runCatching { api.getUser() }
+```
+
+### Cancellation Rules
+1. **Never swallow `CancellationException`** — always rethrow it if caught.
+2. **Cooperative cancellation**: coroutines cancel only at suspension points. Check `ensureActive()` or `yield()` in long-running loops.
+3. **`ensureActive()`**: explicitly checks cancellation in CPU-bound work.
+
+```kotlin
+// Cancellable loop
+suspend fun processFiles(files: List<File>) = withContext(Dispatchers.IO) {
+    for (file in files) {
+        ensureActive()  // throws CancellationException if cancelled
+        process(file)
     }
 }
 ```
 
-### 4.3 runTest Rules
+### CoroutineExceptionHandler
+```kotlin
+val handler = CoroutineExceptionHandler { _, throwable ->
+    // Log to crash reporting; don't try to recover
+    FirebaseCrashlytics.recordException(throwable)
+}
 
-- `runTest` uses virtual time — `delay()` is skipped automatically
-- All TestDispatchers share one scheduler for deterministic tests
-- Use `advanceUntilIdle()` to process all pending coroutines
-- Never use `runBlocking` in tests — use `runTest` instead
+// Attach to top-level scopes (viewModelScope already has this internally)
+val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main + handler)
+```
 
 ---
 
-## 5. Jetpack Compose Integration
+## 6. Android Patterns
 
-### 5.1 State in Compose
-
+### ViewModel Best Practices
 ```kotlin
-// ✅ CORRECT: ViewModel creates coroutines, exposes StateFlow
-class OrderViewModel(
-    private val repository: OrderRepository
+@HiltViewModel
+class ProductViewModel @Inject constructor(
+    private val getProductsUseCase: GetProductsUseCase,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    val uiState: StateFlow<OrderUiState> = repository.getOrders()
-        .map { OrderUiState.Success(it) }
-        .catch { OrderUiState.Error(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OrderUiState.Loading)
+    private val _uiState = MutableStateFlow<ProductUiState>(ProductUiState.Loading)
+    val uiState: StateFlow<ProductUiState> = _uiState.asStateFlow()
 
-    fun placeOrder(item: OrderItem) {
+    // Survive process death with SavedStateHandle
+    private val query: String = savedStateHandle["query"] ?: ""
+
+    init {
+        loadProducts()
+    }
+
+    fun loadProducts() {
         viewModelScope.launch {
-            repository.placeOrder(item)
+            getProductsUseCase(query)
+                .onStart { _uiState.value = ProductUiState.Loading }
+                .catch { _uiState.value = ProductUiState.Error(it) }
+                .collect { _uiState.value = ProductUiState.Success(it) }
         }
     }
-}
 
-// ✅ CORRECT: Compose collects with lifecycle awareness
-@Composable
-fun OrderScreen(viewModel: OrderViewModel) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    when (val s = state) {
-        is OrderUiState.Loading -> LoadingIndicator()
-        is OrderUiState.Success -> OrderList(s.orders)
-        is OrderUiState.Error -> ErrorMessage(s.exception)
+    // For one-shot actions (navigations, toasts)
+    fun onProductClick(productId: String) {
+        viewModelScope.launch {
+            _events.emit(ProductEvent.NavigateToDetail(productId))
+        }
     }
 }
 ```
 
-### 5.2 rememberCoroutineScope
-
+### Fragment Flow Collection
 ```kotlin
-// ✅ CORRECT: Use for event-driven coroutines tied to composable lifecycle
-@Composable
-fun SearchScreen(viewModel: SearchViewModel) {
-    val scope = rememberCoroutineScope()
+// Fragment
+override fun onViewCreated(view: View, Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
 
-    Button(onClick = {
-        scope.launch {
-            viewModel.onSearchClicked()
-        }
-    }) {
-        Text("Search")
-    }
-}
-```
-
----
-
-## 6. Interop Patterns
-
-### 6.1 Callback to Suspend
-
-```kotlin
-// ✅ CORRECT: suspendCancellableCoroutine for cancellable bridges
-suspend fun fetchFromLegacyApi(id: String): Data =
-    suspendCancellableCoroutine { continuation ->
-        val callback = object : LegacyCallback {
-            override fun onSuccess(data: Data) {
-                continuation.resume(data)
-            }
-            override fun onError(error: Throwable) {
-                continuation.resumeWithException(error)
+    viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.uiState.collect { state ->
+                render(state)
             }
         }
-        legacyApi.fetch(id, callback)
-
-        continuation.invokeOnCancellation {
-            legacyApi.cancel(id)
-        }
-    }
-
-// ✅ CORRECT: callbackFlow for listener-based APIs
-fun observeDatabaseChanges(): Flow<List<Item>> = callbackFlow {
-    val observer = object : DatabaseObserver {
-        override fun onChange(items: List<Item>) {
-            trySend(items)
-        }
-    }
-    database.registerObserver(observer)
-
-    awaitClose {
-        database.unregisterObserver(observer)
     }
 }
 ```
 
-### 6.2 CompletableFuture Interop
-
+### Compose Integration
 ```kotlin
-// ✅ CORRECT: Use await() extension from kotlinx-coroutines-jdk8
-suspend fun fetchFromJavaLibrary(): Data {
-    val future: CompletableFuture<Data> = javaLib.asyncFetch()
-    return future.await()  // ✅ Non-blocking
-}
-
-// ❌ WRONG: get() blocks the thread
-suspend fun fetchFromJavaLibrary(): Data {
-    val future: CompletableFuture<Data> = javaLib.asyncFetch()
-    return future.get()  // ❌ Blocks thread
-}
-```
-
----
-
-## 7. Kotlin Multiplatform (KMP)
-
-### 7.1 expect/actual Pattern
-
-```kotlin
-// Common module
-expect class PlatformContext
-
-expect fun getDeviceId(): String
-
-expect fun getCurrentTimestamp(): Long
-
-// Android actual
-actual typealias PlatformContext = Context
-
-actual fun getDeviceId(): String {
-    return Settings.Secure.getString(
-        appContext.contentResolver,
-        Settings.Secure.ANDROID_ID
-    )
-}
-
-// iOS actual
-actual typealias PlatformContext = NSObject
-
-actual fun getDeviceId(): String {
-    return UIDevice.currentDevice.identifierForVendor?.UUIDString ?: "unknown"
-}
-```
-
-### 7.2 KMP Project Structure
-
-```
-shared/
-├── src/
-│   ├── commonMain/          # Shared Kotlin code
-│   │   └── kotlin/
-│   │       ├── domain/      # Business logic
-│   │       ├── data/        # Repositories
-│   │       └── di/          # Shared DI
-│   ├── androidMain/         # Android-specific
-│   │   └── kotlin/
-│   │       └── platform/
-│   └── iosMain/             # iOS-specific
-│       └── kotlin/
-│           └── platform/
-```
-
-### 7.3 Compose Multiplatform
-
-```kotlin
-// CommonMain
 @Composable
-fun SharedApp() {
-    val viewModel = getViewModel { AppViewModel() }
-    val state by viewModel.state.collectAsState()
-    MaterialTheme {
-        when (state) {
-            is AppState.Loading -> LoadingScreen()
-            is AppState.Success -> SuccessScreen(state.data)
+fun ProductScreen(viewModel: ProductViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    when (val state = uiState) {
+        is ProductUiState.Loading -> LoadingIndicator()
+        is ProductUiState.Success -> ProductList(state.products)
+        is ProductUiState.Error -> ErrorMessage(state.cause)
+    }
+
+    // One-shot events
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is ProductEvent.NavigateToDetail -> navController.navigate(event.route)
+            }
         }
     }
 }
+```
 
-// Platform-specific UI where needed (camera, GPS, etc.)
-// These are OUT of scope for Compose Multiplatform — use expect/actual
+### Lifecycle-Aware Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        UI Layer (Compose/XML)                   │
+│  collectAsStateWithLifecycle() / repeatOnLifecycle(STARTED)     │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │ observes StateFlow
+┌────────────────────────────────▼────────────────────────────────┐
+│                      Presentation Layer                         │
+│  ViewModel + viewModelScope + StateFlow + SharedFlow            │
+│  StateIn(cold Flow → hot StateFlow, WhileSubscribed(5000))     │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │ calls suspend functions
+┌────────────────────────────────▼────────────────────────────────┐
+│                        Domain Layer                             │
+│  Use cases: suspend functions with coroutineScope/supervisorScope│
+└────────────────────────────────┬────────────────────────────────┘
+                                 │ calls suspend functions
+┌────────────────────────────────▼────────────────────────────────┐
+│                         Data Layer                              │
+│  Repository: suspend functions + cold Flows                     │
+│  Room DAOs: Flow return types                                   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 8. Ktor Server Patterns
+## 7. Ktor Server Patterns
 
-### 8.1 Application Structure
+### Project Structure
+```
+src/main/kotlin/
+├── Application.kt          # main(), plugin installation
+├── config/
+│   ├── DatabaseConfig.kt
+│   └── AppConfig.kt
+├── routes/
+│   ├── UserRoutes.kt
+│   └── OrderRoutes.kt
+├── service/
+│   ├── UserService.kt
+│   └── OrderService.kt
+├── repository/
+│   ├── UserRepository.kt
+│   └── OrderRepository.kt
+├── model/
+│   ├── User.kt
+│   └── dto/
+│       ├── CreateUserRequest.kt
+│       └── UserResponse.kt
+└── plugins/
+    ├── Routing.kt
+    ├── Security.kt
+    ├── Serialization.kt
+    └── DI.kt
+```
 
+### Essential Plugin Configuration
 ```kotlin
+// Application.kt
+fun main() {
+    embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
+        .start(wait = true)
+}
+
 fun Application.module() {
-    // Configuration
     configureSerialization()
     configureMonitoring()
-    configureHTTP()
-    configureSecurity()
+    configureHTTP()  // CORS, ContentNegotiation
+    configureSecurity()  // JWT auth
+    configureDI()  // Koin
     configureRouting()
-}
-
-fun Application.configureHTTP() {
-    install(DefaultHeaders)
-    install(CallLogging)
-    install(CORS) {
-        anyHost()
-        allowHeader(HttpHeaders.ContentType)
-    }
-    install(ContentNegotiation) {
-        json(Json { prettyPrint = true })
-    }
-}
-
-fun Application.configureSecurity() {
-    install(Sessions) {
-        cookie<UserSession>("user_session") {
-            cookie.path = "/"
-            cookie.maxAgeInSeconds = 3600
-        }
-    }
-    install(Authentication) {
-        form("auth-form") {
-            userParamName = "username"
-            passwordParamName = "password"
-            validate { credentials ->
-                if (isValid(credentials)) UserIdPrincipal(credentials.name) else null
-            }
-        }
-        session<UserSession>("auth-session") {
-            validate { session -> if (session.isValid()) session else null }
-            challenge { call.respondRedirect("/login") }
-        }
-    }
+    configureStatusPages()  // Global error handling
 }
 ```
 
-### 8.2 Routing DSL
-
+### Routing DSL
 ```kotlin
 fun Application.configureRouting() {
     routing {
-        // Public routes
-        get("/health") { call.respond(mapOf("status" to "ok")) }
+        route("/api/v1") {
+            userRoutes()
+            orderRoutes()
 
-        // Authenticated routes
-        authenticate("auth-session") {
-            route("/api") {
-                get("/me") {
-                    val session = call.principal<UserSession>()
-                    call.respond(session)
-                }
-                post("/orders") {
-                    val order = call.receive<OrderRequest>()
-                    val created = orderService.create(order)
-                    call.respond(HttpStatusCode.Created, created)
+            // Authenticated routes
+            authenticate("auth-jwt") {
+                get("/profile") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val userId = principal?.getClaim("userId", String::class)
+                    call.respond(service.getProfile(userId))
                 }
             }
         }
+    }
+}
 
-        // Nested auth with required strategy
-        authenticate("auth-session", strategy = AuthenticationStrategy.Required) {
-            authenticate("auth-basic", strategy = AuthenticationStrategy.Required) {
-                get("/admin") {
-                    call.respondText("Admin panel")
-                }
+// UserRoutes.kt
+fun Route.userRoutes() {
+    route("/users") {
+        post<CreateUserRequest> { dto ->
+            val user = service.create(dto)
+            call.respond(HttpStatusCode.Created, user)
+        }
+
+        get("/{id}") {
+            val id = call.parameters["id"] ?: throw BadRequestException("Missing id")
+            val user = service.getById(id) ?: throw NotFoundException("User not found")
+            call.respond(user)
+        }
+    }
+}
+```
+
+### JWT Authentication
+```kotlin
+fun Application.configureSecurity() {
+    val jwtConfig = environment.config.config("jwt")
+
+    install(Authentication) {
+        jwt("auth-jwt") {
+            realm = jwtConfig.property("realm").getString()
+            verifier(
+                JWT.require(Algorithm.HMAC256(jwtConfig.property("secret").getString()))
+                    .withAudience(jwtConfig.property("audience").getString())
+                    .withIssuer(jwtConfig.property("issuer").getString())
+                    .build()
+            )
+            validate { credential ->
+                if (credential.payload.getClaim("userId").asString() != null) {
+                    JWTPrincipal(credential.payload)
+                } else null
+            }
+            challenge { _, _ ->
+                call.respond(HttpStatusCode.Unauthorized, "Token is not valid")
             }
         }
     }
 }
 ```
 
-### 8.3 Error Handling with StatusPages
-
+### Status Pages (Global Error Handling)
 ```kotlin
 fun Application.configureStatusPages() {
     install(StatusPages) {
-        exception<ValidationException> { call, cause ->
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message))
+        exception<BadRequestException> { call, cause ->
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(cause.message ?: "Bad request"))
         }
         exception<NotFoundException> { call, cause ->
-            call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message))
+            call.respond(HttpStatusCode.NotFound, ErrorResponse(cause.message ?: "Not found"))
         }
         exception<Throwable> { call, cause ->
-            call.application.log.error("Unhandled error", cause)
+            call.application.log.error("Unhandled exception", cause)
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Internal error"))
-        }
-        status(HttpStatusCode.NotFound) { call, status ->
-            call.respond(status, ErrorResponse("Not found"))
         }
     }
 }
 ```
 
-### 8.4 Dependency Injection with Koin
-
+### Koin Dependency Injection
 ```kotlin
 fun Application.configureDI() {
     install(Koin) {
@@ -705,48 +587,33 @@ fun Application.configureDI() {
 }
 
 val appModule = module {
-    single<Database> { Database.connect(dataSource = get()) }
+    single { DatabaseFactory(get()) }
+    single<UserRepository> { UserRepositoryImpl(get()) }
     single<OrderRepository> { OrderRepositoryImpl(get()) }
-    single<OrderService> { OrderServiceImpl(get()) }
+    factory { UserService(get(), get()) }
 }
 
-// In routes
-fun Route.orderRoutes() {
-    val orderService: OrderService by inject()
-
-    post("/orders") {
-        val request = call.receive<OrderRequest>()
-        val order = orderService.create(request)
-        call.respond(HttpStatusCode.Created, order)
-    }
-}
+// Usage in route: call.get<UserService>() or inject<KClass> { parametersOf(call) }
 ```
 
-### 8.5 Testing Ktor
-
+### Integration Testing
 ```kotlin
-class OrderRoutesTest {
+class ApplicationTest {
     @Test
-    fun `create order returns 201`() = testApplication {
+    fun `get user returns 200`() = testApplication {
         application {
-            configureRouting()
-            configureDI()
+            module()
         }
-
-        client.post("/orders") {
-            contentType(ContentType.Application.Json)
-            setBody(OrderRequest(item = "test", quantity = 1))
-        }.apply {
-            assertEquals(HttpStatusCode.Created, response.status)
+        client.get("/api/v1/users/1").apply {
+            assertEquals(HttpStatusCode.OK, status)
         }
     }
 
     @Test
-    fun `unauthorized request returns 401`() = testApplication {
-        application { configureRouting() }
-
-        client.get("/api/me").apply {
-            assertEquals(HttpStatusCode.Unauthorized, response.status)
+    fun `unauthorized without token`() = testApplication {
+        application { module() }
+        client.get("/api/v1/profile").apply {
+            assertEquals(HttpStatusCode.Unauthorized, status)
         }
     }
 }
@@ -754,114 +621,342 @@ class OrderRoutesTest {
 
 ---
 
-## 9. Android-Specific Patterns
+## 8. Kotlin Multiplatform (KMP)
 
-### 9.1 Repository Pattern
-
+### expect/actual Pattern
 ```kotlin
-interface UserRepository {
-    fun observeUsers(): Flow<List<User>>       // Continuous stream
-    suspend fun getUser(id: String): User      // One-shot
-    suspend fun saveUser(user: User): Unit     // One-shot write
+// Common (shared)
+expect class PlatformContext
+
+expect fun getPlatformName(): String
+
+interface Repository {
+    suspend fun getData(): String
 }
 
-class UserRepositoryImpl(
-    private val api: UserApi,
-    private val dao: UserDao,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) : UserRepository {
+// Android
+actual typealias PlatformContext = Context
 
-    override fun observeUsers(): Flow<List<User>> = dao.observeUsers()
-        .flowOn(ioDispatcher)
+actual fun getPlatformName(): String = "Android ${Build.VERSION.RELEASE}"
 
-    override suspend fun getUser(id: String): User = withContext(ioDispatcher) {
-        dao.getUser(id) ?: api.fetchUser(id).also { dao.insert(it) }
-    }
-
-    override suspend fun saveUser(user: User): Unit = withContext(ioDispatcher) {
-        api.saveUser(user)
-        dao.insert(user)
-    }
+class AndroidRepository : Repository {
+    override suspend fun getData(): String = "Android data"
 }
-```
 
-### 9.2 UseCase Pattern
+// iOS
+actual class PlatformContext(val value: NSObject)
 
-```kotlin
-// UseCases are suspend functions that do one thing
-class GetUserProfileUseCase(
-    private val userRepository: UserRepository,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
-    suspend operator fun invoke(userId: String): UserProfile = withContext(ioDispatcher) {
-        userRepository.getUser(userId).toDomain()
-    }
+actual fun getPlatformName(): String = UIDevice.currentDevice.systemName()
+
+class IOSRepository : Repository {
+    override suspend fun getData(): String = "iOS data"
 }
 ```
 
-### 9.3 ViewModel Best Practices
+### KMP Project Structure
+```
+shared/
+├── src/
+│   ├── commonMain/kotlin/          # Shared business logic
+│   │   ├── domain/
+│   │   ├── data/
+│   │   └── presentation/           # Shared ViewModels (optional)
+│   ├── androidMain/kotlin/         # Android-specific
+│   │   └── di/
+│   ├── iosMain/kotlin/             # iOS-specific
+│   │   └── di/
+│   └── commonTest/kotlin/          # Shared tests
+```
 
+### Compose Multiplatform
 ```kotlin
-// ✅ CORRECT: ViewModel creates coroutines
-class ProfileViewModel(
-    private val getUserProfile: GetUserProfileUseCase
-) : ViewModel() {
+// Shared composable
+@Composable
+fun SharedApp() {
+    val viewModel = viewModel { SharedViewModel() }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    // Shared UI code
+}
 
-    private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
-    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+// Platform-specific integrations remain in platform modules
+// - Permissions, Camera, GPS, Bluetooth → expect/actual or platform code
+// - Navigation → often platform-specific
+```
 
-    fun loadProfile(userId: String) {
-        viewModelScope.launch {
-            _uiState.value = ProfileUiState.Loading
-            _uiState.value = try {
-                ProfileUiState.Success(getUserProfile(userId))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                ProfileUiState.Error(e.message)
-            }
+### Dispatchers in KMP
+```kotlin
+// commonMain
+expect val ioDispatcher: CoroutineDispatcher
+
+// androidMain
+actual val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+// iosMain
+actual val ioDispatcher: CoroutineDispatcher = Dispatchers.Default  // No IO dispatcher on iOS
+```
+
+---
+
+## 9. Testing
+
+### Coroutine Testing Patterns
+```kotlin
+@OptIn(ExperimentalCoroutinesApi::class)
+class ViewModelTest {
+
+    @get:Rule
+    val mainRule = MainDispatcherRule()  // Sets UnconfinedTestDispatcher as Main
+
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @Test
+    fun `loadData updates state to success`() = runTest {
+        // Given
+        val repository = mockk<Repository> {
+            coEvery { getData() } returns Result.success(data)
         }
+        val viewModel = MyViewModel(repository, testDispatcher)
+
+        // When
+        viewModel.loadData()
+
+        // Then
+        val state = viewModel.uiState.value
+        assertThat(state).isInstanceOf(UiState.Success::class.java)
+    }
+
+    @Test
+    fun `loadData emits error on failure`() = runTest {
+        val repository = mockk<Repository> {
+            coEvery { getData() } throws IOException("Network error")
+        }
+        val viewModel = MyViewModel(repository, testDispatcher)
+
+        viewModel.loadData()
+
+        advanceUntilIdle()  // Let coroutines complete
+        assertThat(viewModel.uiState.value).isInstanceOf(UiState.Error::class.java)
     }
 }
 
-// ❌ WRONG: Exposing suspend functions from ViewModel for business logic
-class BadViewModel : ViewModel() {
-    suspend fun loadData(): Data = repository.getData()  // Caller controls scope!
+// TestDispatcherRule
+@OptIn(ExperimentalCoroutinesApi::class)
+class MainDispatcherRule(
+    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher()
+) : TestWatcher() {
+    override fun starting(description: Description) {
+        Dispatchers.setMain(dispatcher)
+    }
+    override fun finished(description: Description) {
+        Dispatchers.resetMain()
+    }
+}
+```
+
+### Flow Testing with Turbine
+```kotlin
+@Test
+fun `uiState emits Loading then Success`() = runTest {
+    viewModel.uiState.test {
+        viewModel.loadData()
+
+        assertThat(awaitItem()).isInstanceOf(UiState.Loading::class.java)
+        assertThat(awaitItem()).isInstanceOf(UiState.Success::class.java)
+
+        cancelAndIgnoreRemainingEvents()
+    }
+}
+```
+
+### Testing Suspended Functions
+```kotlin
+// runTest uses virtual time — delays are skipped automatically
+@Test
+fun `delayed emission`() = runTest {
+    val flow = flow {
+        delay(1000)  // Skipped in tests
+        emit("value")
+    }
+
+    flow.test {
+        assertThat(awaitItem()).isEqualTo("value")
+        awaitComplete()
+    }
+}
+```
+
+### Parallel Testing
+```kotlin
+@Test
+fun `parallel requests complete independently`() = runTest {
+    val results = supervisorScope {
+        val a = async { repo.fetchA() }
+        val b = async { repo.fetchB() }
+        val c = async { repo.fetchC() }
+        listOf(a, b, c).map { it.awaitCatching().getOrNull() }
+    }
+    assertEquals(3, results.size)
 }
 ```
 
 ---
 
-## 10. Common Anti-Patterns Checklist
+## 10. Detekt & Ktlint Standards
 
-- [ ] No `GlobalScope` usage — use framework or injected scopes
-- [ ] `async` calls have corresponding `await` calls
+### Key Rules
+| Rule | Description |
+|------|-------------|
+| `TooManyFunctions` | Max 15 functions per class |
+| `ComplexMethod` | Cyclomatic complexity ≤ 15 |
+| `LongMethod` | Max 60 lines per function |
+| `LargeClass` | Max 600 lines per class |
+| `MagicNumber` | Named constants over literals |
+| `ForbiddenComment` | No TODO/FIXME/HACK |
+| `SwallowedException` | Don't catch and ignore |
+| `ThrowingExceptionsWithoutMessageOrCause` | Always message or cause |
+
+### detekt.yml Configuration
+```yaml
+complexity:
+  active: true
+  ComplexMethod:
+    threshold: 15
+    ignoreSimpleWhenEntries: true
+  LargeClass:
+    threshold: 600
+  TooManyFunctions:
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+
+style:
+  active: true
+  MagicNumber:
+    active: true
+    ignorePropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreEnums: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+
+exceptions:
+  active: true
+  SwallowedException:
+    active: true
+    ignoredExceptionTypes:
+      - InterruptedException
+      - MalformedURLException
+      - ParseException
+```
+
+---
+
+## 11. Java-to-Kotlin Migration
+
+### Automated Patterns
+| Java | Kotlin |
+|------|--------|
+| `new Type(args)` | `Type(args)` |
+| `field = value; return this;` | `field = value; return this` → `.apply { }` |
+| `if (x != null) { ... }` | `x?.let { ... }` |
+| `return condition ? a : b` | `return if (condition) a else b` |
+| Anonymous classes | Lambdas or function references |
+| Getters/setters | Properties (`val`/`var`) |
+| `Optional<T>` | Nullable `T?` with `?.` |
+| Builder pattern | Named + default args, `apply { }` |
+
+### Manual Review Points
+- Null-safety audits: identify nullable vs non-null types
+- Check exception handling (Kotlin has no checked exceptions)
+- Replace `Stream` with collection operators or `Flow`
+- Convert callback interfaces to `suspend` functions or `Flow`
+- Replace `CompletableDeferred`/`Future` with coroutines `async`/`suspend`
+
+---
+
+## 12. Anti-Patterns Checklist
+
+### Coroutine Anti-Patterns
+- [ ] No `GlobalScope` usage (use framework or injected scopes)
+- [ ] Every `async` has a corresponding `await`
 - [ ] Structured concurrency maintained (children cancelled with parents)
-- [ ] `awaitAll` in `coroutineScope`: first failure cancels others; use `supervisorScope` for independent failures
-- [ ] `CancellationException` never caught or swallowed — always rethrown
-- [ ] Suspend functions are main-safe (move blocking work to `Dispatchers.IO` internally)
-- [ ] Dispatchers are injected, not hardcoded
-- [ ] `MutableStateFlow`/`MutableSharedFlow` are private; expose read-only via `.asStateFlow()`/`.asSharedFlow()`
-- [ ] Flow collection uses `repeatOnLifecycle(STARTED)` or `collectAsStateWithLifecycle()`
-- [ ] No blocking calls inside `flow { }` — use `flowOn()` to switch context
-- [ ] `collectLatest` only when cancelling in-flight work is acceptable
-- [ ] Tests use `runTest` with virtual time, not `runBlocking`
-- [ ] ViewModel creates coroutines, not the View
-- [ ] Long-running guaranteed work uses WorkManager, not app scope
-- [ ] Channels are properly closed; `consumeEach` only for single consumer
+- [ ] `awaitAll` in `coroutineScope`: first failure cancels others — use `supervisorScope` for independence
+- [ ] `CancellationException` never swallowed (always rethrown)
+- [ ] No fire-and-forget `launch` inside repositories
+- [ ] Dispatchers injected, not hardcoded (for testability)
+
+### Flow Anti-Patterns
+- [ ] No blocking calls in `flow { }` builder
+- [ ] No cold `Flow` as shared state (use `StateFlow`)
+- [ ] `collectLatest` only when cancellation of previous work is acceptable
+- [ ] `MutableStateFlow`/`MutableSharedFlow` not exposed as public (use backing property + `asStateFlow()`)
+- [ ] `flowOn()` applied correctly when emission context differs
+
+### Android Anti-Patterns
+- [ ] ViewModel creates coroutines (not exposed suspend functions for business logic)
+- [ ] No direct coroutine launching in Composable functions (use `LaunchedEffect`/`rememberCoroutineScope`)
+- [ ] Flow collection tied to lifecycle (`repeatOnLifecycle`/`collectAsStateWithLifecycle`)
+- [ ] No `GlobalScope` for app-scoped work (use injected scope or `WorkManager`)
+- [ ] Errors handled in ViewModel (not silently dropped)
+
+### Testing Anti-Patterns
+- [ ] `runBlocking` in tests → use `runTest` for virtual time
+- [ ] `TestDispatcher` injected and shared across all test dependencies
+- [ ] `advanceUntilIdle()` used to let coroutines complete
+- [ ] `Turbine` used for Flow assertions (not manual collection)
+- [ ] `Dispatchers.setMain(testDispatcher)` in test rule
+
+### General Kotlin Anti-Patterns
+- [ ] No `!!` (non-null assert) — use `?: return`, `?: throw`, `?.let`
+- [ ] No empty catch blocks
+- [ ] No catching `Throwable` or `Exception` broadly — catch specific types
+- [ ] No mutable collections exposed publicly (use `toImmutableList()` or `List` interface)
+- [ ] No platform types leaking into public APIs
 
 ---
 
-## 11. Key References
+## Quick Reference: Scope Decision Tree
 
-- **Official Coroutines Guide:** https://kotlinlang.org/docs/coroutines-guide.html
-- **Coroutines Best Practices (Android):** https://developer.android.com/kotlin/coroutines/coroutines-best-practices
-- **Flow Documentation:** https://kotlinlang.org/docs/flow.html
-- **StateFlow & SharedFlow:** https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-state-flow/
-- **Ktor Documentation:** https://ktor.io/docs/
-- **Kotlin Multiplatform:** https://kotlinlang.org/docs/multiplatform.html
-- **Structured Concurrency:** https://kotlinlang.org/docs/coroutines-guide.html#structured-concurrency
+```
+Are you in a ViewModel?
+├── Yes → viewModelScope
+└── No
+    Are you in a Fragment/Activity/LifecycleOwner?
+    ├── Yes → viewLifecycleOwner.lifecycleScope (+ repeatOnLifecycle if collecting Flow)
+    └── No
+        Are you in Compose?
+        ├── Yes → rememberCoroutineScope() / LaunchedEffect
+        └── No
+            Is this test code?
+            ├── Yes → runTest { }
+            └── No
+                Should a failure in one child cancel others?
+                ├── Yes → coroutineScope { }
+                └── No (independent failures) → supervisorScope { }
+```
 
----
+## Quick Reference: Flow vs StateFlow vs SharedFlow
 
-*Last updated: 2026-09-01. Synthesized from official Kotlin docs, Context7, Android Developers, and production best practices from 15+ skill sources.*
+```
+Do you need to share state across multiple collectors?
+├── No → cold Flow
+└── Yes
+    Does the data represent current state (has a "last known value")?
+    ├── Yes → StateFlow (replay = 1, always has current value)
+    └── No (one-shot events, notifications)
+        → SharedFlow (replay = 0, appropriate onBufferOverflow)
+```
+
+## Quick Reference: Dispatcher Decision Tree
+
+```
+Is the work I/O-bound (network, file, database)?
+├── Yes → Dispatchers.IO
+└── No
+    Is the work CPU-bound (computation, parsing)?
+    ├── Yes → Dispatchers.Default
+    └── No (UI work)
+        → Dispatchers.Main / Dispatchers.Main.immediate
+```

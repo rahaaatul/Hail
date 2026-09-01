@@ -1,22 +1,17 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package com.aistra.hail.ui.main
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.IdRes
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarDefaults
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationItemIconPosition
 import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarArrangement
@@ -29,38 +24,30 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.aistra.hail.R
+import androidx.navigation.NavDestination
 
-data class NavItem(
-    @IdRes val id: Int,
+private data class NavItem(
     val route: String,
-    @DrawableRes val iconRes: Int,
-    @StringRes val titleRes: Int,
+    val filledIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    val outlinedIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String,
 )
 
 private val navItems = listOf(
-    NavItem(R.id.nav_home, "nav_home", R.drawable.ic_round_frozen, R.string.title_home),
-    NavItem(R.id.nav_actions, "nav_actions", R.drawable.ic_round_action_flow, R.string.title_actions),
-    NavItem(R.id.nav_settings, "nav_settings", R.drawable.ic_outline_settings, R.string.title_settings),
+    NavItem("nav_home", Icons.Filled.Home, Icons.Outlined.Home, "Home"),
+    NavItem("nav_actions", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome, "Actions"),
+    NavItem("nav_settings", Icons.Filled.Settings, Icons.Outlined.Settings, "Settings"),
 )
 
 @Composable
 fun ExpressiveNavigationBar(
     navController: NavController,
-    useFloating: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var currentDestination by remember {
-        mutableStateOf(navController.currentDestination)
+        mutableStateOf<NavDestination?>(navController.currentDestination)
     }
 
     DisposableEffect(navController) {
@@ -73,53 +60,34 @@ fun ExpressiveNavigationBar(
         }
     }
 
-    val selectedId = currentDestination?.id
+    val currentRoute = currentDestination?.route
 
-    if (useFloating) {
-        val floatingNavItems = listOf(
-            FloatingNavItem(icon = Icons.Filled.Home, label = "Home", contentDescription = null),
-            FloatingNavItem(icon = Icons.Filled.AutoAwesome, label = "Actions", contentDescription = null),
-            FloatingNavItem(icon = Icons.Filled.Settings, label = "Settings", contentDescription = null),
-        )
-        val selectedIndex = navItems.indexOfFirst { it.id == selectedId }.coerceAtLeast(0)
-        FloatingBottomBar(
-            items = floatingNavItems,
-            selectedIndex = selectedIndex,
-            onSelected = { index ->
-                val targetRoute = navItems[index].route
-                navController.navigate(targetRoute) {
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            modifier = modifier,
-        )
-    } else {
-        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-        ShortNavigationBar(
-            modifier = modifier.fillMaxWidth(),
-            windowInsets = ShortNavigationBarDefaults.windowInsets,
-            arrangement = ShortNavigationBarArrangement.EqualWeight,
-        ) {
-            navItems.forEach { item ->
-                ShortNavigationBarItem(
-                    selected = item.id == selectedId,
-                    onClick = {
+    ShortNavigationBar(
+        modifier = modifier.fillMaxWidth(),
+        windowInsets = ShortNavigationBarDefaults.windowInsets,
+        arrangement = ShortNavigationBarArrangement.EqualWeight,
+    ) {
+        navItems.forEach { item ->
+            val selected = item.route == currentRoute
+            ShortNavigationBarItem(
+                selected = selected,
+                onClick = {
+                    if (!selected) {
                         navController.navigate(item.route) {
                             launchSingleTop = true
                             restoreState = true
                         }
-                    },
-                    icon = {
-                        Icon(
-                            painter = painterResource(id = item.iconRes),
-                            contentDescription = null,
-                        )
-                    },
-                    label = { Text(stringResource(id = item.titleRes)) },
-                    iconPosition = NavigationItemIconPosition.Top,
-                )
-            }
+                    }
+                },
+                icon = {
+                    Icon(
+                        imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+                        contentDescription = item.label,
+                    )
+                },
+                label = { Text(item.label) },
+                iconPosition = NavigationItemIconPosition.Top,
+            )
         }
     }
 }
