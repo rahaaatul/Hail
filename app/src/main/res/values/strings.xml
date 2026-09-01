@@ -61,6 +61,7 @@
     <string name="action_uninstall">Uninstall</string>
     <string name="msg_uninstall">Do you want to uninstall this app?</string>
     <string name="working_mode">Working mode</string>
+    <string name="provider">Provider</string>
     <string name="mode">Mode</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_default">Idle</string>
