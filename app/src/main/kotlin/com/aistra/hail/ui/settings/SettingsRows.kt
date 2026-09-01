@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -65,13 +64,14 @@ fun SettingsSwitch(
     }
     ListItem(
         modifier = toggleableModifier,
-        headlineContent = headlineContent,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
         trailingContent = {
             Switch(checked = checked, onCheckedChange = null, enabled = enabled)
         }
-    )
+    ) {
+        headlineContent()
+    }
 }
 
 @Composable
@@ -95,24 +95,23 @@ fun SettingsSlider(
     ListItem(
         modifier = modifier
             .fillMaxWidth(),
-        headlineContent = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                headlineContent()
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { newValue ->
-                        sliderValue = newValue
-                        onValueChange(newValue)
-                    },
-                    valueRange = valueRange,
-                    steps = valueSteps,
-                    enabled = enabled
-                )
-            }
-        },
         supportingContent = supportingContent,
         leadingContent = leadingContent
-    )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            headlineContent()
+            Slider(
+                value = sliderValue,
+                onValueChange = { newValue ->
+                    sliderValue = newValue
+                    onValueChange(newValue)
+                },
+                valueRange = valueRange,
+                steps = valueSteps,
+                enabled = enabled
+            )
+        }
+    }
 }
 
 @Composable
@@ -136,10 +135,11 @@ private fun SettingsListInternal(
                 modifier = modifier
                     .clickable(enabled = enabled) { expanded = true }
                     .fillMaxWidth(),
-                headlineContent = headlineContent,
                 supportingContent = supportingContent,
                 leadingContent = leadingContent
-            )
+            ) {
+                headlineContent()
+            }
             if (expanded) {
                 AlertDialog(
                     onDismissRequest = { expanded = false },
@@ -186,10 +186,11 @@ private fun SettingsListInternal(
                     modifier = modifier
                         .clickable(enabled = enabled) { expanded = !expanded }
                         .fillMaxWidth(),
-                    headlineContent = headlineContent,
                     supportingContent = supportingContent,
                     leadingContent = leadingContent
-                )
+                ) {
+                    headlineContent()
+                }
                 DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
@@ -272,10 +273,11 @@ fun SettingsClickable(
     leadingContent: (@Composable () -> Unit)? = null,
 ) = ListItem(
     modifier = modifier.clickable(enabled = enabled, onClick = onClick),
-    headlineContent = headlineContent,
     supportingContent = supportingContent,
     leadingContent = leadingContent
-)
+) {
+    headlineContent()
+}
 
 @Composable
 fun SettingsSectionHeader(title: String) {
@@ -286,6 +288,3 @@ fun SettingsSectionHeader(title: String) {
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
     )
 }
-
-@Composable
-fun SettingsHorizontalDivider() = HorizontalDivider()
