@@ -123,6 +123,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         var skipForegroundApp by remember { mutableStateOf(HailData.skipForegroundApp) }
         var skipNotifyingApp by remember { mutableStateOf(HailData.skipNotifyingApp) }
         var dynamicShortcutAction by remember { mutableStateOf(HailData.dynamicShortcutAction) }
+        var showModeDialog by remember { mutableStateOf(false) }
 
         val iconPackValues by _iconPackValues
 
@@ -136,21 +137,50 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 .fillMaxSize()
                 .verticalScroll(scrollState)
         ) {
-            SettingsList(
+            // Working mode: two-row Provider/Mode picker
+            val currentProvider = HailData.providerForMode(workingMode)
+            SettingsClickable(
                 headlineContent = { Text(stringResource(R.string.working_mode)) },
-                selectedValue = workingMode,
-                onValueChange = { mode ->
-                    val accepted = onWorkingModeChange(mode) { workingMode = it }
-                    if (accepted) HailData.workingMode = mode
-                    accepted
-                },
-                values = HailData.WORKING_MODE_VALUES,
-                entriesId = R.array.working_mode_entries,
+                supportingContent = { Text(getString(currentProvider?.labelRes ?: R.string.label_default)) },
                 leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
-                type = ListPreferenceType.ALERT_DIALOG,
+                onClick = {
+                    val items = HailData.WORKING_MODE_PROVIDERS.map { getString(it.labelRes) }.toTypedArray()
+                    MaterialAlertDialogBuilder(requireActivity())
+                        .setTitle(R.string.working_mode)
+                        .setItems(items) { _, which ->
+                            val chosen = HailData.WORKING_MODE_PROVIDERS[which]
+                            if (chosen.modes.size == 1) {
+                                val accepted = onWorkingModeChange(chosen.modes.first()) { workingMode = it }
+                                if (accepted) HailData.workingMode = chosen.modes.first()
+                            } else {
+                                workingMode = chosen.modes.first()
+                                showModeDialog = true
+                            }
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+            )
+            SettingsClickable(
+                headlineContent = { Text(stringResource(R.string.mode)) },
                 supportingContent = {
-                    val index = HailData.WORKING_MODE_VALUES.indexOf(workingMode)
-                    Text(workingModeEntries.getOrElse(index) { workingMode })
+                    Text(getString(HailData.labelResForMode(workingMode)))
+                },
+                leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
+                enabled = (currentProvider?.modes?.size ?: 0) > 1,
+                onClick = {
+                    val modes = currentProvider?.modes.orEmpty()
+                    val modeItems = modes.map { getString(HailData.labelResForMode(it)) }.toTypedArray()
+                    val checkedItem = modes.indexOf(workingMode).takeIf { it >= 0 } ?: 0
+                    MaterialAlertDialogBuilder(requireActivity())
+                        .setTitle(R.string.mode)
+                        .setSingleChoiceItems(modeItems, checkedItem) { _, which ->
+                            val chosenMode = modes[which]
+                            val accepted = onWorkingModeChange(chosenMode) { workingMode = it }
+                            if (accepted) HailData.workingMode = chosenMode
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
                 }
             )
             SettingsSwitch(
