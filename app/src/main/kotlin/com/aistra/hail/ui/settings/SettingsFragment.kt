@@ -495,6 +495,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         var compactIcon by remember { mutableStateOf(HailData.compactIcon) }
         var synthesizeAdaptiveIcons by remember { mutableStateOf(HailData.synthesizeAdaptiveIcons) }
         var homeFontSize by remember { mutableStateOf(HailData.homeFontSize) }
+        var useFloatingBottomBar by remember { mutableStateOf(HailData.useFloatingBottomBar) }
 
         val iconPackValues by _iconPackValues
         val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
@@ -586,6 +587,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         valueRange = 11f..16f,
                         valueSteps = 4,
                         leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.use_floating_bottom_bar)) },
+                        supportingContent = { Text(stringResource(R.string.use_floating_bottom_bar_desc)) },
+                        checked = useFloatingBottomBar,
+                        onCheckedChange = {
+                            useFloatingBottomBar = it
+                            HailData.useFloatingBottomBar = it
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Smartphone, contentDescription = null) },
                     )
                 }
             }

@@ -140,6 +140,7 @@ object HailData {
     const val GRAYSCALE_ICON = "grayscale_icon"
     const val COMPACT_ICON = "compact_icon"
     const val SYNTHESIZE_ADAPTIVE_ICONS = "synthesize_adaptive_icons"
+    const val USE_FLOATING_BOTTOM_BAR = "use_floating_bottom_bar"
     const val HOME_FONT_SIZE = "home_font_size_f"
     const val FUZZY_SEARCH = "fuzzy_search"
     const val NINE_KEY_SEARCH = "nine_key"
@@ -254,6 +255,9 @@ object HailData {
     var seedColor
         get() = sp.getInt(SEED_COLOR, 0xFF6750A4.toInt())
         set(value) = sp.edit { putInt(SEED_COLOR, value) }
+    var useFloatingBottomBar
+        get() = sp.getBoolean(USE_FLOATING_BOTTOM_BAR, false)
+        set(value) = sp.edit { putBoolean(USE_FLOATING_BOTTOM_BAR, value) }
 
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"

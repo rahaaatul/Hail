@@ -81,13 +81,19 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         bottomNav?.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         bottomNav?.setContent {
             AppTheme {
-                ExpressiveNavigationBar(navController = navController)
+                ExpressiveNavigationBar(
+                    navController = navController,
+                    useFloating = HailData.useFloatingBottomBar
+                )
             }
         }
         navRail?.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         navRail?.setContent {
             AppTheme {
-                ExpressiveNavigationBar(navController = navController)
+                ExpressiveNavigationBar(
+                    navController = navController,
+                    useFloating = HailData.useFloatingBottomBar
+                )
             }
         }
 
