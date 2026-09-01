@@ -13,8 +13,6 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -646,7 +644,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     .fillMaxSize()
                     .padding(padding)
                     .verticalScroll(rememberScrollState())
-                    .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+                    .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec())
             ) {
                 options.forEachIndexed { index, option ->
                     val selected = index == selectedOption
