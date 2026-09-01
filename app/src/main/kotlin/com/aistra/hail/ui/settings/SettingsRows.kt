@@ -14,8 +14,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -32,13 +35,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.min
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.dp
 
 enum class ListPreferenceType { ALERT_DIALOG, DROPDOWN_MENU }
 
@@ -51,6 +48,8 @@ fun SettingsSwitch(
     enabled: Boolean = true,
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
+    shapes: ListItemShapes? = null,
+    colors: ListItemColors? = null,
 ) {
     val toggleableModifier = if (enabled) {
         modifier.toggleable(
@@ -62,13 +61,15 @@ fun SettingsSwitch(
     } else {
         modifier
     }
-    ListItem(
+    SegmentedListItem(
         modifier = toggleableModifier,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
         trailingContent = {
             Switch(checked = checked, onCheckedChange = null, enabled = enabled)
-        }
+        },
+        shapes = shapes ?: ListItemDefaults.shapes(),
+        colors = colors ?: ListItemDefaults.segmentedColors()
     ) {
         headlineContent()
     }
@@ -85,18 +86,21 @@ fun SettingsSlider(
     enabled: Boolean = true,
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
+    shapes: ListItemShapes? = null,
+    colors: ListItemColors? = null,
 ) {
     var sliderValue by remember { mutableStateOf(value) }
-    // Update local state when parent value changes
     if (sliderValue != value) {
         sliderValue = value
     }
 
-    ListItem(
+    SegmentedListItem(
         modifier = modifier
             .fillMaxWidth(),
         supportingContent = supportingContent,
-        leadingContent = leadingContent
+        leadingContent = leadingContent,
+        shapes = shapes ?: ListItemDefaults.shapes(),
+        colors = colors ?: ListItemDefaults.segmentedColors()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             headlineContent()
@@ -126,17 +130,21 @@ private fun SettingsListInternal(
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
     type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
+    shapes: ListItemShapes? = null,
+    colors: ListItemColors? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     when (type) {
         ListPreferenceType.ALERT_DIALOG -> {
-            ListItem(
+            SegmentedListItem(
+                onClick = { expanded = true },
                 modifier = modifier
-                    .clickable(enabled = enabled) { expanded = true }
                     .fillMaxWidth(),
                 supportingContent = supportingContent,
-                leadingContent = leadingContent
+                leadingContent = leadingContent,
+                shapes = shapes ?: ListItemDefaults.shapes(),
+                colors = colors ?: ListItemDefaults.segmentedColors()
             ) {
                 headlineContent()
             }
@@ -182,12 +190,14 @@ private fun SettingsListInternal(
 
         ListPreferenceType.DROPDOWN_MENU -> {
             Box {
-                ListItem(
+                SegmentedListItem(
+                    onClick = { expanded = !expanded },
                     modifier = modifier
-                        .clickable(enabled = enabled) { expanded = !expanded }
                         .fillMaxWidth(),
                     supportingContent = supportingContent,
-                    leadingContent = leadingContent
+                    leadingContent = leadingContent,
+                    shapes = shapes ?: ListItemDefaults.shapes(),
+                    colors = colors ?: ListItemDefaults.segmentedColors()
                 ) {
                     headlineContent()
                 }
@@ -222,6 +232,8 @@ fun SettingsList(
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
     type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
+    shapes: ListItemShapes? = null,
+    colors: ListItemColors? = null,
 ) = SettingsListInternal(
     headlineContent = headlineContent,
     selectedValue = selectedValue,
@@ -232,7 +244,9 @@ fun SettingsList(
     enabled = enabled,
     supportingContent = supportingContent,
     leadingContent = leadingContent,
-    type = type
+    type = type,
+    shapes = shapes ?: ListItemDefaults.shapes(),
+    colors = colors ?: ListItemDefaults.segmentedColors()
 )
 
 @Composable
@@ -247,6 +261,8 @@ fun SettingsList(
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
     type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
+    shapes: ListItemShapes? = null,
+    colors: ListItemColors? = null,
 ) {
     val entries = stringArrayResource(entriesId).toList()
     SettingsListInternal(
@@ -259,7 +275,9 @@ fun SettingsList(
         enabled = enabled,
         supportingContent = supportingContent,
         leadingContent = leadingContent,
-        type = type
+        type = type,
+        shapes = shapes ?: ListItemDefaults.shapes(),
+        colors = colors ?: ListItemDefaults.segmentedColors()
     )
 }
 
@@ -271,10 +289,15 @@ fun SettingsClickable(
     enabled: Boolean = true,
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
-) = ListItem(
-    modifier = modifier.clickable(enabled = enabled, onClick = onClick),
+    shapes: ListItemShapes? = null,
+    colors: ListItemColors? = null,
+) = SegmentedListItem(
+    onClick = onClick,
+    modifier = modifier,
     supportingContent = supportingContent,
-    leadingContent = leadingContent
+    leadingContent = leadingContent,
+    shapes = shapes ?: ListItemDefaults.shapes(),
+    colors = colors ?: ListItemDefaults.segmentedColors()
 ) {
     headlineContent()
 }
@@ -283,7 +306,7 @@ fun SettingsClickable(
 fun SettingsSectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.titleMediumEmphasized,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
     )

@@ -19,6 +19,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -35,14 +36,19 @@ import androidx.compose.material.icons.automirrored.outlined.Shortcut
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,17 +60,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
-import androidx.navigation.fragment.findNavController
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
@@ -179,22 +187,33 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 val sortedOptions = sortedProviders.map { getString(it.labelRes) }
                 val currentProvider = HailData.providerForMode(workingMode)
                 val selectedIndex = sortedProviders.indexOfFirst { it.key == currentProvider?.key }.takeIf { it >= 0 } ?: 0
+                val notAvailableLabel = stringResource(R.string.not_available)
+                val sortedEnabled = sortedProviders.map { isProviderAvailable(it.key) }
+                val sortedSubtitles = sortedEnabled.map { if (it) null else notAvailableLabel }
                 SelectionScreen(
                     title = stringResource(R.string.working_mode),
                     options = sortedOptions,
                     selectedOption = selectedIndex,
+                    enabled = sortedEnabled,
+                    subtitles = sortedSubtitles,
                     onSelect = { index ->
                         val chosen = sortedProviders[index]
                         if (chosen.modes.size == 1) {
                             val accepted = onWorkingModeChange(chosen.modes.first()) { workingMode = it }
-                            if (accepted) HailData.workingMode = chosen.modes.first()
+                            if (!accepted) {
+                                workingMode = HailData.MODE_DEFAULT
+                                HailData.workingMode = HailData.MODE_DEFAULT
+                            }
                             currentScreen = SettingsScreen.MAIN
                         } else {
                             // Sort modes alphabetically
                             val sortedModes = chosen.modes.sortedBy { getString(HailData.labelResForMode(it)) }
-                            workingMode = sortedModes.first()
-                            HailData.workingMode = sortedModes.first()
-                            currentScreen = SettingsScreen.MODE_SELECTION
+                            val accepted = onWorkingModeChange(sortedModes.first()) { workingMode = it }
+                            if (!accepted) {
+                                workingMode = HailData.MODE_DEFAULT
+                                HailData.workingMode = HailData.MODE_DEFAULT
+                            }
+                            currentScreen = if (accepted) SettingsScreen.MODE_SELECTION else SettingsScreen.MAIN
                         }
                     },
                     onBack = { currentScreen = SettingsScreen.WORKING_MODE }
@@ -213,7 +232,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     onSelect = { index ->
                         val chosenMode = sortedModes.get(index) ?: return@SelectionScreen
                         val accepted = onWorkingModeChange(chosenMode) { workingMode = it }
-                        if (accepted) HailData.workingMode = chosenMode
+                        if (!accepted) {
+                            workingMode = HailData.MODE_DEFAULT
+                            HailData.workingMode = HailData.MODE_DEFAULT
+                        }
                         currentScreen = SettingsScreen.MAIN
                     },
                     onBack = { currentScreen = SettingsScreen.WORKING_MODE }
@@ -222,7 +244,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     private fun MainSettingsScreen(
         workingMode: String,
@@ -231,8 +253,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
     ) {
         val context = LocalContext.current
         val scrollState = rememberScrollState()
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-        // Local state holders - trigger recomposition on change, persist to HailData
         var biometricLogin by remember { mutableStateOf(HailData.biometricLogin) }
         var appTheme by remember { mutableStateOf(HailData.appTheme) }
         var iconPack by remember { mutableStateOf(HailData.iconPack) }
@@ -251,14 +273,17 @@ class SettingsFragment : MainFragment(), MenuProvider {
         var dynamicShortcutAction by remember { mutableStateOf(HailData.dynamicShortcutAction) }
 
         val iconPackValues by _iconPackValues
-        val workingModeEntries = stringArrayResource(R.array.working_mode_entries)
         val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
         val tileActionEntries = stringArrayResource(R.array.tile_action_entries)
         val dynamicShortcutEntries = stringArrayResource(R.array.dynamic_shortcut_entries)
 
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(title = { Text(stringResource(R.string.title_settings)) })
+                LargeFlexibleTopAppBar(
+                    title = { Text(stringResource(R.string.title_settings), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    scrollBehavior = scrollBehavior
+                )
             }
         ) { padding ->
             Column(
@@ -267,236 +292,275 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     .padding(padding)
                     .verticalScroll(scrollState)
             ) {
-                // Working mode navigation row
-                SettingsNavigationRow(
-                    title = stringResource(R.string.working_mode),
-                    subtitle = getString(HailData.providerForMode(workingMode)?.labelRes ?: R.string.label_default),
-                    icon = Icons.Outlined.Adb,
-                    onClick = onNavigateToWorkingMode
-                )
+                // ── General ──
+                SettingsSectionHeader(stringResource(R.string.section_general))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    val generalItems = 6
+                SegmentedListItem(
+                        onClick = { onNavigateToWorkingMode() },
+                        supportingContent = { Text(getString(HailData.providerForMode(workingMode)?.labelRes ?: R.string.provider_idle)) },
+                        leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
+                        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = generalItems),
+                        colors = ListItemDefaults.segmentedColors()
+                    ) {
+                        Text(stringResource(R.string.working_mode))
+                    }
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.fuzzy_search)) },
+                        checked = fuzzySearch,
+                        onCheckedChange = {
+                            fuzzySearch = it
+                            HailData.fuzzySearch = it
+                        },
+                        leadingContent = { Icon(Icons.AutoMirrored.Outlined.ManageSearch, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.nine_key)) },
+                        checked = nineKeySearch,
+                        onCheckedChange = {
+                            nineKeySearch = it
+                            HailData.nineKeySearch = it
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Dialpad, contentDescription = null) },
+                    )
+                    SettingsList(
+                        headlineContent = { Text(stringResource(R.string.tile_action)) },
+                        selectedValue = tileAction,
+                        onValueChange = { value ->
+                            tileAction = value
+                            HailData.tileAction = value
+                            true
+                        },
+                        values = HailData.TILE_ACTION_VALUES,
+                        entriesId = R.array.tile_action_entries,
+                        leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) },
+                        supportingContent = {
+                            val index = HailData.TILE_ACTION_VALUES.indexOf(tileAction)
+                            Text(tileActionEntries.getOrElse(index) { tileAction })
+                        },
+                    )
+                    SettingsList(
+                        headlineContent = { Text(stringResource(R.string.dynamic_shortcut_action)) },
+                        selectedValue = dynamicShortcutAction,
+                        onValueChange = { action ->
+                            HShortcuts.removeAllDynamicShortcuts()
+                            HShortcuts.addDynamicShortcutAction(action)
+                            dynamicShortcutAction = action
+                            HailData.dynamicShortcutAction = action
+                            true
+                        },
+                        values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
+                        entriesId = R.array.dynamic_shortcut_entries,
+                        leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) },
+                        supportingContent = {
+                            val index = HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(dynamicShortcutAction)
+                            Text(dynamicShortcutEntries.getOrElse(index) { dynamicShortcutAction })
+                        },
+                    )
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.action_add_pin_shortcut)) },
+                        onClick = ::addPinShortcut,
+                        leadingContent = { Icon(Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
+                    )
+                }
 
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.action_biometric)) },
-                    checked = biometricLogin,
-                    onCheckedChange = { value ->
-                        if (value) resetDynamicShortcuts()
-                        biometricLogin = value
-                        HailData.biometricLogin = value
-                    },
-                    leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) }
-                )
-                SettingsSectionHeader(stringResource(R.string.title_customize))
-                SettingsList(
-                    headlineContent = { Text(stringResource(R.string.app_theme)) },
-                    selectedValue = appTheme,
-                    onValueChange = { value ->
-                        appTheme = value
-                        HailData.appTheme = value
-                        app.setAppTheme(value)
-                        true
-                    },
-                    values = HailData.APP_THEME_VALUES,
-                    entriesId = R.array.app_theme_entries,
-                    leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
-                    supportingContent = {
-                        val index = HailData.APP_THEME_VALUES.indexOf(appTheme)
-                        Text(appThemeEntries.getOrElse(index) { appTheme })
-                    }
-                )
-                SettingsList(
-                    headlineContent = { Text(stringResource(R.string.icon_pack)) },
-                    selectedValue = iconPack,
-                    onValueChange = { value ->
-                        AppIconCache.clear()
-                        iconPack = value
-                        HailData.iconPack = value
-                        true
-                    },
-                    values = iconPackValues,
-                    entries = iconPackValues.map { iconPackName(it) },
-                    leadingContent = { Icon(Icons.Outlined.Palette, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.grayscale_icon)) },
-                    checked = grayscaleIcon,
-                    onCheckedChange = {
-                        grayscaleIcon = it
-                        HailData.grayscaleIcon = it
-                    },
-                    leadingContent = { Icon(Icons.Outlined.FilterBAndW, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.compact_icon)) },
-                    checked = compactIcon,
-                    onCheckedChange = {
-                        compactIcon = it
-                        HailData.compactIcon = it
-                    },
-                    leadingContent = { Icon(Icons.Outlined.Apps, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.synthesize_adaptive_icons)) },
-                    checked = synthesizeAdaptiveIcons,
-                    onCheckedChange = {
-                        synthesizeAdaptiveIcons = it
-                        HailData.synthesizeAdaptiveIcons = it
-                    },
-                    leadingContent = { Icon(Icons.Outlined.Layers, contentDescription = null) }
-                )
-                SettingsSlider(
-                    headlineContent = { Text(stringResource(R.string.home_font_size)) },
-                    value = homeFontSize,
-                    onValueChange = {
-                        homeFontSize = it
-                        HailData.homeFontSize = it
-                    },
-                    valueRange = 11f..16f,
-                    valueSteps = 4,
-                    leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.fuzzy_search)) },
-                    checked = fuzzySearch,
-                    onCheckedChange = {
-                        fuzzySearch = it
-                        HailData.fuzzySearch = it
-                    },
-                    leadingContent = { Icon(Icons.AutoMirrored.Outlined.ManageSearch, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.nine_key)) },
-                    checked = nineKeySearch,
-                    onCheckedChange = {
-                        nineKeySearch = it
-                        HailData.nineKeySearch = it
-                    },
-                    leadingContent = { Icon(Icons.Outlined.Dialpad, contentDescription = null) }
-                )
-                SettingsList(
-                    headlineContent = { Text(stringResource(R.string.tile_action)) },
-                    selectedValue = tileAction,
-                    onValueChange = { value ->
-                        tileAction = value
-                        HailData.tileAction = value
-                        true
-                    },
-                    values = HailData.TILE_ACTION_VALUES,
-                    entriesId = R.array.tile_action_entries,
-                    leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) },
-                    supportingContent = {
-                        val index = HailData.TILE_ACTION_VALUES.indexOf(tileAction)
-                        Text(tileActionEntries.getOrElse(index) { tileAction })
-                    }
-                )
-                SettingsSectionHeader(stringResource(R.string.auto_freeze))
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.auto_freeze_after_lock)) },
-                    checked = autoFreezeAfterLock,
-                    onCheckedChange = { value ->
-                        autoFreezeAfterLock = value
-                        HailData.autoFreezeAfterLock = value
-                        app.setAutoFreezeService(value)
-                    },
-                    leadingContent = { Icon(Icons.Outlined.ScreenLockPortrait, contentDescription = null) }
-                )
-                SettingsSlider(
-                    headlineContent = { Text(stringResource(R.string.auto_freeze_delay)) },
-                    value = autoFreezeDelay.toFloat(),
-                    onValueChange = {
-                        autoFreezeDelay = it.toLong()
-                        HailData.autoFreezeDelay = it.toLong()
-                    },
-                    valueRange = 0f..30f,
-                    valueSteps = 29,
-                    enabled = autoFreezeAfterLock,
-                    leadingContent = { Icon(Icons.Outlined.LockClock, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.skip_while_charging)) },
-                    checked = skipWhileCharging,
-                    onCheckedChange = {
-                        skipWhileCharging = it
-                        HailData.skipWhileCharging = it
-                    },
-                    enabled = autoFreezeAfterLock,
-                    leadingContent = { Icon(Icons.Outlined.BatteryChargingFull, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.skip_foreground_app)) },
-                    checked = skipForegroundApp,
-                    onCheckedChange = { value ->
-                        if (value && !HSystem.checkOpUsageStats(context)) {
-                            context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                            false
-                        } else {
-                            skipForegroundApp = value
-                            HailData.skipForegroundApp = value
+                // ── Appearance ──
+                SettingsSectionHeader(stringResource(R.string.section_appearance))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SettingsList(
+                        headlineContent = { Text(stringResource(R.string.app_theme)) },
+                        selectedValue = appTheme,
+                        onValueChange = { value ->
+                            appTheme = value
+                            HailData.appTheme = value
+                            app.setAppTheme(value)
                             true
-                        }
-                    },
-                    enabled = autoFreezeAfterLock,
-                    leadingContent = { Icon(Icons.Outlined.Android, contentDescription = null) }
-                )
-                SettingsSwitch(
-                    headlineContent = { Text(stringResource(R.string.skip_notifying_app)) },
-                    checked = skipNotifyingApp,
-                    onCheckedChange = { value ->
-                        val isGranted = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
-                        if (value && !isGranted) {
-                            app.setAutoFreezeServiceEnabled(true)
-                            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                            false
-                        } else {
-                            skipNotifyingApp = value
-                            HailData.skipNotifyingApp = value
+                        },
+                        values = HailData.APP_THEME_VALUES,
+                        entriesId = R.array.app_theme_entries,
+                        leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
+                        supportingContent = {
+                            val index = HailData.APP_THEME_VALUES.indexOf(appTheme)
+                            Text(appThemeEntries.getOrElse(index) { appTheme })
+                        },
+                    )
+                    SettingsList(
+                        headlineContent = { Text(stringResource(R.string.icon_pack)) },
+                        selectedValue = iconPack,
+                        onValueChange = { value ->
+                            AppIconCache.clear()
+                            iconPack = value
+                            HailData.iconPack = value
                             true
-                        }
-                    },
-                    enabled = autoFreezeAfterLock,
-                    leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null) }
-                )
-                SettingsSectionHeader(stringResource(R.string.title_shortcuts))
-                SettingsClickable(
-                    headlineContent = { Text(stringResource(R.string.action_add_pin_shortcut)) },
-                    onClick = ::addPinShortcut,
-                    leadingContent = { Icon(Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) }
-                )
-                SettingsList(
-                    headlineContent = { Text(stringResource(R.string.dynamic_shortcut_action)) },
-                    selectedValue = dynamicShortcutAction,
-                    onValueChange = { action ->
-                        HShortcuts.removeAllDynamicShortcuts()
-                        HShortcuts.addDynamicShortcutAction(action)
-                        dynamicShortcutAction = action
-                        HailData.dynamicShortcutAction = action
-                        true
-                    },
-                    values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
-                    entriesId = R.array.dynamic_shortcut_entries,
-                    leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) },
-                    supportingContent = {
-                        val index = HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(dynamicShortcutAction)
-                        Text(dynamicShortcutEntries.getOrElse(index) { dynamicShortcutAction })
+                        },
+                        values = iconPackValues,
+                        entries = iconPackValues.map { iconPackName(it) },
+                        leadingContent = { Icon(Icons.Outlined.Palette, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.grayscale_icon)) },
+                        checked = grayscaleIcon,
+                        onCheckedChange = {
+                            grayscaleIcon = it
+                            HailData.grayscaleIcon = it
+                        },
+                        leadingContent = { Icon(Icons.Outlined.FilterBAndW, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.compact_icon)) },
+                        checked = compactIcon,
+                        onCheckedChange = {
+                            compactIcon = it
+                            HailData.compactIcon = it
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Apps, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.synthesize_adaptive_icons)) },
+                        checked = synthesizeAdaptiveIcons,
+                        onCheckedChange = {
+                            synthesizeAdaptiveIcons = it
+                            HailData.synthesizeAdaptiveIcons = it
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Layers, contentDescription = null) },
+                    )
+                    SettingsSlider(
+                        headlineContent = { Text(stringResource(R.string.home_font_size)) },
+                        value = homeFontSize,
+                        onValueChange = {
+                            homeFontSize = it
+                            HailData.homeFontSize = it
+                        },
+                        valueRange = 11f..16f,
+                        valueSteps = 4,
+                        leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) },
+                    )
+                }
+
+                // ── Security ──
+                SettingsSectionHeader(stringResource(R.string.section_security))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.action_biometric)) },
+                        checked = biometricLogin,
+                        onCheckedChange = { value ->
+                            if (value) resetDynamicShortcuts()
+                            biometricLogin = value
+                            HailData.biometricLogin = value
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) },
+                    )
+                }
+
+                // ── Automation ──
+                SettingsSectionHeader(stringResource(R.string.section_automation))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.auto_freeze_after_lock)) },
+                        checked = autoFreezeAfterLock,
+                        onCheckedChange = { value ->
+                            autoFreezeAfterLock = value
+                            HailData.autoFreezeAfterLock = value
+                            app.setAutoFreezeService(value)
+                        },
+                        leadingContent = { Icon(Icons.Outlined.ScreenLockPortrait, contentDescription = null) },
+                    )
+                    SettingsSlider(
+                        headlineContent = { Text(stringResource(R.string.auto_freeze_delay)) },
+                        value = autoFreezeDelay.toFloat(),
+                        onValueChange = {
+                            autoFreezeDelay = it.toLong()
+                            HailData.autoFreezeDelay = it.toLong()
+                        },
+                        valueRange = 0f..30f,
+                        valueSteps = 29,
+                        enabled = autoFreezeAfterLock,
+                        leadingContent = { Icon(Icons.Outlined.LockClock, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.skip_while_charging)) },
+                        checked = skipWhileCharging,
+                        onCheckedChange = {
+                            skipWhileCharging = it
+                            HailData.skipWhileCharging = it
+                        },
+                        enabled = autoFreezeAfterLock,
+                        leadingContent = { Icon(Icons.Outlined.BatteryChargingFull, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.skip_foreground_app)) },
+                        checked = skipForegroundApp,
+                        onCheckedChange = { value ->
+                            if (value && !HSystem.checkOpUsageStats(context)) {
+                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                false
+                            } else {
+                                skipForegroundApp = value
+                                HailData.skipForegroundApp = value
+                                true
+                            }
+                        },
+                        enabled = autoFreezeAfterLock,
+                        leadingContent = { Icon(Icons.Outlined.Android, contentDescription = null) },
+                    )
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.skip_notifying_app)) },
+                        checked = skipNotifyingApp,
+                        onCheckedChange = { value ->
+                            val isGranted = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+                            if (value && !isGranted) {
+                                app.setAutoFreezeServiceEnabled(true)
+                                context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                false
+                            } else {
+                                skipNotifyingApp = value
+                                HailData.skipNotifyingApp = value
+                                true
+                            }
+                        },
+                        enabled = autoFreezeAfterLock,
+                        leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null) },
+                    )
+                }
+
+                 // ── Advanced ──
+                SettingsSectionHeader(stringResource(R.string.section_advanced))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.action_clear_dynamic_shortcuts)) },
+                        onClick = ::resetDynamicShortcuts,
+                        leadingContent = { Icon(Icons.Outlined.CleaningServices, contentDescription = null) },
+                    )
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.action_rebuild_cache)) },
+                        onClick = ::confirmRebuildCache,
+                        supportingContent = { Text(stringResource(R.string.summary_rebuild_cache)) },
+                        leadingContent = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
+                    )
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.allow_background_activity)) },
+                        onClick = ::requestBackgroundActivity,
+                        supportingContent = { Text(stringResource(R.string.summary_background_activity)) },
+                        leadingContent = { Icon(Icons.Outlined.BatterySaver, contentDescription = null) },
+                    )
+                    if (workingMode.startsWith(HailData.SU) ||
+                        workingMode.startsWith(HailData.SHIZUKU) ||
+                        workingMode.startsWith(HailData.DHIZUKU) ||
+                        workingMode.startsWith(HailData.OWNER)
+                    ) {
+                        SettingsClickable(
+                            headlineContent = { Text(stringResource(R.string.action_terminal)) },
+                            onClick = ::showTerminalDialog,
+                            leadingContent = { Icon(Icons.Outlined.Terminal, contentDescription = null) },
+                        )
                     }
-                )
-                SettingsClickable(
-                    headlineContent = { Text(stringResource(R.string.action_clear_dynamic_shortcuts)) },
-                    onClick = ::resetDynamicShortcuts,
-                    leadingContent = { Icon(Icons.Outlined.CleaningServices, contentDescription = null) }
-                )
-                SettingsSectionHeader(stringResource(R.string.title_cache))
-                SettingsClickable(
-                    headlineContent = { Text(stringResource(R.string.action_rebuild_cache)) },
-                    onClick = ::confirmRebuildCache,
-                    supportingContent = { Text(stringResource(R.string.summary_rebuild_cache)) },
-                    leadingContent = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) }
-                )
-                SettingsClickable(
-                    headlineContent = { Text(stringResource(R.string.allow_background_activity)) },
-                    onClick = ::requestBackgroundActivity,
-                    supportingContent = { Text(stringResource(R.string.summary_background_activity)) },
-                    leadingContent = { Icon(Icons.Outlined.BatterySaver, contentDescription = null) }
-                )
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.title_about)) },
+                        onClick = { findNavController().navigate(R.id.nav_about) },
+                        leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                    )
+                }
             }
         }
     }
@@ -529,19 +593,24 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                ListItem(
-                    modifier = Modifier.clickable { onNavigateToProviderSelection() },
+                SegmentedListItem(
+                    onClick = { onNavigateToProviderSelection() },
                     supportingContent = { Text(getString(currentProvider?.labelRes ?: R.string.provider_idle)) },
                     leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
-                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) }
+                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                    colors = ListItemDefaults.segmentedColors()
                 ) {
                     Text(stringResource(R.string.provider))
                 }
-                ListItem(
-                    modifier = Modifier.clickable(enabled = (currentProvider?.modes?.size ?: 0) > 1) { onNavigateToModeSelection() },
+                SegmentedListItem(
+                    onClick = { onNavigateToModeSelection() },
+                    enabled = (currentProvider?.modes?.size ?: 0) > 1,
                     supportingContent = { Text(getString(HailData.labelResForMode(workingMode))) },
                     leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
-                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) }
+                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                    colors = ListItemDefaults.segmentedColors()
                 ) {
                     Text(stringResource(R.string.mode))
                 }
@@ -556,7 +625,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
         options: List<String>,
         selectedOption: Int,
         onSelect: (Int) -> Unit,
-        onBack: () -> Unit
+        onBack: () -> Unit,
+        enabled: List<Boolean> = options.map { true },
+        subtitles: List<String?> = options.map { null }
     ) {
         Scaffold(
             topBar = {
@@ -579,36 +650,50 @@ class SettingsFragment : MainFragment(), MenuProvider {
             ) {
                 options.forEachIndexed { index, option ->
                     val selected = index == selectedOption
+                    val isEnabled = enabled.getOrElse(index) { true }
+                    val subtitle = subtitles.getOrElse(index) { null }
                     val interactionSource = remember { MutableInteractionSource() }
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 48.dp)
+                            .heightIn(min = if (subtitle != null) 64.dp else 48.dp)
                             .selectable(
                                 selected = selected,
+                                enabled = isEnabled,
                                 role = Role.RadioButton,
                                 interactionSource = interactionSource,
                                 onClick = { onSelect(index) }
                             )
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-                        RadioButton(
-                            selected = selected,
-                            onClick = null,
-                            interactionSource = interactionSource,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = option,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selected,
+                                onClick = null,
+                                interactionSource = interactionSource,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = option,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = when {
+                                    !isEnabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                    selected -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
+                        if (subtitle != null) {
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                                modifier = Modifier.padding(start = 36.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -622,11 +707,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
         icon: ImageVector,
         onClick: () -> Unit,
         enabled: Boolean = true
-    ) = ListItem(
-        modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
+    ) = SegmentedListItem(
+        onClick = onClick,
+        enabled = enabled,
         supportingContent = { Text(subtitle) },
         leadingContent = { Icon(icon, contentDescription = null) },
-        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) }
+        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+        colors = ListItemDefaults.segmentedColors()
     ) {
         Text(title)
     }
@@ -660,6 +748,18 @@ class SettingsFragment : MainFragment(), MenuProvider {
 
     private fun iconPackName(pack: String): String = if (pack == HailData.ACTION_NONE) getString(R.string.action_none)
     else _iconPackNames.value[pack] ?: pack
+
+    private fun isProviderAvailable(key: String): Boolean = when (key) {
+        "idle" -> true
+        "shizuku" -> runCatching { Shizuku.pingBinder() }.getOrDefault(false)
+        "su" -> HShell.checkSU
+        "dhizuku" -> runCatching { Dhizuku.init(app) }.getOrDefault(false)
+        "owner" -> HPolicy.isDeviceOwnerActive
+        "island" -> HPackages.getApplicationInfoOrNull("com.oasisfeng.island") != null ||
+            HPackages.getApplicationInfoOrNull("com.oasisfeng.island.fdroid") != null
+        "privapp" -> HPackages.isPrivilegedApp(app.packageName)
+        else -> true
+    }
 
     private fun addPinShortcut() {
         MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_add_pin_shortcut)
@@ -867,9 +967,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_terminal -> showTerminalDialog()
             R.id.action_remove_owner -> (requireActivity() as MainActivity).ownerRemoveDialog()
-            R.id.action_help -> findNavController().navigate(R.id.nav_about)
         }
         return false
     }
@@ -880,11 +978,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
 
     override fun onPrepareMenu(menu: Menu) {
         super.onPrepareMenu(menu)
-        if (HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(
-                HailData.SHIZUKU
-            )
-        ) menu.findItem(R.id.action_terminal).isVisible = true
-        else if (HPolicy.isDeviceOwnerActive) menu.findItem(R.id.action_remove_owner).isVisible = true
+        if (HPolicy.isDeviceOwnerActive) menu.findItem(R.id.action_remove_owner).isVisible = true
     }
 
     private fun showTerminalDialog() {
