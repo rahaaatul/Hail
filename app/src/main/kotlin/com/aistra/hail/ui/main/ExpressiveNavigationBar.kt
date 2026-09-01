@@ -13,10 +13,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationItemIconPosition
-import androidx.compose.material3.ShortNavigationBar
-import androidx.compose.material3.ShortNavigationBarDefaults
-import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -91,12 +90,12 @@ fun ExpressiveNavigationBar(
             modifier = modifier,
         )
     } else {
-        ShortNavigationBar(
+        NavigationBar(
             modifier = modifier.fillMaxWidth(),
-            windowInsets = ShortNavigationBarDefaults.windowInsets,
+            windowInsets = NavigationBarDefaults.windowInsets,
         ) {
             navItems.forEach { item ->
-                ShortNavigationBarItem(
+                NavigationBarItem(
                     selected = item.id == selectedId,
                     onClick = {
                         if (item.id != selectedId) {
@@ -113,7 +112,6 @@ fun ExpressiveNavigationBar(
                         )
                     },
                     label = { Text(stringResource(id = item.titleRes)) },
-                    iconPosition = NavigationItemIconPosition.Start,
                 )
             }
         }
