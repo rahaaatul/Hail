@@ -6,6 +6,7 @@ import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
+import com.aistra.hail.utils.HTarget
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -173,6 +174,16 @@ object HailData {
         ACTION_LOCK_FREEZE
     )
 
+    const val PALETTE_STYLE = "palette_style"
+    val PALETTE_STYLE_VALUES = listOf(
+        "TonalSpot", "Neutral", "Vibrant", "Expressive", "Rainbow",
+        "FruitSalad", "Monochrome", "Fidelity", "Content"
+    )
+    const val COLOR_SPEC = "color_spec"
+    val COLOR_SPEC_VALUES = listOf("SPEC_2021", "SPEC_2025")
+    const val DYNAMIC_COLOR = "dynamic_color"
+    const val SEED_COLOR = "seed_color"
+
     private val sp by lazy { PreferenceManager.getDefaultSharedPreferences(app) }
     val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
     val filterUserApps get() = sp.getBoolean(FILTER_USER_APPS, true)
@@ -231,6 +242,18 @@ object HailData {
     var dynamicShortcutAction
         get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
         set(value) = sp.edit { putString(DYNAMIC_SHORTCUT_ACTION, value) }
+    var paletteStyle
+        get() = sp.getString(PALETTE_STYLE, "Expressive")!!
+        set(value) = sp.edit { putString(PALETTE_STYLE, value) }
+    var colorSpec
+        get() = sp.getString(COLOR_SPEC, "SPEC_2025")!!
+        set(value) = sp.edit { putString(COLOR_SPEC, value) }
+    var dynamicColor
+        get() = sp.getBoolean(DYNAMIC_COLOR, HTarget.S)
+        set(value) = sp.edit { putBoolean(DYNAMIC_COLOR, value) }
+    var seedColor
+        get() = sp.getInt(SEED_COLOR, 0xFF6750A4.toInt())
+        set(value) = sp.edit { putInt(SEED_COLOR, value) }
 
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"

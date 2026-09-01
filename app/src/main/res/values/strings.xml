@@ -200,4 +200,8 @@
     <string name="state_hidden">Hidden</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
+    <string name="settings_palette_style">Palette Style</string>
+    <string name="settings_color_spec">Color Spec</string>
+    <string name="settings_dynamic_color">Dynamic Color</string>
+    <string name="settings_seed_color">Seed Color</string>
 </resources>
