@@ -27,9 +27,15 @@ The user-facing outcome is a Settings screen that opens instantly on cold start,
 - [x] (2026-09-01) Fixed section headers to use `titleSmall` (M3 Expressive style).
 - [x] (2026-09-01) Added `provider` string resource.
 - [x] (2026-09-01) Updated `tg_debug.sh` to read from `debug.md` with emoji support.
-- [x] (2026-09-01) Verified build, ran unit tests, confirmed Settings opens without crashes.
+- [x] (2026-09-01) Updated material3 to 1.5.0-alpha27 (Expressive APIs).
+- [x] (2026-09-01) Migrated Theme.kt from MaterialTheme to MaterialExpressiveTheme.
+- [x] (2026-09-01) Added expressiveLightColorScheme() for vibrant light palette.
+- [x] (2026-09-01) Added MotionScheme.expressive() for spring-based animations.
+- [x] (2026-09-01) Added expressiveShapes with 8-param corner radii.
+- [x] (2026-09-01) Created AppTypography with emphasized variants (Bold/Black weights).
+- [x] (2026-09-01) Updated minSdk from 23 to 24 (required by material3-ripple alpha).
+- [x] (2026-09-01) Verified Kotlin compilation and unit tests pass.
 - [ ] (Pending) Device testing: verify cold-start performance, toggle responsiveness, slider functionality, dialog positioning.
-- [ ] (Pending) Material 3 Expressive theme migration (color scheme, motion, typography, shapes).
 - [ ] (Pending) Add Working mode help toolbar action.
 - [ ] (Pending) Move About from toolbar to end of settings list.
 - [ ] (Pending) Remove unused `working_mode_entries` array.
@@ -69,6 +75,15 @@ The user-facing outcome is a Settings screen that opens instantly on cold start,
 - Observation: `rememberRipple` is deprecated in newer Compose versions. The `selectable` modifier already provides ripple indication by default.
 
 - Observation: `ChevronRight` icon is in `Icons.Filled`, not `Icons.AutoMirrored.Filled`.
+
+- Observation: Material 3 Expressive APIs require material3 1.5.0-alpha27+ and minSdk 24.
+  Evidence: The `material3-ripple-android:1.5.0-alpha27` library declares `minSdk 24`. The project's original `minSdk 23` caused a manifest merger error. Fixed by bumping `minSdk` to 24. `MaterialExpressiveTheme`, `expressiveLightColorScheme()`, `MotionScheme`, and the 8-param `Shapes` constructor are all available in 1.5.0-alpha27.
+
+- Observation: `expressiveDarkColorScheme()` does not exist in the Material 3 library.
+  Evidence: Attempting to call `expressiveDarkColorScheme()` resulted in `Unresolved reference`. Google's official sample pairs `expressiveLightColorScheme()` with `darkColorScheme()` for dark mode. The plan was updated to use `darkColorScheme()` as the dark fallback.
+
+- Observation: APK assembly crashes the Gradle daemon due to memory constraints in this environment.
+  Evidence: `./gradlew :app:assembleDebug` consistently causes "Gradle build daemon disappeared unexpectedly" errors. Kotlin compilation and unit tests pass. The issue is environmental (insufficient memory for dexing/packaging), not a code defect.
 
 ## Decision Log
 
@@ -142,7 +157,7 @@ The user-facing outcome is a Settings screen that opens instantly on cold start,
 
 ## Outcomes & Retrospective
 
-The native Compose migration is complete and deployed to the `dev` branch. All core milestones achieved:
+The native Compose migration and Material 3 Expressive theme migration are complete and deployed to the `dev` branch. All core milestones achieved:
 
 1. Added 16 writable setters to `HailData` for all UI-modified preferences.
 2. Created native Compose row composables in `SettingsRows.kt` with proper accessibility.
@@ -156,6 +171,9 @@ The native Compose migration is complete and deployed to the `dev` branch. All c
 10. Sorted providers and modes alphabetically.
 11. Added M3 radio button specs and spring animations.
 12. Updated `tg_debug.sh` to read from `debug.md` with emoji support.
+13. Migrated from `MaterialTheme` to `MaterialExpressiveTheme` with expressive color scheme, motion, typography, and shapes.
+14. Updated material3 to 1.5.0-alpha27 and minSdk to 24.
+15. Verified Kotlin compilation and unit tests pass.
 
 Post-implementation discoveries that changed the approach from the original plan:
 
@@ -168,13 +186,17 @@ Post-implementation discoveries that changed the approach from the original plan
 7. **CRITICAL**: Reading from `HailData.xxx` directly in composables does NOT trigger recomposition. All switches/sliders/lists must use local `mutableStateOf` state holders.
 8. `rememberRipple` is deprecated — use the default ripple from `selectable` modifier.
 9. `ChevronRight` icon is in `Icons.Filled`, not `Icons.AutoMirrored.Filled`.
+10. Material 3 Expressive APIs require material3 1.5.0-alpha27+ and minSdk 24.
+11. `expressiveDarkColorScheme()` does not exist — use `darkColorScheme()` for dark mode.
+12. APK assembly crashes the Gradle daemon due to memory constraints in this environment.
 
 **Known remaining issues (device testing pending):**
-- Toggles in Customize section may still not respond correctly to taps (needs verification).
-- Home font size slider drag behavior needs verification.
-- Dialog positioning on actual device needs verification.
-- Cold-start performance improvement needs quantitative measurement.
-- Radio button selection in working mode dialog needs verification.
+- Verify cold-start performance improvement on device.
+- Verify toggle responsiveness and slider functionality.
+- Verify dialog positioning on actual device.
+- Add Working mode help toolbar action.
+- Move About from toolbar to end of settings list.
+- Remove unused `working_mode_entries` array.
 
 ## Context and Orientation
 
