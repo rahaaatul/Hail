@@ -1,17 +1,7 @@
 package com.aistra.hail.ui.main
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -42,8 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -176,24 +164,13 @@ private fun TraditionalNavItem(
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "pressScale"
-    )
 
     val contentColor = if (selected) MaterialTheme.colorScheme.primary
                       else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = modifier
-            .height(72.dp)
-            .scale(pressScale)
-            .clip(RoundedCornerShape(16.dp))
+            .height(64.dp)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -263,7 +240,7 @@ private fun FloatingPillNavBar(
                         item = item,
                         selected = selected,
                         onClick = { onNavigate(item.route) },
-                        modifier = if (selected) Modifier.weight(1f) else Modifier
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -279,17 +256,7 @@ private fun NavPill(
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "pressScale"
-    )
 
-    val shape = if (selected) RoundedCornerShape(24.dp) else CircleShape
     val bgColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                   else MaterialTheme.colorScheme.surfaceContainer
     val contentColor = if (selected) MaterialTheme.colorScheme.primary
@@ -298,14 +265,13 @@ private fun NavPill(
     Surface(
         modifier = modifier
             .height(56.dp)
-            .scale(pressScale)
-            .clip(shape)
+            .alpha(if (selected) 1f else 0.9f)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             ),
-        shape = shape,
+        shape = RoundedCornerShape(if (selected) 24.dp else 16.dp),
         color = bgColor,
     ) {
         Row(
@@ -321,11 +287,7 @@ private fun NavPill(
                 tint = contentColor,
                 modifier = Modifier.size(24.dp)
             )
-            AnimatedVisibility(
-                visible = selected,
-                enter = expandHorizontally(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-                exit = shrinkHorizontally(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
-            ) {
+            if (selected) {
                 Text(
                     text = item.label,
                     fontSize = 14.sp,
