@@ -42,12 +42,19 @@ if [[ ! -f "${DEBUG_MD}" ]] || [[ ! -s "${DEBUG_MD}" ]]; then
 fi
 commit_subject="$(cat "${DEBUG_MD}")"
 
-./gradlew :app:assembleDebug --console=plain
+./gradlew clean :app:assembleDebug --console=plain
 
 apk_path="$(find "${APK_DIR}" -maxdepth 1 -name '*.apk' | head -1)"
 if [[ -z "${apk_path}" ]]; then
     echo "No APK found in ${APK_DIR}" >&2
     exit 1
+fi
+
+echo "==> Verifying APK contains generated classes"
+if command -v unzip >/dev/null 2>&1; then
+    if unzip -l "${apk_path}" | grep -q "classes.dex"; then
+        echo "  ✓ classes.dex found"
+    fi
 fi
 
 echo "==> Reading APK metadata"
