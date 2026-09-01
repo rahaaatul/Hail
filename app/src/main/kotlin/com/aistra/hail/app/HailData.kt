@@ -5,6 +5,8 @@ import androidx.preference.PreferenceManager
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
+import com.aistra.hail.ui.theme.PaletteStyle
+import com.aistra.hail.ui.theme.ThemeColorSpec
 import com.aistra.hail.utils.HFiles
 import com.aistra.hail.utils.HTarget
 import org.json.JSONArray
@@ -244,16 +246,19 @@ object HailData {
         get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
         set(value) = sp.edit { putString(DYNAMIC_SHORTCUT_ACTION, value) }
     var paletteStyle
-        get() = sp.getString(PALETTE_STYLE, "Expressive")!!
-        set(value) = sp.edit { putString(PALETTE_STYLE, value) }
+        get() = PaletteStyle.fromValueOrDefault(sp.getString(PALETTE_STYLE, null) ?: "TonalSpot")
+        set(value) = sp.edit { putString(PALETTE_STYLE, value.name) }
     var colorSpec
-        get() = sp.getString(COLOR_SPEC, "SPEC_2025")!!
-        set(value) = sp.edit { putString(COLOR_SPEC, value) }
+        get() = ThemeColorSpec.fromValueOrDefault(sp.getString(COLOR_SPEC, null) ?: "SPEC_2025")
+        set(value) = sp.edit { putString(COLOR_SPEC, value.name) }
     var dynamicColor
         get() = sp.getBoolean(DYNAMIC_COLOR, HTarget.S)
         set(value) = sp.edit { putBoolean(DYNAMIC_COLOR, value) }
+    var useDynamicColor
+        get() = sp.getBoolean("use_dynamic_color", true)
+        set(value) = sp.edit { putBoolean("use_dynamic_color", value) }
     var seedColor
-        get() = sp.getInt(SEED_COLOR, 0xFF6750A4.toInt())
+        get() = sp.getInt(SEED_COLOR, 0xFF1976D2.toInt())
         set(value) = sp.edit { putInt(SEED_COLOR, value) }
     var useFloatingBottomBar
         get() = sp.getBoolean(USE_FLOATING_BOTTOM_BAR, false)

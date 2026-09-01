@@ -206,4 +206,11 @@
     <string name="settings_seed_color">Seed Color</string>
     <string name="use_floating_bottom_bar">Floating bar</string>
     <string name="use_floating_bottom_bar_desc">Use a floating pill-shaped navigation bar</string>
+    <string name="title_theme_settings">Theme Settings</string>
+    <string name="theme_palette_style">Palette Style</string>
+    <string name="theme_color_spec">Color Spec</string>
+    <string name="theme_dynamic_color">Dynamic Color (Monet)</string>
+    <string name="theme_dynamic_color_desc">Use colors from your wallpaper</string>
+    <string name="theme_seed_color">Seed Color</string>
+    <string name="theme_seed_color_desc">Choose a custom color</string>
 </resources>

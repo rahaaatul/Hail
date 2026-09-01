@@ -350,10 +350,19 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         onClick = onNavigateToAppearance,
                         leadingContent = { Icon(Icons.Outlined.Palette, contentDescription = null) },
                         trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
-                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
                         colors = ListItemDefaults.segmentedColors()
                     ) {
                         Text(stringResource(R.string.section_appearance))
+                    }
+                    SegmentedListItem(
+                        onClick = { findNavController().navigate(R.id.nav_theme_settings) },
+                        leadingContent = { Icon(Icons.Outlined.ColorLens, contentDescription = null) },
+                        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                        colors = ListItemDefaults.segmentedColors()
+                    ) {
+                        Text(stringResource(R.string.title_theme_settings))
                     }
                 }
 
