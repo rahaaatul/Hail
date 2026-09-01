@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.fragment.findNavController
@@ -102,10 +103,28 @@ class SettingsFragment : MainFragment(), MenuProvider {
     @Composable
     private fun SettingsScreen() {
         val context = LocalContext.current
-        var workingMode by remember { mutableStateOf(HailData.workingMode) }
-        var autoFreezeAfterLock by remember { mutableStateOf(HailData.autoFreezeAfterLock) }
-        val iconPackValues by _iconPackValues
         val scrollState = rememberScrollState()
+
+        // Local state holders - trigger recomposition on change, persist to HailData
+        var workingMode by remember { mutableStateOf(HailData.workingMode) }
+        var biometricLogin by remember { mutableStateOf(HailData.biometricLogin) }
+        var appTheme by remember { mutableStateOf(HailData.appTheme) }
+        var iconPack by remember { mutableStateOf(HailData.iconPack) }
+        var grayscaleIcon by remember { mutableStateOf(HailData.grayscaleIcon) }
+        var compactIcon by remember { mutableStateOf(HailData.compactIcon) }
+        var synthesizeAdaptiveIcons by remember { mutableStateOf(HailData.synthesizeAdaptiveIcons) }
+        var homeFontSize by remember { mutableStateOf(HailData.homeFontSize) }
+        var fuzzySearch by remember { mutableStateOf(HailData.fuzzySearch) }
+        var nineKeySearch by remember { mutableStateOf(HailData.nineKeySearch) }
+        var tileAction by remember { mutableStateOf(HailData.tileAction) }
+        var autoFreezeAfterLock by remember { mutableStateOf(HailData.autoFreezeAfterLock) }
+        var autoFreezeDelay by remember { mutableStateOf(HailData.autoFreezeDelay) }
+        var skipWhileCharging by remember { mutableStateOf(HailData.skipWhileCharging) }
+        var skipForegroundApp by remember { mutableStateOf(HailData.skipForegroundApp) }
+        var skipNotifyingApp by remember { mutableStateOf(HailData.skipNotifyingApp) }
+        var dynamicShortcutAction by remember { mutableStateOf(HailData.dynamicShortcutAction) }
+
+        val iconPackValues by _iconPackValues
 
         val workingModeEntries = stringArrayResource(R.array.working_mode_entries)
         val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
@@ -136,9 +155,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.action_biometric)) },
-                checked = HailData.biometricLogin,
+                checked = biometricLogin,
                 onCheckedChange = { value ->
                     if (value) resetDynamicShortcuts()
+                    biometricLogin = value
                     HailData.biometricLogin = value
                 },
                 leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) }
@@ -147,8 +167,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
             SettingsSectionHeader(stringResource(R.string.title_customize))
             SettingsList(
                 headlineContent = { Text(stringResource(R.string.app_theme)) },
-                selectedValue = HailData.appTheme,
+                selectedValue = appTheme,
                 onValueChange = { value ->
+                    appTheme = value
                     HailData.appTheme = value
                     app.setAppTheme(value)
                     true
@@ -157,15 +178,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 entriesId = R.array.app_theme_entries,
                 leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
                 supportingContent = {
-                    val index = HailData.APP_THEME_VALUES.indexOf(HailData.appTheme)
-                    Text(appThemeEntries.getOrElse(index) { HailData.appTheme })
+                    val index = HailData.APP_THEME_VALUES.indexOf(appTheme)
+                    Text(appThemeEntries.getOrElse(index) { appTheme })
                 }
             )
             SettingsList(
                 headlineContent = { Text(stringResource(R.string.icon_pack)) },
-                selectedValue = HailData.iconPack,
+                selectedValue = iconPack,
                 onValueChange = { value ->
                     AppIconCache.clear()
+                    iconPack = value
                     HailData.iconPack = value
                     true
                 },
@@ -175,52 +197,74 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.grayscale_icon)) },
-                checked = HailData.grayscaleIcon,
-                onCheckedChange = { HailData.grayscaleIcon = it },
+                checked = grayscaleIcon,
+                onCheckedChange = {
+                    grayscaleIcon = it
+                    HailData.grayscaleIcon = it
+                },
                 leadingContent = { Icon(Icons.Outlined.FilterBAndW, contentDescription = null) }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.compact_icon)) },
-                checked = HailData.compactIcon,
-                onCheckedChange = { HailData.compactIcon = it },
+                checked = compactIcon,
+                onCheckedChange = {
+                    compactIcon = it
+                    HailData.compactIcon = it
+                },
                 leadingContent = { Icon(Icons.Outlined.Apps, contentDescription = null) }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.synthesize_adaptive_icons)) },
-                checked = HailData.synthesizeAdaptiveIcons,
-                onCheckedChange = { HailData.synthesizeAdaptiveIcons = it },
+                checked = synthesizeAdaptiveIcons,
+                onCheckedChange = {
+                    synthesizeAdaptiveIcons = it
+                    HailData.synthesizeAdaptiveIcons = it
+                },
                 leadingContent = { Icon(Icons.Outlined.Layers, contentDescription = null) }
             )
             SettingsSlider(
                 headlineContent = { Text(stringResource(R.string.home_font_size)) },
-                value = HailData.homeFontSize,
-                onValueChange = { HailData.homeFontSize = it },
+                value = homeFontSize,
+                onValueChange = {
+                    homeFontSize = it
+                    HailData.homeFontSize = it
+                },
                 valueRange = 11f..16f,
                 valueSteps = 4,
                 leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.fuzzy_search)) },
-                checked = HailData.fuzzySearch,
-                onCheckedChange = { HailData.fuzzySearch = it },
+                checked = fuzzySearch,
+                onCheckedChange = {
+                    fuzzySearch = it
+                    HailData.fuzzySearch = it
+                },
                 leadingContent = { Icon(Icons.AutoMirrored.Outlined.ManageSearch, contentDescription = null) }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.nine_key)) },
-                checked = HailData.nineKeySearch,
-                onCheckedChange = { HailData.nineKeySearch = it },
+                checked = nineKeySearch,
+                onCheckedChange = {
+                    nineKeySearch = it
+                    HailData.nineKeySearch = it
+                },
                 leadingContent = { Icon(Icons.Outlined.Dialpad, contentDescription = null) }
             )
             SettingsList(
                 headlineContent = { Text(stringResource(R.string.tile_action)) },
-                selectedValue = HailData.tileAction,
-                onValueChange = { value -> HailData.tileAction = value; true },
+                selectedValue = tileAction,
+                onValueChange = { value ->
+                    tileAction = value
+                    HailData.tileAction = value
+                    true
+                },
                 values = HailData.TILE_ACTION_VALUES,
                 entriesId = R.array.tile_action_entries,
                 leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) },
                 supportingContent = {
-                    val index = HailData.TILE_ACTION_VALUES.indexOf(HailData.tileAction)
-                    Text(tileActionEntries.getOrElse(index) { HailData.tileAction })
+                    val index = HailData.TILE_ACTION_VALUES.indexOf(tileAction)
+                    Text(tileActionEntries.getOrElse(index) { tileAction })
                 }
             )
             SettingsHorizontalDivider()
@@ -237,8 +281,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             SettingsSlider(
                 headlineContent = { Text(stringResource(R.string.auto_freeze_delay)) },
-                value = HailData.autoFreezeDelay.toFloat(),
-                onValueChange = { HailData.autoFreezeDelay = it.toLong() },
+                value = autoFreezeDelay.toFloat(),
+                onValueChange = {
+                    autoFreezeDelay = it.toLong()
+                    HailData.autoFreezeDelay = it.toLong()
+                },
                 valueRange = 0f..30f,
                 valueSteps = 29,
                 enabled = autoFreezeAfterLock,
@@ -246,19 +293,23 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.skip_while_charging)) },
-                checked = HailData.skipWhileCharging,
-                onCheckedChange = { HailData.skipWhileCharging = it },
+                checked = skipWhileCharging,
+                onCheckedChange = {
+                    skipWhileCharging = it
+                    HailData.skipWhileCharging = it
+                },
                 enabled = autoFreezeAfterLock,
                 leadingContent = { Icon(Icons.Outlined.BatteryChargingFull, contentDescription = null) }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.skip_foreground_app)) },
-                checked = HailData.skipForegroundApp,
+                checked = skipForegroundApp,
                 onCheckedChange = { value ->
                     if (value && !HSystem.checkOpUsageStats(context)) {
                         context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                         false
                     } else {
+                        skipForegroundApp = value
                         HailData.skipForegroundApp = value
                         true
                     }
@@ -268,7 +319,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.skip_notifying_app)) },
-                checked = HailData.skipNotifyingApp,
+                checked = skipNotifyingApp,
                 onCheckedChange = { value ->
                     val isGranted = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
                     if (value && !isGranted) {
@@ -276,6 +327,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                         false
                     } else {
+                        skipNotifyingApp = value
                         HailData.skipNotifyingApp = value
                         true
                     }
@@ -292,10 +344,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             SettingsList(
                 headlineContent = { Text(stringResource(R.string.dynamic_shortcut_action)) },
-                selectedValue = HailData.dynamicShortcutAction,
+                selectedValue = dynamicShortcutAction,
                 onValueChange = { action ->
                     HShortcuts.removeAllDynamicShortcuts()
                     HShortcuts.addDynamicShortcutAction(action)
+                    dynamicShortcutAction = action
                     HailData.dynamicShortcutAction = action
                     true
                 },
@@ -303,8 +356,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 entriesId = R.array.dynamic_shortcut_entries,
                 leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) },
                 supportingContent = {
-                    val index = HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(HailData.dynamicShortcutAction)
-                    Text(dynamicShortcutEntries.getOrElse(index) { HailData.dynamicShortcutAction })
+                    val index = HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(dynamicShortcutAction)
+                    Text(dynamicShortcutEntries.getOrElse(index) { dynamicShortcutAction })
                 }
             )
             SettingsClickable(
