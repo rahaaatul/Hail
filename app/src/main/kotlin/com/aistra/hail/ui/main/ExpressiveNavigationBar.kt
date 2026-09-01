@@ -42,14 +42,15 @@ import com.aistra.hail.R
 
 data class NavItem(
     @IdRes val id: Int,
+    val route: String,
     @DrawableRes val iconRes: Int,
     @StringRes val titleRes: Int,
 )
 
 private val navItems = listOf(
-    NavItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home),
-    NavItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
-    NavItem(R.id.nav_settings, R.drawable.ic_outline_settings, R.string.title_settings),
+    NavItem(R.id.nav_home, "nav_home", R.drawable.ic_round_frozen, R.string.title_home),
+    NavItem(R.id.nav_actions, "nav_actions", R.drawable.ic_round_action_flow, R.string.title_actions),
+    NavItem(R.id.nav_settings, "nav_settings", R.drawable.ic_outline_settings, R.string.title_settings),
 )
 
 @Composable
@@ -85,12 +86,10 @@ fun ExpressiveNavigationBar(
             items = floatingNavItems,
             selectedIndex = selectedIndex,
             onSelected = { index ->
-                val targetId = navItems[index].id
-                if (targetId != selectedId) {
-                    navController.navigate(targetId) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                val targetRoute = navItems[index].route
+                navController.navigate(targetRoute) {
+                    launchSingleTop = true
+                    restoreState = true
                 }
             },
             modifier = modifier,
@@ -106,11 +105,9 @@ fun ExpressiveNavigationBar(
                 ShortNavigationBarItem(
                     selected = item.id == selectedId,
                     onClick = {
-                        if (item.id != selectedId) {
-                            navController.navigate(item.id) {
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+                        navController.navigate(item.route) {
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     },
                     icon = {

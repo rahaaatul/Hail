@@ -8,7 +8,8 @@
     <fragment
         android:id="@+id/nav_home"
         android:name="com.aistra.hail.ui.home.HomeFragment"
-        android:label="@string/app_name" >
+        android:label="@string/app_name"
+        app:route="nav_home" >
         <action
             android:id="@+id/action_home_to_apps"
             app:destination="@id/nav_apps" />
@@ -17,21 +18,25 @@
     <fragment
         android:id="@+id/nav_actions"
         android:name="com.aistra.hail.ui.actions.ActionsFragment"
-        android:label="@string/title_actions" />
+        android:label="@string/title_actions"
+        app:route="nav_actions" />
 
     <fragment
         android:id="@+id/nav_apps"
         android:name="com.aistra.hail.ui.apps.AppsFragment"
-        android:label="@string/title_apps" />
+        android:label="@string/title_apps"
+        app:route="nav_apps" />
 
     <fragment
         android:id="@+id/nav_settings"
         android:name="com.aistra.hail.ui.settings.SettingsFragment"
-        android:label="@string/title_settings" />
+        android:label="@string/title_settings"
+        app:route="nav_settings" />
 
     <fragment
         android:id="@+id/nav_about"
         android:name="com.aistra.hail.ui.about.AboutFragment"
         android:label="@string/title_about"
+        app:route="nav_about"
         tools:layout="@layout/fragment_about" />
 </navigation>
