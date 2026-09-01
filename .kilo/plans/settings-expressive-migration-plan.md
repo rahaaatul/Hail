@@ -628,6 +628,112 @@ navController.navigate(item.route) {
 10. ✅ Verify navigation uses route strings — confirmed via code review: `app:route` attributes in navigation graph and `navController.navigate(route)` calls.
 11. ⏳ Install the debug APK on a device or emulator and verify all patterns work (requires physical device).
 
+---
+
+## Navigation Bar: Comparative Analysis & Implementation Guide
+
+This section combines findings from three production repos (InstallerX-Revived, AZenith, Keyguard) with Google's official Material 3 Expressive recommendations to guide Hail's navigation bar implementation.
+
+### Reference Repo Comparison
+
+| Aspect | InstallerX-Revived | AZenith | KeyGuard | Google Recommendation |
+|--------|-------------------|---------|----------|----------------------|
+| **Component** | `ShortNavigationBar` (docked) / `FloatingBottomBar` (custom) | Custom `BottomNavBar` + `NavPill` | `ShortNavigationBar` (docked) | `ShortNavigationBar` for docked, custom for floating |
+| **Shape morphing** | Custom `SegmentedColumn` (325 lines) | `CircleShape` → `RoundedCornerShape(24.dp)` | None (uses M3 built-in) | `ListItemDefaults.segmentedShapes()` |
+| **Window insets** | `windowInsetsPadding(WindowInsets.navigationBars)` | `windowInsetsPadding(WindowInsets.navigationBars)` + bottom scrim | `padding(bottomInsets.asPaddingValues())` | `windowInsetsPadding(WindowInsets.navigationBars)` |
+| **Icon toggle** | Filled/Outlined variants | Single icon + color change | `Crossfade` Filled/Outlined | Filled (selected) / Outlined (unselected) |
+| **Label reveal** | `AnimatedVisibility` | `AnimatedVisibility` + `expandHorizontally` | `Crossfade` | `AnimatedVisibility` |
+| **Press feedback** | Damped drag (custom spring) | `animateFloatAsState` scale | None | `animateFloatAsState` or `graphicsLayer` |
+| **Edge-to-edge** | `enableEdgeToEdge()` | `enableEdgeToEdge()` + contrast disabled | No (manual padding) | `enableEdgeToEdge()` |
+
+### Google's Official M3 Expressive Recommendations
+
+**From [material.io](https://m3.material.io/blog/building-with-m3-expressive) and [Android Developers](https://developer.android.com/develop/ui/compose/designsystems/material3-expressive):**
+
+1. **Use `ShortNavigationBar`** — It's the expressive replacement for `BottomNavigation`. Shorter height, compact, uses `NavigationItemIconPosition.Top`.
+
+2. **Handle window insets** — Always use `windowInsetsPadding(WindowInsets.navigationBars)` or pass `windowInsets` parameter to `ShortNavigationBar`.
+
+3. **Icon fill toggle** — Toggle between `Icons.Filled.*` (selected) and `Icons.Outlined.*` (unselected). The fill change is the primary selection signal.
+
+4. **Use `graphicsLayer` for animations** — Runs on GPU without triggering recomposition or relayout.
+
+5. **Spring animations** — Use `MaterialTheme.motionScheme.fastSpatialSpec()` / `fastEffectsSpec()` for smooth, physics-based motion.
+
+6. **Enable edge-to-edge** — Call `enableEdgeToEdge()` in `onCreate` and disable navigation bar contrast with `window.isNavigationBarContrastEnforced = false`.
+
+### Hail's Implementation
+
+**Current state:**
+- Uses custom `ExpressiveNavigationBar` with both traditional and floating modes
+- Custom `Icons.kt` with Material Symbols (Home=snowflake, Automation, Settings)
+- `windowInsetsPadding(WindowInsets.navigationBars)` for system bar handling
+- `animateColorAsState` for color transitions
+- `graphicsLayer` for press scale animation
+
+**What to improve based on research:**
+
+| Current | Recommended | Reason |
+|---------|-------------|--------|
+| Custom nav bar layout | Use `ShortNavigationBar` for docked mode | Simpler, officially supported |
+| `tween(300)` animations | `motionScheme.fastEffectsSpec()` | Smoother, spring-based |
+| `Surface` + `background` | `graphicsLayer` for transforms | GPU-accelerated, no relayout |
+| Hardcoded colors | `MaterialTheme.colorScheme.*` | Theme-aware |
+
+### Key Patterns from Reference Repos
+
+**Pattern 1: AZenith's Floating Pill**
+```kotlin
+Surface(
+    modifier = Modifier
+        .widthIn(max = 350.dp)
+        .fillMaxWidth()
+        .clip(RoundedCornerShape(28.dp)),
+    shape = RoundedCornerShape(28.dp),
+    color = MaterialTheme.colorScheme.surfaceContainer,
+    shadowElevation = 8.dp
+) {
+    Row(
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items.forEach { item ->
+            NavPill(
+                item = item,
+                isSelected = selectedRoute == item.route,
+                modifier = if (isSelected) Modifier.weight(1f) else Modifier
+            )
+        }
+    }
+}
+```
+
+**Pattern 2: KeyGuard's Crossfade Icons**
+```kotlin
+@Composable
+private fun NavigationIcon(selected: Boolean, icon: ImageVector, iconSelected: ImageVector, count: Int?) {
+    BadgedBox(badge = { AnimatedNewCounterBadge(count = count) }) {
+        Crossfade(targetState = selected) {
+            val vector = if (it) iconSelected else icon
+            Icon(vector, null)
+        }
+    }
+}
+```
+
+**Pattern 3: InstallerX's Window Insets**
+```kotlin
+FloatingBottomBar(
+    modifier = Modifier
+        .align(Alignment.BottomCenter)
+        .padding(bottom = 12.dp)
+        .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom)),
+    /* ... */
+)
+```
+
+---
+
 ## Outcomes & Retrospective
 
 This section is written at the end of the migration. It records what was actually shipped versus what was planned, and the reasoning for the final state.
