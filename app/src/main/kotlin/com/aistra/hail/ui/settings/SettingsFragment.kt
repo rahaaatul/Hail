@@ -10,6 +10,7 @@ import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
@@ -34,7 +35,6 @@ import androidx.compose.material.icons.automirrored.outlined.Shortcut
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -62,6 +62,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.fragment.findNavController
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.aistra.hail.HailApp.Companion.app
@@ -100,6 +101,18 @@ class SettingsFragment : MainFragment(), MenuProvider {
     private val _iconPackValues = mutableStateOf(listOf(HailData.ACTION_NONE))
     private val _iconPackNames = mutableStateOf(mapOf<String, String>())
 
+    override fun onResume() {
+        super.onResume()
+        // Hide the Activity's toolbar to avoid double top bar with Compose Scaffold
+        (requireActivity() as MainActivity).appbar.isVisible = false
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Restore the Activity's toolbar when leaving settings
+        (requireActivity() as MainActivity).appbar.isVisible = true
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
@@ -137,6 +150,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
         val context = LocalContext.current
         var currentScreen by remember { mutableStateOf(SettingsScreen.MAIN) }
         var workingMode by remember { mutableStateOf(HailData.workingMode) }
+
+        // Handle system back button to navigate within settings screens
+        BackHandler(enabled = currentScreen != SettingsScreen.MAIN) {
+            currentScreen = when (currentScreen) {
+                SettingsScreen.WORKING_MODE -> SettingsScreen.MAIN
+                SettingsScreen.PROVIDER_SELECTION -> SettingsScreen.WORKING_MODE
+                SettingsScreen.MODE_SELECTION -> SettingsScreen.WORKING_MODE
+                else -> SettingsScreen.MAIN
+            }
+        }
 
         when (currentScreen) {
             SettingsScreen.MAIN -> MainSettingsScreen(
@@ -262,7 +285,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     },
                     leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) }
                 )
-                SettingsHorizontalDivider()
                 SettingsSectionHeader(stringResource(R.string.title_customize))
                 SettingsList(
                     headlineContent = { Text(stringResource(R.string.app_theme)) },
@@ -366,7 +388,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         Text(tileActionEntries.getOrElse(index) { tileAction })
                     }
                 )
-                SettingsHorizontalDivider()
                 SettingsSectionHeader(stringResource(R.string.auto_freeze))
                 SettingsSwitch(
                     headlineContent = { Text(stringResource(R.string.auto_freeze_after_lock)) },
@@ -434,7 +455,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     enabled = autoFreezeAfterLock,
                     leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null) }
                 )
-                SettingsHorizontalDivider()
                 SettingsSectionHeader(stringResource(R.string.title_shortcuts))
                 SettingsClickable(
                     headlineContent = { Text(stringResource(R.string.action_add_pin_shortcut)) },
@@ -464,7 +484,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     onClick = ::resetDynamicShortcuts,
                     leadingContent = { Icon(Icons.Outlined.CleaningServices, contentDescription = null) }
                 )
-                SettingsHorizontalDivider()
                 SettingsSectionHeader(stringResource(R.string.title_cache))
                 SettingsClickable(
                     headlineContent = { Text(stringResource(R.string.action_rebuild_cache)) },
@@ -512,19 +531,20 @@ class SettingsFragment : MainFragment(), MenuProvider {
             ) {
                 ListItem(
                     modifier = Modifier.clickable { onNavigateToProviderSelection() },
-                    headlineContent = { Text(stringResource(R.string.provider)) },
-                    supportingContent = { Text(getString(currentProvider?.labelRes ?: R.string.label_default)) },
+                    supportingContent = { Text(getString(currentProvider?.labelRes ?: R.string.provider_idle)) },
                     leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
                     trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) }
-                )
-                HorizontalDivider()
+                ) {
+                    Text(stringResource(R.string.provider))
+                }
                 ListItem(
                     modifier = Modifier.clickable(enabled = (currentProvider?.modes?.size ?: 0) > 1) { onNavigateToModeSelection() },
-                    headlineContent = { Text(stringResource(R.string.mode)) },
                     supportingContent = { Text(getString(HailData.labelResForMode(workingMode))) },
                     leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
                     trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) }
-                )
+                ) {
+                    Text(stringResource(R.string.mode))
+                }
             }
         }
     }
@@ -590,9 +610,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             }
                         )
                     }
-                    if (index < options.lastIndex) {
-                        HorizontalDivider(modifier = Modifier.padding(start = 56.dp))
-                    }
                 }
             }
         }
@@ -607,11 +624,12 @@ class SettingsFragment : MainFragment(), MenuProvider {
         enabled: Boolean = true
     ) = ListItem(
         modifier = Modifier.clickable(enabled = enabled, onClick = onClick),
-        headlineContent = { Text(title) },
         supportingContent = { Text(subtitle) },
         leadingContent = { Icon(icon, contentDescription = null) },
         trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) }
-    )
+    ) {
+        Text(title)
+    }
 
     private fun requestBackgroundActivity() {
         val powerManager = requireContext().getSystemService(PowerManager::class.java)
