@@ -8,16 +8,15 @@ import android.os.PowerManager
 import android.provider.Settings
 import android.view.*
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -39,7 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.RadioButton
@@ -94,12 +92,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
-// Navigation screens for settings
-private object SettingsScreen {
-    const val MAIN = 0
-    const val WORKING_MODE = 1
-    const val PROVIDER_SELECTION = 2
-    const val MODE_SELECTION = 3
+sealed class SettingsScreen {
+    data object MAIN : SettingsScreen()
+    data object WORKING_MODE : SettingsScreen()
+    data object PROVIDER_SELECTION : SettingsScreen()
+    data object MODE_SELECTION : SettingsScreen()
+    data object APPEARANCE : SettingsScreen()
+    data object AUTO_FREEZE : SettingsScreen()
+    data object SHORTCUTS : SettingsScreen()
+    data object CACHE : SettingsScreen()
 }
 
 class SettingsFragment : MainFragment(), MenuProvider {
@@ -109,13 +110,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
 
     override fun onResume() {
         super.onResume()
-        // Hide the Activity's toolbar to avoid double top bar with Compose Scaffold
         (requireActivity() as MainActivity).appbar.isVisible = false
     }
 
     override fun onPause() {
         super.onPause()
-        // Restore the Activity's toolbar when leaving settings
         (requireActivity() as MainActivity).appbar.isVisible = true
     }
 
@@ -145,33 +144,38 @@ class SettingsFragment : MainFragment(), MenuProvider {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AppTheme {
-                    SettingsScreen()
+                    SettingsNavigator()
                 }
             }
         }
     }
 
     @Composable
-    private fun SettingsScreen() {
-        val context = LocalContext.current
-        var currentScreen by remember { mutableStateOf(SettingsScreen.MAIN) }
+    private fun SettingsNavigator() {
+        var currentScreen by remember { mutableStateOf<SettingsScreen>(SettingsScreen.MAIN) }
         var workingMode by remember { mutableStateOf(HailData.workingMode) }
 
-        // Handle system back button to navigate within settings screens
         BackHandler(enabled = currentScreen != SettingsScreen.MAIN) {
             currentScreen = when (currentScreen) {
                 SettingsScreen.WORKING_MODE -> SettingsScreen.MAIN
                 SettingsScreen.PROVIDER_SELECTION -> SettingsScreen.WORKING_MODE
                 SettingsScreen.MODE_SELECTION -> SettingsScreen.WORKING_MODE
-                else -> SettingsScreen.MAIN
+                SettingsScreen.APPEARANCE -> SettingsScreen.MAIN
+                SettingsScreen.AUTO_FREEZE -> SettingsScreen.MAIN
+                SettingsScreen.SHORTCUTS -> SettingsScreen.MAIN
+                SettingsScreen.CACHE -> SettingsScreen.MAIN
+                SettingsScreen.MAIN -> SettingsScreen.MAIN
             }
         }
 
         when (currentScreen) {
             SettingsScreen.MAIN -> MainSettingsScreen(
                 workingMode = workingMode,
-                onWorkingModeChange = { workingMode = it; HailData.workingMode = it },
-                onNavigateToWorkingMode = { currentScreen = SettingsScreen.WORKING_MODE }
+                onNavigateToWorkingMode = { currentScreen = SettingsScreen.WORKING_MODE },
+                onNavigateToAppearance = { currentScreen = SettingsScreen.APPEARANCE },
+                onNavigateToAutoFreeze = { currentScreen = SettingsScreen.AUTO_FREEZE },
+                onNavigateToShortcuts = { currentScreen = SettingsScreen.SHORTCUTS },
+                onNavigateToCache = { currentScreen = SettingsScreen.CACHE }
             )
             SettingsScreen.WORKING_MODE -> WorkingModeScreen(
                 workingMode = workingMode,
@@ -180,7 +184,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 onNavigateToModeSelection = { currentScreen = SettingsScreen.MODE_SELECTION }
             )
             SettingsScreen.PROVIDER_SELECTION -> {
-                // Sort providers alphabetically by label
                 val sortedProviders = HailData.WORKING_MODE_PROVIDERS.sortedBy { getString(it.labelRes) }
                 val sortedOptions = sortedProviders.map { getString(it.labelRes) }
                 val currentProvider = HailData.providerForMode(workingMode)
@@ -204,7 +207,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             }
                             currentScreen = SettingsScreen.MAIN
                         } else {
-                            // Sort modes alphabetically
                             val sortedModes = chosen.modes.sortedBy { getString(HailData.labelResForMode(it)) }
                             val accepted = onWorkingModeChange(sortedModes.first()) { workingMode = it }
                             if (!accepted) {
@@ -219,7 +221,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
             }
             SettingsScreen.MODE_SELECTION -> {
                 val provider = HailData.providerForMode(workingMode)
-                // Sort modes alphabetically by label
                 val sortedModes = (provider?.modes ?: emptyList()).sortedBy { getString(HailData.labelResForMode(it)) }
                 val sortedOptions = sortedModes.map { getString(HailData.labelResForMode(it)) }
                 val selectedIndex = sortedModes.indexOf(workingMode).takeIf { it >= 0 } ?: 0
@@ -239,6 +240,18 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     onBack = { currentScreen = SettingsScreen.WORKING_MODE }
                 )
             }
+            SettingsScreen.APPEARANCE -> AppearanceScreen(
+                onBack = { currentScreen = SettingsScreen.MAIN }
+            )
+            SettingsScreen.AUTO_FREEZE -> AutoFreezeScreen(
+                onBack = { currentScreen = SettingsScreen.MAIN }
+            )
+            SettingsScreen.SHORTCUTS -> ShortcutsScreen(
+                onBack = { currentScreen = SettingsScreen.MAIN }
+            )
+            SettingsScreen.CACHE -> CacheScreen(
+                onBack = { currentScreen = SettingsScreen.MAIN }
+            )
         }
     }
 
@@ -246,34 +259,22 @@ class SettingsFragment : MainFragment(), MenuProvider {
     @Composable
     private fun MainSettingsScreen(
         workingMode: String,
-        onWorkingModeChange: (String) -> Unit,
-        onNavigateToWorkingMode: () -> Unit
+        onNavigateToWorkingMode: () -> Unit,
+        onNavigateToAppearance: () -> Unit,
+        onNavigateToAutoFreeze: () -> Unit,
+        onNavigateToShortcuts: () -> Unit,
+        onNavigateToCache: () -> Unit
     ) {
-        val context = LocalContext.current
-        val scrollState = rememberScrollState()
-        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-
         var biometricLogin by remember { mutableStateOf(HailData.biometricLogin) }
-        var appTheme by remember { mutableStateOf(HailData.appTheme) }
-        var iconPack by remember { mutableStateOf(HailData.iconPack) }
-        var grayscaleIcon by remember { mutableStateOf(HailData.grayscaleIcon) }
-        var compactIcon by remember { mutableStateOf(HailData.compactIcon) }
-        var synthesizeAdaptiveIcons by remember { mutableStateOf(HailData.synthesizeAdaptiveIcons) }
-        var homeFontSize by remember { mutableStateOf(HailData.homeFontSize) }
         var fuzzySearch by remember { mutableStateOf(HailData.fuzzySearch) }
         var nineKeySearch by remember { mutableStateOf(HailData.nineKeySearch) }
         var tileAction by remember { mutableStateOf(HailData.tileAction) }
-        var autoFreezeAfterLock by remember { mutableStateOf(HailData.autoFreezeAfterLock) }
-        var autoFreezeDelay by remember { mutableStateOf(HailData.autoFreezeDelay) }
-        var skipWhileCharging by remember { mutableStateOf(HailData.skipWhileCharging) }
-        var skipForegroundApp by remember { mutableStateOf(HailData.skipForegroundApp) }
-        var skipNotifyingApp by remember { mutableStateOf(HailData.skipNotifyingApp) }
         var dynamicShortcutAction by remember { mutableStateOf(HailData.dynamicShortcutAction) }
 
-        val iconPackValues by _iconPackValues
-        val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
         val tileActionEntries = stringArrayResource(R.array.tile_action_entries)
         val dynamicShortcutEntries = stringArrayResource(R.array.dynamic_shortcut_entries)
+        val scrollState = rememberScrollState()
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -293,9 +294,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 // ── General ──
                 SettingsSectionHeader(stringResource(R.string.section_general))
                 Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-                    val generalItems = 6
-                SegmentedListItem(
-                        onClick = { onNavigateToWorkingMode() },
+                    val generalItems = 4
+                    SegmentedListItem(
+                        onClick = onNavigateToWorkingMode,
                         supportingContent = { Text(getString(HailData.providerForMode(workingMode)?.labelRes ?: R.string.provider_idle)) },
                         leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
                         trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
@@ -338,6 +339,54 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             Text(tileActionEntries.getOrElse(index) { tileAction })
                         },
                     )
+                }
+
+                // ── Appearance ──
+                SettingsSectionHeader(stringResource(R.string.section_appearance))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SegmentedListItem(
+                        onClick = onNavigateToAppearance,
+                        leadingContent = { Icon(Icons.Outlined.Palette, contentDescription = null) },
+                        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+                        colors = ListItemDefaults.segmentedColors()
+                    ) {
+                        Text(stringResource(R.string.section_appearance))
+                    }
+                }
+
+                // ── Security ──
+                SettingsSectionHeader(stringResource(R.string.section_security))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.action_biometric)) },
+                        checked = biometricLogin,
+                        onCheckedChange = { value ->
+                            if (value) resetDynamicShortcuts()
+                            biometricLogin = value
+                            HailData.biometricLogin = value
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) },
+                    )
+                }
+
+                // ── Automation ──
+                SettingsSectionHeader(stringResource(R.string.section_automation))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SegmentedListItem(
+                        onClick = onNavigateToAutoFreeze,
+                        leadingContent = { Icon(Icons.Outlined.ScreenLockPortrait, contentDescription = null) },
+                        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
+                        colors = ListItemDefaults.segmentedColors()
+                    ) {
+                        Text(stringResource(R.string.auto_freeze))
+                    }
+                }
+
+                // ── Advanced ──
+                SettingsSectionHeader(stringResource(R.string.section_advanced))
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                     SettingsList(
                         headlineContent = { Text(stringResource(R.string.dynamic_shortcut_action)) },
                         selectedValue = dynamicShortcutAction,
@@ -356,15 +405,119 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             Text(dynamicShortcutEntries.getOrElse(index) { dynamicShortcutAction })
                         },
                     )
-                    SettingsClickable(
-                        headlineContent = { Text(stringResource(R.string.action_add_pin_shortcut)) },
-                        onClick = ::addPinShortcut,
+                    SegmentedListItem(
+                        onClick = onNavigateToShortcuts,
                         leadingContent = { Icon(Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
+                        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 3),
+                        colors = ListItemDefaults.segmentedColors()
+                    ) {
+                        Text(stringResource(R.string.title_shortcuts))
+                    }
+                    SegmentedListItem(
+                        onClick = onNavigateToCache,
+                        leadingContent = { Icon(Icons.Outlined.DeleteSweep, contentDescription = null) },
+                        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 1, count = 3),
+                        colors = ListItemDefaults.segmentedColors()
+                    ) {
+                        Text(stringResource(R.string.title_cache))
+                    }
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.title_about)) },
+                        onClick = { findNavController().navigate(R.id.nav_about) },
+                        leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                        shapes = ListItemDefaults.segmentedShapes(index = 2, count = 3),
+                        colors = ListItemDefaults.segmentedColors()
                     )
                 }
+            }
+        }
+    }
 
-                // ── Appearance ──
-                SettingsSectionHeader(stringResource(R.string.section_appearance))
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun WorkingModeScreen(
+        workingMode: String,
+        onBack: () -> Unit,
+        onNavigateToProviderSelection: () -> Unit,
+        onNavigateToModeSelection: () -> Unit
+    ) {
+        val currentProvider = HailData.providerForMode(workingMode)
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.working_mode)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                SegmentedListItem(
+                    onClick = onNavigateToProviderSelection,
+                    supportingContent = { Text(getString(currentProvider?.labelRes ?: R.string.provider_idle)) },
+                    leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
+                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
+                    colors = ListItemDefaults.segmentedColors()
+                ) {
+                    Text(stringResource(R.string.provider))
+                }
+                SegmentedListItem(
+                    onClick = onNavigateToModeSelection,
+                    enabled = (currentProvider?.modes?.size ?: 0) > 1,
+                    supportingContent = { Text(getString(HailData.labelResForMode(workingMode))) },
+                    leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
+                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
+                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
+                    colors = ListItemDefaults.segmentedColors()
+                ) {
+                    Text(stringResource(R.string.mode))
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun AppearanceScreen(onBack: () -> Unit) {
+        var appTheme by remember { mutableStateOf(HailData.appTheme) }
+        var iconPack by remember { mutableStateOf(HailData.iconPack) }
+        var grayscaleIcon by remember { mutableStateOf(HailData.grayscaleIcon) }
+        var compactIcon by remember { mutableStateOf(HailData.compactIcon) }
+        var synthesizeAdaptiveIcons by remember { mutableStateOf(HailData.synthesizeAdaptiveIcons) }
+        var homeFontSize by remember { mutableStateOf(HailData.homeFontSize) }
+
+        val iconPackValues by _iconPackValues
+        val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
+        val scrollState = rememberScrollState()
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.section_appearance)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(scrollState)
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                     SettingsList(
                         headlineContent = { Text(stringResource(R.string.app_theme)) },
@@ -435,24 +588,39 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) },
                     )
                 }
+            }
+        }
+    }
 
-                // ── Security ──
-                SettingsSectionHeader(stringResource(R.string.section_security))
-                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
-                    SettingsSwitch(
-                        headlineContent = { Text(stringResource(R.string.action_biometric)) },
-                        checked = biometricLogin,
-                        onCheckedChange = { value ->
-                            if (value) resetDynamicShortcuts()
-                            biometricLogin = value
-                            HailData.biometricLogin = value
-                        },
-                        leadingContent = { Icon(Icons.Outlined.Fingerprint, contentDescription = null) },
-                    )
-                }
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun AutoFreezeScreen(onBack: () -> Unit) {
+        val context = LocalContext.current
+        var autoFreezeAfterLock by remember { mutableStateOf(HailData.autoFreezeAfterLock) }
+        var autoFreezeDelay by remember { mutableStateOf(HailData.autoFreezeDelay) }
+        var skipWhileCharging by remember { mutableStateOf(HailData.skipWhileCharging) }
+        var skipForegroundApp by remember { mutableStateOf(HailData.skipForegroundApp) }
+        var skipNotifyingApp by remember { mutableStateOf(HailData.skipNotifyingApp) }
+        val scrollState = rememberScrollState()
 
-                // ── Automation ──
-                SettingsSectionHeader(stringResource(R.string.section_automation))
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.auto_freeze)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(scrollState)
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                     SettingsSwitch(
                         headlineContent = { Text(stringResource(R.string.auto_freeze_after_lock)) },
@@ -521,15 +689,72 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null) },
                     )
                 }
+            }
+        }
+    }
 
-                 // ── Advanced ──
-                SettingsSectionHeader(stringResource(R.string.section_advanced))
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun ShortcutsScreen(onBack: () -> Unit) {
+        val scrollState = rememberScrollState()
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.title_shortcuts)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(scrollState)
+            ) {
                 Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+                    SettingsClickable(
+                        headlineContent = { Text(stringResource(R.string.action_add_pin_shortcut)) },
+                        onClick = ::addPinShortcut,
+                        leadingContent = { Icon(Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
+                    )
                     SettingsClickable(
                         headlineContent = { Text(stringResource(R.string.action_clear_dynamic_shortcuts)) },
                         onClick = ::resetDynamicShortcuts,
                         leadingContent = { Icon(Icons.Outlined.CleaningServices, contentDescription = null) },
                     )
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun CacheScreen(onBack: () -> Unit) {
+        val workingMode = HailData.workingMode
+        val scrollState = rememberScrollState()
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.title_cache)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(scrollState)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
                     SettingsClickable(
                         headlineContent = { Text(stringResource(R.string.action_rebuild_cache)) },
                         onClick = ::confirmRebuildCache,
@@ -553,64 +778,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             leadingContent = { Icon(Icons.Outlined.Terminal, contentDescription = null) },
                         )
                     }
-                    SettingsClickable(
-                        headlineContent = { Text(stringResource(R.string.title_about)) },
-                        onClick = { findNavController().navigate(R.id.nav_about) },
-                        leadingContent = { Icon(Icons.Outlined.Info, contentDescription = null) },
-                    )
-                }
-            }
-        }
-    }
-
-    // ── New composables for 3-level navigation ──
-
-@OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun WorkingModeScreen(
-        workingMode: String,
-        onBack: () -> Unit,
-        onNavigateToProviderSelection: () -> Unit,
-        onNavigateToModeSelection: () -> Unit
-    ) {
-        val currentProvider = HailData.providerForMode(workingMode)
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.working_mode)) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                        }
-                    }
-                )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                SegmentedListItem(
-                    onClick = { onNavigateToProviderSelection() },
-                    supportingContent = { Text(getString(currentProvider?.labelRes ?: R.string.provider_idle)) },
-                    leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
-                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
-                    shapes = ListItemDefaults.segmentedShapes(index = 0, count = 2),
-                    colors = ListItemDefaults.segmentedColors()
-                ) {
-                    Text(stringResource(R.string.provider))
-                }
-                SegmentedListItem(
-                    onClick = { onNavigateToModeSelection() },
-                    enabled = (currentProvider?.modes?.size ?: 0) > 1,
-                    supportingContent = { Text(getString(HailData.labelResForMode(workingMode))) },
-                    leadingContent = { Icon(Icons.Outlined.Tune, contentDescription = null) },
-                    trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
-                    shapes = ListItemDefaults.segmentedShapes(index = 1, count = 2),
-                    colors = ListItemDefaults.segmentedColors()
-                ) {
-                    Text(stringResource(R.string.mode))
                 }
             }
         }
@@ -696,25 +863,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 }
             }
         }
-    }
-
-    @Composable
-    private fun SettingsNavigationRow(
-        title: String,
-        subtitle: String,
-        icon: ImageVector,
-        onClick: () -> Unit,
-        enabled: Boolean = true
-    ) = SegmentedListItem(
-        onClick = onClick,
-        enabled = enabled,
-        supportingContent = { Text(subtitle) },
-        leadingContent = { Icon(icon, contentDescription = null) },
-        trailingContent = { Icon(Icons.Filled.ChevronRight, contentDescription = null) },
-        shapes = ListItemDefaults.segmentedShapes(index = 0, count = 1),
-        colors = ListItemDefaults.segmentedColors()
-    ) {
-        Text(title)
     }
 
     private fun requestBackgroundActivity() {
@@ -835,15 +983,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
 
     fun onWorkingModeChange(mode: String, setState: (String) -> Unit): Boolean {
-        // Show/hide terminal menu.
         activity.invalidateOptionsMenu()
         when {
             mode.startsWith(HailData.OWNER) -> if (!HPolicy.isDeviceOwnerActive) {
                 MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
                     .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
                     .setPositiveButton(android.R.string.ok, null)
-                    .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
-                    .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
+                    .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }
+                    .show()
                 return false
             }
 
