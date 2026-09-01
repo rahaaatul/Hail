@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.fragment.findNavController
@@ -106,6 +107,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
         val iconPackValues by _iconPackValues
         val scrollState = rememberScrollState()
 
+        val workingModeEntries = stringArrayResource(R.array.working_mode_entries)
+        val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
+        val tileActionEntries = stringArrayResource(R.array.tile_action_entries)
+        val dynamicShortcutEntries = stringArrayResource(R.array.dynamic_shortcut_entries)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -123,7 +129,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 entriesId = R.array.working_mode_entries,
                 leadingContent = { Icon(Icons.Outlined.Adb, contentDescription = null) },
                 type = ListPreferenceType.ALERT_DIALOG,
-                supportingContent = { Text(getString(R.array.working_mode_entries, HailData.WORKING_MODE_VALUES.indexOf(workingMode))) }
+                supportingContent = {
+                    val index = HailData.WORKING_MODE_VALUES.indexOf(workingMode)
+                    Text(workingModeEntries.getOrElse(index) { workingMode })
+                }
             )
             SettingsSwitch(
                 headlineContent = { Text(stringResource(R.string.action_biometric)) },
@@ -147,7 +156,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.APP_THEME_VALUES,
                 entriesId = R.array.app_theme_entries,
                 leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
-                supportingContent = { Text(getString(R.array.app_theme_entries, HailData.APP_THEME_VALUES.indexOf(HailData.appTheme))) }
+                supportingContent = {
+                    val index = HailData.APP_THEME_VALUES.indexOf(HailData.appTheme)
+                    Text(appThemeEntries.getOrElse(index) { HailData.appTheme })
+                }
             )
             SettingsList(
                 headlineContent = { Text(stringResource(R.string.icon_pack)) },
@@ -206,7 +218,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.TILE_ACTION_VALUES,
                 entriesId = R.array.tile_action_entries,
                 leadingContent = { Icon(Icons.Outlined.DashboardCustomize, contentDescription = null) },
-                supportingContent = { Text(getString(R.array.tile_action_entries, HailData.TILE_ACTION_VALUES.indexOf(HailData.tileAction))) }
+                supportingContent = {
+                    val index = HailData.TILE_ACTION_VALUES.indexOf(HailData.tileAction)
+                    Text(tileActionEntries.getOrElse(index) { HailData.tileAction })
+                }
             )
             SettingsHorizontalDivider()
             SettingsSectionHeader(stringResource(R.string.auto_freeze))
@@ -287,7 +302,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
                 entriesId = R.array.dynamic_shortcut_entries,
                 leadingContent = { Icon(Icons.Outlined.AppShortcut, contentDescription = null) },
-                supportingContent = { Text(getString(R.array.dynamic_shortcut_entries, HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(HailData.dynamicShortcutAction))) }
+                supportingContent = {
+                    val index = HailData.DYNAMIC_SHORTCUT_ACTIONS.indexOf(HailData.dynamicShortcutAction)
+                    Text(dynamicShortcutEntries.getOrElse(index) { HailData.dynamicShortcutAction })
+                }
             )
             SettingsClickable(
                 headlineContent = { Text(stringResource(R.string.action_clear_dynamic_shortcuts)) },
