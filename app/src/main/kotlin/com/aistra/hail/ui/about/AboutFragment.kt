@@ -102,15 +102,6 @@ class AboutFragment : MainFragment() {
                 ClickableItem(
                     icon = Icons.AutoMirrored.Filled.Send, title = R.string.action_telegram
                 ) { HUI.openLink(HailData.URL_TELEGRAM) }
-                ClickableItem(
-                    icon = Icons.Outlined.Group, title = R.string.action_qq
-                ) { HUI.openLink(HailData.URL_QQ) }
-                ClickableItem(
-                    icon = Icons.Outlined.LocalMall, title = R.string.action_fdroid
-                ) { HUI.openLink(HailData.URL_FDROID) }
-                ClickableItem(
-                    icon = Icons.Outlined.Coffee, title = R.string.action_donate, onClick = ::openDonateDialog
-                )
             }
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
             OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {

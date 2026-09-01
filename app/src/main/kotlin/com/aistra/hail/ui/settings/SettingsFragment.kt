@@ -11,12 +11,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -337,27 +343,40 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     .fillMaxSize()
                     .padding(padding)
                     .verticalScroll(rememberScrollState())
+                    .animateContentSize(animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
             ) {
                 options.forEachIndexed { index, option ->
+                    val selected = index == selectedOption
+                    val interactionSource = remember { MutableInteractionSource() }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .heightIn(min = 48.dp) // M3 spec: 48dp minimum touch target
                             .selectable(
-                                selected = index == selectedOption,
+                                selected = selected,
                                 role = Role.RadioButton,
+                                interactionSource = interactionSource,
                                 onClick = { onSelect(index) }
                             )
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // M3 spec: 20dp radio icon on left
                         RadioButton(
-                            selected = index == selectedOption,
-                            onClick = null
+                            selected = selected,
+                            onClick = null,
+                            interactionSource = interactionSource,
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
                             text = option,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                         )
                     }
                 }
