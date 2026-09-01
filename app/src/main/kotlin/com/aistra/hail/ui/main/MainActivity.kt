@@ -11,16 +11,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.MenuCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
 import com.aistra.hail.extensions.*
+import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.google.android.material.appbar.AppBarLayout
@@ -77,16 +78,24 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             R.id.nav_home, R.id.nav_actions, R.id.nav_settings
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
-        bottomNav?.setupWithNavController(navController)
-        navRail?.setupWithNavController(navController)
+        bottomNav?.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        bottomNav?.setContent {
+            AppTheme {
+                ExpressiveNavigationBar(navController = navController)
+            }
+        }
+        navRail?.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        navRail?.setContent {
+            AppTheme {
+                ExpressiveNavigationBar(navController = navController)
+            }
+        }
 
         val isRtl = isRtl
         val isLandscape = isLandscape
         appBarMain.appBarLayout.applyDefaultInsetter {
             paddingRelative(isRtl, start = !isLandscape, end = true, top = true)
         }
-        bottomNav?.applyDefaultInsetter { paddingRelative(isRtl, start = true, end = true, bottom = true) }
-        navRail?.applyDefaultInsetter { paddingRelative(isRtl, start = true, top = true, bottom = true) }
         fab.applyDefaultInsetter { marginRelative(isRtl, end = true, bottom = isLandscape) }
     }
 

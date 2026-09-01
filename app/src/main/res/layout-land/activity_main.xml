@@ -12,12 +12,9 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/nav_rail" />
 
-    <com.google.android.material.navigationrail.NavigationRailView
+    <androidx.compose.ui.platform.ComposeView
         android:id="@+id/nav_rail"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        app:labelVisibilityMode="labeled"
-        app:layout_constraintStart_toStartOf="parent"
-        app:menu="@menu/nav_main"
-        app:menuGravity="center" />
+        app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
