@@ -32,6 +32,24 @@ fi
 echo "==> Building debug APK"
 chmod +x ./gradlew
 
+# Remind about uncommitted changes at the beginning
+if ! git diff --quiet HEAD 2>/dev/null; then
+    echo ""
+    echo "⚠️  WARNING: You have uncommitted changes!"
+    echo "   The debug APK will be built from CURRENT code (including uncommitted changes)."
+    echo "   Consider committing first so the build matches a tracked commit."
+    echo ""
+    echo "   Uncommitted files:"
+    git diff --name-only | head -10 | sed 's/^/     - /'
+    echo ""
+    read -p "   Continue anyway? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted. Commit your changes first."
+        exit 1
+    fi
+fi
+
 # Read description from debug.md
 DEBUG_MD="debug.md"
 if [[ ! -f "${DEBUG_MD}" ]] || [[ ! -s "${DEBUG_MD}" ]]; then
