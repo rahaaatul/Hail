@@ -63,6 +63,17 @@
     <string name="working_mode">Working mode</string>
     <string name="provider">Provider</string>
     <string name="mode">Mode</string>
+    <string name="provider_idle">Idle</string>
+    <string name="provider_shizuku">Shizuku</string>
+    <string name="provider_su">Root</string>
+    <string name="provider_dhizuku">Dhizuku</string>
+    <string name="provider_owner">Device Owner</string>
+    <string name="provider_island">Island</string>
+    <string name="provider_privapp">System App</string>
+    <string name="mode_stop">Force Stop</string>
+    <string name="mode_disable">Disable</string>
+    <string name="mode_hide">Hide</string>
+    <string name="mode_suspend">Suspend</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_default">Idle</string>
     <string name="mode_owner_hide">Device Owner - Hide</string>
