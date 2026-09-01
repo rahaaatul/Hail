@@ -1,8 +1,17 @@
 package com.aistra.hail.ui.main
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -10,12 +19,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -37,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -260,7 +271,7 @@ private fun FloatingPillNavBar(
                         item = item,
                         selected = selected,
                         onClick = { onNavigate(item.route) },
-                        modifier = Modifier.weight(1f)
+                        modifier = if (selected) Modifier.weight(1f) else Modifier
                     )
                 }
             }
@@ -277,60 +288,75 @@ private fun NavPill(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+
     val pressScale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = tween(150),
         label = "pressScale"
     )
 
-    val bgColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                  else MaterialTheme.colorScheme.surfaceContainer
-    val contentColor = if (selected) MaterialTheme.colorScheme.primary
-                      else MaterialTheme.colorScheme.onSurfaceVariant
+    val bgColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                  else Color.Transparent,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "bgColor"
+    )
 
-    Surface(
+    val contentColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary
+                      else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "contentColor"
+    )
+
+    val shape = if (selected) RoundedCornerShape(24.dp) else CircleShape
+
+    Row(
         modifier = modifier
-            .height(56.dp)
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
-                clip = true
-                shape = RoundedCornerShape(if (selected) 24.dp else 16.dp)
             }
+            .height(48.dp)
+            .defaultMinSize(minWidth = 48.dp)
+            .clip(shape)
+            .background(bgColor)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
-            ),
-        shape = RoundedCornerShape(if (selected) 24.dp else 16.dp),
-        color = bgColor,
-    ) {
-        Row(
-            modifier = Modifier
-                .height(56.dp)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (selected) item.filledIcon else item.outlinedIcon,
-                contentDescription = item.label,
-                tint = contentColor,
-                modifier = Modifier.size(24.dp)
             )
-            if (selected) {
-                Text(
-                    text = item.label,
-                    fontSize = 14.sp,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = if (selected) item.filledIcon else item.outlinedIcon,
+            contentDescription = item.label,
+            tint = contentColor,
+            modifier = Modifier.size(24.dp)
+        )
+        AnimatedVisibility(
+            visible = selected,
+            enter = expandHorizontally(
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                expandFrom = Alignment.Start
+            ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+            exit = shrinkHorizontally(
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                shrinkTowards = Alignment.Start
+            ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
+        ) {
+            Text(
+                text = item.label,
+                fontSize = 14.sp,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                color = contentColor,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 5.dp)
+            )
         }
     }
 }
