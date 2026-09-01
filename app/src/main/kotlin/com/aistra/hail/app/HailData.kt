@@ -91,13 +91,13 @@ object HailData {
     data class WorkingModeProvider(val key: String, val labelRes: Int, val modes: List<String>)
 
     val WORKING_MODE_PROVIDERS = listOf(
-        WorkingModeProvider("idle", R.string.label_default, listOf(MODE_DEFAULT)),
-        WorkingModeProvider("shizuku", R.string.mode_shizuku_stop, listOf(MODE_SHIZUKU_STOP, MODE_SHIZUKU_DISABLE, MODE_SHIZUKU_HIDE, MODE_SHIZUKU_SUSPEND)),
-        WorkingModeProvider("su", R.string.mode_su_stop, listOf(MODE_SU_STOP, MODE_SU_DISABLE, MODE_SU_HIDE, MODE_SU_SUSPEND)),
-        WorkingModeProvider("dhizuku", R.string.mode_dhizuku_hide, listOf(MODE_DHIZUKU_HIDE, MODE_DHIZUKU_SUSPEND)),
-        WorkingModeProvider("owner", R.string.mode_owner_hide, listOf(MODE_OWNER_HIDE, MODE_OWNER_SUSPEND)),
-        WorkingModeProvider("island", R.string.mode_island_hide, listOf(MODE_ISLAND_HIDE, MODE_ISLAND_SUSPEND)),
-        WorkingModeProvider("privapp", R.string.mode_privapp_stop, listOf(MODE_PRIVAPP_STOP, MODE_PRIVAPP_DISABLE))
+        WorkingModeProvider("idle", R.string.provider_idle, listOf(MODE_DEFAULT)),
+        WorkingModeProvider("shizuku", R.string.provider_shizuku, listOf(MODE_SHIZUKU_STOP, MODE_SHIZUKU_DISABLE, MODE_SHIZUKU_HIDE, MODE_SHIZUKU_SUSPEND)),
+        WorkingModeProvider("su", R.string.provider_su, listOf(MODE_SU_STOP, MODE_SU_DISABLE, MODE_SU_HIDE, MODE_SU_SUSPEND)),
+        WorkingModeProvider("dhizuku", R.string.provider_dhizuku, listOf(MODE_DHIZUKU_HIDE, MODE_DHIZUKU_SUSPEND)),
+        WorkingModeProvider("owner", R.string.provider_owner, listOf(MODE_OWNER_HIDE, MODE_OWNER_SUSPEND)),
+        WorkingModeProvider("island", R.string.provider_island, listOf(MODE_ISLAND_HIDE, MODE_ISLAND_SUSPEND)),
+        WorkingModeProvider("privapp", R.string.provider_privapp, listOf(MODE_PRIVAPP_STOP, MODE_PRIVAPP_DISABLE))
     )
 
     fun providerForMode(mode: String): WorkingModeProvider? = when {
@@ -109,26 +109,26 @@ object HailData {
         WORKING_MODE_PROVIDERS.firstOrNull { it.key == key }?.modes.orEmpty()
 
     private val modeLabelResMap = mapOf(
-        MODE_DEFAULT to R.string.label_default,
-        MODE_SHIZUKU_STOP to R.string.mode_shizuku_stop,
-        MODE_SHIZUKU_DISABLE to R.string.mode_shizuku_disable,
-        MODE_SHIZUKU_HIDE to R.string.mode_shizuku_hide,
-        MODE_SHIZUKU_SUSPEND to R.string.mode_shizuku_suspend,
-        MODE_SU_STOP to R.string.mode_su_stop,
-        MODE_SU_DISABLE to R.string.mode_su_disable,
-        MODE_SU_HIDE to R.string.mode_su_hide,
-        MODE_SU_SUSPEND to R.string.mode_su_suspend,
-        MODE_DHIZUKU_HIDE to R.string.mode_dhizuku_hide,
-        MODE_DHIZUKU_SUSPEND to R.string.mode_dhizuku_suspend,
-        MODE_OWNER_HIDE to R.string.mode_owner_hide,
-        MODE_OWNER_SUSPEND to R.string.mode_owner_suspend,
-        MODE_ISLAND_HIDE to R.string.mode_island_hide,
-        MODE_ISLAND_SUSPEND to R.string.mode_island_suspend,
-        MODE_PRIVAPP_STOP to R.string.mode_privapp_stop,
-        MODE_PRIVAPP_DISABLE to R.string.mode_privapp_disable
+        MODE_DEFAULT to R.string.provider_idle,
+        MODE_SHIZUKU_STOP to R.string.mode_stop,
+        MODE_SHIZUKU_DISABLE to R.string.mode_disable,
+        MODE_SHIZUKU_HIDE to R.string.mode_hide,
+        MODE_SHIZUKU_SUSPEND to R.string.mode_suspend,
+        MODE_SU_STOP to R.string.mode_stop,
+        MODE_SU_DISABLE to R.string.mode_disable,
+        MODE_SU_HIDE to R.string.mode_hide,
+        MODE_SU_SUSPEND to R.string.mode_suspend,
+        MODE_DHIZUKU_HIDE to R.string.mode_hide,
+        MODE_DHIZUKU_SUSPEND to R.string.mode_suspend,
+        MODE_OWNER_HIDE to R.string.mode_hide,
+        MODE_OWNER_SUSPEND to R.string.mode_suspend,
+        MODE_ISLAND_HIDE to R.string.mode_hide,
+        MODE_ISLAND_SUSPEND to R.string.mode_suspend,
+        MODE_PRIVAPP_STOP to R.string.mode_stop,
+        MODE_PRIVAPP_DISABLE to R.string.mode_disable
     )
 
-    fun labelResForMode(mode: String): Int = modeLabelResMap[mode] ?: R.string.label_default
+    fun labelResForMode(mode: String): Int = modeLabelResMap[mode] ?: R.string.provider_idle
     const val BIOMETRIC_LOGIN = "biometric_login"
     const val APP_THEME = "app_theme"
     const val FOLLOW_SYSTEM = "follow_system"
