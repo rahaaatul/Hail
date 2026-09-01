@@ -77,7 +77,7 @@ fun ExpressiveNavigationBar(
                     )
                 },
                 label = { Text(stringResource(id = item.titleRes)) },
-                iconPosition = NavigationItemIconPosition.Top,
+                iconPosition = NavigationItemIconPosition.Start,
             )
         }
     }
