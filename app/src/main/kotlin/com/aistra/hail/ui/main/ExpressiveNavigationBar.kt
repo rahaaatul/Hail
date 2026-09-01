@@ -7,7 +7,6 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -43,11 +42,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
+import android.content.SharedPreferences
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.preference.PreferenceManager
+import com.aistra.hail.app.HailData
+import com.aistra.hail.HailApp
 
 private data class NavItem(
     val route: String,
@@ -66,11 +69,13 @@ private val navItems = listOf(
 fun ExpressiveNavigationBar(
     navController: NavController,
     modifier: Modifier = Modifier,
-    useFloating: Boolean = false,
+    defaultUseFloating: Boolean = false,
 ) {
     var currentDestination by remember {
         mutableStateOf<NavDestination?>(navController.currentDestination)
     }
+
+    var useFloating by remember { mutableStateOf(defaultUseFloating) }
 
     DisposableEffect(navController) {
         val listener = NavController.OnDestinationChangedListener { _, destination, _ ->
@@ -79,6 +84,20 @@ fun ExpressiveNavigationBar(
         navController.addOnDestinationChangedListener(listener)
         onDispose {
             navController.removeOnDestinationChangedListener(listener)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val context = HailApp.app
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == "use_floating_bottom_bar") {
+                useFloating = prefs.getBoolean("use_floating_bottom_bar", false)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
         }
     }
 
@@ -130,7 +149,7 @@ private fun DockedNavBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -162,7 +181,7 @@ private fun FloatingPillNavBar(
             modifier = Modifier
                 .widthIn(max = 350.dp)
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(12.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
             shadowElevation = 8.dp
@@ -170,7 +189,7 @@ private fun FloatingPillNavBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -225,7 +244,7 @@ private fun NavPill(
         Row(
             modifier = Modifier
                 .height(56.dp)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {

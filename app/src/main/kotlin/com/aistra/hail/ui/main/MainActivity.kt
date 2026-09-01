@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             AppTheme {
                 ExpressiveNavigationBar(
                     navController = navController,
-                    useFloating = HailData.useFloatingBottomBar
+                    defaultUseFloating = HailData.useFloatingBottomBar
                 )
             }
         }
@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             AppTheme {
                 ExpressiveNavigationBar(
                     navController = navController,
-                    useFloating = HailData.useFloatingBottomBar
+                    defaultUseFloating = HailData.useFloatingBottomBar
                 )
             }
         }
