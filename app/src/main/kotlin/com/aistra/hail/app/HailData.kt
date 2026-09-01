@@ -14,7 +14,7 @@ object HailData {
     const val URL_GITHUB = "https://github.com/rahaaatul/Hail"
     const val URL_README = "$URL_GITHUB#readme"
     const val URL_RELEASES = "$URL_GITHUB/releases"
-    const val URL_TELEGRAM = "https://t.me/+yvRXYTounDIxODFl"
+    const val URL_TELEGRAM = "https://t.me/hailapk"
     const val URL_QQ = "http://qm.qq.com/cgi-bin/qm/qr?k=I2g_Ymanc6bQMo4cVKTG0knARE0twtSG"
     const val URL_FDROID = "https://f-droid.org/packages/${BuildConfig.APPLICATION_ID}"
     const val URL_ALIPAY = "https://qr.alipay.com/tsx02922ajwj6xekqyd1rbf"
