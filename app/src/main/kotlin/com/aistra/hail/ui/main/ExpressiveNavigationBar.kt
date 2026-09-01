@@ -11,11 +11,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationItemIconPosition
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarArrangement
+import androidx.compose.material3.ShortNavigationBarDefaults
+import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -90,12 +96,14 @@ fun ExpressiveNavigationBar(
             modifier = modifier,
         )
     } else {
-        NavigationBar(
+        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+        ShortNavigationBar(
             modifier = modifier.fillMaxWidth(),
-            windowInsets = NavigationBarDefaults.windowInsets,
+            windowInsets = ShortNavigationBarDefaults.windowInsets,
+            arrangement = ShortNavigationBarArrangement.EqualWeight,
         ) {
             navItems.forEach { item ->
-                NavigationBarItem(
+                ShortNavigationBarItem(
                     selected = item.id == selectedId,
                     onClick = {
                         if (item.id != selectedId) {
@@ -112,6 +120,7 @@ fun ExpressiveNavigationBar(
                         )
                     },
                     label = { Text(stringResource(id = item.titleRes)) },
+                    iconPosition = NavigationItemIconPosition.Top,
                 )
             }
         }
