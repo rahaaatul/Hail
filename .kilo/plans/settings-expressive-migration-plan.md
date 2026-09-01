@@ -734,6 +734,176 @@ FloatingBottomBar(
 
 ---
 
+## Hail vs Reference Repos: Gap Analysis
+
+This section compares Hail's current navigation bar implementation against the three reference repos and identifies what Hail should add or improve.
+
+### What Hail IS Doing (Aligned with Best Practices)
+
+| Feature | Hail | Reference Repo | Status |
+|---------|------|----------------|--------|
+| `windowInsetsPadding(navigationBars)` | ✅ | All three | ✅ Aligned |
+| Custom floating pill bar | ✅ | AZenith, InstallerX | ✅ Aligned |
+| Shape morphing (circle → rounded) | ✅ | AZenith | ✅ Aligned |
+| `graphicsLayer` for press feedback | ✅ | InstallerX | ✅ Aligned |
+| `weight(1f)` for selected expansion | ✅ | AZenith | ✅ Aligned |
+| Two modes (docked + floating) | ✅ | InstallerX | ✅ Aligned |
+| Material Symbols icons | ✅ | All three | ✅ Aligned |
+
+### What Hail is NOT Doing (Gap)
+
+| Missing Feature | Reference Repo | Priority | Why It Matters |
+|----------------|----------------|----------|----------------|
+| `Crossfade` icon transition | KeyGuard | 🔴 High | Smooth icon swap on selection |
+| `AnimatedVisibility` + `expandHorizontally` label reveal | AZenith, InstallerX | 🔴 High | Smooth label appear/disappear |
+| `enableEdgeToEdge()` in Activity | InstallerX, AZenith | 🔴 High | Proper edge-to-edge rendering |
+| `isNavigationBarContrastEnforced = false` | InstallerX, AZenith | 🟡 Medium | Consistent theming on Android 10+ |
+| `motionScheme.fastEffectsSpec()` | Google recommendation | 🟡 Medium | Smoother spring animations |
+| Badge support | KeyGuard, InstallerX | 🟡 Medium | Notification counters |
+| Adaptive layout / nav rail | KeyGuard, InstallerX | 🟢 Low | Tablet/landscape support |
+| `consumeWindowInsets` for content | KeyGuard | 🟢 Low | Prevents double-padding |
+| `semantics` for accessibility | KeyGuard | 🟢 Low | Screen reader support |
+
+### Icon & Title Vertical Pair Implementation
+
+**How reference repos implement vertical icon-title layouts:**
+
+#### AZenith (Floating Pill — Horizontal Layout)
+```kotlin
+Row(
+    modifier = modifier
+        .scale(scale)
+        .height(48.dp)
+        .clip(shape)
+        .background(bgColor)
+        .clickable { onClick() }
+        .padding(horizontal = 12.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
+) {
+    Icon(imageVector = item.icon, modifier = Modifier.size(24.dp))
+    AnimatedVisibility(visible = isSelected) {
+        Text(text = stringResource(item.labelRes), modifier = Modifier.padding(start = 5.dp))
+    }
+}
+```
+- Icon and title are HORIZONTAL (side by side)
+- Selected item expands with `weight(1f)` to show title
+- Unselected items are circles (icon only)
+- Label appears with `expandHorizontally` animation
+
+#### InstallerX (Docked — Vertical Layout via ShortNavigationBar)
+```kotlin
+ShortNavigationBarItem(
+    selected = currentPage == index,
+    onClick = { onPageChanged(index) },
+    iconPosition = if (isMedium) NavigationItemIconPosition.Start else NavigationItemIconPosition.Top,
+    icon = { /* BadgedBox with Icon */ },
+    label = { Text(text = navigationData.label) },
+)
+```
+- Uses `NavigationItemIconPosition.Top` for vertical layout in compact mode
+- Icon above title in compact mode
+- Icon beside title in medium mode
+- Uses Material 3 Expressive built-in component
+
+#### KeyGuard (Docked — Vertical Layout via ShortNavigationBar)
+```kotlin
+val iconPosition = if (maxWidth <= 680.dp)
+    NavigationItemIconPosition.Top else NavigationItemIconPosition.Start
+
+ShortNavigationBar(containerColor = Color.Unspecified) {
+    routesSplit.visible.forEach { r ->
+        BottomNavigationControllerItem(
+            item = r,
+            iconPosition = iconPosition,
+            label = if (navLabelState.value) { { Text(...) } } else null,
+        )
+    }
+}
+```
+- Uses `NavigationItemIconPosition.Top` for phones (≤680dp)
+- Uses `NavigationItemIconPosition.Start` for wider screens
+- `Crossfade` for icon swap between Filled/Outlined
+- Conditionally hides labels based on `navLabelState`
+
+#### Hail's Current Implementation
+
+**TraditionalNavBar (Docked — Custom Vertical Layout):**
+```kotlin
+Column(
+    modifier = modifier
+        .height(64.dp)
+        .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+        .clip(RoundedCornerShape(16.dp))
+        .clickable { onClick() }
+        .padding(horizontal = 12.dp, vertical = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.size(40.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(imageVector = item.icon, modifier = Modifier.size(24.dp))
+        }
+    }
+    Text(text = item.label, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+}
+```
+
+**FloatingPillNavBar (Floating — Horizontal Layout):**
+```kotlin
+Row(
+    modifier = modifier
+        .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+        .height(48.dp)
+        .defaultMinSize(minWidth = 48.dp)
+        .clip(shape)
+        .background(bgColor)
+        .clickable { onClick() }
+        .padding(horizontal = 12.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center
+) {
+    Icon(imageVector = item.icon, modifier = Modifier.size(24.dp))
+    if (selected) {
+        Text(text = item.label, fontSize = 14.sp, modifier = Modifier.padding(start = 5.dp))
+    }
+}
+```
+
+### Recommendations for Hail
+
+**Priority 1 (Critical):**
+1. **Add `enableEdgeToEdge()`** to `MainActivity.onCreate()` for proper edge-to-edge rendering
+2. **Add `Crossfade` for icon transitions** between selected/unselected states (like KeyGuard)
+3. **Add `AnimatedVisibility` with `expandHorizontally`** for label reveal in floating mode (like AZenith)
+
+**Priority 2 (Important):**
+4. **Use `motionScheme.fastEffectsSpec()`** instead of `tween(300)` for spring-based animations
+5. **Add `isNavigationBarContrastEnforced = false`** for consistent theming
+6. **Add `semantics` for accessibility** (screen reader support)
+
+**Priority 3 (Nice to have):**
+7. **Add badge support** for notification counters (like KeyGuard)
+8. **Add adaptive layout** with navigation rail for tablets (like KeyGuard)
+9. **Add `consumeWindowInsets`** to prevent double-padding (like KeyGuard)
+
+### Animation Comparison
+
+| Animation | Hail | AZenith | KeyGuard | Recommended |
+|-----------|------|---------|----------|-------------|
+| Press feedback | `graphicsLayer` scale | `tween(150)` scale | None | `graphicsLayer` (GPU) |
+| Color transition | `tween(300)` | `tween(300)` | `Crossfade` | `motionScheme.fastEffectsSpec()` |
+| Label reveal | None (always visible) | `AnimatedVisibility` + `expandHorizontally` | `Crossfade` | `AnimatedVisibility` + `expandHorizontally` |
+| Icon transition | None | None | `Crossfade` | `Crossfade` |
+| Shape morphing | `clip(shape)` | `clip(shape)` | None | `clip(shape)` |
+
+---
+
 ## Outcomes & Retrospective
 
 This section is written at the end of the migration. It records what was actually shipped versus what was planned, and the reasoning for the final state.
