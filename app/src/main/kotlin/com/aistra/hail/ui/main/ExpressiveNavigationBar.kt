@@ -1,6 +1,8 @@
 package com.aistra.hail.ui.main
 
+import android.content.SharedPreferences
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -26,16 +28,11 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -52,14 +49,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
-import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.HailApp
@@ -169,7 +167,7 @@ private fun TraditionalNavBar(
                 val selected = item.route == currentRoute
                 TraditionalNavItem(
                     item = item,
-                    selected = selected,
+                    isSelected = selected,
                     onClick = { onNavigate(item.route) },
                     modifier = Modifier.weight(1f)
                 )
@@ -181,7 +179,7 @@ private fun TraditionalNavBar(
 @Composable
 private fun TraditionalNavItem(
     item: NavItem,
-    selected: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -196,7 +194,7 @@ private fun TraditionalNavItem(
         label = "pressScale"
     )
 
-    val contentColor = if (selected) MaterialTheme.colorScheme.primary
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.primary
                       else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
@@ -212,13 +210,17 @@ private fun TraditionalNavItem(
                 indication = null,
                 onClick = onClick
             )
+            .semantics {
+                set(SemanticsProperties.Selected, isSelected)
+                set(SemanticsProperties.Role, Role.Tab)
+            }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = if (selected) MaterialTheme.colorScheme.secondaryContainer
+            color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
                     else MaterialTheme.colorScheme.surfaceContainer,
             modifier = Modifier.size(40.dp)
         ) {
@@ -226,7 +228,7 @@ private fun TraditionalNavItem(
                 Icon(
                     imageVector = item.icon,
                     contentDescription = item.label,
-                    tint = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+                    tint = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp)
                 )
@@ -276,7 +278,7 @@ private fun FloatingPillNavBar(
                     val selected = item.route == currentRoute
                     NavPill(
                         item = item,
-                        selected = selected,
+                        isSelected = selected,
                         onClick = { onNavigate(item.route) },
                         modifier = if (selected) Modifier.weight(1f) else Modifier
                     )
@@ -289,7 +291,7 @@ private fun FloatingPillNavBar(
 @Composable
 private fun NavPill(
     item: NavItem,
-    selected: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -303,20 +305,20 @@ private fun NavPill(
     )
 
     val bgColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.secondaryContainer
+        targetValue = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
                   else Color.Transparent,
-        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
         label = "bgColor"
     )
 
     val contentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+        targetValue = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer
                       else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
         label = "contentColor"
     )
 
-    val shape = if (selected) RoundedCornerShape(24.dp) else CircleShape
+    val shape = if (isSelected) RoundedCornerShape(24.dp) else CircleShape
 
     Row(
         modifier = modifier
@@ -333,17 +335,33 @@ private fun NavPill(
                 indication = null,
                 onClick = onClick
             )
+            .semantics {
+                set(SemanticsProperties.Selected, isSelected)
+                set(SemanticsProperties.Role, Role.Tab)
+            }
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.label,
-            tint = contentColor,
-            modifier = Modifier.size(24.dp)
-        )
-        if (selected) {
+        Crossfade(targetState = isSelected, label = "iconCrossfade") { showIcon ->
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                tint = contentColor,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        AnimatedVisibility(
+            visible = isSelected,
+            enter = expandHorizontally(
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                expandFrom = Alignment.Start
+            ) + fadeIn(animationSpec = tween(300, easing = FastOutSlowInEasing)),
+            exit = shrinkHorizontally(
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                shrinkTowards = Alignment.Start
+            ) + fadeOut(animationSpec = tween(300, easing = FastOutSlowInEasing))
+        ) {
             Text(
                 text = item.label,
                 fontSize = 14.sp,
