@@ -88,6 +88,7 @@ import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.ui.theme.PaletteStyle
 import com.aistra.hail.ui.theme.ThemeColorSpec
+import com.aistra.hail.ui.theme.labelRes
 import com.aistra.hail.utils.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textview.MaterialTextView
@@ -514,9 +515,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
         val iconPackValues by _iconPackValues
         val appThemeEntries = stringArrayResource(R.array.app_theme_entries)
         val paletteStyleValues = PaletteStyle.entries.toList()
-        val paletteStyleEntries = paletteStyleValues.map { it.displayName }
+        val paletteStyleEntries = paletteStyleValues.map { stringResource(it.labelRes()) }
         val colorSpecValues = ThemeColorSpec.entries.toList()
-        val colorSpecEntries = colorSpecValues.map { it.displayName }
+        val colorSpecEntries = colorSpecValues.map { stringResource(it.labelRes()) }
         val scrollState = rememberScrollState()
         val colorSpecEnabled = paletteStyle.supportsSpec2025
 

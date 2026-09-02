@@ -156,4 +156,24 @@
     <string name="state_uninstalled">已卸载</string>
     <string name="donate_kofi">Ko-fi</string>
     <string name="action_freeze_failed">Could not freeze: %s</string>
+
+    <!-- Theme mode display names -->
+    <string name="theme_mode_light">浅色</string>
+    <string name="theme_mode_dark">深色</string>
+    <string name="theme_mode_system">跟随系统</string>
+
+    <!-- Palette style display names -->
+    <string name="palette_style_tonal_spot">色调聚焦</string>
+    <string name="palette_style_neutral">中性</string>
+    <string name="palette_style_vibrant">鲜艳</string>
+    <string name="palette_style_expressive">表现力</string>
+    <string name="palette_style_rainbow">彩虹</string>
+    <string name="palette_style_fruit_salad">水果沙拉</string>
+    <string name="palette_style_monochrome">单色</string>
+    <string name="palette_style_fidelity">保真</string>
+    <string name="palette_style_content">内容源色</string>
+
+    <!-- Color spec display names -->
+    <string name="color_spec_2021">Material 3（2021）</string>
+    <string name="color_spec_2025">Expressive（2025）</string>
 </resources>

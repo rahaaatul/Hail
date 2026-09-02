@@ -213,4 +213,24 @@
     <string name="theme_dynamic_color_desc">Use colors from your wallpaper</string>
     <string name="theme_seed_color">Seed Color</string>
     <string name="theme_seed_color_desc">Choose a custom color</string>
+
+    <!-- Theme mode display names -->
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
+    <string name="theme_mode_system">Follow system</string>
+
+    <!-- Palette style display names -->
+    <string name="palette_style_tonal_spot">Tonal Spot</string>
+    <string name="palette_style_neutral">Neutral</string>
+    <string name="palette_style_vibrant">Vibrant</string>
+    <string name="palette_style_expressive">Expressive</string>
+    <string name="palette_style_rainbow">Rainbow</string>
+    <string name="palette_style_fruit_salad">Fruit Salad</string>
+    <string name="palette_style_monochrome">Monochrome</string>
+    <string name="palette_style_fidelity">Fidelity</string>
+    <string name="palette_style_content">Content</string>
+
+    <!-- Color spec display names -->
+    <string name="color_spec_2021">Material 3 (2021)</string>
+    <string name="color_spec_2025">Expressive (2025)</string>
 </resources>
