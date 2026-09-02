@@ -6,7 +6,7 @@
 
 **Architecture:** Per-screen migration following Google's 10-step XML-to-Compose process. Create new Compose files alongside old Fragment/XML, validate, then delete old files. One git branch per screen. Data layer (Room, HailData, AppManager, AppMetaCache, Shizuku, Xposed) remains untouched.
 
-**Tech Stack:** Jetpack Compose, Navigation 3 (1.2.0-alpha05), Material 3 Expressive (1.5.0-alpha27), material-kolor 5.0.1, Kotlin 2.4.10
+**Tech Stack:** Jetpack Compose, Navigation 3 (1.2.0-alpha05 → alpha07 available, upgrade deferred), Material 3 Expressive (1.5.0-alpha27), material-kolor 5.0.1, Kotlin 2.4.10
 
 **Spec:** docs/superpowers/specs/2026-09-02-compose-migration-design.md
 
@@ -25,6 +25,130 @@
 - **Testing:** Compose UI tests via `createAndroidComposeRule` in `app/src/androidTest/`
 - **New dependency approval:** Navigation 3 + kotlinx-serialization require user approval (see Phase 0 Task 1-2)
 - **No Hilt** — existing project doesn't use Hilt; use `AndroidViewModel` + `viewModel()` for Compose ViewModels
+
+### Navigation 3 Version Decision: alpha05 → alpha07
+
+**Finding:** `1.2.0-alpha07` is available (released July 29, 2026). We are currently on `alpha05` (July 1, 2026). Intermediate `alpha06` (July 15) also exists.
+
+**alpha06 breaking changes (deep link APIs):**
+- Removed `DeepLinkRequest.fromAction`, `fromMimeType`, `fromIntent`, `fromUri`, `fromUriString`
+- Replaced with new constructors + `extras` field
+- `DeepLinkMatcher.Filter` is now a functional interface (constructor field removed)
+
+**alpha07 new features:**
+- `BackStackMatcher` + `DeepLinkMatcher.withBackStack` for back stack-aware deep linking
+- `DeepLinkSerializer` abstract class for non-primitive deep link arguments
+- `DeepLinkMatcher` second type parameter `out R : MatchResult` (less casting)
+- `WrappedMatchResult` class for layered match results
+- `ResultEffect` uses `rememberUpdatedState`
+- `EntryProvider` prioritizes key instances over key types
+- `SceneState` previous scene calculation fix
+
+**Decision: Defer upgrade to alpha07.**
+- We are not using deep links in Phase 0–2 (no `DeepLinkMatcher` yet)
+- Upgrading during active migration adds regression risk without immediate benefit
+- Upgrade after Phase 3 (first real screen) or when deep linking is needed
+- If upgrading, test deep link paths and `EntryProvider` key matching behavior
+
+---
+
+## Image Loading Strategy
+
+**Finding:** No image loading library (Coil, Glide, Picasso, Accompanist) is currently in the project. `AppIconCache.loadIconBitmapAsync()` takes an `ImageView` — incompatible with Compose.
+
+**Decision: Create a custom `AppIcon` composable wrapping `AppIconCache.getOrLoadBitmap()`.**
+
+```kotlin
+@Composable
+fun AppIcon(
+    info: AppInfo,
+    modifier: Modifier = Modifier,
+    grayscale: Boolean = HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
+) {
+    val context = LocalContext.current
+    val bitmap = produceState<Bitmap?>(
+        context.resources.getDimensionPixelSize(R.dimen.app_icon_size),
+        info.packageName,
+        HPackages.myUserId,
+    ) {
+        value = AppIconCache.getOrLoadBitmap(context, info.applicationInfo!!, HPackages.myUserId, size)
+    }.value
+
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier,
+            colorFilter = if (grayscale) ColorFilter.tint(Color.Gray) else null,
+        )
+    } else {
+        Icon(
+            imageVector = Icons.Default.Apps,
+            contentDescription = null,
+            modifier = modifier,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+```
+
+**Why not add Coil?** Adds a new dependency (requires user approval per AGENTS.md). The custom composable leverages the existing `AppIconCache` LRU + disk cache, keeping memory behavior identical.
+
+---
+
+## Compose State Management Patterns
+
+**Existing pattern:** Local `remember { mutableStateOf(HailData.xxx) }` with write-back callbacks (used in SettingsFragment, AboutFragment).
+
+**New pattern for screen ViewModels:**
+
+```kotlin
+class PagerViewModel(application: Application) : AndroidViewModel(application) {
+    private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
+    val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            AppMetaCache.revision.collect { loadApps() }
+        }
+    }
+
+    private fun loadApps() {
+        _apps.value = HailData.checkedList.filter { /* tag + search filter */ }
+    }
+}
+
+@Composable
+fun PagerScreen(viewModel: PagerViewModel = viewModel()) {
+    val apps by viewModel.apps.collectAsStateWithLifecycle()
+    // ...
+}
+```
+
+**Key rule:** Use `collectAsStateWithLifecycle()` (from `androidx.lifecycle:lifecycle-runtime-compose`) for Flow collection — backed by `repeatOnLifecycle(STARTED)`. Never use `collect` directly in Compose.
+
+---
+
+## Existing Compose Foundation Audit
+
+| Layer | Status | Key Files |
+|-------|--------|-----------|
+| **Theme** | ✅ Wired | `Theme.kt` — `HailTheme`, `MaterialExpressiveTheme`, `MotionScheme.expressive()`, `AppTypography`, `expressiveShapes` |
+| **Navigation 3** | ✅ Scaffold | `HailNavHost.kt` — `rememberNavBackStack`, `NavDisplay`, `entryProvider` DSL with 5 `@Serializable` routes |
+| **Bottom nav** | ✅ Production | `ExpressiveNavigationBar.kt` — Traditional/FloatingPill variants, `graphicsLayer` press animation, `semantics` |
+| **Settings** | ✅ Migrated | `SettingsFragment` + `SettingsRows.kt` — full settings UI in Compose via `ComposeView` root |
+| **About** | ✅ Migrated | `AboutFragment` — full Compose screen |
+| **API Activity** | ✅ Hybrid | `ApiActivity` — `ComponentActivity` using `setContent` for dialogs/sheets |
+| **Pager** | 🔶 Partial | `PagerFragment` — mostly ViewPager2/ViewBinding, but embeds `ComposeView` for tag picker dialog |
+| **State management** | 🔶 Local only | Heavy use of `remember { mutableStateOf }`; no `ViewModel` + `StateFlow` observation in Compose yet |
+| **AndroidView interop** | ❌ None | `AndroidView` not used; only `ComposeView` for Fragment embedding |
+
+**Conventions to preserve:**
+1. Wrap every screen in `HailTheme(state = HailThemeState()) { ... }`
+2. Use expressive components (`ShortNavigationBar`, `PrimaryTabRow`, etc.) per the material3-expressive skill
+3. `modifier` as first optional parameter; chained modifiers with leading dots on continuation lines
+4. For Fragment embedding: `ComposeView` + `DisposeOnViewTreeLifecycleDestroyed` strategy
+5. Settings-style state: local `remember { mutableStateOf(HailData.xxx) }` with write-back callbacks
 
 ---
 
@@ -184,9 +308,20 @@ fun HailNavHost(
 
 ### Task 3: Analyze PagerFragment
 
-Read: `PagerFragment.kt`, `fragment_pager.xml`, `PagerAdapter.kt`, `item_home.xml`, `AppsFragment.kt` (for shared state patterns)
+**Read:** `PagerFragment.kt` (690 lines), `fragment_pager.xml`, `PagerAdapter.kt` (106 lines), `item_home.xml`, `HomeFragment.kt`, `HailData.tags`, `AppMetaCache`, `AppManager`, `AppActions`
 
-Document: all callbacks, state, and data sources the PagerScreen needs. Output summary as commit message.
+**Document:** all callbacks, state, and data sources the PagerScreen needs.
+
+**Actual complexity findings (from code analysis):**
+- `PagerFragment` extends `MainFragment` and couples tightly to `HomeFragment` via `parentFragment` casts (multiselect, selectedList, tabs, pager adapter)
+- State: `query`, `multiselect`, `selectedList` (mutable), `_menu`
+- Data source: `AppMetaCache.revision` collected via `repeatOnLifecycle`
+- Filtering: tag-based (`tag?.second`) + search (`query`) with `NineKeySearch`, `FuzzySearch`, `PinyinSearch`
+- Actions: launch, freeze/unfreeze (single + batch), tag management (add/rename/remove/tri-state), import/export clipboard, deferred tasks, pin/unpin, whitelist, remove from home
+- Menu: `menu_home.xml` with search (`SearchView`), multiselect button, freeze/unfreeze all, import/export actions
+- Dialogs: tag dialog (`DialogInputBinding`), tri-state tag dialog (embeds ComposeView), action picker dialog
+- Back handling: `OnBackPressedCallback` — deselects in multiselect mode
+- Icon loading: `AppIconCache.loadIconBitmapAsync(context, info, userId, imageView)` — ImageView-bound
 
 ### Task 4: Create HomeAppItem composable (item_home.xml equivalent)
 
@@ -195,15 +330,18 @@ Document: all callbacks, state, and data sources the PagerScreen needs. Output s
 - Create: `app/src/androidTest/kotlin/com/aistra/hail/ui/screens/home/HomeAppItemTest.kt`
 
 **Interfaces:**
-- Consumes: `AppInfo` (`com.aistra.hail.app.AppInfo`), `AppIconCache`, `Icons.Filled.Home`
+- Consumes: `AppInfo` (`com.aistra.hail.app.AppInfo`), `AppIconCache`
 - Produces: `HomeAppItem(appInfo, isSelected, multiselectMode, onClick, onLongClick, modifier)`
 
-Key mappings from item_home.xml:
-- `ImageView` (app icon) → `AsyncImage` (Coil) or fallback `Icon`
-- `MaterialCheckBox` (multiselect) → `Checkbox`
-- App name `TextView` → `Text`
-- Frozen state: `AppInfo.state` + `AppInfo.isInstalled`
-- `isSelectable` → `Modifier.clickable(onLongClick)`
+Key mappings from `item_home.xml`:
+- `ImageView` (app icon, 64dp) → custom `AppIcon` composable using `AppIconCache.getOrLoadBitmap()` + `Image(bitmap.asImageBitmap())`
+- App name `TextView` → `Text` with `overflow = TextOverflow.Ellipsis`, `maxLines = 1`
+- Frozen state: `❄️` prefix + `grayscaleIcon` color filter
+- Whitelisted: `🔒` suffix
+- Selected state: `color = MaterialTheme.colorScheme.primary`
+- Not found state: `color = MaterialTheme.colorScheme.error`
+- Default: `MaterialTheme.typography.bodyMedium`, `fontSize = 14.sp`
+- Background: `Modifier.clickable` with `selectableItemBackgroundBorderless`
 
 ### Task 5: Create PagerScreen composable
 
@@ -213,23 +351,37 @@ Key mappings from item_home.xml:
 - Create: `app/src/androidTest/kotlin/com/aistra/hail/ui/screens/home/PagerScreenTest.kt`
 
 **Interfaces:**
-- Consumes: `HomeAppItem` (Task 4), `TriStateTagList` (existing Compose in PagerFragment), `AppsViewModel` flow
-- Produces: `PagerScreen(tagId: Long, onAppClick, onAppLongClick, onFabClick, modifier)`
+- Consumes: `HomeAppItem`, `HailData.tags`, `AppMetaCache.revision`, `AppManager`, `AppActions`
+- Produces: `PagerScreen(tagId: Long, onFabClick, modifier)`
 
-Key mappings from fragment_pager.xml:
-- `RecyclerView` (grid) → `LazyVerticalGrid(GridCells.FixedSpan(HailData.iconColumns))`
-- `SwipeRefreshLayout` → `PullToRefreshBox`
-- `SearchView` (menu) → `SearchBar` or `TextField` in top bar
-- Context menu → `DropdownMenu` anchored on long-click
-- `OnBackPressedCallback` → `BackHandler`
-- Multiselect action mode → inline `Checkbox` selection + action bar
+Key mappings from `fragment_pager.xml` + `PagerFragment.kt`:
+- `SwipeRefreshLayout` → `PullToRefreshBox` (from `foundation-pager` or custom `PullRefresh` if not in BOM)
+- `RecyclerView` (grid, `HailData.iconColumns` cols) → `LazyVerticalGrid(columns = Fixed(HailData.iconColumns))`
+- Search (`SearchView` in menu) → `SearchBar` in `LargeFlexibleTopAppBar` or inline `TextField`
+- Context menu (long-press) → `DropdownMenu` anchored on long-click
+- `OnBackPressedCallback` → `BackHandler` with `multiselect` check
+- Multiselect mode → inline checkbox UI + `TopAppBar` title update
+- Tag tabs (`TabLayout`) → `ScrollableTabRow` or `PrimaryTabRow` (Expressive)
 
-PagerViewModel wraps existing `AppsViewModel` logic:
+**PagerViewModel:**
 ```kotlin
 class PagerViewModel(application: Application) : AndroidViewModel(application) {
-    // Exposes Flow<List<AppInfo>> filtered by tag
-    val appsForTag = flow { ... }
-    // Reuses existing AppMetaCache, HPackages, filtering logic
+    private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
+    val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
+
+    var query by mutableStateOf("")
+    var multiselect by mutableStateOf(false)
+    val selectedList = mutableStateListOf<AppInfo>()
+
+    init {
+        viewModelScope.launch {
+            AppMetaCache.revision.collect { loadApps() }
+        }
+    }
+
+    fun loadApps(tagId: Long) { /* filter + search logic from PagerFragment */ }
+    fun setListFrozen(frozen: Boolean) { /* AppActions.freezePackages + invalidate */ }
+    // ... other action handlers
 }
 ```
 
@@ -238,9 +390,10 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
 Wire `PagerScreen` into the existing `PagerFragment` via `ComposeView` temporarily:
 ```kotlin
 binding.root.addView(ComposeView(requireContext()).apply {
+    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
     setContent {
-        HailTheme(state = themeState) {
-            PagerScreen(tagId = tagId, onAppClick = { ... }, ...)
+        HailTheme(state = HailThemeState()) {
+            PagerScreen(tagId = tag?.second ?: 0, onFabClick = { /* ... */ })
         }
     }
 })
