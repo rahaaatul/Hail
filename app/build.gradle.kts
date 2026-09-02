@@ -112,6 +112,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.sqlite.wrapper)
     implementation(libs.androidx.sqlite)
+    implementation(libs.material.kolor)
     ksp(libs.androidx.room.compiler)
     compileOnly(libs.libxposed.api)
 
