@@ -31,7 +31,8 @@ import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
-import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
 import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork.setAutoFreeze
 import kotlinx.coroutines.launch
@@ -47,7 +48,7 @@ class ApiActivity : ComponentActivity() {
     private fun handleAction(action: String?): Boolean {
         when (action) {
             Intent.ACTION_SHOW_APP_INFO -> {
-                setContent { AppTheme { RedirectBottomSheet(requirePackage) } }
+                setContent { HailTheme(state = HailThemeState()) { RedirectBottomSheet(requirePackage) } }
                 return false
             }
 
@@ -122,7 +123,7 @@ class ApiActivity : ComponentActivity() {
         )
     }
 
-    private fun setErrorDialog(t: Throwable) = setContent { AppTheme { ErrorDialog(t) } }
+    private fun setErrorDialog(t: Throwable) = setContent { HailTheme(state = HailThemeState()) { ErrorDialog(t) } }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable

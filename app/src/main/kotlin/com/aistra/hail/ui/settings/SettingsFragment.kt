@@ -85,7 +85,8 @@ import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
-import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
 import com.aistra.hail.ui.theme.PaletteStyle
 import com.aistra.hail.ui.theme.ThemeColorSpec
 import com.aistra.hail.ui.theme.labelRes
@@ -154,7 +155,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                AppTheme {
+                HailTheme(state = HailThemeState()) {
                     SettingsNavigator()
                 }
             }

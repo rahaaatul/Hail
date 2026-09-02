@@ -3,6 +3,7 @@ package com.aistra.hail.ui.main
 import android.os.Build
 import android.os.Bundle
 import android.view.Menu
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -12,17 +13,22 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.MenuCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.preference.PreferenceManager
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
 import com.aistra.hail.extensions.*
-import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.google.android.material.appbar.AppBarLayout
@@ -35,6 +41,19 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
+    private var themeState by mutableStateOf(HailThemeState())
+    private val themeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key in setOf(
+                HailData.PALETTE_STYLE,
+                HailData.COLOR_SPEC,
+                HailData.SEED_COLOR,
+                HailData.DYNAMIC_COLOR,
+                HailData.APP_THEME,
+            )
+        ) {
+            themeState = HailThemeState()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +62,8 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             window.isNavigationBarContrastEnforced = false
         }
         binding = initView()
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .registerOnSharedPreferenceChangeListener(themeListener)
         if (!HailData.biometricLogin || BiometricManager.from(this)
                 .canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS
         ) return
@@ -84,7 +105,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         setupActionBarWithNavController(navController, appBarConfiguration)
         bottomNav?.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         bottomNav?.setContent {
-            AppTheme {
+            HailTheme(state = themeState) {
                 ExpressiveNavigationBar(
                     navController = navController,
                     defaultUseFloating = HailData.useFloatingBottomBar
@@ -93,7 +114,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         }
         navRail?.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         navRail?.setContent {
-            AppTheme {
+            HailTheme(state = themeState) {
                 ExpressiveNavigationBar(
                     navController = navController,
                     defaultUseFloating = HailData.useFloatingBottomBar
@@ -129,6 +150,12 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
 
     override fun onSupportNavigateUp(): Boolean =
         navController.navigateUp() || super.onSupportNavigateUp()
+
+    override fun onDestroy() {
+        super.onDestroy()
+        PreferenceManager.getDefaultSharedPreferences(this)
+            .unregisterOnSharedPreferenceChangeListener(themeListener)
+    }
 
     override fun onDestinationChanged(
         controller: NavController, destination: NavDestination, arguments: Bundle?

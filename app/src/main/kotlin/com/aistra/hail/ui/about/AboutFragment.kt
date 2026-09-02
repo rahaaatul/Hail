@@ -31,7 +31,8 @@ import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.main.MainFragment
-import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HUI
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -44,7 +45,7 @@ class AboutFragment : MainFragment() {
         ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                AppTheme {
+                HailTheme(state = HailThemeState()) {
                     AboutScreen(HPackages.getUnhiddenPackageInfoOrNull(app.packageName)!!.firstInstallTime)
                 }
             }
@@ -52,7 +53,7 @@ class AboutFragment : MainFragment() {
 
     @Preview(showBackground = true)
     @Composable
-    fun PreviewAboutScreen() = AppTheme { AboutScreen(System.currentTimeMillis()) }
+    fun PreviewAboutScreen() = HailTheme(state = HailThemeState()) { AboutScreen(System.currentTimeMillis()) }
 
     @Composable
     private fun AboutScreen(installTime: Long) {

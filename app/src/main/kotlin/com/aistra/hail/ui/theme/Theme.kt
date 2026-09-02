@@ -1,49 +1,80 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package com.aistra.hail.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HTarget
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+data class HailThemeState(
+    val themeMode: ThemeMode = ThemeMode.fromAppTheme(HailData.appTheme),
+    val paletteStyle: PaletteStyle = HailData.paletteStyle,
+    val colorSpec: ThemeColorSpec = HailData.colorSpec,
+    val useDynamicColor: Boolean = HailData.useDynamicColor,
+    val seedColor: Int = HailData.seedColor,
+)
+
+private val LocalHailColorScheme = staticCompositionLocalOf<ColorScheme> { error("No ColorScheme provided") }
+
+private val LocalIsDark = staticCompositionLocalOf { false }
+
+object HailTheme {
+    val colorScheme: ColorScheme
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalHailColorScheme.current
+
+    val isDark: Boolean
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalIsDark.current
+}
+
 @Composable
-fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable() () -> Unit
+fun HailTheme(
+    state: HailThemeState,
+    content: @Composable () -> Unit
 ) {
-    val colorScheme = colorSchemeFromHailData(darkTheme)
-
-    MaterialExpressiveTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        motionScheme = MotionScheme.expressive(),
-        shapes = expressiveShapes,
-        content = content
-    )
-}
-
-@Composable
-private fun colorSchemeFromHailData(isDark: Boolean): ColorScheme {
-    val data = HailData
-    return when {
-        data.useDynamicColor && HTarget.S -> {
-            val context = LocalContext.current
-            if (isDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        else -> colorSchemeFromSeed(data.seedColor, isDark, data.paletteStyle)
+    val isDark = when (state.themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
-}
-
-fun colorSchemeFromSeed(seedColor: Int, isDark: Boolean, style: PaletteStyle): ColorScheme {
-    val seed = Color(seedColor)
-    return when {
-        style.supportsSpec2025 && !isDark -> expressiveLightColorScheme().copy(primary = seed)
-        style.supportsSpec2025 -> darkColorScheme().copy(primary = seed)
-        isDark -> darkColorScheme(primary = seed)
-        else -> lightColorScheme(primary = seed)
+    val keyColor = if (state.useDynamicColor && HTarget.S) {
+        Color(LocalContext.current.getColor(android.R.color.system_accent1_500))
+    } else {
+        Color(state.seedColor)
+    }
+    val baseColorScheme = remember(keyColor, isDark, state.paletteStyle, state.colorSpec) {
+        dynamicColorScheme(
+            keyColor = keyColor,
+            isDark = isDark,
+            style = state.paletteStyle,
+            colorSpec = state.colorSpec,
+        )
+    }
+    val colorScheme = baseColorScheme.animateColorScheme()
+    CompositionLocalProvider(
+        LocalHailColorScheme provides colorScheme,
+        LocalIsDark provides isDark,
+    ) {
+        MaterialExpressiveTheme(
+            colorScheme = colorScheme,
+            motionScheme = MotionScheme.expressive(),
+            typography = AppTypography,
+            shapes = expressiveShapes,
+            content = content,
+        )
     }
 }

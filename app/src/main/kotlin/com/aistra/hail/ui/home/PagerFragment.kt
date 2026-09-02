@@ -44,7 +44,8 @@ import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.databinding.FragmentPagerBinding
 import com.aistra.hail.extensions.*
 import com.aistra.hail.ui.main.MainFragment
-import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
 import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork
 import com.google.android.material.color.MaterialColors
@@ -422,7 +423,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         val states = mutableStateListOf(*initialStates)
         MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setView(ComposeView(activity).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent { AppTheme { TriStateTagList(initialStates, states) } }
+            setContent { HailTheme(state = HailThemeState()) { TriStateTagList(initialStates, states) } }
         }).setPositiveButton(android.R.string.ok) { _, _ ->
             selectedList.forEach {
                 states.forEachIndexed { index, state ->
