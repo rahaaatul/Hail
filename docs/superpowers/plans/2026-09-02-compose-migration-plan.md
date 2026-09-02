@@ -54,45 +54,36 @@
 
 ## Image Loading Strategy
 
-**Finding:** No image loading library (Coil, Glide, Picasso, Accompanist) is currently in the project. `AppIconCache.loadIconBitmapAsync()` takes an `ImageView` — incompatible with Compose.
+**Finding:** No image loading library (Coil, Glide, Picasso, Accompanist) was in the project. `AppIconCache.loadIconBitmapAsync()` takes an `ImageView` — incompatible with Compose.
 
-**Decision: Create a custom `AppIcon` composable wrapping `AppIconCache.getOrLoadBitmap()`.**
+**Decision: Use Coil 2.7.0 (Google-recommended for Compose).**
+
+Per Google/Android recommendations, Coil is the recommended image loading library for Jetpack Compose. It provides:
+- `AsyncImage` composable for declarative image loading
+- Built-in caching, placeholder/error handling
+- `ImageRequest.Builder` for customization
+- Lifecycle-aware loading
 
 ```kotlin
-@Composable
-fun AppIcon(
-    info: AppInfo,
-    modifier: Modifier = Modifier,
-    grayscale: Boolean = HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
-) {
-    val context = LocalContext.current
-    val bitmap = produceState<Bitmap?>(
-        context.resources.getDimensionPixelSize(R.dimen.app_icon_size),
-        info.packageName,
-        HPackages.myUserId,
-    ) {
-        value = AppIconCache.getOrLoadBitmap(context, info.applicationInfo!!, HPackages.myUserId, size)
-    }.value
-
-    if (bitmap != null) {
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = null,
-            modifier = modifier,
-            colorFilter = if (grayscale) ColorFilter.tint(Color.Gray) else null,
-        )
-    } else {
-        Icon(
-            imageVector = Icons.Default.Apps,
-            contentDescription = null,
-            modifier = modifier,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
+AsyncImage(
+    model = ImageRequest.Builder(context)
+        .data(applicationInfo)
+        .size(64)
+        .crossfade(false)
+        .build(),
+    contentDescription = null,
+    modifier = modifier.size(64.dp),
+    colorFilter = if (grayscale) ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) else null,
+    placeholder = painterResource(R.drawable.ic_round_apps),
+    error = painterResource(R.drawable.ic_round_apps),
+)
 ```
 
-**Why not add Coil?** Adds a new dependency (requires user approval per AGENTS.md). The custom composable leverages the existing `AppIconCache` LRU + disk cache, keeping memory behavior identical.
+**Why Coil over custom bridge:**
+- Google-recommended standard for Compose image loading
+- Eliminates custom bitmap management code
+- Handles lifecycle, caching, and memory automatically
+- Version 2.7.0 is latest stable (verified via Maven Central)
 
 ---
 
@@ -152,7 +143,67 @@ fun PagerScreen(viewModel: PagerViewModel = viewModel()) {
 
 ---
 
-## Phase 0: Navigation 3 Setup
+## Google Recommendations for Jetpack Compose (Consolidated)
+
+Source: Android Developer Docs (Context7 `/websites/developer_android` + `/websites/developer_android_develop_ui_compose`), verified against Hail's Compose BOM `2026.08.00` and Material 3 `1.5.0-alpha27`.
+
+### Image Loading
+- **Use Coil** (`io.coil-kt:coil-compose`) as the recommended image loading library for Compose.
+- Use `AsyncImage` for declarative image loading with built-in caching, placeholder/error handling.
+- Use `ImageRequest.Builder` for customization (`size()`, `crossfade()`, etc.).
+- **Do not** use custom `produceState` + `Bitmap` bridges for standard image loading.
+
+### State Management
+- **ViewModel:** Expose `StateFlow` / `SharedFlow` from `AndroidViewModel`. Never expose `mutableStateOf` or `mutableStateListOf` from a ViewModel — those are Compose runtime types.
+- **Compose:** Collect flows with `collectAsStateWithLifecycle()` from `androidx.lifecycle:lifecycle-runtime-compose`. This is backed by `repeatOnLifecycle(STARTED)` and avoids collecting when the screen is off.
+- **UI state:** Use `sealed interface` for UI state (`Loading`, `Success`, `Error`) to make `when` exhaustive.
+- **Fallible operations:** Prefer `runCatching { }.getOrNull()` / `.getOrDefault()` over try/catch when no built-in safe API exists.
+
+### Lists & Grids
+- **LazyColumn/LazyVerticalGrid:** Use for scrollable lists. Provide `key` and `contentType` to `items()` for better composition reuse and scroll restoration.
+- **Grids:** Use `LazyVerticalGrid(columns = GridCells.Fixed(count))` for fixed column grids. `GridCells.Fixed` is standard in Compose Foundation.
+- **Avoid:** Reading `LazyListState` scroll metrics in a way that triggers recomposition on every scroll event.
+
+### Theming
+- Wrap every screen in `HailTheme(state = HailThemeState()) { ... }` to receive animated `ColorScheme`, expressive typography, motion scheme, and system bar coloring.
+- Use `MaterialTheme.colorScheme.primary/secondary/surface/onSurface` etc. — never hardcode colors.
+- Use `MaterialTheme.typography.bodyLarge/bodyMedium/titleMediumEmphasized` etc.
+- Use `MaterialTheme.motionScheme.fastEffectsSpec()` / `slowEffectsSpec()` for animated transitions.
+- Use `CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)` for tonal elevation.
+- Avoid `Modifier.shadow()` — use tonal color overlays for elevation.
+
+### Interop
+- **Compose in Views:** Use `ComposeView` + `setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)` for embedding Compose in Fragments.
+- **Views in Compose:** Use `AndroidView` or `AndroidViewBinding` for embedding legacy Views in Compose.
+- **Activity migration:** Use `ComponentActivity` + `setContent` + `enableEdgeToEdge()`.
+
+### Side Effects & Lifecycle
+- **LaunchedEffect:** Use for suspend work — cancelled when keys change or composable leaves.
+- **DisposableEffect:** Use for lifecycle observers — requires `onDispose { }` cleanup.
+- **rememberUpdatedState:** Use for lambdas that need to reference updated values without restarting the effect.
+- **BackHandler:** Use `BackHandler` composable for back press handling in Compose (replaces `OnBackPressedCallback`).
+
+### Navigation 3
+- Use `rememberNavBackStack(vararg keys: NavKey)` for persistent back stack.
+- Use `NavDisplay(backStack, onBack, entryProvider)` from `androidx.navigation3.ui`.
+- Use `entryProvider { entry<Route> { ... } }` DSL.
+- For multiple back stacks (bottom nav): use `NavigationState` + `Navigator` pattern with `rememberNavigationState()`.
+- For ViewModel persistence across navigation: use `rememberViewModelStoreNavEntryDecorator()`.
+- For deep linking: use `DeepLinkPattern` + `DeepLinkMatcher` (alpha06+ API).
+
+### Accessibility
+- 48dp minimum touch targets.
+- `contentDescription = null` for decorative icons.
+- Use `Modifier.semantics { ... }` for custom gestures.
+- Prefer `onSurface` / `onSurfaceVariant` for text/icons; avoid hardcoded `Color.Black`/`Color.White`.
+
+### Code Style
+- `modifier` as first optional parameter in public composables.
+- `@Composable` functions returning `Unit` use `PascalCase` noun names.
+- `@File:OptIn(ExperimentalMaterial3ExpressiveApi::class)` for Expressive APIs.
+- 4 spaces, no tabs, K&R braces, `val` over `var`.
+
+---
 
 ### Task 1: Add Navigation 3 + serialization dependencies
 
