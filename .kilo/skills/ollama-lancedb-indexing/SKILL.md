@@ -1,77 +1,63 @@
 ---
 name: ollama-lancedb-indexing
-description: Setup and troubleshoot Ollama + LanceDB codebase indexing for semantic code search. Use when the user asks about indexing, semantic search, or codebase exploration.
+description: Use when setting up, debugging, or configuring free local codebase semantic search via Ollama embeddings + LanceDB vector store. Triggers include "idx failed to initialize", indexing not working, no semantic_search results, model pull failures, or installing Ollama in Linux containers.
 ---
 
 # Ollama + LanceDB Codebase Indexing
 
-This skill provides free, local codebase indexing using Ollama for embeddings and LanceDB as the vector store. No API keys or per-token fees required.
+Free, local, no-API-key codebase indexing. Ollama generates embeddings; LanceDB stores them. Kilo Code parses code with Tree-sitter, embeds semantic blocks (functions, classes), and exposes `semantic_search` for natural-language queries.
 
-## Architecture
+## When to Use
 
-Kilo Code connects to a locally running Ollama server to generate embeddings for code blocks, then stores those embeddings in LanceDB (an embedded vector store that requires no separate server). This enables semantic search across the entire codebase.
-
-The indexing pipeline works as follows: Kilo Code parses the code using Tree-sitter to identify semantic blocks (functions, classes, methods), sends each block to the Ollama embedding API, stores the resulting vectors in LanceDB, and provides the `semantic_search` tool for natural language queries.
+- Installing Ollama for the first time, especially in a container/CI where systemd is absent
+- "idx failed to initialize" or no semantic search results
+- Picking/switching an embedding model
+- Tuning `searchMinScore`, batch size, or file exclusions
+- Confirming an existing setup still works
 
 ## Prerequisites
 
-- Ollama installed and running locally
-- An embedding model pulled (nomic-embed-text recommended)
-- Kilo Code extension with indexing enabled
+- Ollama binary (`/usr/local/bin/ollama` after install)
+- An embedding model pulled (start with `nomic-embed-text`)
+- A reachable server on `http://127.0.0.1:11434`
 
-## Initial Setup
-
-Install Ollama on your local machine:
+## Setup (Linux)
 
 ```bash
+# 1. Install — Debian/Ubuntu needs zstd first
+sudo apt-get install -y zstd
 curl -fsSL https://ollama.ai/install.sh | sh
-```
 
-Pull an embedding model. The `nomic-embed-text` model provides 768-dimensional embeddings and works well for code:
-
-```bash
+# 2. Pull model (~270 MB)
 ollama pull nomic-embed-text
+
+# 3. Start server (systemd is often absent in containers/devcontainers)
+nohup ollama serve > /tmp/ollama.log 2>&1 &
+
+# 4. Verify
+curl -s http://127.0.0.1:11434/api/tags | jq '.models[].name'
+curl -s http://127.0.0.1:11434/api/embed \
+  -d '{"model":"nomic-embed-text","input":"test"}' | jq '.embeddings[0]|length'
+# Expect 768
 ```
 
-Start the Ollama server (if not already running):
+**Use `nohup … &` in containers/remote hosts.** The official install creates a systemd unit, which silently no-ops when `systemd` isn't PID 1. Backgrounding with `nohup` works everywhere.
 
-```bash
-ollama serve
-```
+**No `python3`?** Use `jq` for the verification step — installed by default on most dev images.
 
-Verify the server is accessible:
+## Configure Kilo Code
 
-```bash
-curl http://127.0.0.1:11434/api/tags
-```
-
-Test that embeddings work:
-
-```bash
-curl -s http://127.0.0.1:11434/api/embed -d '{"model":"nomic-embed-text","input":"test code"}' | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'Dimensions: {len(d[\"embeddings\"][0])}')"
-```
-
-## Configuring Kilo Code
-
-Open Kilo Code Settings and navigate to Indexing. Configure as follows:
-
-- **Global Enable** or **Enable for This Project**: Turn on
-- **Embedding Provider**: Ollama
-- **Vector Store**: LanceDB (default, embedded, no server needed)
-- **Ollama Base URL**: `http://127.0.0.1:11434`
-
-Or edit `~/.config/kilo/kilo.jsonc` directly:
+Edit `~/.config/kilo/kilo.jsonc`:
 
 ```json
 {
+  "$schema": "https://app.kilo.ai/config.json",
   "indexing": {
     "enabled": true,
     "provider": "ollama",
     "model": "nomic-embed-text",
     "vectorStore": "lancedb",
-    "ollama": {
-      "baseUrl": "http://127.0.0.1:11434"
-    },
+    "ollama": { "baseUrl": "http://127.0.0.1:11434" },
     "lancedb": {},
     "searchMinScore": 0.4,
     "searchMaxResults": 50,
@@ -81,72 +67,61 @@ Or edit `~/.config/kilo/kilo.jsonc` directly:
 }
 ```
 
-## Troubleshooting
+Reload with `/reload` in chat or restart the IDE — config changes don't apply live.
 
-### Index shows "idx failed to initialize"
+## Excluding Files
 
-This means Kilo Code cannot reach the Ollama server. Check:
-
-1. Is Ollama running? Run `ollama serve` if not
-2. Is it accessible at `http://127.0.0.1:11434`? Test with `curl http://127.0.0.1:11434/api/tags`
-3. Is the embedding model pulled? Check with `ollama list`
-4. If Kilo Code runs as a VS Code extension, Ollama must be on your local machine, not a remote container
-
-### Semantic search returns no results
-
-1. Wait for indexing to complete (check status indicator in Kilo Code)
-2. Verify the search query is in natural language, not exact keywords
-3. Try lowering `searchMinScore` to 0.3 for broader results
-
-### Indexing stalls or fails
-
-1. Reduce `embeddingBatchSize` if hitting rate limits (default 60)
-2. Check Ollama logs: `cat /tmp/ollama.log`
-3. For local Ollama with llama.cpp, ensure batch size (`-b`) matches micro-batch size (`-ub`)
-
-### Reloading after setup
-
-After configuring indexing, reload Kilo Code or start a new session for changes to take effect. Use `/reload` in the chat or restart the IDE.
-
-## Alternative Embedding Models
-
-| Model | Size | Dimensions | Notes |
-|---|---|---|---|
-| nomic-embed-text | 137M | 768 | Best balance for code, recommended |
-| mxbai-embed-large | 334M | 1024 | Higher quality, slower |
-| all-minilm | 23M | 384 | Fastest, lower quality |
-
-Switch models by changing the `model` field in config and re-indexing.
-
-## Excluding Files from Indexing
-
-Create a `.kilocodeignore` file at the project root to exclude files (same syntax as `.gitignore`):
+Project root `.kilocodeignore` (same syntax as `.gitignore`):
 
 ```
 build/
 .gradle/
+.idea/
 local.properties
 signing.properties
 *.jks
+*.keystore
+captures/
+.externalNativeBuild/
+.cxx/
 ```
 
-Or configure `indexing.fileExtensions` in `kilo.jsonc` to index only specific file types:
+Or restrict to specific extensions in `kilo.jsonc`:
 
 ```json
-{
-  "indexing": {
-    "fileExtensions": [".kt", ".java", ".xml"]
-  }
-}
+"indexing": { "fileExtensions": [".kt", ".java", ".xml"] }
 ```
 
-## Verification
+## Troubleshooting
 
-After setup, test semantic search with natural language queries:
+| Symptom | Cause | Fix |
+|---|---|---|
+| `idx failed to initialize` | Ollama unreachable | `curl 127.0.0.1:11434/api/tags` → start with `nohup ollama serve` if 000 |
+| Install fails: "requires zstd" | Missing system lib | `apt-get install -y zstd`, then reinstall |
+| Install warns "systemd is not running" | No init in container | Expected — fall through to `nohup ollama serve` |
+| `ollama list` empty | Model not pulled | `ollama pull nomic-embed-text` |
+| Embeddings 0-dim / error | Wrong model name | Match `model` in config exactly: `nomic-embed-text` (no tag) |
+| `semantic_search` returns nothing | Indexing not finished, or score too high | Wait for status indicator; try `searchMinScore: 0.3` |
+| Indexing stalls | Batch too large for hardware | Lower `embeddingBatchSize` (e.g. 20); `tail -f /tmp/ollama.log` |
+| VS Code extension can't see Ollama | Running in remote container | Ollama must be on the host the IDE runs on, not the container |
+
+## Embedding Models
+
+| Model | Size | Dim | Use when |
+|---|---|---|---|
+| `nomic-embed-text` | 274 MB | 768 | Default — best balance for code |
+| `mxbai-embed-large` | 669 MB | 1024 | Higher quality, slower indexing |
+| `all-minilm` | 46 MB | 384 | Fastest, lower recall |
+
+Switching models requires re-indexing; change `model` in `kilo.jsonc` and reload.
+
+## Verify It Works
+
+Natural-language queries that should return results once indexing completes:
 
 - "How is user authentication handled?"
 - "Database connection setup"
 - "Error handling patterns"
 - "API endpoint definitions"
 
-Results include file paths, line numbers, and similarity scores.
+Results include file path, line number, similarity score. If returns are empty, confirm the indexer finished (status indicator in Kilo Code) before lowering the score threshold.
