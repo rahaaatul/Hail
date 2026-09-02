@@ -42,21 +42,19 @@ fun HomeAppItem(
         else -> MaterialTheme.colorScheme.onSurface
     }
 
-    val clickModifier = if (onClick != null) {
-        Modifier.clickable(onClick = onClick)
-    } else Modifier
-
-    val longClickModifier = if (onLongClick != null) {
-        Modifier.pointerInput(onLongClick) {
-            detectTapGestures(onLongPress = { onLongClick() })
+    val clickModifier = if (onClick != null || onLongClick != null) {
+        Modifier.pointerInput(onClick, onLongClick) {
+            detectTapGestures(
+                onTap = { onClick?.invoke() },
+                onLongPress = { onLongClick?.invoke() },
+            )
         }
     } else Modifier
 
     Column(
         modifier = modifier
             .padding(paddingExtraSmall)
-            .then(clickModifier)
-            .then(longClickModifier),
+            .then(clickModifier),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {

@@ -20,11 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,9 +46,18 @@ fun PagerScreen(
 ) {
     val apps by viewModel.apps.collectAsStateWithLifecycle()
     val multiselect by viewModel.multiselect.collectAsStateWithLifecycle()
-    val selectedList = viewModel.selectedList
+    val selectedList by viewModel.selectedList.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
-    HailTheme(state = HailThemeState()) {
+    HailTheme(state = remember { HailThemeState() }) {
+        LaunchedEffect(tagId) {
+            viewModel.setTagId(tagId)
+        }
+        if (multiselect) {
+            androidx.activity.compose.BackHandler {
+                viewModel.setMultiselect(false)
+            }
+        }
         Column(
             modifier = modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -70,13 +82,18 @@ fun PagerScreen(
                                 else
                                     MaterialTheme.colorScheme.surfaceContainerHigh,
                             ),
-                            onClick = { viewModel.launchApp(appInfo.packageName) },
                         ) {
                             HomeAppItem(
                                 appInfo = appInfo,
                                 isSelected = appInfo in selectedList,
                                 multiselectMode = multiselect,
-                                onClick = { viewModel.launchApp(appInfo.packageName) },
+                                onClick = {
+                                    viewModel.launchApp(appInfo.packageName) { intent ->
+                                        if (intent != null) {
+                                            context.startActivity(intent)
+                                        }
+                                    }
+                                },
                                 onLongClick = { /* TODO: context menu */ },
                             )
                         }

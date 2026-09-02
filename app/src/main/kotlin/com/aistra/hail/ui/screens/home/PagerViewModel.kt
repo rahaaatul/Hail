@@ -10,7 +10,6 @@ import com.aistra.hail.utils.AppActions
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.HShortcuts
-import com.aistra.hail.utils.HUI
 import com.aistra.hail.utils.NameComparator
 import com.aistra.hail.utils.NineKeySearch
 import com.aistra.hail.utils.PinyinSearch
@@ -29,8 +28,8 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
     private val _multiselect = MutableStateFlow(false)
     val multiselect: StateFlow<Boolean> = _multiselect.asStateFlow()
 
-    private val _selectedList = mutableListOf<AppInfo>()
-    val selectedList: List<AppInfo> = _selectedList
+    private val _selectedList = MutableStateFlow<List<AppInfo>>(emptyList())
+    val selectedList: StateFlow<List<AppInfo>> = _selectedList.asStateFlow()
 
     var selectedTagId: Long = 0
         private set
@@ -66,22 +65,21 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
     fun setMultiselect(enabled: Boolean) {
         _multiselect.value = enabled
         if (!enabled) {
-            _selectedList.clear()
+            _selectedList.value = emptyList()
         }
     }
 
     fun toggleSelection(info: AppInfo) {
-        if (info in _selectedList) _selectedList.remove(info)
-        else _selectedList.add(info)
+        val current = _selectedList.value
+        _selectedList.value = if (info in current) current - info else current + info
     }
 
     fun selectAll() {
-        _selectedList.clear()
-        _selectedList.addAll(_apps.value)
+        _selectedList.value = _apps.value
     }
 
     fun deselect() {
-        _selectedList.clear()
+        _selectedList.value = emptyList()
         _multiselect.value = false
     }
 
@@ -111,21 +109,21 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun launchApp(packageName: String, onResult: (Boolean) -> Unit = {}) {
+    fun launchApp(packageName: String, onLaunch: (android.content.Intent?) -> Unit = {}) {
         viewModelScope.launch {
             if (AppManager.isAppFrozen(packageName)) {
                 AppActions.ensureUnfrozen(packageName).onSuccess {
-                    launchApp(packageName, onResult)
+                    launchApp(packageName, onLaunch)
                 }.onFailure {
-                    onResult(false)
+                    onLaunch(null)
                 }
                 return@launch
             }
             AppActions.getLaunchIntent(packageName).onSuccess { intent ->
                 HShortcuts.addDynamicShortcut(packageName)
-                onResult(true)
+                onLaunch(intent)
             }.onFailure {
-                onResult(false)
+                onLaunch(null)
             }
         }
     }
