@@ -21,17 +21,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
 import androidx.compose.material.icons.filled.*
@@ -60,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ComposeView
@@ -87,7 +87,10 @@ import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.HailTheme
 import com.aistra.hail.ui.theme.HailThemeState
+import com.aistra.hail.ui.theme.ColorSwatchPreview
 import com.aistra.hail.ui.theme.PaletteStyle
+import com.aistra.hail.ui.theme.PresetColors
+import com.aistra.hail.ui.theme.RawColor
 import com.aistra.hail.ui.theme.ThemeColorSpec
 import com.aistra.hail.ui.theme.labelRes
 import com.aistra.hail.utils.*
@@ -597,13 +600,24 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     )
                     if (!useDynamicColor) {
                         SettingsSectionHeader(stringResource(R.string.theme_seed_color))
-                        ColorSwatchRow(
-                            currentColor = seedColor,
-                            onColorSelected = { color ->
-                                seedColor = color
-                                HailData.seedColor = color
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            PresetColors.forEach { raw ->
+                                ColorSwatchPreview(
+                                    rawColor = raw,
+                                    currentStyle = paletteStyle,
+                                    colorSpec = colorSpec,
+                                    isSelected = seedColor == raw.color.toArgb(),
+                                    onClick = {
+                                        seedColor = raw.color.toArgb()
+                                        HailData.seedColor = raw.color.toArgb()
+                                    },
+                                )
                             }
-                        )
+                        }
                     }
                     SettingsList(
                         headlineContent = { Text(stringResource(R.string.icon_pack)) },
@@ -1221,49 +1235,5 @@ class SettingsFragment : MainFragment(), MenuProvider {
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
-    @Composable
-    private fun ColorSwatchRow(currentColor: Int, onColorSelected: (Int) -> Unit) {
-        val presetColors = listOf(
-            0xFF6750A4.toInt(),
-            0xFF625B71.toInt(),
-            0xFF7D5260.toInt(),
-            0xFFB3261E.toInt(),
-            0xFF006D40.toInt(),
-            0xFF004D40.toInt(),
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            presetColors.forEach { color ->
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color(color))
-                        .then(
-                            if (currentColor == color) {
-                                Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                            } else {
-                                Modifier
-                            }
-                        )
-                        .clickable { onColorSelected(color) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (currentColor == color) {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
+
