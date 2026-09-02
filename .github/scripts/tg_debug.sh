@@ -42,11 +42,8 @@ if [[ ! -f "${DEBUG_MD}" ]] || [[ ! -s "${DEBUG_MD}" ]]; then
     echo ""
     echo "   Enter descriptions (empty line to finish):"
     > "${DEBUG_MD}"
-    while IFS= read -r line; do
-        [[ -z "$line" ]] && break
-        echo "$line" >> "${DEBUG_MD}"
-    done
-    echo "   Saved to ${DEBUG_MD}"
+    echo "❌ debug.md not found or empty. Create it with your changes (one per line, starting with emoji)."
+    exit 1
     echo ""
 fi
 commit_subject="$(cat "${DEBUG_MD}")"
