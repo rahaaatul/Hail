@@ -99,11 +99,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             onItemLongClickListener = this@PagerFragment
         }
         binding.recyclerView.run {
-            layoutManager = GridLayoutManager(
-                activity, resources.getInteger(
-                    if (HailData.compactIcon) R.integer.home_span_compact else R.integer.home_span
-                )
-            )
+            layoutManager = GridLayoutManager(activity, HailData.iconColumns)
             adapter = pagerAdapter
             applyDefaultInsetter { paddingRelative(isRtl, bottom = isLandscape) }
 

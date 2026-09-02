@@ -67,7 +67,7 @@ class PagerAdapter(
 
                     else -> setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
                 }
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, HailData.homeFontSize)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
             }
         }
     }

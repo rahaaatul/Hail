@@ -57,7 +57,19 @@ fun HailTheme(
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
     val keyColor = if (state.useDynamicColor && HTarget.S) {
-        Color(LocalContext.current.getColor(android.R.color.system_accent1_500))
+        val context = LocalContext.current
+        try {
+            val manager = context.getSystemService(android.app.WallpaperManager::class.java)
+            val wallpaperColors: android.app.WallpaperColors? = manager.getWallpaperColors(android.app.WallpaperManager.FLAG_SYSTEM)
+            if (wallpaperColors != null) {
+                val primary = wallpaperColors.getPrimaryColor().toArgb()
+                if (primary != 0) Color(primary) else Color(context.getColor(android.R.color.system_accent1_500))
+            } else {
+                Color(context.getColor(android.R.color.system_accent1_500))
+            }
+        } catch (e: Exception) {
+            Color(context.getColor(android.R.color.system_accent1_500))
+        }
     } else {
         Color(state.seedColor)
     }
