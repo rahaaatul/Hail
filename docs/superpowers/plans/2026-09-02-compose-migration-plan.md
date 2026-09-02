@@ -71,11 +71,10 @@ Run: `./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep n
 **Files:**
 - Create: `app/src/main/kotlin/com/aistra/hail/ui/nav/Routes.kt`
 - Create: `app/src/main/kotlin/com/aistra/hail/ui/nav/HailNavHost.kt`
-- Create: `app/src/main/kotlin/com/aistra/hail/ui/nav/HailNavState.kt`
 
 **Interfaces:**
 - Consumes: Navigation 3 APIs (Task 1)
-- Produces: `HailNavHost()`, `HailNavState`, route objects
+- Produces: `HailNavHost()`, route objects
 
 **Routes.kt:**
 ```kotlin
@@ -91,65 +90,93 @@ import kotlinx.serialization.Serializable
 @Serializable data object AboutRoute : NavKey
 ```
 
-**HailNavState.kt:**
-```kotlin
-package com.aistra.hail.ui.nav
-
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.navigation3.runtime.NavPath
-import androidx.navigation3.runtime.rememberNavBackStack
-
-class HailNavState(
-    val backStack: MutableList<NavPath>,
-    val onNavigate: (NavPath) -> Unit,
-    val onBack: () -> Unit,
-)
-
-@Composable
-fun rememberHailNavState(): HailNavState {
-    val backStack = rememberNavBackStack(HomeRoute)
-    return remember(backStack) {
-        HailNavState(
-            backStack = backStack,
-            onNavigate = { backStack.add(it) },
-            onBack = { if (backStack.size > 1) backStack.removeLast() },
-        )
-    }
-}
-```
-
-**HailNavHost.kt (placeholder):**
+**HailNavHost.kt:**
 ```kotlin
 package com.aistra.hail.ui.nav
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation3.compose.NavDisplay
-import androidx.navigation3.compose.entryProvider
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.ui.NavDisplay
 import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
 
 @Composable
 fun HailNavHost(
     modifier: Modifier = Modifier,
-    navState: HailNavState = rememberHailNavState(),
+    themeState: HailThemeState = HailThemeState(),
 ) {
-    HailTheme {
+    HailTheme(state = themeState) {
+        val backStack = rememberNavBackStack(HomeRoute)
         NavDisplay(
-            backStack = navState.backStack,
-            onBack = { navState.onBack() },
+            modifier = modifier,
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
             entryProvider = entryProvider {
-                entry<HomeRoute> { Text("Home", modifier = modifier) }
-                entry<AppsRoute> { Text("Apps", modifier = modifier) }
-                entry<ActionsRoute> { Text("Actions", modifier = modifier) }
-                entry<SettingsRoute> { Text("Settings", modifier = modifier) }
-                entry<AboutRoute> { Text("About", modifier = modifier) }
+                entry<HomeRoute> { Text("Home") }
+                entry<AppsRoute> { Text("Apps") }
+                entry<ActionsRoute> { Text("Actions") }
+                entry<SettingsRoute> { Text("Settings") }
+                entry<AboutRoute> { Text("About") }
             }
         )
     }
 }
 ```
+
+**Verified API (navigation3 1.2.0-alpha05 + nav3-recipes source + bytecode inspection):**
+- `NavDisplay` is in `androidx.navigation3.ui` (NOT `androidx.navigation3.compose`)
+- `entryProvider` is in `androidx.navigation3.runtime`
+- `NavDisplay` accepts named params: `backStack`, `onBack`, `entryProvider`
+- `rememberNavBackStack(vararg keys: NavKey)` creates persistent back stack
+- `NavBackStack<T>` implements `List<T>` with `add(T)`, `removeLastOrNull()`
+- `HailNavState` wrapper eliminated (over-engineered, per simplifier review — `onNavigate` was dead code, `onBack` was trivial passthrough)
+- Per-tab back stacks will be added when wiring bottom nav bar (Phase 5), following `NavigationState` + `Navigator` pattern from multiplestacks recipe
+- `NavBackStack<T>` implements `List<T>` with `add(T)`, `removeLastOrNull()`
+
+**HailNavHost.kt:**
+```kotlin
+package com.aistra.hail.ui.nav
+
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
+import com.aistra.hail.ui.theme.HailTheme
+import com.aistra.hail.ui.theme.HailThemeState
+
+@Composable
+fun HailNavHost(
+    modifier: Modifier = Modifier,
+    themeState: HailThemeState = HailThemeState(),
+) {
+    HailTheme(state = themeState) {
+        val backStack = rememberNavBackStack(HomeRoute)
+        NavDisplay(
+            modifier = modifier,
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
+            entryProvider = entryProvider {
+                entry<HomeRoute> { Text("Home") }
+                entry<AppsRoute> { Text("Apps") }
+                entry<ActionsRoute> { Text("Actions") }
+                entry<SettingsRoute> { Text("Settings") }
+                entry<AboutRoute> { Text("About") }
+            }
+        )
+    }
+}
+```
+
+**Key corrections from actual API (verified against navigation3 1.2.0-alpha05 + nav3-recipes source):**
+- `NavDisplay` is in `androidx.navigation3.ui` (NOT `androidx.navigation3.compose`)
+- `NavDisplay` accepts `backStack`, `onBack`, `entryProvider` named parameters
+- `HailTheme` requires `state: HailThemeState` parameter
+- `rememberNavBackStack(vararg keys: NavKey)` takes vararg keys
+- `NavBackStack<T>` implements `List<T>` with `add(T)`, `remove(T)` methods
 
 ---
 
