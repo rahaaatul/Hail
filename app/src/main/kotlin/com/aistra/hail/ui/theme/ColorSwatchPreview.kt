@@ -25,7 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import com.aistra.hail.ui.theme.dynamicColorScheme
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,11 +71,8 @@ fun ColorSwatchPreview(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (scheme != null) {
-            FullSwatchContent(scheme = scheme!!, isSelected = isSelected)
-        } else {
-            FallbackSwatchContent(baseColor = rawColor.color, isSelected = isSelected)
-        }
+        scheme?.let { FullSwatchContent(scheme = it, isSelected = isSelected) }
+            ?: FallbackSwatchContent(baseColor = rawColor.color, isSelected = isSelected)
     }
 }
 
