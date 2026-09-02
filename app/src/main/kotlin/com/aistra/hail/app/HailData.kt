@@ -140,10 +140,8 @@ object HailData {
     val APP_THEME_VALUES = listOf(FOLLOW_SYSTEM, THEME_LIGHT, THEME_DARK)
     const val ICON_PACK = "icon_pack"
     const val GRAYSCALE_ICON = "grayscale_icon"
-    const val COMPACT_ICON = "compact_icon"
     const val SYNTHESIZE_ADAPTIVE_ICONS = "synthesize_adaptive_icons"
     const val USE_FLOATING_BOTTOM_BAR = "use_floating_bottom_bar"
-    const val HOME_FONT_SIZE = "home_font_size_f"
     const val ICON_COLUMNS = "icon_columns"
     const val FUZZY_SEARCH = "fuzzy_search"
     const val NINE_KEY_SEARCH = "nine_key"
@@ -210,15 +208,9 @@ object HailData {
     var grayscaleIcon
         get() = sp.getBoolean(GRAYSCALE_ICON, true)
         set(value) = sp.edit { putBoolean(GRAYSCALE_ICON, value) }
-    var compactIcon
-        get() = sp.getBoolean(COMPACT_ICON, false)
-        set(value) = sp.edit { putBoolean(COMPACT_ICON, value) }
     var synthesizeAdaptiveIcons
         get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
         set(value) = sp.edit { putBoolean(SYNTHESIZE_ADAPTIVE_ICONS, value) }
-    var homeFontSize
-        get() = sp.getFloat(HOME_FONT_SIZE, 14f)
-        set(value) = sp.edit { putFloat(HOME_FONT_SIZE, value) }
     var iconColumns
         get() = sp.getInt(ICON_COLUMNS, 4)
         set(value) = sp.edit { putInt(ICON_COLUMNS, value) }
