@@ -213,6 +213,9 @@
     <string name="theme_dynamic_color_desc">Use colors from your wallpaper</string>
     <string name="theme_seed_color">Seed Color</string>
     <string name="theme_seed_color_desc">Choose a custom color</string>
+    <string name="section_colors">Colors</string>
+    <string name="section_icon">Icon</string>
+    <string name="icon_columns">Icon Columns</string>
 
     <!-- Theme mode display names -->
     <string name="theme_mode_light">Light</string>

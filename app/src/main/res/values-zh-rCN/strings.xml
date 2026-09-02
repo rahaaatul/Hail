@@ -121,6 +121,9 @@
     <string name="action_freeze_tag">标签冻结</string>
     <string name="action_unfreeze_tag">标签解冻</string>
     <string name="icon_pack">图标包</string>
+    <string name="section_colors">颜色</string>
+    <string name="section_icon">图标</string>
+    <string name="icon_columns">图标列数</string>
     <string name="action_select_all">全选</string>
     <string name="action_terminal">终端</string>
     <string name="mode_dhizuku_hide">Dhizuku - 隐藏</string>

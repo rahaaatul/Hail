@@ -502,9 +502,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
         var appTheme by remember { mutableStateOf(HailData.appTheme) }
         var iconPack by remember { mutableStateOf(HailData.iconPack) }
         var grayscaleIcon by remember { mutableStateOf(HailData.grayscaleIcon) }
-        var compactIcon by remember { mutableStateOf(HailData.compactIcon) }
         var synthesizeAdaptiveIcons by remember { mutableStateOf(HailData.synthesizeAdaptiveIcons) }
-        var homeFontSize by remember { mutableStateOf(HailData.homeFontSize) }
+        var iconColumns by remember { mutableStateOf(HailData.iconColumns.toFloat()) }
         var useFloatingBottomBar by remember { mutableStateOf(HailData.useFloatingBottomBar) }
         var paletteStyle by remember { mutableStateOf(HailData.paletteStyle) }
         var colorSpec by remember { mutableStateOf(HailData.colorSpec) }
@@ -556,7 +555,17 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             Text(appThemeEntries.getOrElse(index) { appTheme })
                         },
                     )
-                    SettingsSectionHeader(stringResource(R.string.theme_palette_style))
+                    SettingsSwitch(
+                        headlineContent = { Text(stringResource(R.string.use_floating_bottom_bar)) },
+                        supportingContent = { Text(stringResource(R.string.use_floating_bottom_bar_desc)) },
+                        checked = useFloatingBottomBar,
+                        onCheckedChange = {
+                            useFloatingBottomBar = it
+                            HailData.useFloatingBottomBar = it
+                        },
+                        leadingContent = { Icon(Icons.Outlined.Smartphone, contentDescription = null) },
+                    )
+                    SettingsSectionHeader(stringResource(R.string.section_colors))
                     SettingsList(
                         headlineContent = { Text(stringResource(R.string.theme_palette_style)) },
                         selectedValue = paletteStyle.name,
@@ -567,7 +576,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         values = paletteStyleValues.map { it.name },
                         entries = paletteStyleEntries,
                     )
-                    SettingsSectionHeader(stringResource(R.string.theme_color_spec))
                     SettingsList(
                         headlineContent = { Text(stringResource(R.string.theme_color_spec)) },
                         selectedValue = colorSpec.name,
@@ -579,7 +587,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         entries = colorSpecEntries,
                         enabled = colorSpecEnabled,
                     )
-                    SettingsSectionHeader(stringResource(R.string.theme_dynamic_color))
                     SettingsSwitch(
                         headlineContent = { Text(stringResource(R.string.theme_dynamic_color)) },
                         supportingContent = { Text(stringResource(R.string.theme_dynamic_color_desc)) },
@@ -590,7 +597,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         },
                     )
                     if (!useDynamicColor) {
-                        SettingsSectionHeader(stringResource(R.string.theme_seed_color))
                         FlowRow(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -610,6 +616,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             }
                         }
                     }
+                    SettingsSectionHeader(stringResource(R.string.section_icon))
                     SettingsList(
                         headlineContent = { Text(stringResource(R.string.icon_pack)) },
                         selectedValue = iconPack,
@@ -633,15 +640,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         leadingContent = { Icon(Icons.Outlined.FilterBAndW, contentDescription = null) },
                     )
                     SettingsSwitch(
-                        headlineContent = { Text(stringResource(R.string.compact_icon)) },
-                        checked = compactIcon,
-                        onCheckedChange = {
-                            compactIcon = it
-                            HailData.compactIcon = it
-                        },
-                        leadingContent = { Icon(Icons.Outlined.Apps, contentDescription = null) },
-                    )
-                    SettingsSwitch(
                         headlineContent = { Text(stringResource(R.string.synthesize_adaptive_icons)) },
                         checked = synthesizeAdaptiveIcons,
                         onCheckedChange = {
@@ -651,25 +649,15 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         leadingContent = { Icon(Icons.Outlined.Layers, contentDescription = null) },
                     )
                     SettingsSlider(
-                        headlineContent = { Text(stringResource(R.string.home_font_size)) },
-                        value = homeFontSize,
+                        headlineContent = { Text(stringResource(R.string.icon_columns)) },
+                        value = iconColumns,
                         onValueChange = {
-                            homeFontSize = it
-                            HailData.homeFontSize = it
+                            iconColumns = it
+                            HailData.iconColumns = it.toInt()
                         },
-                        valueRange = 11f..16f,
-                        valueSteps = 4,
-                        leadingContent = { Icon(Icons.Outlined.TextFields, contentDescription = null) },
-                    )
-                    SettingsSwitch(
-                        headlineContent = { Text(stringResource(R.string.use_floating_bottom_bar)) },
-                        supportingContent = { Text(stringResource(R.string.use_floating_bottom_bar_desc)) },
-                        checked = useFloatingBottomBar,
-                        onCheckedChange = {
-                            useFloatingBottomBar = it
-                            HailData.useFloatingBottomBar = it
-                        },
-                        leadingContent = { Icon(Icons.Outlined.Smartphone, contentDescription = null) },
+                        valueRange = 4f..6f,
+                        valueSteps = 2,
+                        leadingContent = { Icon(Icons.Outlined.ViewColumn, contentDescription = null) },
                     )
                 }
             }
