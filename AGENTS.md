@@ -86,12 +86,15 @@ Room classes live in `app/src/main/kotlin/com/aistra/hail/utils/` as Kotlin file
 
 Tests live in `app/src/test/kotlin/com/aistra/hail/` (unit tests) and `app/src/androidTest/kotlin/com/aistra/hail/` (instrumented tests).
 
-- Framework: JUnit4 + MockK + Turbine
+- Framework: JUnit4 + MockK + Turbine + Robolectric
 - Run all unit tests: `./gradlew :app:testDebugUnitTest`
 - Run single test: `./gradlew :app:testDebugUnitTest --tests="ClassName.testMethod"`
+- Coverage report: `./gradlew :app:jacocoTestReport` (output: `build/reports/jacoco/jacocoTestReport/`)
 - Coroutine tests use `runTest { }`
 - Room tests use `Room.inMemoryDatabaseBuilder()` with `allowMainThreadQueries()`
 - Mocking: `mockkObject()`, `every { }`, `coEvery { }` for suspend functions
+- Compose UI tests: `androidx.compose.ui:ui-test-junit4` + `createAndroidComposeRule`
+- Robolectric: run instrumented-style tests locally without a device
 
 When adding tests, place them in `app/src/test/kotlin/com/aistra/hail/` following the package structure of the code under test.
 
@@ -133,6 +136,7 @@ Skills live in `.kilo/skills/`. Load the relevant skill before starting work. Fo
 | `using-superpowers` | Start of any conversation |
 | `edge-to-edge` | UI layout or system bar work |
 | `navigation-3` | Screen routing or navigation changes |
+| `styles` | Compose theming with Styles API |
 
 ### Invoke When Needed
 
@@ -144,6 +148,7 @@ Skills live in `.kilo/skills/`. Load the relevant skill before starting work. Fo
 | `verification-before-completion` | Before claiming work complete |
 | `brainstorming` | Before any creative work |
 | `test-driven-development` | Implementing features or fixes |
+| `jetpack-compose` | Compose migration, adaptive layouts, theming |
 
 ## Research-First Decision Policy
 

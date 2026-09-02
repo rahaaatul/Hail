@@ -2,6 +2,60 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
+    id("jacoco")
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.withType<Test>().configureEach {
+    extensions.configure<JacocoTaskExtension> {
+        excludes = listOf("jdk.internal.*", "sun.util.*")
+    }
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("testDebugUnitTest"))
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/Inject_*.*",
+        "**/*Hilt*.*",
+        "**/*_Factory*.*",
+        "**/*_Provide*.*",
+        "**/*MembersInjector*.*",
+        "**/*_Components*.*"
+    )
+
+    val kotlinDebug = layout.buildDirectory.dir("tmp/kotlin-classes/debug")
+    val javaDebug = layout.buildDirectory.dir("intermediates/javac/debug")
+
+    classDirectories.setFrom(
+        files(
+            kotlinDebug.map { fileTree(it) { exclude(fileFilter) } },
+            javaDebug.map { fileTree(it) { exclude(fileFilter) } }
+        )
+    )
+    sourceDirectories.setFrom(
+        files(
+            layout.projectDirectory.dir("src/main/kotlin"),
+            layout.projectDirectory.dir("src/main/java")
+        )
+    )
+    executionData.setFrom(
+        layout.buildDirectory.dir("jacoco/testDebugUnitTest.exec")
+    )
 }
 
 android {
@@ -72,6 +126,7 @@ android {
         }
     }
 }
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(26)
@@ -124,6 +179,10 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
     testImplementation("androidx.room3:room3-testing:3.0.1")
     testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation(libs.turbine)
+    testImplementation(libs.robolectric)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.compose.ui:ui-test-manifest")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
@@ -132,4 +191,6 @@ dependencies {
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
     androidTestImplementation("io.mockk:mockk-android:1.13.12")
     androidTestImplementation("androidx.room3:room3-testing:3.0.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.compose.ui:ui-test-manifest")
 }
