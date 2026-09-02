@@ -251,12 +251,10 @@ object HailData {
     var colorSpec
         get() = ThemeColorSpec.fromValueOrDefault(sp.getString(COLOR_SPEC, null) ?: "SPEC_2025")
         set(value) = sp.edit { putString(COLOR_SPEC, value.name) }
-    var dynamicColor
+
+    var useDynamicColor
         get() = sp.getBoolean(DYNAMIC_COLOR, HTarget.S)
         set(value) = sp.edit { putBoolean(DYNAMIC_COLOR, value) }
-    var useDynamicColor
-        get() = sp.getBoolean("use_dynamic_color", true)
-        set(value) = sp.edit { putBoolean("use_dynamic_color", value) }
     var seedColor
         get() = sp.getInt(SEED_COLOR, 0xFF1976D2.toInt())
         set(value) = sp.edit { putInt(SEED_COLOR, value) }
@@ -346,4 +344,15 @@ object HailData {
     fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }
 
     fun changeAppsFilter(filter: String, enabled: Boolean) = sp.edit { putBoolean(filter, enabled) }
+
+    init {
+        val migratedKey = "use_dynamic_color_migrated"
+        if (!sp.getBoolean(migratedKey, false)) {
+            val legacyKey = "use_dynamic_color"
+            if (sp.contains(legacyKey)) {
+                sp.edit { putBoolean(DYNAMIC_COLOR, sp.getBoolean(legacyKey, true)) }
+            }
+            sp.edit { putBoolean(migratedKey, true) }
+        }
+    }
 }
