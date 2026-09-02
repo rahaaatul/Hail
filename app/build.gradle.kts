@@ -123,13 +123,13 @@ dependencies {
     testImplementation("androidx.test.ext:truth:1.7.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
     testImplementation("androidx.room3:room3-testing:3.0.1")
-    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("io.mockk:mockk:1.14.11")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
-    androidTestImplementation("io.mockk:mockk-android:1.13.12")
+    androidTestImplementation("io.mockk:mockk-android:1.14.11")
     androidTestImplementation("androidx.room3:room3-testing:3.0.1")
 }
