@@ -85,7 +85,9 @@ fun HailTheme(
     val view = LocalView.current
     SideEffect {
         val window = (view.context as? ComponentActivity)?.window ?: return@SideEffect
+        @Suppress("DEPRECATION")
         window.statusBarColor = colorScheme.surface.toArgb()
+        @Suppress("DEPRECATION")
         window.navigationBarColor = colorScheme.surface.toArgb()
         WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
         WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !isDark
