@@ -76,7 +76,7 @@ class AboutFragment : MainFragment() {
                     Image(
                         painter = painterResource(R.drawable.ic_launcher_foreground),
                         contentDescription = null,
-                        modifier = Modifier.size(72.dp).background(Color.White, CircleShape),
+                        modifier = Modifier.size(72.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
                         contentScale = ContentScale.None
                     )
                     Text(

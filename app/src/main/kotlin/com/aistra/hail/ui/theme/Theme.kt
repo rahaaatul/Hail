@@ -2,6 +2,7 @@
 
 package com.aistra.hail.ui.theme
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -10,10 +11,14 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HTarget
 
@@ -65,6 +70,14 @@ fun HailTheme(
         )
     }
     val colorScheme = baseColorScheme.animateColorScheme()
+    val view = LocalView.current
+    SideEffect {
+        val window = (view.context as? ComponentActivity)?.window ?: return@SideEffect
+        window.statusBarColor = colorScheme.surface.toArgb()
+        window.navigationBarColor = colorScheme.surface.toArgb()
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
+        WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !isDark
+    }
     CompositionLocalProvider(
         LocalHailColorScheme provides colorScheme,
         LocalIsDark provides isDark,

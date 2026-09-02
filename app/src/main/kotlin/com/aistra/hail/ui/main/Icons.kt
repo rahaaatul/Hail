@@ -26,7 +26,7 @@ val Icons.Filled.Home: ImageVector
         )
         .apply {
           path(
-            fill = SolidColor(Color.Black),
+            fill = SolidColor(Color.Unspecified),
             fillAlpha = 1f,
             stroke = null,
             strokeAlpha = 1f,
@@ -128,7 +128,7 @@ val Icons.Filled.Automation: ImageVector
         )
         .apply {
           path(
-            fill = SolidColor(Color.Black),
+            fill = SolidColor(Color.Unspecified),
             fillAlpha = 1f,
             stroke = null,
             strokeAlpha = 1f,
@@ -230,7 +230,7 @@ val Icons.Filled.Settings: ImageVector
         )
         .apply {
           path(
-            fill = SolidColor(Color.Black),
+            fill = SolidColor(Color.Unspecified),
             fillAlpha = 1f,
             stroke = null,
             strokeAlpha = 1f,
