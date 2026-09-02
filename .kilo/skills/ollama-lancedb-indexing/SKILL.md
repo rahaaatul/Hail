@@ -5,21 +5,42 @@ description: Use when setting up, debugging, or configuring free local codebase 
 
 # Ollama + LanceDB Codebase Indexing
 
-Free, local, no-API-key codebase indexing. Ollama generates embeddings; LanceDB stores them. Kilo Code parses code with Tree-sitter, embeds semantic blocks (functions, classes), and exposes `semantic_search` for natural-language queries.
+## Overview
+
+Free, local, no-API-key codebase indexing. Ollama generates embeddings; LanceDB stores them embedded (no separate server). Kilo Code parses code with Tree-sitter, embeds semantic blocks, and exposes `semantic_search` for natural-language queries.
 
 ## When to Use
 
 - Installing Ollama for the first time, especially in a container/CI where systemd is absent
 - "idx failed to initialize" or no semantic search results
-- Picking/switching an embedding model
+- Picking or switching an embedding model
 - Tuning `searchMinScore`, batch size, or file exclusions
-- Confirming an existing setup still works
+- Confirming an existing setup still works after an IDE or host restart
+
+**When NOT to use:**
+
+- You have a paid hosted embedding provider (OpenAI, Voyage, etc.) and are happy with per-token cost — this skill is the offline alternative
+- You need embeddings generated remotely — Ollama must run on the host where Kilo Code executes
+- You need multi-GB corpora with sub-100ms retrieval — LanceDB is fine for typical codebases, not for >1M blocks
+
+## Quick Reference
+
+| Task | Command / Action |
+|---|---|
+| Install (Debian/Ubuntu) | `sudo apt-get install -y zstd && curl -fsSL https://ollama.ai/install.sh \| sh` |
+| Pull embedding model | `ollama pull nomic-embed-text` |
+| Start server (containers) | `nohup ollama serve > /tmp/ollama.log 2>&1 &` |
+| Verify server | `curl -s 127.0.0.1:11434/api/tags \| jq '.models[].name'` |
+| Verify embeddings | `curl -s 127.0.0.1:11434/api/embed -d '{"model":"nomic-embed-text","input":"test"}' \| jq '.embeddings[0]\|length'` → 768 |
+| Edit config | `~/.config/kilo/kilo.jsonc` → `indexing.*` keys |
+| Exclude files | Project root `.kilocodeignore` (gitignore syntax) |
+| Apply config | `/reload` in chat or restart IDE |
 
 ## Prerequisites
 
-- Ollama binary (`/usr/local/bin/ollama` after install)
+- Ollama binary at `/usr/local/bin/ollama`
 - An embedding model pulled (start with `nomic-embed-text`)
-- A reachable server on `http://127.0.0.1:11434`
+- Reachable server on `http://127.0.0.1:11434`
 
 ## Setup (Linux)
 
@@ -92,7 +113,17 @@ Or restrict to specific extensions in `kilo.jsonc`:
 "indexing": { "fileExtensions": [".kt", ".java", ".xml"] }
 ```
 
-## Troubleshooting
+## Embedding Models
+
+| Model | Size | Dim | Use when |
+|---|---|---|---|
+| `nomic-embed-text` | 274 MB | 768 | Default — best balance for code |
+| `mxbai-embed-large` | 669 MB | 1024 | Higher quality, slower indexing |
+| `all-minilm` | 46 MB | 384 | Fastest, lower recall |
+
+Switching models requires re-indexing; change `model` in `kilo.jsonc` and reload.
+
+## Common Mistakes
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -104,16 +135,8 @@ Or restrict to specific extensions in `kilo.jsonc`:
 | `semantic_search` returns nothing | Indexing not finished, or score too high | Wait for status indicator; try `searchMinScore: 0.3` |
 | Indexing stalls | Batch too large for hardware | Lower `embeddingBatchSize` (e.g. 20); `tail -f /tmp/ollama.log` |
 | VS Code extension can't see Ollama | Running in remote container | Ollama must be on the host the IDE runs on, not the container |
-
-## Embedding Models
-
-| Model | Size | Dim | Use when |
-|---|---|---|---|
-| `nomic-embed-text` | 274 MB | 768 | Default — best balance for code |
-| `mxbai-embed-large` | 669 MB | 1024 | Higher quality, slower indexing |
-| `all-minilm` | 46 MB | 384 | Fastest, lower recall |
-
-Switching models requires re-indexing; change `model` in `kilo.jsonc` and reload.
+| Config change has no effect | Not reloaded | `/reload` in chat or restart IDE |
+| Re-pulled model didn't help search | Old index still in use | Delete `.kilocode/` index dir or trigger re-index from settings |
 
 ## Verify It Works
 
