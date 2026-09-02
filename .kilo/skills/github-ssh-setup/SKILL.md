@@ -15,7 +15,7 @@ Reproducible method for creating an Ed25519 SSH key, configuring git to use it f
 - Need to print a public key for GitHub
 - Need to confirm `ssh -T git@github.com` succeeds
 - Configuring git identity and SSH commit signing together
-- Resetting default GitHub remote to lowercase owner/repo
+- Resetting default GitHub remote to `rahaaatul/Hail`
 
 Do NOT use for non-GitHub hosts or non-SSH auth methods.
 
@@ -27,7 +27,7 @@ Do NOT use for non-GitHub hosts or non-SSH auth methods.
 | Start agent | `eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519` |
 | Git identity | `git config --global user.name "<name>"` and `user.email "<email>"` |
 | Commit signing | `git config --global gpg.format ssh`, `user.signingkey "<key content>"`, `commit.gpgsign true` |
-| Remote | `git remote set-url origin git@github.com:<user>/<repo>.git` |
+| Remote | `git remote set-url origin git@github.com:rahaaatul/Hail.git` |
 | Verify agent | `ssh-add -l` |
 | Verify config | `git config user.signingkey`, `git config commit.gpgsign` |
 | Verify GitHub | `ssh -T git@github.com` |
@@ -71,10 +71,10 @@ git config --global commit.gpgsign true
 ### 5. Set default remote
 
 ```bash
-git remote set-url origin git@github.com:<user>/<repo>.git
+git remote set-url origin git@github.com:rahaaatul/Hail.git
 ```
 
-Use lowercase for both owner and repo. Confirm with `git remote -v`.
+Use exact owner/repo casing. Confirm with `git remote -v`.
 
 ### 6. Verify
 
@@ -94,5 +94,4 @@ Expected GitHub response: `Hi <username>! You've successfully authenticated, but
 | Using non-standard key path (`github_ed25519`) | Use `~/.ssh/id_ed25519` |
 | Setting `user.signingkey` to a file path | Set it to the public key content string |
 | Forgetting to start ssh-agent or add key | Run `eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519` |
-| Mixed-case remote URL (`Hail` vs `hail`) | Use lowercase owner and repo |
 | Verifying GitHub before key is added to account | `ssh -T git@github.com` returns `Permission denied (publickey)` until the public key is added on GitHub |
