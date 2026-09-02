@@ -39,10 +39,4 @@
         android:label="@string/title_about"
         app:route="nav_about"
         tools:layout="@layout/fragment_about" />
-
-    <fragment
-        android:id="@+id/nav_theme_settings"
-        android:name="com.aistra.hail.ui.settings.ThemeSettingsFragment"
-        android:label="@string/title_theme_settings"
-        app:route="nav_theme_settings" />
 </navigation>
