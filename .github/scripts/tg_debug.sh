@@ -36,16 +36,16 @@ chmod +x ./gradlew
 DEBUG_MD="debug.md"
 if [[ ! -f "${DEBUG_MD}" ]] || [[ ! -s "${DEBUG_MD}" ]]; then
     echo ""
-    echo "📝 No debug.md found. Please describe your changes."
-    echo "   Format: start each line with emoji:"
+    echo "📝 No debug.md found. Please create it with your changes."
+    echo "   Format: start each line with an emoji:"
     echo "     ✨ Add, 🗑️ Remove, 🐛 Fix, 💄 Style, ♻️ Refactor, 📝 Docs, 🔧 Chore, 🚀 Perf"
+    echo "   The first line should be the branch name, e.g. [feature/foo]"
     echo ""
     echo "   Enter descriptions (empty line to finish):"
-    > "${DEBUG_MD}"
-    echo "❌ debug.md not found or empty. Create it with your changes (one per line, starting with emoji)."
     exit 1
-    echo ""
 fi
+
+readonly BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 commit_subject="$(cat "${DEBUG_MD}")"
 
 ./gradlew clean :app:assembleDebug --console=plain
@@ -125,6 +125,9 @@ send_debug_notification() {
     fi
 
     local caption="<b>Debug Build v${version_name}-${commit_hash}</b>
+
+<b>Branch</b>
+<blockquote>${BRANCH}</blockquote>
 
 <b>Version</b>
 <blockquote>${version_name}-${commit_hash} (${version_code})</blockquote>
