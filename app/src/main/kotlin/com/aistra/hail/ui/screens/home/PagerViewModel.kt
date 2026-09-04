@@ -31,6 +31,9 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedList = MutableStateFlow<List<AppInfo>>(emptyList())
     val selectedList: StateFlow<List<AppInfo>> = _selectedList.asStateFlow()
 
+    private val _refreshing = MutableStateFlow(false)
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
     var selectedTagId: Int = 0
         private set
 
@@ -55,6 +58,12 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         _apps.value = result.sortedWith(NameComparator)
+    }
+
+    fun refresh() {
+        _refreshing.value = true
+        loadApps(selectedTagId)
+        _refreshing.value = false
     }
 
     fun setQuery(newQuery: String) {
