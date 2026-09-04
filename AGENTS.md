@@ -98,6 +98,19 @@ Tests live in `app/src/test/kotlin/com/aistra/hail/` (unit tests) and `app/src/a
 
 When adding tests, place them in `app/src/test/kotlin/com/aistra/hail/` following the package structure of the code under test.
 
+## Agentic Workflow CLI Tools
+
+The following CLI tools are installed and benefit agentic workflows. Use them when built-in tools are insufficient or when operating in pipelines.
+
+| Tool | Use case | Example |
+|------|----------|---------|
+| `rg` (`ripgrep`) | Fast regex/line search; respects `.gitignore` | `rg "pattern" --type kotlin` |
+| `fd` | Fast file discovery by pattern/extension | `fd -e kt` |
+| `jq` | JSON parsing/transformation in pipelines | `curl ... \| jq '.field'` |
+| `curl` | HTTP requests for API inspection | `curl -s <url> \| jq` |
+
+These complement built-in tools (`Grep`, `Glob`, `Read`, `bash`). Prefer built-ins for structured operations; use these for text processing, JSON pipelines, or when regex flexibility is needed.
+
 ## Security
 
 - Never commit `signing.properties` or `local.properties` (gitignored, contain secrets)
