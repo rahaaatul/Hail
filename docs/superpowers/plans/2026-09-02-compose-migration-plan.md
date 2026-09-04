@@ -145,7 +145,7 @@ fun PagerScreen(viewModel: PagerViewModel = viewModel()) {
 
 ## Google Recommendations for Jetpack Compose (Consolidated)
 
-Source: Android Developer Docs (Context7 `/websites/developer_android` + `/websites/developer_android_develop_ui_compose`), verified against Hail's Compose BOM `2026.08.00` and Material 3 `1.5.0-alpha27`.
+Source: Android Developer Docs (Context7 `/websites/developer_android` + `/websites/developer_android_develop_ui_compose` + `/websites/developer_android_develop_ui_compose_migrate`), verified against Hail's Compose BOM `2026.08.00` and Material 3 `1.5.0-alpha27`.
 
 ### Image Loading
 - **Use Coil** (`io.coil-kt:coil-compose`) as the recommended image loading library for Compose.
@@ -205,7 +205,605 @@ Source: Android Developer Docs (Context7 `/websites/developer_android` + `/websi
 
 ---
 
-### Task 1: Add Navigation 3 + serialization dependencies
+## Material 3 Expressive Reference (1.5.0-alpha27)
+
+Source: Context7 `/websites/developer_android_develop_ui_compose` + `.kilo/skills/material3-expressive/SKILL.md`
+
+### Seven Pillars
+Material 3 Expressive coordinates **Color**, **Typography**, **Shape**, **Motion**, **Layout**, **Components**, and **Icons**. Partial styling produces generic-looking apps.
+
+### 1. Color — 48-Role System
+Expressive uses an expanded **48-role color scheme** with hero elements receiving tonal-surfaced container colors (`surfaceContainerHigh`) and supporting surfaces staying neutral. Use `withContrastLevel(ContrastLevel.High)` for AA contrast. Fixed accent colors remain constant across light/dark themes.
+
+### 2. Typography — Emphasized Scale
+Use `EmphasizedTypography` (tighter line height, bumped weight). Map roles: `display*` for hero, `headline*` for sections, `title*` for in-list, `body*` for content, `label*` for affordances.
+
+### 3. Shape — Five Buckets, Morphing
+35 shapes across 5 size buckets with automatic **morphing** transitions in `ButtonGroup`, `SegmentedButton`, and `SplitButton` driven by `motionScheme.defaultSpatialSpec()`. **Full-radius** corners (`RoundedCornerShape(percent = 100)`) reserved for one hero element per screen.
+
+### 4. Motion — MotionScheme
+`MotionScheme` returns specs for six slots. Route hero interactions through `MotionScheme.expressive()` and utilitarian UI through `MotionScheme.standard()`.
+
+| Spec | Use for |
+|---|---|
+| `defaultSpatialSpec` | size/shape/position changes |
+| `fastSpatialSpec` | button press, toggle morphs |
+| `slowSpatialSpec` | sheet expand, hero enter |
+| `defaultEffectsSpec` | color/alpha/content |
+| `fastEffectsSpec` | hover/ripple tints |
+| `slowEffectsSpec` | long crossfades |
+
+Use with `animateDpAsState`/`animateColorAsState`, not hand-rolled springs.
+
+### 5. Layout — Adaptive + Background Blur
+Use `WindowSizeClass` for adaptive layouts. Apply **background blur** to overlays/navigation via translucent containers, pairing with tonal elevation (not drop shadows).
+
+### 6. Components — What's New vs Standard M3
+
+| Need | Expressive Component | Replaces |
+|---|---|---|
+| Short wait (<5s) | `LoadingIndicator` | `CircularProgressIndicator` |
+| Bottom action bar | `DockedToolbar` | `BottomAppBar` |
+| Contextual floating actions | `FloatingToolbar` (horizontal/vertical) | bespoke FAB row |
+| Scroll-reactive bottom bar | `FlexibleBottomAppBar` | custom animated bar |
+| Multi-select actions | `ButtonGroup` / `MultiChoiceSegmentedButtonRow` | `Row` of buttons |
+| Primary + dropdown | `SplitButton` | FAB + menu |
+| Hero top bar | `LargeFlexibleTopAppBar` / `MediumFlexibleTopAppBar` | `TopAppBar` |
+| Tonal progress | `LinearWavyProgressIndicator` / `CircularWavyProgressIndicator` | linear/circular |
+
+### 7. Icons — Material Symbols
+Use Material Symbols (variable icon fonts) with **fill toggle** (Filled for selected, Outlined for unselected) in navigation. Never animate color alone — the fill change is the signal.
+
+### Android 16+ Requirements
+- **Edge-to-edge:** call `enableEdgeToEdge()` in every Activity's `onCreate`
+- **Predictive back gesture:** supported out-of-the-box in `BottomSheet`, `NavigationDrawer`, `ModalBottomSheet`, `DockedToolbar`
+
+### Accessibility Non-Negotiables
+- **Contrast:** 4.5:1 minimum (3:1 for large text)
+- **Touch targets:** 48dp minimum
+- **Reduced motion:** fall back to `MotionScheme.standard()` when accessibility manager recommends shorter timeouts
+- **TalkBack:** every `IconButton` needs `contentDescription`
+
+### Key Deprecations → Replacements
+| Deprecated | Replacement |
+|---|---|
+| `BottomAppBar` | `DockedToolbar` / `FlexibleBottomAppBar` |
+| `CircularProgressIndicator` (short waits) | `LoadingIndicator` |
+| `TopAppBar` | `LargeFlexibleTopAppBar` / `MediumFlexibleTopAppBar` / `CenterAlignedTopAppBar` |
+| `ExtendedFloatingActionButton` | `FloatingActionButtonMenu` |
+| Manual rounded `ListItem` | `surfaceContainer` + segmented shape |
+| Only `MaterialTheme.shapes` | Set both `shapes` and `motionScheme` |
+
+---
+
+## Navigation 3 Reference (1.2.0-alpha05)
+
+Source: Context7 `/websites/developer_android_develop_ui_compose` + nav3-recipes source + bytecode inspection
+
+### Core Architecture
+Navigation 3 gives you **full control** over the back stack — you own it as a Compose-backed `List` and `NavDisplay` simply observes it.
+
+| Layer | Component | Package | Role |
+|-------|-----------|---------|------|
+| **State** | `NavKey` (interface) | `androidx.navigation3.runtime` | Marker interface: all back stack keys must implement this + `@Serializable` |
+| **State** | `NavBackStack<T>` | `androidx.navigation3.runtime` | Mutable back stack of `NavKey` elements; integrates with Compose snapshot state |
+| **State** | `rememberNavBackStack()` | `androidx.navigation3.runtime` | Remembers a `NavBackStack` across config changes & process death |
+| **Resolution** | `NavEntry<T>` | `androidx.navigation3.runtime` | Wraps a key + its composable content + metadata + `contentKey` |
+| **Resolution** | `entryProvider { }` DSL | `androidx.navigation3.runtime` | Lambda that maps back stack keys → `NavEntry` objects |
+| **Resolution** | `EntryProviderScope.entry<T>()` | `androidx.navigation3.runtime` | Typed entry registration within the DSL |
+| **Resolution** | `rememberDecoratedNavEntries()` | `androidx.navigation3.runtime` | Decorates `NavEntry` list with `NavEntryDecorator`s |
+| **Display** | `NavDisplay()` | `androidx.navigation3.ui` | Observes back stack; renders matching `NavEntry` content with animations |
+| **Display** | `SceneStrategy<T>` | `androidx.navigation3.scene` | Pluggable layout strategy (single pane, dialog, bottom sheet, list-detail, etc.) |
+| **Display** | `NavEntryDecorator<T>` | `androidx.navigation3.runtime` | Adds cross-cutting behavior to entries (state saving, ViewModel scoping, result buses) |
+
+### "You Own the Back Stack"
+```kotlin
+// Push (navigate forward)
+backStack.add(RouteB("123"))
+// Pop (navigate back)
+backStack.removeLastOrNull()
+```
+
+### `NavKey` Requirements
+Every key must:
+1. **Implement `NavKey`** — marker interface signaling the key is saveable
+2. **Be annotated with `@Serializable`** — for process-death persistence via `kotlinx.serialization`
+
+```kotlin
+@Serializable data object Home : NavKey
+@Serializable data class Details(val id: String) : NavKey
+```
+
+### `NavDisplay` API
+```kotlin
+NavDisplay(
+    backStack = backStack,
+    modifier = Modifier,
+    contentAlignment = Alignment.TopStart,
+    onBack = { backStack.removeLastOrNull() },
+    entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+    sceneStrategies = listOf(SinglePaneSceneStrategy()),
+    entryProvider = entryProvider { ... }
+)
+```
+
+### Two Ways to Define `entryProvider`
+**Option A: Lambda with `when` (manual)**
+```kotlin
+entryProvider = { key ->
+    when (key) {
+        is HomeRoute -> NavEntry(key) { HomeScreen(...) }
+        is DetailsRoute -> NavEntry(key) { DetailsScreen(...) }
+        else -> NavEntry(key) { Text("Unknown") }
+    }
+}
+```
+
+**Option B: DSL with `entry<T>()` (recommended)**
+```kotlin
+entryProvider = entryProvider {
+    entry<HomeRoute> { HomeScreen(...) }
+    entry<DetailsRoute> { key -> DetailsScreen(key.id) }
+}
+```
+
+### Scene Strategies
+| Strategy | Purpose |
+|----------|---------|
+| `SinglePaneSceneStrategy<T>` | Default. Shows only topmost entry. |
+| `DialogSceneStrategy<T>` | Shows entry as a dialog overlay. |
+| `BottomSheetSceneStrategy<T>` | Shows entry as a modal bottom sheet. |
+| `ListDetailSceneStrategy<T>` | Adaptive 1/2/3 pane layout. |
+| `SupportingPaneSceneStrategy<T>` | Main + supporting pane layout. |
+
+### `NavEntryDecorator`s
+| Decorator | Purpose |
+|-----------|---------|
+| `rememberSaveableStateHolderNavEntryDecorator()` | Default. Saves/restores entry state. |
+| `rememberViewModelStoreNavEntryDecorator()` | Provides `ViewModelStoreOwner` per `NavEntry`, enabling `viewModel()` scoped to individual entries. Requires `androidx.lifecycle:lifecycle-viewmodel-navigation3`. |
+| `rememberResultEventBusNavEntryDecorator()` | Provides `ResultEventBus` for state-based result passing. |
+
+### Multiple Back Stacks Pattern
+For bottom navigation with per-tab back stacks:
+```kotlin
+class NavigationState(
+    val startRoute: NavKey,
+    topLevelRoute: MutableState<NavKey>,
+    val backStacks: Map<NavKey, NavBackStack<NavKey>>
+)
+
+class Navigator(val state: NavigationState) {
+    fun navigate(route: NavKey) {
+        if (route in state.backStacks.keys) {
+            state.topLevelRoute = route
+        } else {
+            state.backStacks[state.topLevelRoute]?.add(route)
+        }
+    }
+}
+```
+
+### Animations
+Three transition specs on `NavDisplay`:
+| Parameter | Purpose |
+|-----------|---------|
+| `transitionSpec` | Forward navigation (push) animation |
+| `popTransitionSpec` | Back navigation (pop) animation |
+| `predictivePopTransitionSpec` | Predictive back gesture animation |
+
+### ViewModel Integration
+Use `rememberViewModelStoreNavEntryDecorator()` + `hiltViewModel()` or `viewModel()` inside entries. Requires `androidx.lifecycle:lifecycle-viewmodel-navigation3`.
+
+### Navigation 2 → 3 Migration
+| Nav 2 | Nav 3 |
+|-------|-------|
+| `NavController` | Custom back stack (you own it) |
+| `NavHost` + `composable<T>` | `NavDisplay` + `entryProvider { entry<T>() {} }` |
+| `navController.navigate(route)` | `backStack.add(route)` |
+| `backStackEntry.toRoute<Route>()` | Lambda parameter `key` in `entry<T> { key -> }` |
+| `hiltViewModel()` | `hiltViewModel()` (NavEntry scoped via decorator) + `creationCallback` for args |
+
+---
+
+## Pager / ViewPager2 Migration Reference
+
+Source: Context7 `/websites/developer_android_develop_ui_compose`
+
+### Core APIs
+- `rememberPagerState(pageCount = { ... })` — manages page count, current page, scroll position
+- `HorizontalPager(state = pagerState) { page -> ... }` — equivalent of `ViewPager2`
+- `VerticalPager(state = pagerState) { page -> ... }` — vertical swipe
+- `animateScrollToPage(page)` — programmatic navigation (launch in `CoroutineScope`)
+
+### Tab APIs
+- `PrimaryTabRow(selectedTabIndex = ...) { ... }` — replaces `TabLayout` for top tabs
+- `Tab(selected = ..., onClick = ...) { ... }` — individual tab
+- `Modifier.tabIndicatorOffset(currentTabPosition)` — indicator positioning
+
+### Migration Pattern: ViewPager2 + TabLayout → HorizontalPager + PrimaryTabRow
+```kotlin
+val pagerState = rememberPagerState(pageCount = { tabTitles.size })
+val coroutineScope = rememberCoroutineScope()
+
+Column {
+    PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
+        tabTitles.forEachIndexed { index, title ->
+            Tab(
+                selected = pagerState.currentPage == index,
+                onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                text = { Text(title) }
+            )
+        }
+    }
+    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+        /* page content */
+    }
+}
+```
+
+### Best Practices
+- Use `rememberPagerState { pageCount }` with lazy lambda when page count is dynamic
+- Always launch `animateScrollToPage` in a `CoroutineScope`
+- Pass `contentPadding` from `Scaffold` to the pager's modifier
+- Keep `selectedTabIndex` in `PrimaryTabRow` == `pagerState.currentPage`
+- Customize via `pagerSnapDistance` and `flingBehavior`
+
+---
+
+## Compose Interop & Migration Strategy Reference
+
+Source: Context7 `/websites/developer_android_develop_ui_compose_migrate`
+
+### Three-Step Migration Strategy
+1. **Build new screens using Compose** — New features or screens are written entirely in Compose from the start.
+2. **Identify and extract reusable elements** — Extract common UI components into a shared library of composables.
+3. **Gradually replace existing features one screen at a time** — Convert existing Feature/Fragment screens incrementally.
+
+### ComposeView in Fragment (Transitional)
+```kotlin
+class ExampleFragment : Fragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        return ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent { MaterialTheme { Text("Hello Compose!") } }
+        }
+    }
+}
+```
+
+**ViewCompositionStrategy options:**
+- `DisposeOnViewTreeLifecycleDestroyed` — **Recommended for Fragments.** Ties composition lifetime to view tree's LifecycleOwner.
+- `DisposeOnLifecycleDestroyed` — Legacy option.
+- `DisposeOnDetachedFromWindow` — Legacy option for standard View hierarchies.
+
+### AndroidView (Views in Compose)
+```kotlin
+AndroidView(
+    modifier = Modifier.fillMaxSize(),
+    factory = { context -> MyView(context).apply { /* setup */ } },
+    update = { view -> view.selectedItem = selectedItem }
+)
+```
+
+### AbstractComposeView (Custom Compose-wrapper View)
+Exposes a composable as a reusable Android View that can be placed in XML layouts.
+
+### Migration Scenarios
+| Existing | Compose Equivalent |
+|----------|-------------------|
+| `LinearLayoutManager` (vertical) | `LazyColumn` |
+| `LinearLayoutManager` (horizontal) | `LazyRow` |
+| `GridLayoutManager` | `LazyVerticalGrid` / `LazyHorizontalGrid` |
+| `StaggeredGridLayoutManager` | `LazyVerticalStaggeredGrid` / `LazyHorizontalStaggeredGrid` |
+| `ViewPager2` | `HorizontalPager` |
+| `TabLayout` | `PrimaryTabRow` + `Tab` |
+| `SwipeRefreshLayout` | `PullToRefreshBox` ( accompanist ) or `Modifier.pullRefresh` |
+| `RecyclerView.Adapter` | `LazyColumn`/`LazyVerticalGrid` items |
+
+### Fragment Navigation → Navigation Compose
+1. Extract screen content from Fragment's `setContent { }` into standalone `@Composable`
+2. Register as composable destination in `NavHost`
+3. Remove Fragment once all screens are migrated
+
+### Recommended End State
+- **Single-Activity structure** using Navigation Compose
+- Move away from Fragments in favor of composable destinations
+- `ComposeView` in Fragments is a transitional bridge — remove once all screens are fully Compose
+
+---
+
+## Material 3 Theming Reference
+
+Source: Context7 `/websites/developer_android_develop_ui_compose`
+
+### Three Primary Subsystems
+| Subsystem | Type | Access | Purpose |
+|-----------|------|--------|---------|
+| **Color Scheme** | `ColorScheme` | `MaterialTheme.colorScheme` | Theme-defined colors |
+| **Typography** | `Typography` | `MaterialTheme.typography` | Text styles |
+| **Shapes** | `Shapes` | `MaterialTheme.shapes` | Component corner geometry |
+
+### Color Schemes
+- Use `lightColorScheme()` / `darkColorScheme()` with full 48-role system
+- Dynamic color (Android 12+): `dynamicLightColorScheme(context)` / `dynamicDarkColorScheme(context)`
+- Gate dynamic color on `Build.VERSION.SDK_INT >= Build.VERSION_CODES.S`
+- For crossfading between light/dark: `animateColorScheme(target = if (darkTheme) DarkColorScheme else LightColorScheme)`
+- For individual color transitions: `animateColorAsState`
+
+### Typography
+20 styles: `displayLarge/Medium/Small`, `headlineLarge/Medium/Small`, `titleLarge/Medium/Small`, `bodyLarge/Medium/Small`, `labelLarge/Medium/Small`. Use `EmphasizedTypography` for Material 3 Expressive.
+
+### Shapes
+Five buckets: `extraSmall` (4dp), `small` (8dp), `medium` (12dp), `large` (16dp), `extraLarge` (24dp). Use `RoundedCornerShape`, `CutCornerShape`, `CircleShape`.
+
+### Production Theme Structure
+```kotlin
+@Composable
+fun AppTheme(darkTheme: Boolean = isSystemInDarkTheme(), dynamicColor: Boolean = true, content: @Composable () -> Unit) {
+    val colorScheme = when {
+        dynamicColor && darkTheme -> dynamicDarkColorScheme(LocalContext.current)
+        dynamicColor && !darkTheme -> dynamicLightColorScheme(LocalContext.current)
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+    MaterialTheme(colorScheme = colorScheme, typography = typography, shapes = shapes, content = content)
+}
+```
+
+---
+
+## Phase 1: PagerScreen Migration
+
+### Task 3: Analyze PagerFragment
+
+**Read:** `PagerFragment.kt` (690 lines), `fragment_pager.xml`, `PagerAdapter.kt` (106 lines), `item_home.xml`, `HomeFragment.kt`, `HailData.tags`, `AppMetaCache`, `AppManager`, `AppActions`
+
+**Document:** all callbacks, state, and data sources the PagerScreen needs.
+
+**Actual complexity findings (from code analysis):**
+- `PagerFragment` extends `MainFragment` and couples tightly to `HomeFragment` via `parentFragment` casts (multiselect, selectedList, tabs, pager adapter)
+- State: `query`, `multiselect`, `selectedList` (mutable), `_menu`
+- Data source: `AppMetaCache.revision` collected via `repeatOnLifecycle`
+- Filtering: tag-based (`tag?.second`) + search (`query`) with `NineKeySearch`, `FuzzySearch`, `PinyinSearch`
+- Actions: launch, freeze/unfreeze (single + batch), tag management (add/rename/remove/tri-state), import/export clipboard, deferred tasks, pin/unpin, whitelist, remove from home
+- Menu: `menu_home.xml` with search (`SearchView`), multiselect button, freeze/unfreeze all, import/export actions
+- Dialogs: tag dialog (`DialogInputBinding`), tri-state tag dialog (embeds ComposeView), action picker dialog
+- Back handling: `OnBackPressedCallback` — deselects in multiselect mode
+- Icon loading: `AppIconCache.loadIconBitmapAsync(context, info, userId, imageView)` — ImageView-bound
+
+### Task 4: Create HomeAppItem composable (item_home.xml equivalent)
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/home/HomeAppItem.kt`
+- Create: `app/src/androidTest/kotlin/com/aistra/hail/ui/screens/home/HomeAppItemTest.kt`
+
+**Interfaces:**
+- Consumes: `AppInfo` (`com.aistra.hail.app.AppInfo`), `AppIconCache`
+- Produces: `HomeAppItem(appInfo, isSelected, multiselectMode, onClick, onLongClick, modifier)`
+
+Key mappings from `item_home.xml`:
+- `ImageView` (app icon, 64dp) → custom `AppIcon` composable using `AppIconCache.getOrLoadBitmap()` + `Image(bitmap.asImageBitmap())`
+- App name `TextView` → `Text` with `overflow = TextOverflow.Ellipsis`, `maxLines = 1`
+- Frozen state: `❄️` prefix + `grayscaleIcon` color filter
+- Whitelisted: `🔒` suffix
+- Selected state: `color = MaterialTheme.colorScheme.primary`
+- Not found state: `color = MaterialTheme.colorScheme.error`
+- Default: `MaterialTheme.typography.bodyMedium`, `fontSize = 14.sp`
+- Background: `Modifier.clickable` with `selectableItemBackgroundBorderless`
+
+### Task 5: Create PagerScreen composable
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/home/PagerScreen.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/home/PagerViewModel.kt` (extends `AndroidViewModel`)
+- Create: `app/src/androidTest/kotlin/com/aistra/hail/ui/screens/home/PagerScreenTest.kt`
+
+**Interfaces:**
+- Consumes: `HomeAppItem`, `HailData.tags`, `AppMetaCache.revision`, `AppManager`, `AppActions`
+- Produces: `PagerScreen(tagId: Long, onFabClick, modifier)`
+
+Key mappings from `fragment_pager.xml` + `PagerFragment.kt`:
+- `SwipeRefreshLayout` → `PullToRefreshBox` (from `foundation-pager` or custom `PullRefresh` if not in BOM)
+- `RecyclerView` (grid, `HailData.iconColumns` cols) → `LazyVerticalGrid(columns = Fixed(HailData.iconColumns))`
+- Search (`SearchView` in menu) → `SearchBar` in `LargeFlexibleTopAppBar` or inline `TextField`
+- Context menu (long-press) → `DropdownMenu` anchored on long-click
+- `OnBackPressedCallback` → `BackHandler` with `multiselect` check
+- Multiselect mode → inline checkbox UI + `TopAppBar` title update
+- Tag tabs (`TabLayout`) → `ScrollableTabRow` or `PrimaryTabRow` (Expressive)
+
+**PagerViewModel:**
+```kotlin
+class PagerViewModel(application: Application) : AndroidViewModel(application) {
+    private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
+    val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
+
+    var query by mutableStateOf("")
+    var multiselect by mutableStateOf(false)
+    val selectedList = mutableStateListOf<AppInfo>()
+
+    init {
+        viewModelScope.launch {
+            AppMetaCache.revision.collect { loadApps() }
+        }
+    }
+
+    fun loadApps(tagId: Long) { /* filter + search logic from PagerFragment */ }
+    fun setListFrozen(frozen: Boolean) { /* AppActions.freezePackages + invalidate */ }
+    // ... other action handlers
+}
+```
+
+### Task 6: Validate PagerScreen on existing fragment
+
+Wire `PagerScreen` into the existing `PagerFragment` via `ComposeView` temporarily:
+```kotlin
+binding.root.addView(ComposeView(requireContext()).apply {
+    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+    setContent {
+        HailTheme(state = HailThemeState()) {
+            PagerScreen(tagId = tag?.second ?: 0, onFabClick = { /* ... */ })
+        }
+    }
+})
+```
+Hide old RecyclerView. Validate visual parity. Run tests.
+
+### Task 7: Delete PagerFragment + XML + Adapter
+
+**Files to delete:**
+- `app/src/main/kotlin/com/aistra/hail/ui/home/PagerFragment.kt`
+- `app/src/main/res/layout/fragment_pager.xml`
+- `app/src/main/kotlin/com/aistra/hail/ui/home/PagerAdapter.kt`
+- `app/src/main/res/layout/item_home.xml`
+
+Wire `PagerScreen` directly into the NavHost in Phase 5.
+
+---
+
+## Phase 2: AppsFragment Migration
+
+### Task 8: Analyze AppsFragment
+
+Read: `AppsFragment.kt`, `fragment_apps.xml`, `AppsAdapter.kt`, `item_apps.xml`, `AppsViewModel.kt`, `HRecyclerView.kt`
+
+### Task 9: Create AppListItem composable
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/apps/AppListItem.kt`
+- Create: `app/src/androidTest/kotlin/com/aistra/hail/ui/screens/apps/AppListItemTest.kt`
+
+Key mappings from item_apps.xml:
+- `ImageView` (app icon) → `AsyncImage`
+- App name/desc `TextView` → `Text`
+- `MaterialCheckBox` → `Checkbox`
+- Context menu → `DropdownMenu`
+
+### Task 10: Create AppsScreen composable
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/apps/AppsScreen.kt`
+- Create: `app/src/androidTest/kotlin/com/aistra/hail/ui/screens/apps/AppsScreenTest.kt`
+
+Key mappings from fragment_apps.xml:
+- `HRecyclerView` + `GridLayoutManager` → `LazyVerticalGrid(GridCells.Adaptive(128.dp))`
+- `SwipeRefreshLayout` → `PullToRefreshBox`
+- `SearchView` (menu) → `SearchBar`
+- Context menu → `DropdownMenu`
+
+Uses existing `AppsViewModel` directly via `viewModel()` (no new ViewModel needed).
+
+---
+
+## Phase 3: ActionsFragment Migration
+
+### Task 11: Analyze ActionsFragment
+
+Read: `ActionsFragment.kt`, `fragment_actions.xml`, `ActionsAdapter.kt`, `item_action.xml`, `AppPickerAdapter.kt`, `item_action_picker.xml`, `dialog_input.xml`
+
+### Task 12: Create ActionItem and ActionEditor composables
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/actions/ActionItem.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/actions/ActionEditorDialog.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/actions/AppPickerDialog.kt`
+
+### Task 13: Create ActionsScreen composable
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/actions/ActionsScreen.kt`
+
+Key mappings:
+- `RecyclerView` → `LazyColumn`
+- Programmatically built `AlertDialog` → Compose `AlertDialog`
+- `EditText` in dialog → `TextField`
+
+---
+
+## Phase 4: HomeFragment Migration
+
+### Task 14: Create HomeScreen composable
+
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/home/HomeScreen.kt`
+
+Key mappings from fragment_home.xml (TabLayout + ViewPager2):
+- `TabLayout` + `ViewPager2` + `HomeAdapter` → `PrimaryTabRow` + `HorizontalPager` from `androidx.compose.foundation.pager`
+
+### Task 15: Delete HomeFragment + XML + Adapter
+
+Delete: `HomeFragment.kt`, `fragment_home.xml`, `HomeAdapter.kt`
+
+---
+
+## Phase 5: MainActivity + NavHost integration
+
+### Task 16: Wire NavHost into MainActivity
+
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/screens/HailRootScreen.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/shared/HailScaffold.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/shared/HailTopAppBar.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/shared/HailFab.kt`
+
+MainActivity becomes:
+```kotlin
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            HailTheme { HailRootScreen() }
+        }
+    }
+}
+```
+
+HailRootScreen provides:
+- TopAppBar with title (per destination)
+- BottomNavigation (existing `ExpressiveNavigationBar`)
+- FAB (per destination: Home→add, Actions→create action, else hidden)
+- Handles NavOptions for back stack restoration
+
+### Task 17: Remove XML layouts + old deps
+
+Delete:
+- `activity_main.xml`, `activity_main.xml` (land), `app_bar_main.xml` (both variants), `content_main.xml`
+- `bottomNav` and `navRail` ComposeView references in XML (gone since no XML)
+- Remove `android:theme="@style/Theme.Hail"` → `@style/Theme.Hail` stays (window animations)
+- Remove dependencies: `appcompat`, `constraintlayout`, `swiperefreshlayout`, `insetter`, Material XML
+
+### Task 18: Update manifest
+
+**Files:** Modify `app/src/main/AndroidManifest.xml`
+- Remove `android:theme="@style/Theme.Hail.AppBarOverlay"` references (gone)
+- Add `android:windowSoftInputMode="adjustResize"` to `MainActivity`
+- Remove `tools:context=".ui.main.MainActivity"` if not needed
+
+---
+
+## Phase 6: Cleanup + Validation
+
+### Task 19: Remove legacy adapters and view utilities
+
+Delete any remaining adapters or view utilities that are no longer used:
+- `PagerAdapter.kt`
+- `HomeAdapter.kt`
+- `AppsAdapter.kt`
+- `ActionsAdapter.kt`
+- `AppPickerAdapter.kt`
+- `HRecyclerView.kt`
+- `InsetsExtensions.kt` (no longer needed if no XML views)
+
+### Task 20: Final validation
+
+- `./gradlew :app:compileDebugKotlin`
+- `./gradlew :app:testDebugUnitTest`
+- `./gradlew :app:connectedDebugAndroidTest`
+- `./gradlew :app:assembleDebug`
+- Visual parity check on device for all migrated screens
 
 **Files:**
 - Modify: `gradle/libs.versions.toml`

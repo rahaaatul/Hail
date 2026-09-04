@@ -1,0 +1,1770 @@
+### Implement a basic Card
+
+Source: https://developer.android.com/develop/ui/compose/components/card
+
+A minimal example showing how to wrap content within a Card composable.
+
+```kotlin
+@Composable
+fun CardMinimalExample() {
+    Card() {
+        Text(text = "Hello, world!")
+    }
+}
+```
+
+--------------------------------
+
+### Install Android testing skill
+
+Source: https://developer.android.com/develop/ui/compose/testing
+
+Use the Android CLI to add the testing-setup skill to your project environment.
+
+```bash
+android skills add --skill testing-setup
+```
+
+--------------------------------
+
+### Define a simple screen in XML
+
+Source: https://developer.android.com/develop/ui/compose/migrate/strategy
+
+A static layout example using LinearLayout and TextViews for a simple screen.
+
+```xml
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+  <TextView
+      android:id="@+id/title_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="@string/title"
+      android:textAppearance="?attr/textAppearanceHeadline2" />
+
+  <TextView
+      android:id="@+id/subtitle_text"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:text="@string/subtitle"
+      android:textAppearance="?attr/textAppearanceHeadline6" />
+
+  <TextView
+      android:id="@+id/body_text"
+      android:layout_width="wrap_content"
+      android:layout_height="0dp"
+      android:layout_weight="1"
+      android:text="@string/body"
+      android:textAppearance="?attr/textAppearanceBody1" />
+
+  <Button
+      android:id="@+id/confirm_button"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:text="@string/confirm"/>
+</LinearLayout>
+```
+
+--------------------------------
+
+### Define a capability in shortcuts.xml
+
+Source: https://developer.android.com/develop/ui/compose/system/shortcuts/adding-capabilities
+
+This example shows the structure of a capability element for the START_EXERCISE BII, including the intent and parameter mapping.
+
+```xml
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <capability android:name="actions.intent.START_EXERCISE">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="com.example.sampleApp"
+      android:targetClass="com.example.sampleApp.ExerciseActivity">
+      <parameter
+        android:name="exercise.name"
+        android:key="exerciseType"/>
+    </intent>
+  </capability>
+</shortcuts>
+```
+
+--------------------------------
+
+### Button Implementations
+
+Source: https://developer.android.com/develop/ui/compose/components/button
+
+Examples of how to implement different button types using Jetpack Compose composables.
+
+```APIDOC
+## Filled Button
+```kotlin
+Button(onClick = { onClick() }) { Text("Filled") }
+```
+
+## Filled Tonal Button
+```kotlin
+FilledTonalButton(onClick = { onClick() }) { Text("Tonal") }
+```
+
+## Outlined Button
+```kotlin
+OutlinedButton(onClick = { onClick() }) { Text("Outlined") }
+```
+
+## Elevated Button
+```kotlin
+ElevatedButton(onClick = { onClick() }) { Text("Elevated") }
+```
+
+## Text Button
+```kotlin
+TextButton(onClick = { onClick() }) { Text("Text Button") }
+```
+```
+
+--------------------------------
+
+### Set initial size with FlexBasis
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/flexbox/item-behavior
+
+Examples of setting the preferred size of items using Auto, fixed Dp, and percentage values.
+
+```kotlin
+FlexBox {
+    RedRoundedBox(
+        Modifier.flex { basis(FlexBasis.Auto) }
+    )
+    BlueRoundedBox(
+        Modifier.flex { basis(FlexBasis.Auto) }
+    )
+}FlexBoxSnippets.kt
+```
+
+```kotlin
+FlexBox {
+    RedRoundedBox(
+        Modifier.flex { basis(200.dp) }
+    )
+    BlueRoundedBox(
+        Modifier.flex { basis(100.dp) }
+    )
+}FlexBoxSnippets.kt
+```
+
+```kotlin
+FlexBox {
+    RedRoundedBox(
+        Modifier.flex { basis(0.7f) }
+    )
+    BlueRoundedBox(
+        Modifier.flex { basis(0.3f) }
+    )
+}FlexBoxSnippets.kt
+```
+
+--------------------------------
+
+### Set up Compose Activity entry point
+
+Source: https://developer.android.com/develop/ui/compose/migrate/migration-scenarios/navigation
+
+Replace the traditional View layout setup in your Activity with a Compose entry point using setContent.
+
+```kotlin
+class SampleActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // setContentView<ActivitySampleBinding>(this, R.layout.activity_sample)
+        setContent {
+            SampleApp(/* ... */)
+        }
+    }
+}
+```
+
+--------------------------------
+
+### Install Edge-to-Edge Android skill
+
+Source: https://developer.android.com/develop/ui/compose/system/setup-e2e
+
+Use the Android CLI to add the edge-to-edge support skill to your project.
+
+```bash
+android skills add --skill edge-to-edge
+```
+
+--------------------------------
+
+### Set Success Result and Finish
+
+Source: https://developer.android.com/develop/ui/compose/glance/configuration
+
+Set the activity result to OK and close the configuration activity after successful setup.
+
+```kotlin
+val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+setResult(Activity.RESULT_OK, resultValue)
+finish()
+```
+
+--------------------------------
+
+### Displaying a list of movies in a Column
+
+Source: https://developer.android.com/develop/ui/compose/lifecycle
+
+This example shows a basic implementation where composables are identified by their index in the loop.
+
+```kotlin
+@Composable
+fun MoviesScreen(movies: List<Movie>) {
+    Column {
+        for (movie in movies) {
+            // MovieOverview composables are placed in Composition given its
+            // index position in the for loop
+            MovieOverview(movie)
+        }
+    }
+}
+```
+
+--------------------------------
+
+### Install the Migrate XML Views to Jetpack Compose skill
+
+Source: https://developer.android.com/develop/ui/compose/migrate/migrate-xml-views-to-jetpack-compose
+
+Use the Android CLI to add the migration skill to your development environment.
+
+```bash
+android skills add --skill migrate-xml-views-to-jetpack-compose
+```
+
+--------------------------------
+
+### Inspect Composable Stability Report
+
+Source: https://developer.android.com/develop/ui/compose/performance/stability/diagnose
+
+Example output from a composables.txt file showing a fully stable and skippable composable.
+
+```text
+restartable skippable scheme("[androidx.compose.ui.UiComposable]") fun SnackCollection(
+  stable snackCollection: SnackCollection
+  stable onSnackClick: Function1<Long, Unit>
+  stable modifier: Modifier? = @static Companion
+  stable index: Int = @static 0
+  stable highlight: Boolean = @static true
+)
+```
+
+--------------------------------
+
+### Analyze Class Stability Report
+
+Source: https://developer.android.com/develop/ui/compose/performance/stability/diagnose
+
+Example output from a classes.txt file showing why a class is marked as unstable.
+
+```text
+unstable class Snack {
+  stable val id: Long
+  stable val name: String
+  stable val imageUrl: String
+  stable val price: Long
+  stable val tagline: String
+  unstable val tags: Set<String>
+  <runtime stability> = Unstable
+}
+```
+
+--------------------------------
+
+### Install Styles Skill via CLI
+
+Source: https://developer.android.com/develop/ui/compose/styles
+
+Command to add the Styles skill to an Android project using the Android CLI.
+
+```bash
+android skills add --skill styles
+```
+
+--------------------------------
+
+### Install adaptive skill via Android CLI
+
+Source: https://developer.android.com/develop/ui/compose/build-adaptive-apps
+
+Command to add the adaptive skill to your Android development environment.
+
+```bash
+android skills add --skill adaptive
+```
+
+--------------------------------
+
+### Implement NavigableListDetailPaneScaffold
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/list-detail
+
+Example implementation of a list-detail scaffold using NavigableListDetailPaneScaffold with a specific back navigation behavior.
+
+```kotlin
+NavigableListDetailPaneScaffold(
+    navigator = navigator,
+    listPane = {
+        AnimatedPane {
+            ListContent(
+                words = sampleWords,
+                selectionState = navigator.currentDestination?.contentKey?.let {
+                    SelectionVisibilityState.ShowSelection(it)
+                } ?: SelectionVisibilityState.NoSelection,
+                onWordClick = { word ->
+                    scope.launch {
+                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, word)
+                    }
+                },
+                animatedVisibilityScope = this@AnimatedPane,
+                sharedTransitionScope = this@SharedTransitionLayout
+            )
+        }
+    },
+    detailPane = {
+        AnimatedPane {
+            DetailContent(
+                definedWord = navigator.currentDestination?.contentKey,
+                animatedVisibilityScope = this@AnimatedPane,
+                sharedTransitionScope = this@SharedTransitionLayout,
+                onClosePane = {
+                    scope.launch {
+                        navigator.navigateBack(
+                            backNavigationBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
+                        )
+
+                    }
+                }
+            )
+        }
+    }
+ListDetailSample.kt
+```
+
+--------------------------------
+
+### Grow items in FlexBox
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/flexbox/item-behavior
+
+Examples demonstrating how to distribute extra space among child items using the grow modifier.
+
+```kotlin
+FlexBox {
+    RedRoundedBox(
+        title = "400dp",
+        modifier = Modifier.flex { grow(1f) }
+    )
+    BlueRoundedBox(title = "100dp")
+    GreenRoundedBox(title = "100dp")
+}FlexBoxSnippets.kt
+```
+
+```kotlin
+FlexBox {
+    RedRoundedBox(
+        title = "150dp",
+        modifier = Modifier.flex { grow(1f) }
+    )
+    BlueRoundedBox(
+        title = "200dp",
+        modifier = Modifier.flex { grow(2f) }
+    )
+    GreenRoundedBox(
+        title = "250dp",
+        modifier = Modifier.flex { grow(3f) }
+    )
+}FlexBoxSnippets.kt
+```
+
+--------------------------------
+
+### Define App Widget Provider Sizing Attributes
+
+Source: https://developer.android.com/develop/ui/compose/glance/create-app-widget
+
+Example configuration for an appwidget-provider defining default dimensions, resize constraints, and resize modes.
+
+```xml
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="80dp"
+    android:minHeight="80dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:minResizeWidth="40dp"
+    android:minResizeHeight="40dp"
+    android:maxResizeWidth="120dp"
+    android:maxResizeHeight="120dp"
+    android:resizeMode="horizontal|vertical" />
+```
+
+--------------------------------
+
+### Enable Compose stack traces in Application
+
+Source: https://developer.android.com/develop/ui/compose/tooling/stacktraces
+
+Configure the diagnostic stack trace mode in the application's onCreate method. Perform this setup before any compositions are created to ensure proper collection.
+
+```kotlin
+// Enable stack traces at application level: onCreate
+class SampleStackTracesEnabledApp : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+        // Enable Compose stack traces for minified builds only.
+        Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.Auto)
+
+        // Alternatively:
+        // Enable verbose Compose stack traces for local debugging
+        Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
+    }
+}
+```
+
+--------------------------------
+
+### Interactive Badge Example
+
+Source: https://developer.android.com/develop/ui/compose/components/badges
+
+Demonstrates a badge that updates its content based on user interaction, showing a count of items in a shopping cart.
+
+```kotlin
+@Composable
+fun BadgeInteractiveExample() {
+    var itemCount by remember { mutableIntStateOf(0) }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        BadgedBox(
+            badge = {
+                if (itemCount > 0) {
+                    Badge(
+                        containerColor = Color.Red,
+                        contentColor = Color.White
+                    ) {
+                        Text("$itemCount")
+                    }
+                }
+            }
+        ) {
+            Icon(
+                imageVector = Icons.Filled.ShoppingCart,
+                contentDescription = "Shopping cart",
+            )
+        }
+        Button(onClick = { itemCount++ }) {
+            Text("Add item")
+        }
+    }
+}
+```
+
+--------------------------------
+
+### Align pages with start padding
+
+Source: https://developer.android.com/develop/ui/compose/layouts/pager
+
+Sets start padding to align pages towards the end of the container.
+
+```kotlin
+val pagerState = rememberPagerState(pageCount = {
+    4
+})
+HorizontalPager(
+    state = pagerState,
+    contentPadding = PaddingValues(start = 64.dp),
+) { page ->
+    // page content
+}
+```
+
+--------------------------------
+
+### Usage of PressIconButton
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/user-interactions/handling-interactions
+
+Example implementation of the custom PressIconButton composable.
+
+```kotlin
+PressIconButton(
+    onClick = {},
+    icon = { Icon(Icons.Filled.ShoppingCart, contentDescription = null) },
+    text = { Text("Add to cart") }
+)
+```
+
+--------------------------------
+
+### Define Color Schemes
+
+Source: https://developer.android.com/develop/ui/compose/designsystems/material2-material3
+
+Contrast the M2 lightColors/darkColors setup with the M3 lightColorScheme/darkColorScheme approach.
+
+```kotlin
+import androidx.compose.material.lightColors
+import androidx.compose.material.darkColors
+
+val AppLightColors = lightColors(
+    // M2 light Color parameters
+)
+val AppDarkColors = darkColors(
+    // M2 dark Color parameters
+)
+val AppColors = if (darkTheme) {
+    AppDarkColors
+} else {
+    AppLightColors
+}
+```
+
+```kotlin
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
+
+val AppLightColorScheme = lightColorScheme(
+    // M3 light Color parameters
+)
+val AppDarkColorScheme = darkColorScheme(
+    // M3 dark Color parameters
+)
+val AppColorScheme = if (darkTheme) {
+    AppDarkColorScheme
+} else {
+    AppLightColorScheme
+}
+```
+
+--------------------------------
+
+### Define a custom Indication
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/user-interactions/migrate-indication-ripple
+
+Example of a custom Indication implementation using the deprecated IndicationInstance API.
+
+```kotlin
+object ScaleIndication : Indication {
+    @Composable
+    override fun rememberUpdatedInstance(interactionSource: InteractionSource): IndicationInstance {
+        // key the remember against interactionSource, so if it changes we create a new instance
+        val instance = remember(interactionSource) { ScaleIndicationInstance() }
+
+        LaunchedEffect(interactionSource) {
+            interactionSource.interactions.collectLatest { interaction ->
+                when (interaction) {
+                    is PressInteraction.Press -> instance.animateToPressed(interaction.pressPosition)
+                    is PressInteraction.Release -> instance.animateToResting()
+                    is PressInteraction.Cancel -> instance.animateToResting()
+                }
+            }
+        }
+
+        return instance
+    }
+}
+
+private class ScaleIndicationInstance : IndicationInstance {
+    var currentPressPosition: Offset = Offset.Zero
+    val animatedScalePercent = Animatable(1f)
+
+    suspend fun animateToPressed(pressPosition: Offset) {
+        currentPressPosition = pressPosition
+        animatedScalePercent.animateTo(0.9f, spring())
+    }
+
+    suspend fun animateToResting() {
+        animatedScalePercent.animateTo(1f, spring())
+    }
+
+    override fun ContentDrawScope.drawIndication() {
+        scale(
+            scale = animatedScalePercent.value,
+            pivot = currentPressPosition
+        ) {
+            this@drawIndication.drawContent()
+        }
+    }
+}
+UserInteractions.kt
+```
+
+--------------------------------
+
+### Using Hierarchical Matchers
+
+Source: https://developer.android.com/develop/ui/compose/testing/apis
+
+Example of asserting the visibility of a node based on its parent's properties.
+
+```kotlin
+composeTestRule.onNode(hasParent(hasText("Button")))
+    .assertIsDisplayed()
+```
+
+--------------------------------
+
+### Identify Non-Skippable Composable
+
+Source: https://developer.android.com/develop/ui/compose/performance/stability/diagnose
+
+Example output showing a composable that is not skippable due to an unstable parameter.
+
+```text
+restartable scheme("[androidx.compose.ui.UiComposable]") fun HighlightedSnacks(
+  stable index: Int
+  unstable snacks: List<Snack>
+  stable onSnackClick: Function1<Long, Unit>
+  stable modifier: Modifier? = @static Companion
+)
+```
+
+--------------------------------
+
+### Configure Drag Source for New Instance Creation
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing
+
+Combine DRAG_FLAG_GLOBAL_SAME_APPLICATION and DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG to allow users to spawn new instances by dropping content on empty screen areas.
+
+```kotlin
+Modifier.dragAndDropSource { _ ->
+    val intent = Intent.makeMainActivity(activity.componentName).apply {
+        putExtra("EXTRA_ITEM_ID", itemId)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
+                Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT
+    }
+
+    val pendingIntent = PendingIntent.getActivity(
+        activity, 0, intent, PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val data = ClipData(
+        "Item $itemId",
+        arrayOf(ClipDescription.MIMETYPE_TEXT_INTENT),
+        ClipData.Item.Builder().setIntentSender(pendingIntent.intentSender).build()
+    )
+
+    DragAndDropTransferData(
+        clipData = data,
+        flags = View.DRAG_FLAG_GLOBAL_SAME_APPLICATION or
+                View.DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG,
+    )
+}
+```
+
+--------------------------------
+
+### Avoid side-effects in Composables
+
+Source: https://developer.android.com/develop/ui/compose/mental-model
+
+An example of an incorrect implementation that modifies a local variable during recomposition, which is not thread-safe.
+
+```kotlin
+@Composable
+fun ListWithBug(myList: List<String>) {
+    var items = 0
+
+    Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Column {
+            for (item in myList) {
+                Card {
+                    Text("Item: $item")
+                    items++ // Avoid! Side-effect of the column recomposing.
+                }
+            }
+        }
+        Text("Count: $items")
+    }
+}
+```
+
+--------------------------------
+
+### Implement a PreviewParameterProvider
+
+Source: https://developer.android.com/develop/ui/compose/tooling/previews
+
+Create a class that implements PreviewParameterProvider to supply a sequence of sample data for previews.
+
+```kotlin
+class UserPreviewParameterProvider : PreviewParameterProvider<User> {
+    override val values = sequenceOf(
+        User("Elise"),
+        User("Frank"),
+        User("Julia")
+    )
+}
+```
+
+--------------------------------
+
+### Define a basic composable
+
+Source: https://developer.android.com/develop/ui/compose/lifecycle
+
+A simple example of a composable function that displays text within a column.
+
+```kotlin
+@Composable
+fun MyComposable() {
+    Column {
+        Text("Hello")
+        Text("World")
+    }
+}
+```
+
+--------------------------------
+
+### Initialize GoogleFont.Provider
+
+Source: https://developer.android.com/develop/ui/compose/text/fonts
+
+Configure the provider with authority, package, and certificate hashes to verify identity.
+
+```Kotlin
+val provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
+```
+
+--------------------------------
+
+### Create and Push a Dynamic Shortcut
+
+Source: https://developer.android.com/develop/ui/compose/system/shortcuts/creating-shortcuts
+
+Builds a ShortcutInfoCompat object and pushes it using ShortcutManagerCompat to make it available to the system.
+
+```kotlin
+val shortcut = ShortcutInfoCompat.Builder(context, "id1")
+        .setShortLabel("Website")
+        .setLongLabel("Open the website")
+        .setIcon(IconCompat.createWithResource(context, R.drawable.icon_website))
+        .setIntent(Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://www.mysite.example.com/")))
+        .build()
+
+ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+```
+
+--------------------------------
+
+### Initialize display mode listeners
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/foldables/support-foldable-display-modes
+
+Set up the WindowAreaController and observe display capability changes within the activity's lifecycle.
+
+```kotlin
+displayExecutor = ContextCompat.getMainExecutor(this)
+windowAreaController = WindowAreaController.getOrCreate()
+
+lifecycleScope.launch(Dispatchers.Main) {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        windowAreaController.windowAreaInfos
+            .map { info -> info.firstOrNull { it.type == WindowAreaInfo.Type.TYPE_REAR_FACING } }
+            .onEach { info -> windowAreaInfo = info }
+            .map { it?.getCapability(operation)?.status ?: WindowAreaCapability.Status.WINDOW_AREA_STATUS_UNSUPPORTED }
+            .distinctUntilChanged()
+            .collect {
+                capabilityStatus = it
+            }
+    }
+}
+SupportFoldableDisplayModes.kt
+```
+
+```java
+displayExecutor = ContextCompat.getMainExecutor(this);
+windowAreaController = new WindowAreaControllerCallbackAdapter(WindowAreaController.getOrCreate());
+windowAreaController.addWindowAreaInfoListListener(displayExecutor, this);
+
+windowAreaController.addWindowAreaInfoListListener(displayExecutor,
+  windowAreaInfos -> {
+    for(WindowAreaInfo newInfo : windowAreaInfos){
+        if(newInfo.getType().equals(WindowAreaInfo.Type.TYPE_REAR_FACING)){
+            windowAreaInfo = newInfo;
+            capabilityStatus = newInfo.getCapability(presentOperation).getStatus();
+            break;
+        }
+    }
+});
+```
+
+--------------------------------
+
+### Manage interaction lifecycle in a list
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/user-interactions/handling-interactions
+
+Adds and removes interactions from a list based on their start and end events.
+
+```kotlin
+val interactionSource = remember { MutableInteractionSource() }
+val interactions = remember { mutableStateListOf<Interaction>() }
+
+LaunchedEffect(interactionSource) {
+    interactionSource.interactions.collect { interaction ->
+        when (interaction) {
+            is PressInteraction.Press -> {
+                interactions.add(interaction)
+            }
+            is PressInteraction.Release -> {
+                interactions.remove(interaction.press)
+            }
+            is PressInteraction.Cancel -> {
+                interactions.remove(interaction.press)
+            }
+            is DragInteraction.Start -> {
+                interactions.add(interaction)
+            }
+            is DragInteraction.Stop -> {
+                interactions.remove(interaction.start)
+            }
+            is DragInteraction.Cancel -> {
+                interactions.remove(interaction.start)
+            }
+        }
+    }
+}
+```
+
+--------------------------------
+
+### Generate Perfetto record command
+
+Source: https://developer.android.com/develop/ui/compose/tooling/tracing
+
+Use this command structure to configure and start a Perfetto trace from the terminal.
+
+```bash
+adb shell perfetto \
+  -c - --txt \
+  -o /data/misc/perfetto-traces/trace \
+<<EOF
+buffers: {
+    size_kb: 63488
+    fill_policy: RING_BUFFER
+}
+buffers: {
+    size_kb: 2048
+    fill_policy: RING_BUFFER
+}
+data_sources: {
+    config {
+        name: "track_event"
+    }
+}
+duration_ms: 10000
+flush_period_ms: 30000
+incremental_state_config {
+    clear_period_ms: 5000
+}
+EOF
+```
+
+--------------------------------
+
+### Align pages with end padding
+
+Source: https://developer.android.com/develop/ui/compose/layouts/pager
+
+Sets end padding to align pages towards the start of the container.
+
+```kotlin
+val pagerState = rememberPagerState(pageCount = {
+    4
+})
+HorizontalPager(
+    state = pagerState,
+    contentPadding = PaddingValues(end = 64.dp),
+) { page ->
+    // page content
+}
+```
+
+--------------------------------
+
+### Implement a SearchBar with suggestions
+
+Source: https://developer.android.com/develop/ui/compose/components/search-bar
+
+A basic implementation of a SearchBar using Material3 components, featuring state management for expansion and a list of clickable search results.
+
+```kotlin
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SimpleSearchBar(
+    textFieldState: TextFieldState,
+    onSearch: (String) -> Unit,
+    searchResults: List<String>,
+    modifier: Modifier = Modifier
+) {
+    // Controls expansion state of the search bar
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Box(
+        modifier
+            .fillMaxSize()
+            .semantics { isTraversalGroup = true }
+    ) {
+        SearchBar(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .semantics { traversalIndex = 0f },
+            inputField = {
+                SearchBarDefaults.InputField(
+                    query = textFieldState.text.toString(),
+                    onQueryChange = { textFieldState.edit { replace(0, length, it) } },
+                    onSearch = {
+                        onSearch(textFieldState.text.toString())
+                        expanded = false
+                    },
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                    placeholder = { Text("Search") }
+                )
+            },
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+        ) {
+            // Display search results in a scrollable column
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                searchResults.forEach { result ->
+                    ListItem(
+                        headlineContent = { Text(result) },
+                        modifier = Modifier
+                            .clickable {
+                                textFieldState.edit { replace(0, length, result) }
+                                expanded = false
+                            }
+                            .fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+```
+
+--------------------------------
+
+### Implement a Scaffold with app bars and FAB
+
+Source: https://developer.android.com/develop/ui/compose/components/scaffold
+
+Demonstrates a complete Scaffold implementation including a top app bar, bottom app bar, and a floating action button. The inner content must apply the provided PaddingValues to avoid overlap.
+
+```kotlin
+@Composable
+fun ScaffoldExample() {
+    var presses by remember { mutableIntStateOf(0) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                colors = topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                ),
+                title = {
+                    Text("Top app bar")
+                }
+            )
+        },
+        bottomBar = {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    text = "Bottom app bar",
+                )
+            }
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { presses++ }) {
+                Icon(Icons.Default.Add, contentDescription = "Add")
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                modifier = Modifier.padding(8.dp),
+                text =
+                """
+                    This is an example of a scaffold. It uses the Scaffold composable's parameters to create a screen with a simple top app bar, bottom app bar, and floating action button.
+
+                    It also contains some basic inner content, such as this text.
+
+                    You have pressed the floating action button $presses times.
+                """.trimIndent(),
+            )
+        }
+    }
+}
+```
+
+--------------------------------
+
+### Implement a complete supporting pane scaffold
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/build-a-supporting-pane-layout
+
+A full implementation showing navigation between main and supporting panes with animated transitions and back navigation handling.
+
+```kotlin
+val scaffoldNavigator = rememberSupportingPaneScaffoldNavigator()
+val scope = rememberCoroutineScope()
+val backNavigationBehavior = BackNavigationBehavior.PopUntilScaffoldValueChange
+
+NavigableSupportingPaneScaffold(
+    navigator = scaffoldNavigator,
+    mainPane = {
+        AnimatedPane(
+            modifier = Modifier
+                .safeContentPadding()
+                .background(Color.Red)
+        ) {
+            if (scaffoldNavigator.scaffoldValue[SupportingPaneScaffoldRole.Supporting] == PaneAdaptedValue.Hidden) {
+                Button(
+                    modifier = Modifier
+                        .wrapContentSize(),
+                    onClick = {
+                        scope.launch {
+                            scaffoldNavigator.navigateTo(SupportingPaneScaffoldRole.Supporting)
+                        }
+                    }
+                ) {
+                    Text("Show supporting pane")
+                }
+            } else {
+                Text("Supporting pane is shown")
+            }
+        }
+    },
+    supportingPane = {
+        AnimatedPane(modifier = Modifier.safeContentPadding()) {
+            Column {
+                // Allow users to dismiss the supporting pane. Use back navigation to
+                // hide an expanded supporting pane.
+                if (scaffoldNavigator.scaffoldValue[SupportingPaneScaffoldRole.Supporting] == PaneAdaptedValue.Expanded) {
+                    // Material design principles promote the usage of a right-aligned
+                    // close (X) button.
+                    IconButton(
+                        modifier =  Modifier.align(Alignment.End).padding(16.dp),
+                        onClick = {
+                            scope.launch {
+                                scaffoldNavigator.navigateBack(backNavigationBehavior)
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+                Text("Supporting pane")
+            }
+
+        }
+    }
+)
+```
+
+--------------------------------
+
+### Define Static Shortcuts in XML
+
+Source: https://developer.android.com/develop/ui/compose/system/shortcuts/creating-shortcuts
+
+Create the shortcuts.xml file to define the shortcut properties, intents, and capabilities.
+
+```xml
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+  <shortcut
+    android:shortcutId="compose"
+    android:enabled="true"
+    android:icon="@drawable/compose_icon"
+    android:shortcutShortLabel="@string/compose_shortcut_short_label1"
+    android:shortcutLongLabel="@string/compose_shortcut_long_label1"
+    android:shortcutDisabledMessage="@string/compose_disabled_message1">
+    <intent
+      android:action="android.intent.action.VIEW"
+      android:targetPackage="com.example.myapplication"
+      android:targetClass="com.example.myapplication.Main" />
+    <!-- If your shortcut is associated with multiple intents, include them
+         here. The last intent in the list determines what the user sees when
+         they launch this shortcut. -->
+    <categories android:name="android.shortcut.conversation" />
+    <capability-binding android:key="actions.intent.CREATE_MESSAGE" />
+  </shortcut>
+  <!-- Specify more shortcuts here. -->
+</shortcuts>
+```
+
+--------------------------------
+
+### Get content using Activity Result API
+
+Source: https://developer.android.com/develop/ui/compose/libraries
+
+Uses rememberLauncherForActivityResult with ActivityResultContracts.GetContent to pick an image and display it.
+
+```kotlin
+@Composable
+fun GetContentExample() {
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        imageUri = uri
+    }
+    Column {
+        Button(onClick = { launcher.launch("image/*") }) {
+            Text(text = "Load Image")
+        }
+        Image(
+            painter = rememberAsyncImagePainter(imageUri),
+            contentDescription = "My Image"
+        )
+    }
+}
+```
+
+--------------------------------
+
+### Configure Balanced Line Breaking Strategy
+
+Source: https://developer.android.com/develop/ui/compose/text/style-paragraph
+
+Shows how to create a custom LineBreak configuration using the Balanced strategy to optimize text layout for small screens.
+
+```kotlin
+TextSample(
+    samples = mapOf(
+        "Balanced" to {
+            val smallScreenAdaptedParagraph =
+                LineBreak.Paragraph.copy(strategy = LineBreak.Strategy.Balanced)
+            Text(
+                text = SAMPLE_LONG_TEXT,
+                modifier = Modifier
+                    .width(200.dp)
+                    .border(BorderStroke(1.dp, Color.Gray)),
+                fontSize = 14.sp,
+                style = TextStyle.Default.copy(
+                    lineBreak = smallScreenAdaptedParagraph
+                )
+            )
+        },
+        "Default" to {
+            Text(
+                text = SAMPLE_LONG_TEXT,
+                modifier = Modifier
+                    .width(200.dp)
+                    .border(BorderStroke(1.dp, Color.Gray)),
+                fontSize = 14.sp,
+                style = TextStyle.Default
+            )
+        }
+    )
+)
+```
+
+--------------------------------
+
+### Center pages with horizontal padding
+
+Source: https://developer.android.com/develop/ui/compose/layouts/pager
+
+Applies equal start and end padding to center the pager items horizontally.
+
+```kotlin
+val pagerState = rememberPagerState(pageCount = {
+    4
+})
+HorizontalPager(
+    state = pagerState,
+    contentPadding = PaddingValues(horizontal = 32.dp),
+) { page ->
+    // page content
+}
+```
+
+--------------------------------
+
+### Create a scaling button with InteractionSource
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/user-interactions/handling-interactions
+
+This example demonstrates a button that manually scales down when pressed using an InteractionSource and animateFloatAsState.
+
+```kotlin
+val interactionSource = remember { MutableInteractionSource() }
+val isPressed by interactionSource.collectIsPressedAsState()
+val scale by animateFloatAsState(targetValue = if (isPressed) 0.9f else 1f, label = "scale")
+
+Button(
+    modifier = Modifier.scale(scale),
+    onClick = { },
+    interactionSource = interactionSource
+) {
+    Text(if (isPressed) "Pressed!" else "Not pressed")
+}
+```
+
+--------------------------------
+
+### Implement State Hoisting with HelloScreen and HelloContent
+
+Source: https://developer.android.com/develop/ui/compose/state
+
+Demonstrates moving state out of a composable into a parent, creating a stateless HelloContent and a stateful HelloScreen.
+
+```kotlin
+@Composable
+fun HelloScreen() {
+    var name by rememberSaveable { mutableStateOf("") }
+
+    HelloContent(name = name, onNameChange = { name = it })
+}
+
+@Composable
+fun HelloContent(name: String, onNameChange: (String) -> Unit) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Hello, $name",
+            modifier = Modifier.padding(bottom = 8.dp),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        OutlinedTextField(value = name, onValueChange = onNameChange, label = { Text("Name") })
+    }
+}
+```
+
+--------------------------------
+
+### Create Swipeable List Example
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/user-interactions/swipe-to-dismiss
+
+A LazyColumn implementation that manages a list of TodoItems and applies the animated swipe-to-dismiss behavior.
+
+```kotlin
+@Composable
+private fun SwipeItemWithAnimationExample() {
+    val todoItems = remember {
+        mutableStateListOf(
+            TodoItem("Pay bills"), TodoItem("Buy groceries"),
+            TodoItem("Go to gym"), TodoItem("Get dinner")
+        )
+    }
+
+    LazyColumn {
+        items(
+            items = todoItems,
+            key = { it.itemDescription }
+        ) { todoItem ->
+            TodoListItemWithAnimation(
+                todoItem = todoItem,
+                onToggleDone = { todoItem ->
+                    todoItem.isItemDone = !todoItem.isItemDone
+                },
+                onRemove = { todoItem ->
+                    todoItems -= todoItem
+                },
+                modifier = Modifier.animateItem()
+            )
+        }
+    }
+}
+SwipeToDismissBox.kt
+```
+
+--------------------------------
+
+### Initialize NavController
+
+Source: https://developer.android.com/develop/ui/compose/migrate/migration-scenarios/navigation
+
+Create the NavController within your main App composable to enable state hoisting and back stack management.
+
+```kotlin
+@Composable
+fun SampleApp() {
+    val navController = rememberNavController()
+    // ...
+}
+```
+
+--------------------------------
+
+### Using Selectors for Node Traversal
+
+Source: https://developer.android.com/develop/ui/compose/testing/apis
+
+Example of chaining selectors to filter children and assert properties on specific nodes.
+
+```kotlin
+composeTestRule.onNode(hasTestTag("Players"))
+    .onChildren()
+    .filter(hasClickAction())
+    .assertCountEquals(4)
+    .onFirst()
+    .assert(hasText("John"))
+```
+
+--------------------------------
+
+### Create a ThreePaneScaffoldNavigator
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/build-a-supporting-pane-layout
+
+Initialize the navigator and coroutine scope required for managing pane transitions.
+
+```kotlin
+val scaffoldNavigator = rememberSupportingPaneScaffoldNavigator()
+val scope = rememberCoroutineScope()
+```
+
+--------------------------------
+
+### BespokeButton using foundation components
+
+Source: https://developer.android.com/develop/ui/compose/layering
+
+Demonstrates building a component without any Material layer dependencies by using only foundation components.
+
+```kotlin
+@Composable
+fun BespokeButton(
+    // …
+    backgroundColor: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        // …
+        modifier = modifier
+            .clickable(onClick = {})
+            .background(backgroundColor)
+    ) {
+        // No Material components used
+        content()
+    }
+}
+```
+
+--------------------------------
+
+### Shrink items in FlexBox
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/flexbox/item-behavior
+
+Example showing how to distribute space deficits among items using the shrink modifier.
+
+```kotlin
+FlexBox {
+    Text(
+        "The quick brown fox",
+        fontSize = 36.sp,
+        modifier = Modifier
+            .background(PastelRed)
+            .flex { shrink(1f) }
+    )
+    Text(
+        "The quick brown fox",
+        fontSize = 36.sp,
+        modifier = Modifier
+            .background(PastelBlue)
+            .flex { shrink(0f) }
+    )
+}
+FlexBoxSnippets.kt
+```
+
+--------------------------------
+
+### Explicit parameter dependency example
+
+Source: https://developer.android.com/develop/ui/compose/compositionlocal
+
+Demonstrates the cumbersome nature of passing data explicitly through deep UI hierarchies.
+
+```kotlin
+@Composable
+fun MyApp() {
+    // Theme information tends to be defined near the root of the application
+    val colors = colors()
+}
+
+// Some composable deep in the hierarchy
+@Composable
+fun SomeTextLabel(labelText: String) {
+    Text(
+        text = labelText,
+        color = colors.onPrimary // ← need to access colors here
+    )
+}
+```
+
+--------------------------------
+
+### Apply Simple and Paragraph Line Breaking
+
+Source: https://developer.android.com/develop/ui/compose/text/style-paragraph
+
+Demonstrates applying different LineBreak presets to a Text composable to compare basic versus high-quality formatting.
+
+```kotlin
+TextSample(
+    samples = mapOf(
+        "Simple" to {
+            Text(
+                text = SAMPLE_LONG_TEXT,
+                modifier = Modifier
+                    .width(130.dp)
+                    .border(BorderStroke(1.dp, Color.Gray)),
+                fontSize = 14.sp,
+                style = TextStyle.Default.copy(
+                    lineBreak = LineBreak.Simple
+                )
+            )
+        },
+        "Paragraph" to {
+            Text(
+                text = SAMPLE_LONG_TEXT,
+                modifier = Modifier
+                    .width(130.dp)
+                    .border(BorderStroke(1.dp, Color.Gray)),
+                fontSize = 14.sp,
+                style = TextStyle.Default.copy(
+                    lineBreak = LineBreak.Paragraph
+                )
+            )
+        }
+    )
+)
+```
+
+--------------------------------
+
+### Adaptive layout using derived state
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/mediaquery
+
+Use derivedMediaQuery for frequently updating parameters like window width to optimize performance.
+
+```kotlin
+val narrowerThanMedium by derivedMediaQuery {
+    windowWidth < WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND.dp
+}
+val narrowerThanExpanded by derivedMediaQuery {
+    windowWidth < WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND.dp
+}
+when {
+    narrowerThanMedium -> SinglePaneLayout()
+    narrowerThanExpanded -> TwoPaneLayout()
+    else -> ThreePaneLayout()
+}
+```
+
+--------------------------------
+
+### Create a Brush
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/stylus-input/ink-api-brush-apis
+
+Initializes a new brush using the Brush companion methods with specified family, color, size, and epsilon properties.
+
+```kotlin
+val brush = Brush.createWithComposeColor(
+  family = StockBrushes.pressure(),
+  colorIntArgb = Color.Black,
+  size = 5F,
+  epsilon = 0.1F
+)
+```
+
+--------------------------------
+
+### Implement WindowAreaSessionCallback
+
+Source: https://developer.android.com/develop/ui/compose/layouts/adaptive/foldables/support-foldable-display-modes
+
+Handles session lifecycle events for the Rear Display API, specifically tracking when a session starts or ends.
+
+```kotlin
+override fun onSessionStarted(session: WindowAreaSession) {
+     Log.d(logTag, "onSessionStarted")
+}
+
+override fun onSessionEnded(t: Throwable?) {
+    if (t != null) {
+        Log.e(logTag, "Something was broken: ${t.message}")
+    }
+}
+```
+
+```java
+@Override public void onSessionStarted(){
+    Log.d(logTag, "onSessionStarted");
+}
+
+@Override public void onSessionEnded(@Nullable Throwable t) {
+    if(t != null) {
+        Log.e(logTag, "Something was broken: " + t.getMessage());
+    }
+}
+```
+
+--------------------------------
+
+### Conditional UI Rendering with State
+
+Source: https://developer.android.com/develop/ui/compose/state
+
+Example of using state to conditionally display UI elements based on user input.
+
+```kotlin
+@Composable
+fun HelloContent() {
+    Column(modifier = Modifier.padding(16.dp)) {
+        var name by remember { mutableStateOf("") }
+        if (name.isNotEmpty()) {
+            Text(
+                text = "Hello, $name!",
+                modifier = Modifier.padding(bottom = 8.dp),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") }
+        )
+    }
+}
+StateOverviewSnippets.kt
+```
+
+--------------------------------
+
+### Initialize focus requester for navigation
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/focus/change-focus-behavior
+
+Prepare a FocusRequester to manage custom navigation paths.
+
+```kotlin
+val otherComposable = remember { FocusRequester() }
+```
+
+--------------------------------
+
+### Initialize ComposeView in Fragment
+
+Source: https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views
+
+Inflate the layout and configure the ComposeView using setContent and a ViewCompositionStrategy.
+
+```kotlin
+class ExampleFragmentXml : Fragment() {
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val view = inflater.inflate(R.layout.fragment_example, container, false)
+        val composeView = view.findViewById<ComposeView>(R.id.compose_view)
+        composeView.apply {
+            // Dispose of the Composition when the view's LifecycleOwner
+            // is destroyed
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                // In Compose world
+                MaterialTheme {
+                    Text("Hello Compose!")
+                }
+            }
+        }
+        return view
+    }
+}
+```
+
+--------------------------------
+
+### Display System UI
+
+Source: https://developer.android.com/develop/ui/compose/tooling/previews
+
+Set showSystemUi to true to include status and action bars in the preview.
+
+```kotlin
+@Preview(showSystemUi = true)
+@Composable
+fun DecoratedComposablePreview() {
+    Text("Hello World")
+}
+```
+
+--------------------------------
+
+### Representing an unstable class with a Set
+
+Source: https://developer.android.com/develop/ui/compose/performance/stability/fix
+
+Example of a class structure that the Compose compiler marks as unstable due to the use of a standard Set.
+
+```kotlin
+unstable class Snack {
+  …
+  unstable val tags: Set<String>
+  …
+}
+```
+
+--------------------------------
+
+### Configure Preview Background
+
+Source: https://developer.android.com/develop/ui/compose/tooling/previews
+
+Enable showBackground and provide an ARGB Long value to set a background color for the preview.
+
+```kotlin
+@Preview(showBackground = true, backgroundColor = 0xFF00FF00)
+@Composable
+fun WithGreenBackground() {
+    Text("Hello World")
+}
+```
+
+--------------------------------
+
+### Preview custom baseline padding
+
+Source: https://developer.android.com/develop/ui/compose/layouts/custom
+
+Composables demonstrating the usage of the custom firstBaselineToTop modifier compared to standard padding.
+
+```kotlin
+@Preview
+@Composable
+fun TextWithPaddingToBaselinePreview() {
+    MyApplicationTheme {
+        Text("Hi there!", Modifier.firstBaselineToTop(32.dp))
+    }
+}
+
+@Preview
+@Composable
+fun TextWithNormalPaddingPreview() {
+    MyApplicationTheme {
+        Text("Hi there!", Modifier.padding(top = 32.dp))
+    }
+}
+```
+
+--------------------------------
+
+### Specify a drag source
+
+Source: https://developer.android.com/develop/ui/compose/touch-input/user-interactions/drag-and-drop
+
+Use the dragAndDropSource modifier to define a starting point for a drag gesture, wrapping transferable data in a ClipData object.
+
+```kotlin
+Modifier.dragAndDropSource { _ ->
+    DragAndDropTransferData(
+        ClipData.newPlainText(
+            "image Url", url
+        )
+    )
+}
+```
+
+```kotlin
+Modifier.dragAndDropSource { _ ->
+    DragAndDropTransferData(
+        ClipData.newPlainText(
+            "image Url", url
+        ),
+        flags = View.DRAG_FLAG_GLOBAL
+    )
+}
+```
+
+--------------------------------
+
+### Implement Theme.kt color schemes
+
+Source: https://developer.android.com/develop/ui/compose/designsystems/material3
+
+Configures light and dark color schemes and provides a Composable theme wrapper.
+
+```kotlin
+private val LightColorScheme = lightColorScheme(
+    primary = md_theme_light_primary,
+    onPrimary = md_theme_light_onPrimary,
+    primaryContainer = md_theme_light_primaryContainer,
+    // ..
+)
+private val DarkColorScheme = darkColorScheme(
+    primary = md_theme_dark_primary,
+    onPrimary = md_theme_dark_onPrimary,
+    primaryContainer = md_theme_dark_primaryContainer,
+    // ..
+)
+
+@Composable
+fun ReplyTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colorScheme =
+        if (!darkTheme) {
+            LightColorScheme
+        } else {
+            DarkColorScheme
+        }
+    MaterialTheme(
+        colorScheme = colorScheme,
+        content = content
+    )
+}
+Material3Snippets.kt
+```

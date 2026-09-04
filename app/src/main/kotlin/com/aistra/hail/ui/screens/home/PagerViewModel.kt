@@ -31,7 +31,7 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedList = MutableStateFlow<List<AppInfo>>(emptyList())
     val selectedList: StateFlow<List<AppInfo>> = _selectedList.asStateFlow()
 
-    var selectedTagId: Long = 0
+    var selectedTagId: Int = 0
         private set
 
     init {
@@ -40,11 +40,11 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun loadApps(tagId: Long = selectedTagId) {
+    fun loadApps(tagId: Int = selectedTagId) {
         val queryText = _query.value
         val filtered = HailData.checkedList.filter { it.isInstalled }
         val result = if (queryText.isEmpty()) {
-            filtered.filter { it.tagIdList.contains(tagId.toInt()) }
+            filtered.filter { it.tagIdList.contains(tagId) }
         } else {
             filtered.filter { app ->
                 ((HailData.nineKeySearch && NineKeySearch.search(
@@ -83,7 +83,7 @@ class PagerViewModel(application: Application) : AndroidViewModel(application) {
         _multiselect.value = false
     }
 
-    fun setTagId(tagId: Long) {
+    fun setTagId(tagId: Int) {
         selectedTagId = tagId
         loadApps(tagId)
     }

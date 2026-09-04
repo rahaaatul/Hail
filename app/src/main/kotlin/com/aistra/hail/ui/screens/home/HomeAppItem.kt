@@ -16,6 +16,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
@@ -28,6 +29,7 @@ fun HomeAppItem(
     multiselectMode: Boolean = false,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    onToggleSelection: (() -> Unit)? = null,
 ) {
     val size = dimensionResource(R.dimen.app_icon_size)
     val paddingSmall = dimensionResource(R.dimen.padding_small)
@@ -42,10 +44,23 @@ fun HomeAppItem(
         else -> MaterialTheme.colorScheme.onSurface
     }
 
+    val textSize = when (HailData.iconColumns) {
+        3 -> 14.sp
+        4 -> 13.sp
+        5 -> 12.sp
+        else -> 14.sp
+    }
+
     val clickModifier = if (onClick != null || onLongClick != null) {
         Modifier.pointerInput(onClick, onLongClick) {
             detectTapGestures(
-                onTap = { onClick?.invoke() },
+                onTap = {
+                    if (multiselectMode) {
+                        onToggleSelection?.invoke()
+                    } else {
+                        onClick?.invoke()
+                    }
+                },
                 onLongPress = { onLongClick?.invoke() },
             )
         }
@@ -73,7 +88,7 @@ fun HomeAppItem(
             },
             color = textColor,
             style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = androidx.compose.ui.unit.TextUnit(14f, androidx.compose.ui.unit.TextUnitType.Sp),
+                fontSize = textSize,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             ),
             textAlign = TextAlign.Center,

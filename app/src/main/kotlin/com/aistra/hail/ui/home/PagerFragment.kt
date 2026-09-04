@@ -46,6 +46,7 @@ import com.aistra.hail.extensions.*
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.HailTheme
 import com.aistra.hail.ui.theme.HailThemeState
+import com.aistra.hail.ui.screens.home.PagerScreen
 import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork
 import com.google.android.material.color.MaterialColors
@@ -94,6 +95,22 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
         _binding = FragmentPagerBinding.inflate(inflater, container, false)
+
+        binding.composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        binding.composeView.setContent {
+            HailTheme(state = HailThemeState()) {
+                val currentTag = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
+                PagerScreen(
+                    tagId = currentTag?.second ?: 0,
+                    onFabClick = { /* validation placeholder */ },
+                )
+            }
+        }
+
+        binding.recyclerView.visibility = View.GONE
+        binding.refresh.visibility = View.GONE
+        binding.empty.visibility = View.GONE
+
         pagerAdapter = PagerAdapter(selectedList).apply {
             onItemClickListener = this@PagerFragment
             onItemLongClickListener = this@PagerFragment
