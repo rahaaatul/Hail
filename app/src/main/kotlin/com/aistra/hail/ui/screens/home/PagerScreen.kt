@@ -16,6 +16,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -53,6 +55,7 @@ fun PagerScreen(
     val selectedList by viewModel.selectedList.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
+    var expandedForPackage by remember { mutableStateOf<String?>(null) }
 
     HailTheme(state = remember { HailThemeState() }) {
         LaunchedEffect(tagId) {
@@ -100,31 +103,60 @@ fun PagerScreen(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp),
                 ) {
                     items(apps, key = { it.packageName }) { appInfo ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.elevatedCardColors(
-                                containerColor = if (appInfo in selectedList)
-                                    MaterialTheme.colorScheme.primaryContainer
-                                else
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                            ),
-                        ) {
-                            HomeAppItem(
-                                appInfo = appInfo,
-                                isSelected = appInfo in selectedList,
-                                multiselectMode = multiselect,
-                                onClick = {
-                                    viewModel.launchApp(appInfo.packageName) { intent ->
-                                        if (intent != null) {
-                                            context.startActivity(intent)
+                        Box {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.elevatedCardColors(
+                                    containerColor = if (appInfo in selectedList)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else
+                                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                                ),
+                            ) {
+                                HomeAppItem(
+                                    appInfo = appInfo,
+                                    isSelected = appInfo in selectedList,
+                                    multiselectMode = multiselect,
+                                    onClick = {
+                                        viewModel.launchApp(appInfo.packageName) { intent ->
+                                            if (intent != null) {
+                                                context.startActivity(intent)
+                                            }
                                         }
-                                    }
-                                },
-                                onLongClick = { /* TODO: context menu */ },
-                                onToggleSelection = {
-                                    viewModel.toggleSelection(appInfo)
-                                },
-                            )
+                                    },
+                                    onLongClick = { expandedForPackage = appInfo.packageName },
+                                    onToggleSelection = {
+                                        viewModel.toggleSelection(appInfo)
+                                    },
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = expandedForPackage == appInfo.packageName,
+                                onDismissRequest = { expandedForPackage = null },
+                            ) {
+                                val isFrozen = appInfo.state == AppInfo.State.FROZEN
+                                DropdownMenuItem(
+                                    onClick = {
+                                        expandedForPackage = null
+                                        viewModel.setListFrozen(!isFrozen, listOf(appInfo))
+                                    },
+                                    text = {
+                                        Text(
+                                            stringResource(
+                                                if (isFrozen) R.string.action_unfreeze
+                                                else R.string.action_freeze,
+                                            ),
+                                        )
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    onClick = {
+                                        expandedForPackage = null
+                                        viewModel.removeCheckedApp(appInfo.packageName)
+                                    },
+                                    text = { Text(stringResource(R.string.action_remove_home)) },
+                                )
+                            }
                         }
                     }
                 }
