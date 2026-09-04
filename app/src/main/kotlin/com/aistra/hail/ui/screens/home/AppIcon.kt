@@ -17,7 +17,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
@@ -37,12 +36,13 @@ fun AppIcon(
     val size = dimensionResource(R.dimen.app_icon_size)
     val paddingSmall = dimensionResource(R.dimen.padding_small)
 
-    val bitmapState = produceState<Bitmap?>(null, info.packageName, size) {
+    val sizePx = with(LocalDensity.current) { size.roundToPx() }
+    val bitmapState = produceState<Bitmap?>(null, info.packageName, sizePx) {
         val applicationInfo = info.applicationInfo
         if (applicationInfo != null) {
             try {
                 value = withContext(Dispatchers.IO) {
-                    AppIconCache.getOrLoadBitmap(context, applicationInfo, HPackages.myUserId, size)
+                    AppIconCache.getOrLoadBitmap(context, applicationInfo, HPackages.myUserId, sizePx)
                 }
             } catch (e: Exception) {
                 null
