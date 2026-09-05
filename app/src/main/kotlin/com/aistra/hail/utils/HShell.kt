@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 
 object HShell {
     init {
-        Shell.setDefaultBuilder(Shell.Builder.create().setFlags(Shell.FLAG_REDIRECT_STDERR))
+        Shell.enableLegacyStderrRedirection = true
+        Shell.setDefaultBuilder(Shell.Builder.create())
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
