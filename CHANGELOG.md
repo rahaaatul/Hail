@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.4] - 2026-09-05
+
+### Fixed
+- Root mode no longer prompts for Magisk root permission in the background when Hail is not open or the automation service is off. The cached root shell is now warmed only when the main app is opened, instead of on every process start, so background triggers such as auto-freeze workers and receivers no longer acquire a new shell and trigger repeated root prompts.
+- Auto-freeze worker stops retrying after three attempts instead of failing indefinitely, which previously caused WorkManager to keep restarting the process and re-prompting for root.
+- "Unfreeze and remove from home" now actually removes the app from the home screen. The freeze/unfreeze operation was fire-and-forget, so the removal check ran before the async unfreeze completed and was skipped; the operation now completes before the removal runs.
+- `pm` freeze/unfreeze operations in Root mode are more reliable: `checkSU` now verifies that the shell is genuinely running as root by checking the `whoami` output, so a re-acquired non-root shell is no longer treated as a valid root shell.
+
 ## [1.11.3] - 2026-08-31
 
 ### Highlights
