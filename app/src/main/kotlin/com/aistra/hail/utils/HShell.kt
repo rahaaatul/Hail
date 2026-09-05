@@ -68,7 +68,7 @@ object HShell {
 
     private fun execSU(command: String) = execute(command, true)
 
-    val checkSU get() = execSU("whoami").first == 0
+    val checkSU get() = execSU("whoami").second?.trim() == "root"
 
     val lockScreen get() = execSU("input keyevent KEYCODE_POWER").first == 0
 

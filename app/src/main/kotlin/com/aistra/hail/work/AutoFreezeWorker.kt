@@ -17,13 +17,14 @@ class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(cont
             || isSkipWhileCharging(applicationContext)
         ) return Result.success() // Not stopping the AutoFreezeService here. The worker will run at some point. Then we'll stop the Service
         val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
-        val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
-        return if (result == null) {
-            Result.failure()
-        } else {
-            app.setAutoFreezeService()
-            Result.success()
+        repeat(3) {
+            val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
+            if (result != null) {
+                app.setAutoFreezeService()
+                return Result.success()
+            }
         }
+        return Result.success() // 3 tries failed -> stop WorkManager retries
     }
 
     private fun isSkipWhileCharging(context: Context): Boolean =
