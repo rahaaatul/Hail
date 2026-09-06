@@ -52,6 +52,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -82,7 +83,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     deselect()
                 } else {
                     isEnabled = false
-                    requireActivity().onBackPressed()
+                    requireActivity().onBackPressedDispatcher.onBackPressed()
                 }
             }
         })
@@ -144,10 +145,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         HailData.checkedList.filter { it.isInstalled }.filter {
             if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
             else ((HailData.nineKeySearch && NineKeySearch.search(
-                query, it.packageName, it.name.toString()
+                query, it.packageName, it.name
             )) || FuzzySearch.search(it.packageName, query) || FuzzySearch.search(
-                it.name.toString(), query
-            ) || PinyinSearch.searchPinyinAll(it.name.toString(), query))
+                it.name, query
+            ) || PinyinSearch.searchPinyinAll(it.name, query))
         }.sortedWith(NameComparator).let {
             binding.empty.isVisible = it.isEmpty()
             pagerAdapter.submitList(it)
@@ -257,8 +258,11 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 7 -> exportToClipboard(listOf(info))
                 8 -> removeCheckedApp(pkg)
                 9 -> {
-                    setListFrozen(false, listOf(info), false)
-                    if (!AppManager.isAppFrozen(pkg)) removeCheckedApp(pkg)
+                    val job = setListFrozen(false, listOf(info), false)
+                    lifecycleScope.launch {
+                        job.join()
+                        if (!AppManager.isAppFrozen(pkg)) removeCheckedApp(pkg)
+                    }
                 }
             }
         }.setNeutralButton(R.string.action_details) { _, _ ->
@@ -391,12 +395,15 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 }
 
                 5 -> {
-                    setListFrozen(false, selectedList, false)
-                    selectedList.forEach {
-                        if (!AppManager.isAppFrozen(it.packageName)) removeCheckedApp(it.packageName, false)
+                    val job = setListFrozen(false, selectedList, false)
+                    lifecycleScope.launch {
+                        job.join()
+                        selectedList.forEach {
+                            if (!AppManager.isAppFrozen(it.packageName)) removeCheckedApp(it.packageName, false)
+                        }
+                        HailData.saveApps()
+                        deselect()
                     }
-                    HailData.saveApps()
-                    deselect()
                 }
             }
         }.setNegativeButton(R.string.action_deselect) { _, _ ->
@@ -493,22 +500,22 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     private fun setListFrozen(
         frozen: Boolean, list: List<AppInfo> = HailData.checkedList, updateList: Boolean = true
-    ) {
+    ): Job {
         if (HailData.workingMode == HailData.MODE_DEFAULT) {
             MaterialAlertDialogBuilder(activity).setMessage(R.string.msg_guide)
                 .setPositiveButton(android.R.string.ok, null).show()
-            return
+            return viewLifecycleOwner.lifecycleScope.launch { }
         } else if (HailData.workingMode == HailData.MODE_SHIZUKU_HIDE) {
             runCatching { HShizuku.isRoot }.onSuccess {
                 if (!it) {
                     MaterialAlertDialogBuilder(activity).setMessage(R.string.shizuku_hide_adb)
                         .setPositiveButton(android.R.string.ok, null).show()
-                    return
+                    return viewLifecycleOwner.lifecycleScope.launch { }
                 }
             }
         }
         val filtered = list.filter { AppManager.isAppFrozen(it.packageName) != frozen }
-        viewLifecycleOwner.lifecycleScope.launch {
+        return viewLifecycleOwner.lifecycleScope.launch {
             AppActions.freezePackages(frozen, filtered.map { it.packageName }).onSuccess {
                 AppMetaCache.invalidateState(filtered.map { it.packageName })
                 if (updateList) updateCurrentList()

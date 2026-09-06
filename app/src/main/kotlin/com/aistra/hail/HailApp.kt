@@ -44,12 +44,11 @@ class HailApp : Application() {
         // DirtyDataUpdater.update(app)
         if (!HTarget.S) setAppTheme(HailData.appTheme)
         if (HailData.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
-        syncRootShell()
     }
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private fun syncRootShell() {
+    fun syncRootShell() {
         if (HailData.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()
     }
 

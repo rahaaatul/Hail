@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 
 object HShell {
     init {
-        Shell.setDefaultBuilder(Shell.Builder.create().setFlags(Shell.FLAG_REDIRECT_STDERR))
+        Shell.enableLegacyStderrRedirection = true
+        Shell.setDefaultBuilder(Shell.Builder.create())
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -67,7 +68,7 @@ object HShell {
 
     private fun execSU(command: String) = execute(command, true)
 
-    val checkSU get() = execSU("whoami").first == 0
+    val checkSU get() = execSU("whoami").second?.trim() == "root"
 
     val lockScreen get() = execSU("input keyevent KEYCODE_POWER").first == 0
 
