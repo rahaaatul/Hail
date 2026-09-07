@@ -8,6 +8,7 @@
 #   *debug*      -> TOPIC_DEBUG     (84)
 #   *release*    -> TOPIC_RELEASE   (85)
 #   *pre-release*-> TOPIC_PRE_RELEASE (95)
+#   *pr*         -> TOPIC_PR        (218)
 #
 # Required env:
 #   TG_TOKEN  — bot token
@@ -37,9 +38,13 @@ fi
 readonly TOPIC_DEBUG="84"
 readonly TOPIC_RELEASE="85"
 readonly TOPIC_PRE_RELEASE="95"
+readonly TOPIC_PR="218"
 
 name="$(basename "${zip_path}")"
-if [[ "${name}" == *pre-release* ]]; then
+if [[ "${name}" == *pr* ]]; then
+  topic="${TOPIC_PR}"
+  label="PR topic"
+elif [[ "${name}" == *pre-release* ]]; then
   topic="${TOPIC_PRE_RELEASE}"
   label="pre-release topic"
 elif [[ "${name}" == *release* ]]; then
