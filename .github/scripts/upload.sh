@@ -5,9 +5,13 @@
 # Usage: bash upload.sh <zip_path>
 #
 # Channel is chosen from the filename:
-#   *debug*      -> TOPIC_DEBUG     (84)
-#   *release*    -> TOPIC_RELEASE   (85)
 #   *pre-release*-> TOPIC_PRE_RELEASE (95)
+#   *-pr.apk*    -> TOPIC_PR        (218)
+#   *release*    -> TOPIC_RELEASE   (85)
+#   *debug*      -> TOPIC_DEBUG     (84)
+#
+# Order matters: pre-release is checked before pr, since "pre-release"
+# contains "pr" and would otherwise route to the PR topic.
 #
 # Required env:
 #   TG_TOKEN  — bot token
@@ -37,11 +41,17 @@ fi
 readonly TOPIC_DEBUG="84"
 readonly TOPIC_RELEASE="85"
 readonly TOPIC_PRE_RELEASE="95"
+readonly TOPIC_PR="218"
 
 name="$(basename "${zip_path}")"
+# Order matters: check pre-release before pr, since "pre-release" contains
+# "pr" and would otherwise route to the PR topic.
 if [[ "${name}" == *pre-release* ]]; then
   topic="${TOPIC_PRE_RELEASE}"
   label="pre-release topic"
+elif [[ "${name}" == *-pr.apk ]]; then
+  topic="${TOPIC_PR}"
+  label="PR topic"
 elif [[ "${name}" == *release* ]]; then
   topic="${TOPIC_RELEASE}"
   label="release topic"

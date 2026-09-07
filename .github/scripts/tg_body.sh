@@ -21,7 +21,9 @@
 #   <blockquote><a href="<commit-url>"><short-hash></a></blockquote>
 #
 # Environment:
-#   REPO — "owner/repo" for the commit URL (default: rahaaatul/Hail)
+#   REPO       — "owner/repo" for the commit URL (default: rahaaatul/Hail)
+#   PR_NUMBER  — pull request number; when set, the Branch label becomes
+#                "PR #<N>" instead of the (detached) HEAD ref
 
 set -uo pipefail
 
@@ -32,6 +34,12 @@ readonly REPO="${REPO:-rahaaatul/Hail}"
 # --- Derive values ----------------------------------------------------------
 
 branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")"
+
+# PR builds run on a detached HEAD checkout, so the branch name resolves to
+# "HEAD". When PR_NUMBER is set, label the caption PR #<N> instead.
+if [[ -n "${PR_NUMBER:-}" ]]; then
+  branch="PR #${PR_NUMBER}"
+fi
 
 full_hash="$(git rev-parse HEAD 2>/dev/null || echo "0000000000000000000000000000000000000000")"
 short_hash="${full_hash:0:7}"

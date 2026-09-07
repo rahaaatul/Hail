@@ -35,6 +35,10 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-g$commitHash"
         }
+        create("pr") {
+            applicationIdSuffix = ".pr"
+            versionNameSuffix = System.getenv("PR_NUMBER")?.let { "-$it" } ?: ""
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

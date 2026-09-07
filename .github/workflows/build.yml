@@ -51,17 +51,44 @@ jobs:
         id: build_type
         run: echo "build_type=${BUILD_TYPE}" >> $GITHUB_OUTPUT
 
+      - name: Validate signing secrets
+        if: ${{ steps.build_type.outputs.build_type != 'debug' }}
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "::error::Missing secret KEYSTORE"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "::error::Missing secret KEYSTORE_PASSWORD"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_ALIAS }}" ]; then
+            echo "::error::Missing secret KEYSTORE_ALIAS"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" ]; then
+            echo "::error::Missing secret KEYSTORE_ALIAS_PASSWORD"
+            exit 1
+          fi
+          echo "==> Signing secrets present"
+
       - name: Build debug APK
         if: ${{ steps.build_type.outputs.build_type == 'debug' }}
         id: build_debug
         env:
+          PR_NUMBER: ${{ github.event.number }}
           RUNNER_DEBUG: 1
         run: |
           set -x
-          bash .github/scripts/debug.sh
-          apk_path=$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name 'Hail-*-debug.apk' | head -1)
+          if [[ -n "${PR_NUMBER:-}" ]]; then
+            bash .github/scripts/pr.sh
+          else
+            bash .github/scripts/debug.sh
+          fi
+          apk_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name 'Hail-*-pr.apk' -o -name 'Hail-*-debug.apk' \) | head -1)
           if [[ -z "$apk_path" ]]; then
-            echo "::error::No debug APK found after build"
+            echo "::error::No APK found after build"
             exit 1
           fi
           echo "apk_path=$apk_path" >> $GITHUB_OUTPUT
@@ -71,10 +98,12 @@ jobs:
         if: ${{ steps.build_type.outputs.build_type != 'debug' }}
         id: build_release
         env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
           RELEASE_TYPE: ${{ steps.build_type.outputs.build_type }}
-          RUNNER_DEBUG: 1
         run: |
-          set -x
           bash .github/scripts/release.sh
           apk_path=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name 'Hail-v*-*' | head -1)
           if [[ -z "$apk_path" ]]; then
@@ -91,8 +120,8 @@ jobs:
           RUNNER_DEBUG: 1
         run: |
           set -x
-          bash .github/scripts/zip.sh "${{ steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}"
-          zip_path=$(find app/build/outputs/apk/debug -maxdepth 1 -type f \( -name '*.7z' -o -name '*.zip' \) | head -1)
+          bash .github/scripts/zip.sh "${{ steps.build_debug.outputs.apk_path }}"
+          zip_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name '*.7z' -o -name '*.zip' \) | head -1)
           if [[ -z "$zip_path" ]]; then
             echo "::error::No compressed APK found after zip"
             exit 1
@@ -104,6 +133,7 @@ jobs:
         if: always()
         continue-on-error: true
         env:
+          PR_NUMBER: ${{ github.event.number }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
         run: |
@@ -116,7 +146,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.build_type.outputs.build_type }}
+          name: release
           path: ${{ steps.zip.outputs.zip_path != '' && steps.zip.outputs.zip_path || steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}
           retention-days: 7
 
@@ -149,6 +179,20 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
+      - name: Flatten release APK
+        id: flatten
+        shell: bash
+        run: |
+          apk_path=$(find artifacts -type f -name '*.apk' | head -1)
+          if [[ -z "$apk_path" ]]; then
+            echo "::error::No APK found in downloaded artifacts"
+            exit 1
+          fi
+          flat="Hail-v${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.build_type }}.apk"
+          cp "$apk_path" "$flat"
+          echo "apk_path=$flat" >> $GITHUB_OUTPUT
+          echo "==> Flattened: $apk_path -> $flat"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -157,5 +201,4 @@ jobs:
           body: ${{ steps.changelog.outputs.body }}
           prerelease: ${{ needs.build.outputs.build_type == 'pre-release' }}
           overwrite_files: true
-          files: |
-            artifacts/release/*.apk
+          files: ${{ steps.flatten.outputs.apk_path }}
