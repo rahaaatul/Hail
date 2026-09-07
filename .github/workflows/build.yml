@@ -86,7 +86,7 @@ jobs:
           else
             bash .github/scripts/debug.sh
           fi
-          apk_path=$(find app/build/outputs/apk -maxdepth 1 -type f \( -name 'Hail-*-pr.apk' -o -name 'Hail-*-debug.apk' \) | head -1)
+          apk_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name 'Hail-*-pr.apk' -o -name 'Hail-*-debug.apk' \) | head -1)
           if [[ -z "$apk_path" ]]; then
             echo "::error::No APK found after build"
             exit 1
@@ -121,7 +121,7 @@ jobs:
         run: |
           set -x
           bash .github/scripts/zip.sh "${{ steps.build_debug.outputs.apk_path }}"
-          zip_path=$(find app/build/outputs/apk -maxdepth 1 -type f \( -name '*.7z' -o -name '*.zip' \) | head -1)
+          zip_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name '*.7z' -o -name '*.zip' \) | head -1)
           if [[ -z "$zip_path" ]]; then
             echo "::error::No compressed APK found after zip"
             exit 1
