@@ -2,11 +2,29 @@ package com.aistra.hail.ui.main
 
 import android.os.Bundle
 import android.view.Menu
+import androidx.activity.compose.setContent
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuCompat
 import androidx.core.view.WindowCompat
@@ -21,6 +39,7 @@ import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
 import com.aistra.hail.extensions.*
+import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.google.android.material.appbar.AppBarLayout
@@ -88,6 +107,39 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         bottomNav?.applyDefaultInsetter { paddingRelative(isRtl, start = true, end = true, bottom = true) }
         navRail?.applyDefaultInsetter { paddingRelative(isRtl, start = true, top = true, bottom = true) }
         fab.applyDefaultInsetter { marginRelative(isRtl, end = true, bottom = isLandscape) }
+
+        composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        composeView.setContent {
+            AppTheme {
+                val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
+                val startDestinationId = navController.graph.startDestinationId
+                val currentDestId = navController.currentDestination?.id
+                var selectedItem by remember(currentDestId) { mutableIntStateOf(navItems.indexOfFirst { it.id == currentDestId }.coerceAtLeast(0)) }
+                NavigationSuiteScaffold(
+                    layoutType = navSuiteType,
+                    navigationSuiteItems = {
+                        navItems.forEachIndexed { index, navItem ->
+                            item(
+                                selected = selectedItem == index,
+                                onClick = {
+                                    selectedItem = index
+                                    if (navController.currentDestination?.id != navItem.id) {
+                                        navController.navigate(navItem.id) {
+                                            popUpTo(startDestinationId) { saveState = true }
+                                            launchSingleTop = true
+                                        }
+                                    }
+                                },
+                                icon = {
+                                    Icon(painter = painterResource(navItem.iconRes), contentDescription = null)
+                                },
+                                label = { Text(text = stringResource(navItem.labelRes)) },
+                            )
+                        }
+                    },
+                )
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -139,4 +191,16 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         binding.bottomNav?.isVisible = destination.id != R.id.nav_about
         binding.navRail?.isVisible = destination.id != R.id.nav_about
     }
+
+    private data class NavBarItem(
+        val id: Int,
+        @DrawableRes val iconRes: Int,
+        @StringRes val labelRes: Int,
+    )
+
+    private val navItems = listOf(
+        NavBarItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home),
+        NavBarItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
+        NavBarItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings),
+    )
 }
