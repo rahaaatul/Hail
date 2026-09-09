@@ -1,13 +1,24 @@
 package com.aistra.hail.app
 
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
+import android.view.View
 import androidx.core.content.edit
+import androidx.core.graphics.drawable.toBitmap
 import androidx.preference.PreferenceManager
 import com.aistra.hail.BuildConfig
+import com.aistra.hail.HailApp
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HFiles
+import com.aistra.hail.utils.HPackages
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
 
 object HailData {
     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
@@ -241,12 +252,12 @@ object HailData {
 
     fun changeAppsFilter(filter: String, enabled: Boolean) = sp.edit { putBoolean(filter, enabled) }
 }
-// Backup-related functions
 
+// Backup-related functions
 /**
- * Gets the app icon as a Bitmap
+ * Gets the app icon as a Drawable
  */
-private fun getAppIcon(packageName: String, packageManager: PackageManager): Bitmap? {
+private fun getAppIcon(packageName: String, packageManager: PackageManager): Drawable? {
     val pm = packageManager
     val info = pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
     return info.loadIcon(pm)
@@ -255,10 +266,11 @@ private fun getAppIcon(packageName: String, packageManager: PackageManager): Bit
 /**
  * Saves an app icon as a PNG file named after the package name
  */
-private fun saveAppIcon(icon: Bitmap, packageName: String, outputDir: File): File {
+private fun saveAppIcon(icon: Drawable, packageName: String, outputDir: File): File {
     val outputFile = File(outputDir, "${packageName.replace(".", "_")}.png")
+    val bitmap = icon.toBitmap(width = icon.intrinsicWidth.takeIf { it > 0 } ?: View.MeasureSpec.UNSPECIFIED, height = icon.intrinsicHeight.takeIf { it > 0 } ?: View.MeasureSpec.UNSPECIFIED)
     val os = FileOutputStream(outputFile)
-    icon.compress(Bitmap.CompressFormat.PNG, 100, os)
+    bitmap.compress(Bitmap.CompressFormat.PNG, 100, os)
     os.flush()
     os.close()
     return outputFile
@@ -268,12 +280,15 @@ private fun saveAppIcon(icon: Bitmap, packageName: String, outputDir: File): Fil
  * Saves all checked apps' icons as PNG files named after package names
  */
 fun saveAppIcons(checkedList: MutableList<AppInfo>, outputDir: File) {
-    if (!HFiles.exists(outputDir)) HFiles.createDirectories(outputDir)
+    if (!HFiles.exists(outputDir.path)) HFiles.createDirectories(outputDir.path)
     checkedList.forEach { app ->
         try {
-            val icon = app.applicationInfo.loadIcon(packageManager)
-            if (icon != null) {
-                saveAppIcon(icon, app.packageName, outputDir)
+            val info = app.applicationInfo
+            if (info != null) {
+                val icon = info.loadIcon(HailApp.app.packageManager)
+                if (icon != null) {
+                    saveAppIcon(icon, app.packageName, outputDir)
+                }
             }
         } catch (e: Exception) {
             // Skip apps where icon can't be loaded
