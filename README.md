@@ -8,7 +8,7 @@ English | [简体中文](README.zh_CN.md) | [日本語](README.ja.md)
 [![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
 
 Hail is a free-as-in-freedom software to freeze Android
-apps. [GitHub Releases](https://github.com/aistra0528/Hail/releases)
+apps. [GitHub Releases](https://github.com/rahaaatul/Hail/releases)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
 

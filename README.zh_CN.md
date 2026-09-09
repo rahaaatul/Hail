@@ -7,7 +7,7 @@
 [![Downloads](https://img.shields.io/github/downloads/aistra0528/Hail/total.svg)](https://github.com/aistra0528/Hail/releases)
 [![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
 
-雹是一款用于冻结 Android 应用的自由软件。[GitHub Releases](https://github.com/aistra0528/Hail/releases)
+雹是一款用于冻结 Android 应用的自由软件。[GitHub Releases](https://github.com/rahaaatul/Hail/releases)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
 
