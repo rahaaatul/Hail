@@ -108,13 +108,17 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                 val navSuiteType = calculateNavigationSuiteType()
                 val startDestinationId = navController.graph.startDestinationId
                 val currentDestId = navController.currentDestination?.id
-                val selectedItem = remember(currentDestId) { navItems.indexOfFirst { it.id == currentDestId }.coerceAtLeast(0) }
+                val selectedItem = remember(currentDestId) {
+                    val index = navItems.indexOfFirst { it.id == currentDestId }
+                    if (index >= 0) index else -1
+                }
                 NavigationSuiteScaffold(
                     layoutType = navSuiteType,
                     navigationSuiteItems = {
                         navItems.forEachIndexed { index, navItem ->
+                            val isSelected = selectedItem == index
                             item(
-                                selected = selectedItem == index,
+                                selected = isSelected,
                                 onClick = {
                                     if (navController.currentDestination?.id != navItem.id) {
                                         navController.navigate(navItem.id) {
@@ -124,7 +128,14 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                                     }
                                 },
                                 icon = {
-                                    Icon(painter = painterResource(navItem.iconRes), contentDescription = null)
+                                    Icon(
+                                        painter = painterResource(
+                                            if (navItem.iconRes == R.drawable.ic_settings_selector && isSelected)
+                                                R.drawable.ic_baseline_settings
+                                            else navItem.iconRes
+                                        ),
+                                        contentDescription = null
+                                    )
                                 },
                                 label = { Text(text = stringResource(navItem.labelRes)) },
                             )
