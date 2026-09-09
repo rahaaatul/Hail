@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -95,9 +96,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.window)
     implementation(libs.pinyin4j)
     implementation(libs.material)
     implementation(libs.insetter)
@@ -108,8 +112,11 @@ dependencies {
     implementation(libs.compose.preference)
     implementation(libs.commons.text)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.hiddenapibypass)
     implementation(libs.libsu.core)
+    implementation(libs.androidx.material3.adaptive)
+    implementation(libs.androidx.material3.adaptive.nav3)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.sqlite.wrapper)
     implementation(libs.androidx.sqlite)

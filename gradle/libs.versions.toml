@@ -15,6 +15,7 @@ insetter = "0.6.1"
 kotlinxCoroutinesAndroid = "1.11.0"
 lifecycleLivedataKtx = "2.11.0"
 material = "1.14.0"
+navigation3 = "1.1.0"
 navigationKtx = "2.9.8"
 pinyin4j = "2.5.1"
 preferenceKtx = "1.2.1"
@@ -26,6 +27,9 @@ libsu = "6.0.0"
 room = "3.0.2"
 ksp = "2.3.10"
 sqlite = "2.7.0"
+window = "1.3.0"
+kotlinxSerialization = "1.7.3"
+material3Adaptive = "1.5.0-alpha27"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
@@ -60,9 +64,15 @@ libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu"
 androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
-androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+androidx-window = { module = "androidx.window:window", version.ref = "window" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+androidx-material3-adaptive = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3Adaptive" }
+androidx-material3-adaptive-nav3 = { module = "androidx.compose.material3:adaptive-navigation3", version.ref = "material3Adaptive" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
