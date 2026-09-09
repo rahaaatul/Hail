@@ -241,3 +241,42 @@ object HailData {
 
     fun changeAppsFilter(filter: String, enabled: Boolean) = sp.edit { putBoolean(filter, enabled) }
 }
+// Backup-related functions
+
+/**
+ * Gets the app icon as a Bitmap
+ */
+private fun getAppIcon(packageName: String, packageManager: PackageManager): Bitmap? {
+    val pm = packageManager
+    val info = pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+    return info.loadIcon(pm)
+}
+
+/**
+ * Saves an app icon as a PNG file named after the package name
+ */
+private fun saveAppIcon(icon: Bitmap, packageName: String, outputDir: File): File {
+    val outputFile = File(outputDir, "${packageName.replace(".", "_")}.png")
+    val os = FileOutputStream(outputFile)
+    icon.compress(Bitmap.CompressFormat.PNG, 100, os)
+    os.flush()
+    os.close()
+    return outputFile
+}
+
+/**
+ * Saves all checked apps' icons as PNG files named after package names
+ */
+fun saveAppIcons(checkedList: MutableList<AppInfo>, outputDir: File) {
+    if (!HFiles.exists(outputDir)) HFiles.createDirectories(outputDir)
+    checkedList.forEach { app ->
+        try {
+            val icon = app.applicationInfo.loadIcon(packageManager)
+            if (icon != null) {
+                saveAppIcon(icon, app.packageName, outputDir)
+            }
+        } catch (e: Exception) {
+            // Skip apps where icon can't be loaded
+        }
+    }
+}
