@@ -11,14 +11,6 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-    <com.google.android.material.navigationrail.NavigationRailView
-        android:id="@+id/nav_rail"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/nav_main"
-        app:menuGravity="center" />
 
     <androidx.compose.ui.platform.ComposeView
         android:id="@+id/compose_view"

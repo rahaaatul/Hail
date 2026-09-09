@@ -95,16 +95,12 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             R.id.nav_home, R.id.nav_actions, R.id.nav_settings
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
-        bottomNav?.setupWithNavController(navController)
-        navRail?.setupWithNavController(navController)
 
         val isRtl = isRtl
         val isLandscape = isLandscape
         appBarMain.appBarLayout.applyDefaultInsetter {
             paddingRelative(isRtl, start = !isLandscape, end = true, top = true)
         }
-        bottomNav?.applyDefaultInsetter { paddingRelative(isRtl, start = true, end = true, bottom = true) }
-        navRail?.applyDefaultInsetter { paddingRelative(isRtl, start = true, top = true, bottom = true) }
         fab.applyDefaultInsetter { marginRelative(isRtl, end = true, bottom = isLandscape) }
 
         composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -186,8 +182,6 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             }
             else -> fab.hide()
         }
-        binding.bottomNav?.isVisible = destination.id != R.id.nav_about
-        binding.navRail?.isVisible = destination.id != R.id.nav_about
     }
 
     private data class NavBarItem(
