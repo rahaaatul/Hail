@@ -514,7 +514,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 }
             }
         }
-        val filtered = list.filter { AppManager.isAppFrozen(it.packageName) != frozen }
+        val filtered = list.filter { it.isInstalled && AppManager.isAppFrozen(it.packageName) != frozen }
         return viewLifecycleOwner.lifecycleScope.launch {
             AppActions.freezePackages(frozen, filtered.map { it.packageName }).onSuccess {
                 AppMetaCache.invalidateState(filtered.map { it.packageName })
