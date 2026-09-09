@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Setup Java JDK
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '26'
@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v7.0.1
 
       - name: Setup Java JDK
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '26'
@@ -193,7 +193,6 @@ jobs:
         env:
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
-          TG_LOGO: app/src/main/ic_launcher-playstore.png
           RELEASE_TYPE: ${{ github.event.inputs.release_type }}
           VERSION: ${{ needs.build-universal.outputs.version_name }}
           RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.build-universal.outputs.tag }}
@@ -201,7 +200,6 @@ jobs:
           echo "==> Starting Telegram notification"
           echo "==> TG_GROUP: ${TG_GROUP}"
           echo "==> RELEASE_TYPE: ${RELEASE_TYPE}"
-          echo "==> TG_LOGO: ${TG_LOGO}"
           echo "==> VERSION: ${VERSION}"
           echo "==> RELEASE_URL: ${RELEASE_URL}"
           bash .github/scripts/tg_release.sh \

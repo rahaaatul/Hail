@@ -13,7 +13,7 @@ set -euo pipefail
 # --- Toolchain (matches .devcontainer/setup.sh) ---
 readonly LOCAL_TOOLS_DIR="${HOME}/.local"
 export JAVA_HOME="${JAVA_HOME:-${LOCAL_TOOLS_DIR}/jdk-26}"
-export ANDROID_HOME="${ANDROID_HOME:-${LOCAL_TOOLS_DIR}/android-sdk}"
+export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 export ANDROID_SDK_ROOT="${ANDROID_HOME}"
 export PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
 
@@ -31,12 +31,36 @@ fi
 
 echo "==> Building debug APK"
 chmod +x ./gradlew
-./gradlew :app:assembleDebug --console=plain
+
+# Prompt for debug.md at the beginning
+DEBUG_MD="debug.md"
+if [[ ! -f "${DEBUG_MD}" ]] || [[ ! -s "${DEBUG_MD}" ]]; then
+    echo ""
+    echo "📝 No debug.md found. Please create it with your changes."
+    echo "   Format: start each line with an emoji:"
+    echo "     ✨ Add, 🗑️ Remove, 🐛 Fix, 💄 Style, ♻️ Refactor, 📝 Docs, 🔧 Chore, 🚀 Perf"
+    echo "   The first line should be the branch name, e.g. [feature/foo]"
+    echo ""
+    echo "   Enter descriptions (empty line to finish):"
+    exit 1
+fi
+
+readonly BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+commit_subject="$(cat "${DEBUG_MD}")"
+
+./gradlew clean :app:assembleDebug --console=plain
 
 apk_path="$(find "${APK_DIR}" -maxdepth 1 -name '*.apk' | head -1)"
 if [[ -z "${apk_path}" ]]; then
     echo "No APK found in ${APK_DIR}" >&2
     exit 1
+fi
+
+echo "==> Verifying APK contains generated classes"
+if command -v unzip >/dev/null 2>&1; then
+    if unzip -l "${apk_path}" | grep -q "classes.dex"; then
+        echo "  ✓ classes.dex found"
+    fi
 fi
 
 echo "==> Reading APK metadata"
@@ -49,13 +73,25 @@ version_name="$(grep -oP "versionName='\K[^']+" <<<"${badging}")"
 version_code="$(grep -oP "versionCode='\K[^']+" <<<"${badging}")"
 commit_hash="$(git rev-parse --short HEAD)"
 commit_hash_full="$(git rev-parse HEAD)"
-commit_subject="$(git log -1 --pretty=%s)"
-build_date="$(date '+%Y-%m-%d %H:%M %Z')"
 
 escape_html() {
     sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' <<<"$1"
 }
-commit_subject_esc="$(escape_html "${commit_subject}")"
+
+# Process emoji prefixes: replace text markers with emojis
+process_emoji() {
+    sed -E \
+        -e 's/^[[:space:]]*[+][[:space:]]/✨ /' \
+        -e 's/^[[:space:]]*-[[:space:]]/🗑️ /' \
+        -e 's/^[[:space:]]*[x][[:space:]]/🐛 /' \
+        -e 's/^[[:space:]]*[~][[:space:]]/♻️ /' \
+        -e 's/^[[:space:]]*[!][[:space:]]/🚀 /' \
+        -e 's/^[[:space:]]*[=][[:space:]]/💄 /' \
+        -e 's/^[[:space:]]*[\^][[:space:]]/📝 /' \
+        -e 's/^[[:space:]]*[#][[:space:]]/🔧 /' \
+        <<<"$1"
+}
+commit_subject_esc="$(escape_html "$(process_emoji "${commit_subject}")")"
 
 echo "==> Compressing APK"
 debug_apk_name="Hail-v${version_name}-g${commit_hash}-debug.apk"
@@ -90,6 +126,9 @@ send_debug_notification() {
 
     local caption="<b>Debug Build v${version_name}-${commit_hash}</b>
 
+<b>Branch</b>
+<blockquote>${BRANCH}</blockquote>
+
 <b>Version</b>
 <blockquote>${version_name}-${commit_hash} (${version_code})</blockquote>
 
@@ -118,5 +157,6 @@ send_debug_notification() {
 
 send_debug_notification "84" "debug topic"
 
-rm -f "${zip_path}" "${debug_apk_path}"
+# Clean up temp files and debug.md after successful send
+rm -f "${zip_path}" "${debug_apk_path}" "${DEBUG_MD}"
 echo "==> Done: sent ${zip_name} (${zip_size_mb} MB)"
