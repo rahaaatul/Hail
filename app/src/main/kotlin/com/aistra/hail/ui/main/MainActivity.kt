@@ -14,14 +14,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -111,10 +110,10 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         composeView.setContent {
             AppTheme {
-                val navSuiteType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
+                val navSuiteType = calculateNavigationSuiteType()
                 val startDestinationId = navController.graph.startDestinationId
                 val currentDestId = navController.currentDestination?.id
-                var selectedItem by remember(currentDestId) { mutableIntStateOf(navItems.indexOfFirst { it.id == currentDestId }.coerceAtLeast(0)) }
+                val selectedItem = remember(currentDestId) { navItems.indexOfFirst { it.id == currentDestId }.coerceAtLeast(0) }
                 NavigationSuiteScaffold(
                     layoutType = navSuiteType,
                     navigationSuiteItems = {
@@ -122,7 +121,6 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                             item(
                                 selected = selectedItem == index,
                                 onClick = {
-                                    selectedItem = index
                                     if (navController.currentDestination?.id != navItem.id) {
                                         navController.navigate(navItem.id) {
                                             popUpTo(startDestinationId) { saveState = true }
@@ -203,4 +201,8 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         NavBarItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
         NavBarItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings),
     )
+
+    @Composable
+    private fun calculateNavigationSuiteType(): NavigationSuiteType =
+        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
 }
