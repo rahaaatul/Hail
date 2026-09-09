@@ -1,7 +1,6 @@
 package com.aistra.hail.utils
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.HailData
 import com.aistra.hail.app.AppInfo
@@ -79,8 +78,8 @@ class HBackupTest {
                 val jsonString = String(zipInputStream.readAllBytes(), StandardCharsets.UTF_8)
                 val jsonArray = JSONArray(jsonString)
                 assertEquals(2, jsonArray.length())
-                assertEquals("com.example.app1", jsonArray.getJSONObject(0).getString("packageName"))
-                assertEquals("com.example.app2", jsonArray.getJSONObject(1).getString("packageName"))
+                assertEquals("com.example.app1", jsonArray.getString(0))
+                assertEquals("com.example.app2", jsonArray.getString(1))
             }
             zipInputStream.closeEntry()
             entry = zipInputStream.nextEntry
@@ -113,8 +112,8 @@ class HBackupTest {
                 val jsonString = String(zipInputStream.readAllBytes(), StandardCharsets.UTF_8)
                 val jsonArray = JSONArray(jsonString)
                 assertEquals(2, jsonArray.length())
-                assertEquals("com.example.app2", jsonArray.getJSONObject(0).getString("packageName"))
-                assertEquals("com.example.app3", jsonArray.getJSONObject(1).getString("packageName"))
+                assertEquals("com.example.app2", jsonArray.getString(0))
+                assertEquals("com.example.app3", jsonArray.getString(1))
             }
             zipInputStream.closeEntry()
             entry = zipInputStream.nextEntry
@@ -128,7 +127,7 @@ class HBackupTest {
         // Create a temp ZIP with apps.json
         val zipFile = File(System.getProperty("java.io.tmpdir"), "restore-test-${System.currentTimeMillis()}.zip")
         val zipOutputStream = ZipOutputStream(FileOutputStream(zipFile))
-        val jsonString = """[{"packageName":"com.example.app1"},{"packageName":"com.example.app2"}]"""
+        val jsonString = """["com.example.app1","com.example.app2"]"""
         zipOutputStream.putNextEntry(ZipEntry("apps.json"))
         zipOutputStream.write(jsonString.toByteArray(StandardCharsets.UTF_8))
         zipOutputStream.closeEntry()
@@ -165,9 +164,6 @@ class HBackupTest {
     @Test
     fun `backup handles empty checked list`() = runTest {
         every { HailData.checkedList } returns mutableListOf()
-
-        val mockSp = mockk<SharedPreferences>(relaxed = true)
-        every { mockSp.all } returns mapOf()
 
         val outputFile = File(System.getProperty("java.io.tmpdir"), "backup-test-${System.currentTimeMillis()}.zip")
         val options = HBackup.BackupOptions(apps = true, whitelist = true, actions = true, settings = true)
