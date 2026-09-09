@@ -1,0 +1,14 @@
+ .github/workflows/android.yml                      |   2 +-
+ .github/workflows/release.yml                      |   4 +-
+ .gitignore                                         |   1 -
+ README.ja.md                                       |   2 +-
+ README.md                                          |   2 +-
+ README.zh_CN.md                                    |   2 +-
+ app/build.gradle.kts                               |  11 +-
+ .../main/kotlin/com/aistra/hail/app/HailData.kt    |  56 +-
+ .../kotlin/com/aistra/hail/ui/main/MainActivity.kt |  75 ++-
+ app/src/main/res/layout-land/activity_main.xml     |  20 +-
+ app/src/main/res/layout/activity_main.xml          |  19 +-
+ .../superpowers/plans/2026-09-09-backup-restore.md | 640 +++++++++++++++++++++
+ gradle/libs.versions.toml                          |  11 +-
+ 13 files changed, 804 insertions(+), 41 deletions(-)

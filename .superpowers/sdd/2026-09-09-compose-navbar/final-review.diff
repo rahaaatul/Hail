@@ -1,0 +1,1105 @@
+diff --git a/.github/workflows/android.yml b/.github/workflows/android.yml
+index 8c6893a..b7a075c 100644
+--- a/.github/workflows/android.yml
++++ b/.github/workflows/android.yml
+@@ -18,7 +18,7 @@ jobs:
+       - name: Checkout
+         uses: actions/checkout@v7.0.1
+       - name: Setup Java JDK
+-        uses: actions/setup-java@v5.7.0
++        uses: actions/setup-java@v6
+         with:
+           distribution: 'temurin'
+           java-version: '21'
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+index 549c477..2fe0169 100644
+--- a/.github/workflows/release.yml
++++ b/.github/workflows/release.yml
+@@ -23,7 +23,7 @@ jobs:
+         uses: actions/checkout@v7.0.1
+ 
+       - name: Setup Java JDK
+-        uses: actions/setup-java@v5
++        uses: actions/setup-java@v6
+         with:
+           distribution: 'temurin'
+           java-version: '26'
+@@ -42,7 +42,7 @@ jobs:
+         uses: actions/checkout@v7.0.1
+ 
+       - name: Setup Java JDK
+-        uses: actions/setup-java@v5
++        uses: actions/setup-java@v6
+         with:
+           distribution: 'temurin'
+           java-version: '26'
+diff --git a/.gitignore b/.gitignore
+index 0e57d65..f3487af 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -10,4 +10,3 @@
+ /.secrets
+ commits_since_v1.10.3.txt
+ /.vscode/
+-/docs/
+diff --git a/README.ja.md b/README.ja.md
+index 332f5b9..329bd5b 100644
+--- a/README.ja.md
++++ b/README.ja.md
+@@ -7,7 +7,7 @@
+ [![Downloads](https://img.shields.io/github/downloads/aistra0528/Hail/total.svg)](https://github.com/aistra0528/Hail/releases)
+ [![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
+ 
+-雹は、Androidアプリを凍結するための自由ソフトウェアです。[GitHub Releases](https://github.com/aistra0528/Hail/releases)
++雹は、Androidアプリを凍結するための自由ソフトウェアです。[GitHub Releases](https://github.com/rahaaatul/Hail/releases)
+ 
+ [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
+ 
+diff --git a/README.md b/README.md
+index f8492e6..816d9b9 100644
+--- a/README.md
++++ b/README.md
+@@ -8,7 +8,7 @@ English | [简体中文](README.zh_CN.md) | [日本語](README.ja.md)
+ [![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
+ 
+ Hail is a free-as-in-freedom software to freeze Android
+-apps. [GitHub Releases](https://github.com/aistra0528/Hail/releases)
++apps. [GitHub Releases](https://github.com/rahaaatul/Hail/releases)
+ 
+ [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
+ 
+diff --git a/README.zh_CN.md b/README.zh_CN.md
+index 20c2940..312199c 100644
+--- a/README.zh_CN.md
++++ b/README.zh_CN.md
+@@ -7,7 +7,7 @@
+ [![Downloads](https://img.shields.io/github/downloads/aistra0528/Hail/total.svg)](https://github.com/aistra0528/Hail/releases)
+ [![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
+ 
+-雹是一款用于冻结 Android 应用的自由软件。[GitHub Releases](https://github.com/aistra0528/Hail/releases)
++雹是一款用于冻结 Android 应用的自由软件。[GitHub Releases](https://github.com/rahaaatul/Hail/releases)
+ 
+ [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
+ 
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index f796663..f2b650c 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -2,6 +2,7 @@ plugins {
+     alias(libs.plugins.android.application)
+     alias(libs.plugins.compose.compiler)
+     alias(libs.plugins.ksp)
++    alias(libs.plugins.kotlin.serialization)
+ }
+ 
+ android {
+@@ -20,7 +21,7 @@ android {
+ 
+     defaultConfig {
+         applicationId = "com.aistra.hail"
+-        minSdk = 23
++        minSdk = 24
+         targetSdk = 36
+         versionCode = 42
+         versionName = "1.11.3"
+@@ -93,11 +94,13 @@ dependencies {
+     implementation(libs.androidx.constraintlayout)
+     implementation(libs.androidx.core.ktx)
+     implementation(libs.androidx.lifecycle.livedata.ktx)
++    implementation(libs.androidx.navigation.compose)
+     implementation(libs.androidx.navigation.fragment.ktx)
+     implementation(libs.androidx.navigation.ui.ktx)
+     implementation(libs.androidx.preference.ktx)
+     implementation(libs.androidx.swiperefreshlayout)
+     implementation(libs.androidx.work.runtime)
++    implementation(libs.androidx.window)
+     implementation(libs.pinyin4j)
+     implementation(libs.material)
+     implementation(libs.insetter)
+@@ -108,8 +111,10 @@ dependencies {
+     implementation(libs.compose.preference)
+     implementation(libs.commons.text)
+     implementation(libs.kotlinx.coroutines.android)
++    implementation(libs.kotlinx.serialization.json)
+     implementation(libs.hiddenapibypass)
+     implementation(libs.libsu.core)
++    implementation(libs.androidx.material3.adaptive)
+     implementation(libs.androidx.room.runtime)
+     implementation(libs.androidx.room.sqlite.wrapper)
+     implementation(libs.androidx.sqlite)
+@@ -122,7 +127,7 @@ dependencies {
+     testImplementation("androidx.test.ext:junit:1.3.0")
+     testImplementation("androidx.test.ext:truth:1.7.0")
+     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
+-    testImplementation("androidx.room3:room3-testing:3.0.1")
++    testImplementation("androidx.room3:room3-testing:3.0.2")
+     testImplementation("io.mockk:mockk:1.13.12")
+ 
+     androidTestImplementation("androidx.test.ext:junit:1.3.0")
+@@ -131,5 +136,5 @@ dependencies {
+     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
+     androidTestImplementation("io.mockk:mockk-android:1.13.12")
+-    androidTestImplementation("androidx.room3:room3-testing:3.0.1")
++    androidTestImplementation("androidx.room3:room3-testing:3.0.2")
+ }
+diff --git a/app/src/main/kotlin/com/aistra/hail/app/HailData.kt b/app/src/main/kotlin/com/aistra/hail/app/HailData.kt
+index 252f9cc..43826cb 100644
+--- a/app/src/main/kotlin/com/aistra/hail/app/HailData.kt
++++ b/app/src/main/kotlin/com/aistra/hail/app/HailData.kt
+@@ -1,13 +1,24 @@
+ package com.aistra.hail.app
+ 
++import android.content.pm.ApplicationInfo
++import android.content.pm.PackageManager
++import android.graphics.Bitmap
++import android.graphics.drawable.Drawable
++import android.view.View
+ import androidx.core.content.edit
++import androidx.core.graphics.drawable.toBitmap
+ import androidx.preference.PreferenceManager
+ import com.aistra.hail.BuildConfig
++import com.aistra.hail.HailApp
+ import com.aistra.hail.HailApp.Companion.app
+ import com.aistra.hail.R
++import com.aistra.hail.utils.AppMetaCache
+ import com.aistra.hail.utils.HFiles
++import com.aistra.hail.utils.HPackages
+ import org.json.JSONArray
+ import org.json.JSONObject
++import java.io.File
++import java.io.FileOutputStream
+ 
+ object HailData {
+     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
+@@ -240,4 +251,47 @@ object HailData {
+     fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }
+ 
+     fun changeAppsFilter(filter: String, enabled: Boolean) = sp.edit { putBoolean(filter, enabled) }
+-}
+\ No newline at end of file
++}
++
++// Backup-related functions
++/**
++ * Gets the app icon as a Drawable
++ */
++private fun getAppIcon(packageName: String, packageManager: PackageManager): Drawable? {
++    val pm = packageManager
++    val info = pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
++    return info.loadIcon(pm)
++}
++
++/**
++ * Saves an app icon as a PNG file named after the package name
++ */
++private fun saveAppIcon(icon: Drawable, packageName: String, outputDir: File): File {
++    val outputFile = File(outputDir, "${packageName.replace(".", "_")}.png")
++    val bitmap = icon.toBitmap(width = icon.intrinsicWidth.takeIf { it > 0 } ?: View.MeasureSpec.UNSPECIFIED, height = icon.intrinsicHeight.takeIf { it > 0 } ?: View.MeasureSpec.UNSPECIFIED)
++    val os = FileOutputStream(outputFile)
++    bitmap.compress(Bitmap.CompressFormat.PNG, 100, os)
++    os.flush()
++    os.close()
++    return outputFile
++}
++
++/**
++ * Saves all checked apps' icons as PNG files named after package names
++ */
++fun saveAppIcons(checkedList: MutableList<AppInfo>, outputDir: File) {
++    if (!HFiles.exists(outputDir.path)) HFiles.createDirectories(outputDir.path)
++    checkedList.forEach { app ->
++        try {
++            val info = app.applicationInfo
++            if (info != null) {
++                val icon = info.loadIcon(HailApp.app.packageManager)
++                if (icon != null) {
++                    saveAppIcon(icon, app.packageName, outputDir)
++                }
++            }
++        } catch (e: Exception) {
++            // Skip apps where icon can't be loaded
++        }
++    }
++}
+diff --git a/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt b/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt
+index 935f620..2b5f694 100644
+--- a/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt
++++ b/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt
+@@ -2,11 +2,28 @@ package com.aistra.hail.ui.main
+ 
+ import android.os.Bundle
+ import android.view.Menu
++import androidx.activity.compose.setContent
++import androidx.annotation.DrawableRes
++import androidx.annotation.StringRes
+ import androidx.appcompat.app.AppCompatActivity
+ import androidx.biometric.BiometricManager
+ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+ import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+ import androidx.biometric.BiometricPrompt
++import androidx.compose.material3.Icon
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Text
++import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
++import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
++import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
++import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
++import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.remember
++import androidx.compose.ui.platform.ViewCompositionStrategy
++import androidx.compose.ui.res.painterResource
++import androidx.compose.ui.res.stringResource
+ import androidx.core.content.ContextCompat
+ import androidx.core.view.MenuCompat
+ import androidx.core.view.WindowCompat
+@@ -16,11 +33,11 @@ import androidx.navigation.NavDestination
+ import androidx.navigation.fragment.NavHostFragment
+ import androidx.navigation.ui.AppBarConfiguration
+ import androidx.navigation.ui.setupActionBarWithNavController
+-import androidx.navigation.ui.setupWithNavController
+ import com.aistra.hail.R
+ import com.aistra.hail.app.HailData
+ import com.aistra.hail.databinding.ActivityMainBinding
+ import com.aistra.hail.extensions.*
++import com.aistra.hail.ui.theme.AppTheme
+ import com.aistra.hail.utils.HPolicy
+ import com.aistra.hail.utils.HUI
+ import com.google.android.material.appbar.AppBarLayout
+@@ -77,17 +94,45 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
+             R.id.nav_home, R.id.nav_actions, R.id.nav_settings
+         ).build()
+         setupActionBarWithNavController(navController, appBarConfiguration)
+-        bottomNav?.setupWithNavController(navController)
+-        navRail?.setupWithNavController(navController)
+ 
+         val isRtl = isRtl
+         val isLandscape = isLandscape
+         appBarMain.appBarLayout.applyDefaultInsetter {
+             paddingRelative(isRtl, start = !isLandscape, end = true, top = true)
+         }
+-        bottomNav?.applyDefaultInsetter { paddingRelative(isRtl, start = true, end = true, bottom = true) }
+-        navRail?.applyDefaultInsetter { paddingRelative(isRtl, start = true, top = true, bottom = true) }
+         fab.applyDefaultInsetter { marginRelative(isRtl, end = true, bottom = isLandscape) }
++
++        composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
++        composeView.setContent {
++            AppTheme {
++                val navSuiteType = calculateNavigationSuiteType()
++                val startDestinationId = navController.graph.startDestinationId
++                val currentDestId = navController.currentDestination?.id
++                val selectedItem = remember(currentDestId) { navItems.indexOfFirst { it.id == currentDestId }.coerceAtLeast(0) }
++                NavigationSuiteScaffold(
++                    layoutType = navSuiteType,
++                    navigationSuiteItems = {
++                        navItems.forEachIndexed { index, navItem ->
++                            item(
++                                selected = selectedItem == index,
++                                onClick = {
++                                    if (navController.currentDestination?.id != navItem.id) {
++                                        navController.navigate(navItem.id) {
++                                            popUpTo(startDestinationId) { saveState = true }
++                                            launchSingleTop = true
++                                        }
++                                    }
++                                },
++                                icon = {
++                                    Icon(painter = painterResource(navItem.iconRes), contentDescription = null)
++                                },
++                                label = { Text(text = stringResource(navItem.labelRes)) },
++                            )
++                        }
++                    },
++                )
++            }
++        }
+     }
+ 
+     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+@@ -136,7 +181,21 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
+             }
+             else -> fab.hide()
+         }
+-        binding.bottomNav?.isVisible = destination.id != R.id.nav_about
+-        binding.navRail?.isVisible = destination.id != R.id.nav_about
+     }
+-}
+\ No newline at end of file
++
++    private data class NavBarItem(
++        val id: Int,
++        @DrawableRes val iconRes: Int,
++        @StringRes val labelRes: Int,
++    )
++
++    private val navItems = listOf(
++        NavBarItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home),
++        NavBarItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
++        NavBarItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings),
++    )
++
++    @Composable
++    private fun calculateNavigationSuiteType(): NavigationSuiteType =
++        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
++}
+diff --git a/app/src/main/res/layout-land/activity_main.xml b/app/src/main/res/layout-land/activity_main.xml
+index bc4a0c7..d913b9d 100644
+--- a/app/src/main/res/layout-land/activity_main.xml
++++ b/app/src/main/res/layout-land/activity_main.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
++<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent">
+@@ -7,17 +7,15 @@
+     <include
+         android:id="@+id/app_bar_main"
+         layout="@layout/app_bar_main"
+-        android:layout_width="0dp"
++        android:layout_width="match_parent"
+         android:layout_height="match_parent"
+-        app:layout_constraintEnd_toEndOf="parent"
+-        app:layout_constraintStart_toEndOf="@+id/nav_rail" />
++        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+ 
+-    <com.google.android.material.navigationrail.NavigationRailView
+-        android:id="@+id/nav_rail"
++
++    <androidx.compose.ui.platform.ComposeView
++        android:id="@+id/compose_view"
+         android:layout_width="wrap_content"
+         android:layout_height="match_parent"
+-        app:labelVisibilityMode="labeled"
+-        app:layout_constraintStart_toStartOf="parent"
+-        app:menu="@menu/nav_main"
+-        app:menuGravity="center" />
+-</androidx.constraintlayout.widget.ConstraintLayout>
++        android:layout_gravity="start" />
++
++</androidx.coordinatorlayout.widget.CoordinatorLayout>
+diff --git a/app/src/main/res/layout/activity_main.xml b/app/src/main/res/layout/activity_main.xml
+index 9fd4d29..15e06f3 100644
+--- a/app/src/main/res/layout/activity_main.xml
++++ b/app/src/main/res/layout/activity_main.xml
+@@ -1,5 +1,5 @@
+ <?xml version="1.0" encoding="utf-8"?>
+-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
++<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:layout_width="match_parent"
+     android:layout_height="match_parent">
+@@ -8,15 +8,14 @@
+         android:id="@+id/app_bar_main"
+         layout="@layout/app_bar_main"
+         android:layout_width="match_parent"
+-        android:layout_height="0dp"
+-        app:layout_constraintBottom_toTopOf="@id/bottom_nav"
+-        app:layout_constraintTop_toTopOf="parent" />
++        android:layout_height="match_parent"
++        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+ 
+-    <com.google.android.material.bottomnavigation.BottomNavigationView
+-        android:id="@+id/bottom_nav"
++
++    <androidx.compose.ui.platform.ComposeView
++        android:id="@+id/compose_view"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+-        app:labelVisibilityMode="labeled"
+-        app:layout_constraintBottom_toBottomOf="parent"
+-        app:menu="@menu/nav_main" />
+-</androidx.constraintlayout.widget.ConstraintLayout>
++        android:layout_gravity="bottom" />
++
++</androidx.coordinatorlayout.widget.CoordinatorLayout>
+diff --git a/docs/superpowers/plans/2026-09-09-backup-restore.md b/docs/superpowers/plans/2026-09-09-backup-restore.md
+new file mode 100644
+index 0000000..11ecc93
+--- /dev/null
++++ b/docs/superpowers/plans/2026-09-09-backup-restore.md
+@@ -0,0 +1,640 @@
++# Backup/Restore Implementation Plan
++
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++
++**Goal:** Add backup/restore functionality to Hail that exports/imports apps, actions, settings, and whitelist via a ZIP file
++
++**Architecture:** New `HBackup` utility class handles data serialization to/from ZIP. `PagerFragment` gets backup/restore menu items with checkbox dialogs. Backup shows dialog first then folder picker; restore shows folder picker first then dialog.
++
++**Tech Stack:** Kotlin, `java.util.zip`, SharedPreferences, Room (via ActionsRepository), JSON, Storage Access Framework (`CreateDocument`/`OpenDocument`)
++
++**Spec:** Conversation-derived design: ZIP with `apps.json`, `actions.json`, `settings.json`, `whitelist.json` at root level. Package names only, no state/metadata, no icons. settings.json includes all SharedPreferences.
++
++## Global Constraints
++
++- Min SDK 23, Target SDK 36, Compile SDK 37
++- Use `java.util.zip` (no new dependencies)
++- Follow existing patterns: `MaterialAlertDialogBuilder`, `registerForActivityResult`, `lifecycleScope.launch`, `HFiles` utility
++- Tests use JUnit 4 + MockK + `runTest`
++- Backup flow: Dialog → Folder picker; Restore flow: Folder picker → Dialog
++
++---
++
++### Task 1: Create HBackup Utility Class
++
++**Files:**
++- Create: `app/src/main/kotlin/com/aistra/hail/utils/HBackup.kt`
++- Test: `app/src/test/kotlin/com/aistra/hail/utils/HBackupTest.kt`
++
++**Interfaces:**
++- Consumes: `HailData.checkedList`, `ActionsRepository.loadAll()`, `PreferenceManager.getDefaultSharedPreferences()`
++- Produces: `suspend fun HBackup.backup(outputFile: File, options: BackupOptions): Result<Unit>` and `suspend fun HBackup.restore(inputFile: File, options: RestoreOptions): Result<Unit>`
++
++- [ ] **Step 1: Write the failing test**
++
++`app/src/test/kotlin/com/aistra/hail/utils/HBackupTest.kt`:
++```kotlin
++package com.aistra.hail.utils
++
++import android.content.Context
++import androidx.preference.PreferenceManager
++import com.aistra.hail.HailApp
++import io.mockk.every
++import io.mockk.mockk
++import io.mockk.mockkObject
++import io.mockk.unmockkAll
++import kotlinx.coroutines.test.runTest
++import org.junit.After
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Before
++import org.junit.Test
++import java.io.File
++
++class HBackupTest {
++    @Before
++    fun setUp() {
++        val mockApp = mockk<HailApp>(relaxed = true)
++        every { mockApp.filesDir } returns File(System.getProperty("java.io.tmpdir"), "hail-test-${System.currentTimeMillis()}")
++        every { mockApp.packageManager } returns mockk(relaxed = true)
++        HailApp.setAppForTest(mockApp)
++
++        mockkObject(HailData)
++        mockkObject(ActionsRepository)
++    }
++
++    @After
++    fun tearDown() {
++        unmockkAll()
++    }
++
++    @Test
++    fun `backup writes apps json when apps enabled`() = runTest {
++        every { HailData.checkedList } returns mutableListOf(
++            AppInfo("com.example.app1", pinned = false, whitelisted = false, tagIdList = mutableListOf(0)),
++            AppInfo("com.example.app2", pinned = true, whitelisted = true, tagIdList = mutableListOf(1))
++        )
++
++        val outputFile = File.createTempFile("backup", ".zip")
++        val result = HBackup.backup(
++            context = mockk(relaxed = true),
++            outputFile = outputFile,
++            options = BackupOptions(apps = true, whitelist = false, actions = false, settings = false)
++        )
++
++        assertTrue(result.isSuccess)
++        assertTrue(outputFile.exists())
++        val content = String(java.util.zip.ZipInputStream(FileInputStream(outputFile)).use { zip ->
++            var entry = zip.nextEntry
++            while (entry != null) {
++                if (entry.name == "apps.json") {
++                    String(zip.readBytes())
++                } else {
++                    zip.closeEntry()
++                    entry = zip.nextEntry
++                }
++            }
++            ""
++        })
++        val json = org.json.JSONArray(content)
++        assertEquals(2, json.length())
++        assertEquals("com.example.app1", json.getString(0))
++        assertEquals("com.example.app2", json.getString(1))
++    }
++
++    @Test
++    fun `backup writes whitelist json when whitelist enabled`() = runTest {
++        every { HailData.checkedList } returns mutableListOf(
++            AppInfo("com.example.app1", pinned = false, whitelisted = true, tagIdList = mutableListOf(0)),
++            AppInfo("com.example.app2", pinned = true, whitelisted = false, tagIdList = mutableListOf(1))
++        )
++
++        val outputFile = File.createTempFile("backup", ".zip")
++        val result = HBackup.backup(
++            context = mockk(relaxed = true),
++            outputFile = outputFile,
++            options = BackupOptions(apps = false, whitelist = true, actions = false, settings = false)
++        )
++
++        assertTrue(result.isSuccess)
++        val content = String(java.util.zip.ZipInputStream(FileInputStream(outputFile)).use { zip ->
++            var entry = zip.nextEntry
++            while (entry != null) {
++                if (entry.name == "whitelist.json") {
++                    String(zip.readBytes())
++                } else {
++                    zip.closeEntry()
++                    entry = zip.nextEntry
++                }
++            }
++            ""
++        })
++        val json = org.json.JSONArray(content)
++        assertEquals(1, json.length())
++        assertEquals("com.example.app1", json.getString(0))
++    }
++
++    @Test
++    fun `restore reads apps json and adds to checked list`() = runTest {
++        val inputFile = File.createTempFile("backup", ".zip")
++        java.util.zip.ZipOutputStream(FileOutputStream(inputFile)).use { zip ->
++            zip.putNextEntry(java.util.zip.ZipEntry("apps.json"))
++            zip.write(org.json.JSONArray().apply {
++                put("com.example.restore1")
++                put("com.example.restore2")
++            }.toString().toByteArray())
++            zip.closeEntry()
++        }
++
++        var addedApps = mutableListOf<String>()
++        every { HailData.isChecked(any()) } returns false
++        every { HailData.addCheckedApp(any(), 0, false) } answers {
++            addedApps.add(firstArg())
++        }
++        every { HailData.saveApps() } returns Unit
++
++        val result = HBackup.restore(
++            context = mockk(relaxed = true),
++            inputFile = inputFile,
++            options = RestoreOptions(apps = true, whitelist = false, actions = false, settings = false)
++        )
++
++        assertTrue(result.isSuccess)
++        assertEquals(2, addedApps.size)
++        assertTrue(addedApps.contains("com.example.restore1"))
++        assertTrue(addedApps.contains("com.example.restore2"))
++    }
++}
++```
++
++- [ ] **Step 2: Run test to verify it fails**
++
++Run: `./gradlew :app:testDebugUnitTest --tests "com.aistra.hail.utils.HBackupTest" -i`
++Expected: FAIL with "Unresolved reference: HBackup" and missing imports
++
++- [ ] **Step 3: Write minimal implementation**
++
++`app/src/main/kotlin/com/aistra/hail/utils/HBackup.kt`:
++```kotlin
++package com.aistra.hail.utils
++
++import android.content.Context
++import android.content.SharedPreferences
++import androidx.preference.PreferenceManager
++import com.aistra.hail.HailApp
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.withContext
++import org.json.JSONArray
++import org.json.JSONObject
++import java.io.File
++import java.io.FileInputStream
++import java.io.FileOutputStream
++import java.util.zip.ZipEntry
++import java.util.zip.ZipInputStream
++import java.util.zip.ZipOutputStream
++
++data class BackupOptions(
++    val apps: Boolean = true,
++    val whitelist: Boolean = true,
++    val actions: Boolean = true,
++    val settings: Boolean = true
++)
++
++data class RestoreOptions(
++    val apps: Boolean = true,
++    val whitelist: Boolean = true,
++    val actions: Boolean = true,
++    val settings: Boolean = true
++)
++
++object HBackup {
++    private const val FILE_APPS = "apps.json"
++    private const val FILE_WHITELIST = "whitelist.json"
++    private const val FILE_ACTIONS = "actions.json"
++    private const val FILE_SETTINGS = "settings.json"
++
++    suspend fun backup(
++        context: Context,
++        outputFile: File,
++        options: BackupOptions
++    ): Result<Unit> = withContext(Dispatchers.IO) {
++        runCatching {
++            val sp = PreferenceManager.getDefaultSharedPreferences(context)
++            ZipOutputStream(FileOutputStream(outputFile)).use { zip ->
++                if (options.apps) {
++                    val apps = HailData.checkedList.map { it.packageName }
++                    zip.putNextEntry(ZipEntry(FILE_APPS))
++                    zip.write(JSONArray(apps).toString().toByteArray())
++                    zip.closeEntry()
++                }
++                if (options.whitelist) {
++                    val whitelist = HailData.checkedList.filter { it.whitelisted }.map { it.packageName }
++                    zip.putNextEntry(ZipEntry(FILE_WHITELIST))
++                    zip.write(JSONArray(whitelist).toString().toByteArray())
++                    zip.closeEntry()
++                }
++                if (options.actions) {
++                    val actions = ActionsRepository.loadAll()
++                    val json = JSONArray().apply {
++                        actions.forEach { action ->
++                            put(JSONObject().apply {
++                                put("id", action.id)
++                                put("launchPackage", action.launchPackage)
++                                put("unfreezePackages", JSONArray(action.unfreezePackages))
++                            })
++                        }
++                    }
++                    zip.putNextEntry(ZipEntry(FILE_ACTIONS))
++                    zip.write(json.toString().toByteArray())
++                    zip.closeEntry()
++                }
++                if (options.settings) {
++                    val settings = JSONObject()
++                    sp.all.forEach { (key, value) ->
++                        when (value) {
++                            is String -> settings.put(key, value)
++                            is Int -> settings.put(key, value)
++                            is Boolean -> settings.put(key, value)
++                            is Float -> settings.put(key, value)
++                            is Long -> settings.put(key, value)
++                            is Set<*> -> settings.put(key, JSONArray(value.filterIsInstance<String>()))
++                        }
++                    }
++                    zip.putNextEntry(ZipEntry(FILE_SETTINGS))
++                    zip.write(settings.toString().toByteArray())
++                    zip.closeEntry()
++                }
++            }
++        }
++    }
++
++    suspend fun restore(
++        context: Context,
++        inputFile: File,
++        options: RestoreOptions
++    ): Result<Unit> = withContext(Dispatchers.IO) {
++        runCatching {
++            val sp = PreferenceManager.getDefaultSharedPreferences(context)
++            ZipInputStream(FileInputStream(inputFile)).use { zip ->
++                var entry = zip.nextEntry
++                while (entry != null) {
++                    when (entry.name) {
++                        FILE_APPS -> if (options.apps) {
++                            val apps = JSONArray(String(zip.readBytes()))
++                            for (i in 0 until apps.length()) {
++                                val pkg = apps.getString(i)
++                                if (!HailData.isChecked(pkg)) {
++                                    HailData.addCheckedApp(pkg, 0, false)
++                                }
++                            }
++                        }
++                        FILE_WHITELIST -> if (options.whitelist) {
++                            val whitelist = JSONArray(String(zip.readBytes()))
++                            for (i in 0 until whitelist.length()) {
++                                val pkg = whitelist.getString(i)
++                                val appInfo = HailData.checkedList.find { it.packageName == pkg }
++                                if (appInfo != null) appInfo.whitelisted = true
++                            }
++                        }
++                        FILE_ACTIONS -> if (options.actions) {
++                            val actions = JSONArray(String(zip.readBytes()))
++                            for (i in 0 until actions.length()) {
++                                val actionObj = actions.getJSONObject(i)
++                                val id = actionObj.getString("id")
++                                val launchPackage = actionObj.getString("launchPackage")
++                                val unfreezePackages = actionObj.getJSONArray("unfreezePackages").let { arr ->
++                                    List(arr.length()) { arr.getString(it) }
++                                }
++                                ActionsRepository.save(id, launchPackage, unfreezePackages)
++                            }
++                        }
++                        FILE_SETTINGS -> if (options.settings) {
++                            val settings = JSONObject(String(zip.readBytes()))
++                            val editor = sp.edit()
++                            settings.keys().forEach { key ->
++                                when (val value = settings.get(key)) {
++                                    is String -> editor.putString(key, value)
++                                    is Int -> editor.putInt(key, value)
++                                    is Boolean -> editor.putBoolean(key, value)
++                                    is Float -> editor.putFloat(key, value)
++                                    is Long -> editor.putLong(key, value)
++                                }
++                            }
++                            editor.apply()
++                        }
++                    }
++                    zip.closeEntry()
++                    entry = zip.nextEntry
++                }
++            }
++            if (options.apps) HailData.saveApps()
++        }
++    }
++}
++```
++
++- [ ] **Step 4: Run test to verify it passes**
++
++Run: `./gradlew :app:testDebugUnitTest --tests "com.aistra.hail.utils.HBackupTest" -i`
++Expected: PASS
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add app/src/main/kotlin/com/aistra/hail/utils/HBackup.kt app/src/test/kotlin/com/aistra/hail/utils/HBackupTest.kt
++git commit -m "feat: add HBackup utility for backup/restore via ZIP"
++```
++
++---
++
++### Task 2: Add Backup/Restore Menu Items to PagerFragment
++
++**Files:**
++- Modify: `app/src/main/kotlin/com/aistra/hail/ui/home/PagerFragment.kt`
++- Modify: `app/src/main/res/menu/menu_home.xml`
++
++**Interfaces:**
++- Consumes: `HBackup.backup()`, `HBackup.restore()`, `HUI.showToast()`
++- Produces: `backupLauncher`, `restoreLauncher`, menu item handlers, backup/restore dialogs
++
++- [ ] **Step 1: Add imports and member variables**
++
++In `PagerFragment.kt`, add after line 56 (`import kotlinx.coroutines.withContext`):
++```kotlin
++import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
++import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
++import com.aistra.hail.utils.BackupOptions
++import com.aistra.hail.utils.HBackup
++import com.aistra.hail.utils.RestoreOptions
++import java.io.File
++```
++
++Add after line 61 (`private var query: String = String()`):
++```kotlin
++    private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
++        if (uri == null) return@registerForActivityResult
++        lifecycleScope.launch {
++            val options = pendingBackupOptions ?: return@launch
++            pendingBackupOptions = null
++            val file = File(context?.cacheDir, "backup-${System.currentTimeMillis()}.zip")
++            runCatching {
++                context?.contentResolver?.openOutputStream(uri)?.use { output ->
++                    file.inputStream().use { input ->
++                        HFiles.copy(input, output)
++                    }
++                }
++            }.onSuccess {
++                HUI.showToast(R.string.msg_exported, file.name)
++            }.onFailure {
++                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
++            }
++        }
++    }
++
++    private var restoreLauncher = registerForActivityResult(OpenDocument(arrayOf("application/zip"))) { uri ->
++        if (uri == null) return@registerForActivityResult
++        lifecycleScope.launch {
++            val file = File(context?.cacheDir, "restore-${System.currentTimeMillis()}.zip")
++            runCatching {
++                context?.contentResolver?.openInputStream(uri)?.use { input ->
++                    file.outputStream().use { output ->
++                        HFiles.copy(input, output)
++                    }
++                }
++            }.onSuccess {
++                showRestoreDialog(file)
++            }.onFailure {
++                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
++            }
++        }
++    }
++
++    private var pendingBackupOptions: BackupOptions? = null
++```
++
++- [ ] **Step 2: Add menu items to menu_home.xml**
++
++In `menu_home.xml`, add before the closing `</menu>` tag:
++```xml
++    <item
++            android:title="@string/action_backup"
++            app:showAsAction="never">
++        <menu>
++            <item
++                    android:id="@+id/action_backup"
++                    android:title="@string/action_backup"
++                    app:showAsAction="never"/>
++            <item
++                    android:id="@+id/action_restore"
++                    android:title="@string/action_restore"
++                    app:showAsAction="never"/>
++        </menu>
++    </item>
++```
++
++- [ ] **Step 3: Add menu item handler in onMenuItemSelected**
++
++In `PagerFragment.kt`, add after line 648 (`R.id.action_export_all -> exportToClipboard(HailData.checkedList)`):
++```kotlin
++            R.id.action_backup -> showBackupDialog()
++            R.id.action_restore -> restoreLauncher.launch(arrayOf("application/zip"))
++```
++
++- [ ] **Step 4: Add backup/restore dialog functions**
++
++Add after `exportToClipboard` function (after line 585):
++```kotlin
++    private fun showBackupDialog() {
++        val checkedItems = booleanArrayOf(true, true, true, true)
++        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_backup)
++            .setMultiChoiceItems(
++                arrayOf(
++                    getString(R.string.backup_apps),
++                    getString(R.string.backup_whitelist),
++                    getString(R.string.backup_actions),
++                    getString(R.string.backup_settings)
++                ),
++                checkedItems
++            ) { _, _, _ -> }
++            .setPositiveButton(android.R.string.ok) { _, _ ->
++                val options = BackupOptions(
++                    apps = checkedItems[0],
++                    whitelist = checkedItems[1],
++                    actions = checkedItems[2],
++                    settings = checkedItems[3]
++                )
++                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
++                    HUI.showToast(R.string.msg_no_items_to_select)
++                    return@setPositiveButton
++                }
++                pendingBackupOptions = options
++                backupLauncher.launch("hail-backup-${System.currentTimeMillis()}.zip")
++            }
++            .setNegativeButton(android.R.string.cancel, null)
++            .show()
++    }
++
++    private fun showRestoreDialog(file: File) {
++        val checkedItems = booleanArrayOf(true, true, true, true)
++        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_restore)
++            .setMultiChoiceItems(
++                arrayOf(
++                    getString(R.string.backup_apps),
++                    getString(R.string.backup_whitelist),
++                    getString(R.string.backup_actions),
++                    getString(R.string.backup_settings)
++                ),
++                checkedItems
++            ) { _, _, _ -> }
++            .setPositiveButton(android.R.string.ok) { _, _ ->
++                val options = RestoreOptions(
++                    apps = checkedItems[0],
++                    whitelist = checkedItems[1],
++                    actions = checkedItems[2],
++                    settings = checkedItems[3]
++                )
++                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
++                    HUI.showToast(R.string.msg_no_items_to_select)
++                    return@setPositiveButton
++                }
++                lifecycleScope.launch {
++                    val dialog = MaterialAlertDialogBuilder(activity).setView(R.layout.dialog_progress).setCancelable(false).show()
++                    val result = HBackup.restore(requireContext(), file, options)
++                    dialog.dismiss()
++                    result.onSuccess {
++                        if (options.apps) {
++                            updateCurrentList()
++                        }
++                        if (options.settings) {
++                            activity.invalidateOptionsMenu()
++                        }
++                        HUI.showToast(R.string.msg_imported)
++                    }.onFailure {
++                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
++                    }
++                }
++            }
++            .setNegativeButton(android.R.string.cancel, null)
++            .show()
++    }
++```
++
++- [ ] **Step 5: Commit**
++
++```bash
++git add app/src/main/kotlin/com/aistra/hail/ui/home/PagerFragment.kt app/src/main/res/menu/menu_home.xml
++git commit -m "feat: add backup/restore menu items and dialogs to PagerFragment"
++```
++
++---
++
++### Task 3: Add String Resources
++
++**Files:**
++- Modify: `app/src/main/res/values/strings.xml`
++
++- [ ] **Step 1: Add string resources**
++
++Add to `strings.xml` before the closing `</resources>` tag:
++```xml
++    <string name="action_backup">Backup</string>
++    <string name="action_restore">Restore</string>
++    <string name="backup_apps">Apps</string>
++    <string name="backup_whitelist">Whitelist</string>
++    <string name="backup_actions">Actions</string>
++    <string name="backup_settings">Settings</string>
++```
++
++- [ ] **Step 2: Commit**
++
++```bash
++git add app/src/main/res/values/strings.xml
++git commit -m "feat: add backup/restore string resources"
++```
++
++---
++
++### Task 4: Write Additional Edge Case Tests
++
++**Files:**
++- Modify: `app/src/test/kotlin/com/aistra/hail/utils/HBackupTest.kt`
++
++- [ ] **Step 1: Write failing tests for edge cases**
++
++Add to `HBackupTest.kt`:
++```kotlin
++    @Test
++    fun `restore ignores missing files and succeeds`() = runTest {
++        val inputFile = File.createTempFile("backup", ".zip")
++        java.util.zip.ZipOutputStream(FileOutputStream(inputFile)).use { zip ->
++            zip.putNextEntry(java.util.zip.ZipEntry("nonexistent.json"))
++            zip.write("[]".toByteArray())
++            zip.closeEntry()
++        }
++
++        every { HailData.isChecked(any()) } returns false
++        every { HailData.addCheckedApp(any(), 0, false) } returns Unit
++        every { HailData.saveApps() } returns Unit
++
++        val result = HBackup.restore(
++            context = mockk(relaxed = true),
++            inputFile = inputFile,
++            options = RestoreOptions(apps = true, whitelist = true, actions = true, settings = true)
++        )
++
++        assertTrue(result.isSuccess)
++    }
++
++    @Test
++    fun `backup handles empty checked list`() = runTest {
++        every { HailData.checkedList } returns mutableListOf()
++        every { ActionsRepository.loadAll() } returns emptyList()
++
++        val sp = mockk<SharedPreferences>(relaxed = true)
++        every { sp.all } returns emptyMap()
++        val context = mockk<Context>(relaxed = true)
++        every { PreferenceManager.getDefaultSharedPreferences(context) } returns sp
++
++        val outputFile = File.createTempFile("backup", ".zip")
++        val result = HBackup.backup(
++            context = context,
++            outputFile = outputFile,
++            options = BackupOptions(apps = true, whitelist = true, actions = true, settings = true)
++        )
++
++        assertTrue(result.isSuccess)
++    }
++```
++
++- [ ] **Step 2: Run tests to verify they pass**
++
++Run: `./gradlew :app:testDebugUnitTest --tests "com.aistra.hail.utils.HBackupTest" -i`
++Expected: PASS
++
++- [ ] **Step 3: Commit**
++
++```bash
++git add app/src/test/kotlin/com/aistra/hail/utils/HBackupTest.kt
++git commit -m "test: add HBackup edge case tests"
++```
++
++---
++
++### Task 5: Verify Build and Lint
++
++- [ ] **Step 1: Run unit tests**
++
++Run: `./gradlew :app:testDebugUnitTest`
++Expected: All tests pass
++
++- [ ] **Step 2: Run lint**
++
++Run: `./gradlew :app:lintDebug --continue`
++Expected: No new lint errors
++
++- [ ] **Step 3: Commit any remaining changes**
++
++```bash
++git add .
++git commit -m "chore: verify backup/restore implementation"
++```
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+index 937d569..5c575a0 100644
+--- a/gradle/libs.versions.toml
++++ b/gradle/libs.versions.toml
+@@ -16,6 +16,7 @@ kotlinxCoroutinesAndroid = "1.11.0"
+ lifecycleLivedataKtx = "2.11.0"
+ material = "1.14.0"
+ navigationKtx = "2.9.8"
++navigationCompose = "2.9.8"
+ pinyin4j = "2.5.1"
+ preferenceKtx = "1.2.1"
+ shizuku = "13.1.5"
+@@ -23,9 +24,12 @@ swiperefreshlayout = "1.2.0"
+ workRuntime = "2.11.2"
+ libxposed = "102.0.0"
+ libsu = "6.0.0"
+-room = "3.0.1"
++room = "3.0.2"
+ ksp = "2.3.10"
+ sqlite = "2.7.0"
++window = "1.3.0"
++kotlinxSerialization = "1.7.3"
++material3Adaptive = "1.5.0-alpha27"
+ 
+ [libraries]
+ androidx-activity-compose = { module = "androidx.activity:activity-compose" }
+@@ -60,9 +64,14 @@ libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu"
+ androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+ androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+ androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
++androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+ androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
++androidx-window = { module = "androidx.window:window", version.ref = "window" }
++kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
++androidx-material3-adaptive = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3Adaptive" }
+ 
+ [plugins]
+ android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
++kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

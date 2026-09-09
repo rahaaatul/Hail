@@ -1,0 +1,16 @@
+090bee0 chore: remove unused setupWithNavController import
+2fe88de Remove old XML nav views from layouts and MainActivity
+15bc15e fix: use derived selected state and local calculateNavigationSuiteType wrapper
+a10b203 feat: add Compose NavigationSuiteScaffold to MainActivity
+7944966 task-2: replace activity_main layouts with CoordinatorLayout + ComposeView host
+887f8db fix: bump minSdk to 24 and fix HailData compilation errors
+dd67d6b Downgrade build dependencies from Navigation 3 to Navigation 2 Compose
+0a210c6 feat: add backup icon export and docs directory
+c0faf7b chore: update repo URLs to rahaaatul/Hail
+8e04750 feat: add Navigation 3, Window, Serialization, Material3 Adaptive dependencies for Compose navigation
+d07bf03 build(deps): bump androidx.room3:room3-testing from 3.0.1 to 3.0.2
+da813ac build(deps): bump io.mockk:mockk from 1.13.12 to 1.14.11 (#30)
+6ea2fee build(deps): bump io.mockk:mockk-android from 1.13.12 to 1.14.11 (#28)
+7240e45 build(deps): bump androidx.test.uiautomator:uiautomator from 2.3.0 to 2.4.0 (#27)
+8e9eb5c build(deps): bump room from 3.0.1 to 3.0.2 (#26)
+0d4d101 build(deps): bump actions/setup-java from 5 to 6 (#25)

@@ -1,0 +1,53 @@
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+index 0f34fd0..75dddc0 100644
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -94,10 +94,9 @@ dependencies {
+     implementation(libs.androidx.constraintlayout)
+     implementation(libs.androidx.core.ktx)
+     implementation(libs.androidx.lifecycle.livedata.ktx)
++    implementation(libs.androidx.navigation.compose)
+     implementation(libs.androidx.navigation.fragment.ktx)
+     implementation(libs.androidx.navigation.ui.ktx)
+-    implementation(libs.androidx.navigation3.runtime)
+-    implementation(libs.androidx.navigation3.ui)
+     implementation(libs.androidx.preference.ktx)
+     implementation(libs.androidx.swiperefreshlayout)
+     implementation(libs.androidx.work.runtime)
+@@ -116,7 +115,6 @@ dependencies {
+     implementation(libs.hiddenapibypass)
+     implementation(libs.libsu.core)
+     implementation(libs.androidx.material3.adaptive)
+-    implementation(libs.androidx.material3.adaptive.nav3)
+     implementation(libs.androidx.room.runtime)
+     implementation(libs.androidx.room.sqlite.wrapper)
+     implementation(libs.androidx.sqlite)
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+index 6522e5e..5c575a0 100644
+--- a/gradle/libs.versions.toml
++++ b/gradle/libs.versions.toml
+@@ -15,8 +15,8 @@ insetter = "0.6.1"
+ kotlinxCoroutinesAndroid = "1.11.0"
+ lifecycleLivedataKtx = "2.11.0"
+ material = "1.14.0"
+-navigation3 = "1.1.0"
+ navigationKtx = "2.9.8"
++navigationCompose = "2.9.8"
+ pinyin4j = "2.5.1"
+ preferenceKtx = "1.2.1"
+ shizuku = "13.1.5"
+@@ -64,12 +64,11 @@ libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu"
+ androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+ androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+ androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
+-androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+-androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
++androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
++androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
+ androidx-window = { module = "androidx.window:window", version.ref = "window" }
+ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+ androidx-material3-adaptive = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3Adaptive" }
+-androidx-material3-adaptive-nav3 = { module = "androidx.compose.material3:adaptive-navigation3", version.ref = "material3Adaptive" }
+ 
+ [plugins]
+ android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

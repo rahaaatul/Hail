@@ -1,0 +1,67 @@
+diff --git a/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt b/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt
+index e51765a..a1674c6 100644
+--- a/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt
++++ b/app/src/main/kotlin/com/aistra/hail/ui/main/MainActivity.kt
+@@ -95,16 +95,12 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
+             R.id.nav_home, R.id.nav_actions, R.id.nav_settings
+         ).build()
+         setupActionBarWithNavController(navController, appBarConfiguration)
+-        bottomNav?.setupWithNavController(navController)
+-        navRail?.setupWithNavController(navController)
+ 
+         val isRtl = isRtl
+         val isLandscape = isLandscape
+         appBarMain.appBarLayout.applyDefaultInsetter {
+             paddingRelative(isRtl, start = !isLandscape, end = true, top = true)
+         }
+-        bottomNav?.applyDefaultInsetter { paddingRelative(isRtl, start = true, end = true, bottom = true) }
+-        navRail?.applyDefaultInsetter { paddingRelative(isRtl, start = true, top = true, bottom = true) }
+         fab.applyDefaultInsetter { marginRelative(isRtl, end = true, bottom = isLandscape) }
+ 
+         composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+@@ -186,8 +182,6 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
+             }
+             else -> fab.hide()
+         }
+-        binding.bottomNav?.isVisible = destination.id != R.id.nav_about
+-        binding.navRail?.isVisible = destination.id != R.id.nav_about
+     }
+ 
+     private data class NavBarItem(
+diff --git a/app/src/main/res/layout-land/activity_main.xml b/app/src/main/res/layout-land/activity_main.xml
+index ef07cd7..d913b9d 100644
+--- a/app/src/main/res/layout-land/activity_main.xml
++++ b/app/src/main/res/layout-land/activity_main.xml
+@@ -11,14 +11,6 @@
+         android:layout_height="match_parent"
+         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+ 
+-    <com.google.android.material.navigationrail.NavigationRailView
+-        android:id="@+id/nav_rail"
+-        android:layout_width="wrap_content"
+-        android:layout_height="match_parent"
+-        android:layout_gravity="start"
+-        app:labelVisibilityMode="labeled"
+-        app:menu="@menu/nav_main"
+-        app:menuGravity="center" />
+ 
+     <androidx.compose.ui.platform.ComposeView
+         android:id="@+id/compose_view"
+diff --git a/app/src/main/res/layout/activity_main.xml b/app/src/main/res/layout/activity_main.xml
+index 56da5e9..15e06f3 100644
+--- a/app/src/main/res/layout/activity_main.xml
++++ b/app/src/main/res/layout/activity_main.xml
+@@ -11,13 +11,6 @@
+         android:layout_height="match_parent"
+         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+ 
+-    <com.google.android.material.bottomnavigation.BottomNavigationView
+-        android:id="@+id/bottom_nav"
+-        android:layout_width="match_parent"
+-        android:layout_height="wrap_content"
+-        android:layout_gravity="bottom"
+-        app:labelVisibilityMode="labeled"
+-        app:menu="@menu/nav_main" />
+ 
+     <androidx.compose.ui.platform.ComposeView
+         android:id="@+id/compose_view"
