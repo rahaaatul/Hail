@@ -93,7 +93,7 @@ object HBackup {
     private fun writeAppsJson(zipOutputStream: ZipOutputStream) {
         val jsonArray = JSONArray()
         HailData.checkedList.forEach { appInfo ->
-            jsonArray.put(JSONObject().put("packageName", appInfo.packageName))
+            jsonArray.put(appInfo.packageName)
         }
         writeEntry(zipOutputStream, FILE_APPS, jsonArray.toString())
     }
@@ -103,7 +103,7 @@ object HBackup {
         HailData.checkedList
             .filter { it.whitelisted }
             .forEach { appInfo ->
-                jsonArray.put(JSONObject().put("packageName", appInfo.packageName))
+                jsonArray.put(appInfo.packageName)
             }
         writeEntry(zipOutputStream, FILE_WHITELIST, jsonArray.toString())
     }
@@ -149,7 +149,7 @@ object HBackup {
         val jsonString = zipInputStream.readAllBytes().toString(StandardCharsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
-            val pkg = jsonArray.getJSONObject(i).getString("packageName")
+            val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
                 HailData.addCheckedApp(pkg, 0, false)
             }
@@ -161,7 +161,7 @@ object HBackup {
         val jsonString = zipInputStream.readAllBytes().toString(StandardCharsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
-            val pkg = jsonArray.getJSONObject(i).getString("packageName")
+            val pkg = jsonArray.getString(i)
             HailData.checkedList.firstOrNull { it.packageName == pkg }?.let {
                 it.whitelisted = true
             }
