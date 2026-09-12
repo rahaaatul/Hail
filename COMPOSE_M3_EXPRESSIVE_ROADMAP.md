@@ -228,8 +228,9 @@ val AppTypography = Typography(
 
 ## 4. Migration Phases (Detailed)
 
-### Phase 0: Foundation (2-3 days)
+### Phase 0: Foundation (2-3 days) [COMPLETED]
 **Goal: Add libraries, upgrade dependencies, create Compose infrastructure**
+**Status: DONE — Dependencies added, shared components created, navigation graph defined**
 
 #### 0.1 Upgrade Dependencies
 ```toml
@@ -305,7 +306,7 @@ fun HailNavHost(navController: NavHostController, startDestination: HailRoute = 
 
 ---
 
-### Phase 1: Extract Existing Compose Screens (1 day)
+### Phase 1: Extract Existing Compose Screens (1 day) [NEXT]
 **Goal: Convert SettingsFragment and AboutFragment from Fragment wrappers to pure composables**
 
 #### 1.1 SettingsFragment to SettingsScreen

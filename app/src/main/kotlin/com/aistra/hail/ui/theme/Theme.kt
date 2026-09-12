@@ -1,9 +1,11 @@
 package com.aistra.hail.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.aistra.hail.utils.HTarget
 
 private val lightScheme = lightColorScheme(
@@ -99,6 +101,26 @@ fun AppTheme(
     }
 
     MaterialTheme(
-        colorScheme = colorScheme, typography = AppTypography, content = content
+        colorScheme = colorScheme,
+        typography = AppTypography,
+        shapes = AppShapes,
+        content = content
     )
 }
+
+/**
+ * Material 3 Expressive shape tokens.
+ * Updated corner sizes per M3 Expressive spec:
+ * - extraSmall: 8dp (was 4dp)
+ * - small: 12dp (was 8dp)
+ * - medium: 16dp (was 12dp)
+ * - large: 24dp (was 16dp)
+ * - extraLarge: 32dp (was 24dp)
+ */
+val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp)
+)
