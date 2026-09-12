@@ -54,11 +54,56 @@ import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
+import com.aistra.hail.utils.HBackup
+import com.aistra.hail.utils.HBackup.BackupOptions
+import com.aistra.hail.utils.HBackup.RestoreOptions
+import java.io.File
 import org.json.JSONArray
 
 class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAdapter.OnItemLongClickListener,
     MenuProvider {
     private var query: String = String()
+    private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            val options = pendingBackupOptions ?: return@launch
+            pendingBackupOptions = null
+            val file = File(context?.cacheDir, "backup-${System.currentTimeMillis()}.zip")
+            runCatching {
+                context?.contentResolver?.openOutputStream(uri)?.use { output ->
+                    file.inputStream().use { input ->
+                        HFiles.copy(input, output)
+                    }
+                }
+            }.onSuccess {
+                HUI.showToast(R.string.msg_exported, file.name)
+            }.onFailure {
+                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+            }
+        }
+    }
+
+    private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            val file = File(context?.cacheDir, "restore-${System.currentTimeMillis()}.zip")
+            runCatching {
+                context?.contentResolver?.openInputStream(uri)?.use { input ->
+                    file.outputStream().use { output ->
+                        HFiles.copy(input, output)
+                    }
+                }
+            }.onSuccess {
+                showRestoreDialog(file)
+            }.onFailure {
+                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+            }
+        }
+    }
+
+    private var pendingBackupOptions: BackupOptions? = null
     private var _binding: FragmentPagerBinding? = null
     private val binding get() = _binding!!
     private lateinit var pagerAdapter: PagerAdapter
@@ -584,6 +629,80 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         )
     }
 
+    private fun showBackupDialog() {
+        val checkedItems = booleanArrayOf(true, true, true, true)
+        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_backup)
+            .setMultiChoiceItems(
+                arrayOf(
+                    getString(R.string.backup_apps),
+                    getString(R.string.backup_whitelist),
+                    getString(R.string.backup_actions),
+                    getString(R.string.backup_settings)
+                ),
+                checkedItems
+            ) { _, _, _ -> }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val options = BackupOptions(
+                    apps = checkedItems[0],
+                    whitelist = checkedItems[1],
+                    actions = checkedItems[2],
+                    settings = checkedItems[3]
+                )
+                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
+                    HUI.showToast(R.string.msg_no_items_to_select)
+                    return@setPositiveButton
+                }
+                pendingBackupOptions = options
+                backupLauncher.launch("hail-backup-${System.currentTimeMillis()}.zip")
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showRestoreDialog(file: File) {
+        val checkedItems = booleanArrayOf(true, true, true, true)
+        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_restore)
+            .setMultiChoiceItems(
+                arrayOf(
+                    getString(R.string.backup_apps),
+                    getString(R.string.backup_whitelist),
+                    getString(R.string.backup_actions),
+                    getString(R.string.backup_settings)
+                ),
+                checkedItems
+            ) { _, _, _ -> }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val options = RestoreOptions(
+                    apps = checkedItems[0],
+                    whitelist = checkedItems[1],
+                    actions = checkedItems[2],
+                    settings = checkedItems[3]
+                )
+                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
+                    HUI.showToast(R.string.msg_no_items_to_select)
+                    return@setPositiveButton
+                }
+                lifecycleScope.launch {
+                    val dialog = MaterialAlertDialogBuilder(activity).setView(R.layout.dialog_progress).setCancelable(false).show()
+                    val result = HBackup.restore(requireContext(), file, options)
+                    dialog.dismiss()
+                    result.onSuccess {
+                        if (options.apps) {
+                            updateCurrentList()
+                        }
+                        if (options.settings) {
+                            activity.invalidateOptionsMenu()
+                        }
+                        HUI.showToast(R.string.msg_imported)
+                    }.onFailure {
+                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun importFromClipboard() = runCatching {
         val str = HUI.pasteText() ?: throw IllegalArgumentException()
         val json = if (str.contains('[')) JSONArray(
@@ -646,6 +765,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
             R.id.action_export_current -> exportToClipboard(pagerAdapter.currentList)
             R.id.action_export_all -> exportToClipboard(HailData.checkedList)
+            R.id.action_backup -> showBackupDialog()
+            R.id.action_restore -> restoreLauncher.launch(arrayOf("application/zip"))
         }
         return false
     }
