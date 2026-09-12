@@ -68,6 +68,7 @@ class AutoFreezeService : NotificationListenerService() {
     }
 
     companion object {
-        lateinit var instance: AutoFreezeService private set
+        var instance: AutoFreezeService? = null
+            private set
     }
 }
