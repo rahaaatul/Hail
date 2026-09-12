@@ -16,6 +16,8 @@
 
 ### Task 1: Create HBackup Utility Class
 Status: in_progress
+- Fix round 1/5: Spec compliance ❌ — JSON format deviation. apps.json/whitelist.json use objects `[{"packageName":"..."}]` instead of required string arrays `["..."]`. Reviewer also flagged unused mockSp and transcription artifact. Commits: b75aedd..bfb422e
+- Fix round 1/5 addressed: JSON format fixed to string arrays, unused mock removed, typo verified absent. Commits: b75aedd..4767e13. Scoped re-review pending.
 
 ### Task 2: Add Backup/Restore Menu Items to PagerFragment
 Status: pending
