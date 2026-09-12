@@ -9,9 +9,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -145,8 +147,19 @@ object HBackup {
         zipOutputStream.closeEntry()
     }
 
+    private fun readAllBytes(inputStream: InputStream): ByteArray {
+        val buffer = ByteArrayOutputStream()
+        val data = ByteArray(1024)
+        var count = inputStream.read(data)
+        while (count != -1) {
+            buffer.write(data, 0, count)
+            count = inputStream.read(data)
+        }
+        return buffer.toByteArray()
+    }
+
     private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val jsonString = zipInputStream.readAllBytes().toString(StandardCharsets.UTF_8)
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
@@ -158,7 +171,7 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val jsonString = zipInputStream.readAllBytes().toString(StandardCharsets.UTF_8)
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
@@ -170,7 +183,7 @@ object HBackup {
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val jsonString = zipInputStream.readAllBytes().toString(StandardCharsets.UTF_8)
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
@@ -184,7 +197,7 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val jsonString = zipInputStream.readAllBytes().toString(StandardCharsets.UTF_8)
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonObject = JSONObject(jsonString)
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         val editor = sp.edit()

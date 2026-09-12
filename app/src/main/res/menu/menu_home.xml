@@ -12,7 +12,7 @@
             android:id="@+id/action_multiselect"
             app:actionLayout="@layout/multiselect_action_view"
             app:showAsAction="always"
-            tools:ignore="AlwaysShowAction"/>
+            tools:ignore="AlwaysShowAction,MenuTitle"/>
     <group android:id="@+id/group_freeze_current">
         <item
                 android:id="@+id/action_freeze_current"
