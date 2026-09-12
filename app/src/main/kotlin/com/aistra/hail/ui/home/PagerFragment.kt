@@ -198,6 +198,12 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         val whitelistStr = getString(R.string.action_whitelist)
         val removeWhitelistStr = getString(R.string.action_remove_whitelist)
         val unfreezeRemoveHomeStr = getString(R.string.action_unfreeze_remove_home)
+        val launchStr = getString(R.string.action_launch)
+        val deferredTaskStr = getString(R.string.action_deferred_task)
+        val tagSetStr = getString(R.string.action_tag_set)
+        val addPinShortcutStr = getString(R.string.action_add_pin_shortcut)
+        val exportClipboardStr = getString(R.string.action_export_clipboard)
+        val removeHomeStr = getString(R.string.action_remove_home)
         val filteredEntries = resources.getStringArray(R.array.home_action_entries).filter {
             (it != freezeStr || !frozen) && (it != unfreezeStr || frozen) && (it != pinStr || !info.pinned) &&
                 (it != unpinStr || info.pinned) && (it != whitelistStr || !info.whitelisted) &&
@@ -205,18 +211,18 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
         val actionIds = filteredEntries.map { entry ->
             when (entry) {
-                getString(R.string.action_launch) -> R.string.action_launch
+                launchStr -> R.string.action_launch
                 freezeStr -> R.string.action_freeze
                 unfreezeStr -> R.string.action_unfreeze
-                getString(R.string.action_deferred_task) -> R.string.action_deferred_task
+                deferredTaskStr -> R.string.action_deferred_task
                 pinStr -> R.string.action_pin
                 unpinStr -> R.string.action_unpin
                 whitelistStr -> R.string.action_whitelist
                 removeWhitelistStr -> R.string.action_remove_whitelist
-                getString(R.string.action_tag_set) -> R.string.action_tag_set
-                getString(R.string.action_add_pin_shortcut) -> R.string.action_add_pin_shortcut
-                getString(R.string.action_export_clipboard) -> R.string.action_export_clipboard
-                getString(R.string.action_remove_home) -> R.string.action_remove_home
+                tagSetStr -> R.string.action_tag_set
+                addPinShortcutStr -> R.string.action_add_pin_shortcut
+                exportClipboardStr -> R.string.action_export_clipboard
+                removeHomeStr -> R.string.action_remove_home
                 unfreezeRemoveHomeStr -> R.string.action_unfreeze_remove_home
                 else -> throw IllegalStateException("Unhandled action entry: $entry")
             }
