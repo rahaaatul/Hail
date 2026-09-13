@@ -51,7 +51,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
         with:
-          api-level: 36
+          api-level: 37
           ndk-version: r28
           emulator: false
           licenses: all
