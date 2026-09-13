@@ -44,12 +44,18 @@ object AppManager {
         } catch (e: ActivityNotFoundException) {
             HLog.e("launchToClearStop failed for $packageName: ActivityNotFoundException", e)
             false
+        } catch (e: Exception) {
+            HLog.e("launchToClearStop failed for $packageName: unexpected", e)
+            false
         }
     }
 
     private fun clearStopState(packageName: String): Boolean {
         return if (!HPackages.getApplicationInfoOrNull(packageName)) {
             HLog.d("clearStopState: package $packageName not installed")
+            true
+        } else if (!isAppFrozen(packageName)) {
+            HLog.d("clearStopState: package $packageName already unfrozen")
             true
         } else {
             launchToClearStop(packageName)
@@ -61,7 +67,6 @@ object AppManager {
         var i = 0
         var denied = false
         var name = String()
-        val isStopMode = HailData.workingMode.endsWith(HailData.STOP)
         when (HailData.workingMode) {
             // call setListFrozen for some batch-style working mode here
             // fallback to setAppFrozen otherwise
@@ -72,7 +77,7 @@ object AppManager {
                             i++
                             name = it.name
                         }
-                        it.applicationInfo != null && !(isStopMode && !frozen && isAppFrozen(it.packageName)) -> denied = true
+                        it.applicationInfo != null -> denied = true
                     }
                 }
             }
