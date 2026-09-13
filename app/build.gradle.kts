@@ -16,7 +16,7 @@ android {
     }.standardOutput.asText.get().trim()
 
     namespace = "com.aistra.hail"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.aistra.hail"
