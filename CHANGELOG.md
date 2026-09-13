@@ -5,13 +5,21 @@ All notable changes to this project will be documented in this file.
 ## [1.11.5] - 2026-09-13
 
 ### Fixed
-- Stop-mode unfreeze now properly clears app stop state by launching the app instead of silently returning success
-- Stop-mode unfreeze failures (no launch intent, launch failed) no longer show misleading "Permission denied" toast
-- Fixed silent exception swallowing in stop-mode unfreeze by catching specific exceptions (SecurityException, ActivityNotFoundException) with proper logging
-- Fixed ConcurrentModificationException when renaming/deleting tags across multiple tabs by using snapshot of checked list
-- Added null/empty guard for launchPackage in ActionsRepository to prevent it from being added to unfreeze list
-- Added specific error message for stop-mode unfreeze failures: "Failed to unfreeze (stop mode): no launch intent or launch failed"
-- Added missing HLog.d(String) and HLog.e(String, Throwable) methods
+- Stop-mode unfreeze now properly clears app stop state by launching the app instead of silently returning success (#43)
+- Stop-mode unfreeze failures (no launch intent, launch failed) no longer show misleading "Permission denied" toast (#43)
+- Fixed silent exception swallowing in stop-mode unfreeze by catching specific exceptions (SecurityException, ActivityNotFoundException) with proper logging (#43)
+- Fixed ConcurrentModificationException when renaming/deleting tags across multiple tabs by using snapshot of checked list (#43)
+- Added null/empty guard for launchPackage in ActionsRepository to prevent it from being added to unfreeze list (#43)
+- Added specific error message for stop-mode unfreeze failures: "Failed to unfreeze (stop mode): no launch intent or launch failed" (#43)
+- Added missing HLog.d(String) and HLog.e(String, Throwable) methods (#43)
+- AutoFreezeWorker no longer crashes with NPE when AutoFreezeService isn't running — added thread-safe notification tracking (ConcurrentHashMap) and null-safe access in worker (#40)
+- Fixed zombie AutoFreezeService instance reference by clearing it in onDestroy() (#40)
+- Fixed Island mode permission callback race condition — cancel previous deferred on rapid mode switching (#40)
+- PagerFragment: Fixed tag ID replacement when renaming tags — use snapshot + replaceAll instead of index-based mutation (#42)
+- PagerFragment: Fixed tag removal — collect packages to remove first, then batch remove to avoid ConcurrentModificationException (#42)
+- ActionsRepository: Filter out launch package from unfreeze list to avoid redundant operations (#42)
+- ApiActivity: Fixed Island mode launch — use target package name instead of app's own package name (#42)
+- AppActions: Improved error messages for stop mode unfreeze failures with specific "no launch intent" message (#42)
 
 ## [1.11.4] - 2026-09-05
 
