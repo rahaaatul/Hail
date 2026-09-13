@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.5] - 2026-09-13
+
+### Fixed
+- AutoFreezeWorker no longer crashes with NPE when AutoFreezeService isn't running — added thread-safe notification tracking (ConcurrentHashMap) and null-safe access in worker
+- Fixed zombie AutoFreezeService instance reference by clearing it in onDestroy()
+- Fixed Island mode permission callback race condition — cancel previous deferred on rapid mode switching
+- PagerFragment: Fixed tag ID replacement when renaming tags — use snapshot + replaceAll instead of index-based mutation
+- PagerFragment: Fixed tag removal — collect packages to remove first, then batch remove to avoid ConcurrentModificationException
+- ActionsRepository: Filter out launch package from unfreeze list to avoid redundant operations
+- ApiActivity: Fixed Island mode launch — use target package name instead of app's own package name
+- AppActions: Improved error messages for stop mode unfreeze failures with specific "no launch intent" message
+
 ## [1.11.4] - 2026-09-05
 
 ### Fixed

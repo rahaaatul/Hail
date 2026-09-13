@@ -4,7 +4,9 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.IntentFilter
 import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationChannelCompat
+import java.util.concurrent.ConcurrentHashMap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -16,6 +18,7 @@ import com.aistra.hail.receiver.ScreenOffReceiver
 class AutoFreezeService : NotificationListenerService() {
     private val channelID = javaClass.simpleName
     private val lockReceiver by lazy { ScreenOffReceiver() }
+    val activeNotifications = ConcurrentHashMap<String, StatusBarNotification>()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
@@ -65,9 +68,22 @@ class AutoFreezeService : NotificationListenerService() {
         super.onDestroy()
         unregisterReceiver(lockReceiver)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        instance = null
+        activeNotifications.clear()
+    }
+
+    override fun onNotificationPosted(sbn: StatusBarNotification) {
+        super.onNotificationPosted(sbn)
+        activeNotifications[sbn.packageName] = sbn
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        super.onNotificationRemoved(sbn)
+        activeNotifications.remove(sbn.packageName)
     }
 
     companion object {
-        lateinit var instance: AutoFreezeService private set
+        var instance: AutoFreezeService? = null
+            private set
     }
 }
