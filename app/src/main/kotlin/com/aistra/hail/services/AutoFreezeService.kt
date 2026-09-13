@@ -6,6 +6,7 @@ import android.content.IntentFilter
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationChannelCompat
+import java.util.concurrent.ConcurrentHashMap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -17,7 +18,7 @@ import com.aistra.hail.receiver.ScreenOffReceiver
 class AutoFreezeService : NotificationListenerService() {
     private val channelID = javaClass.simpleName
     private val lockReceiver by lazy { ScreenOffReceiver() }
-    val activeNotifications = mutableMapOf<String, StatusBarNotification>()
+    val activeNotifications = ConcurrentHashMap<String, StatusBarNotification>()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
