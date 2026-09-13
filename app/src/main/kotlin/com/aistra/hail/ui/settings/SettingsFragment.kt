@@ -57,6 +57,7 @@ import com.google.android.material.textview.MaterialTextView
 import com.rosan.dhizuku.api.Dhizuku
 import com.rosan.dhizuku.api.DhizukuRequestPermissionListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
@@ -597,7 +598,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
                     else -> {
                         lifecycleScope.launch {
-                            islandPermissionRequest?.cancel(IllegalStateException("Superseded by new request"))
+                            islandPermissionRequest?.cancel(CancellationException("Superseded by new request"))
                             islandPermissionRequest = CompletableDeferred()
                             requestPermissionLauncher.launch(
                                 if (mode == HailData.MODE_ISLAND_HIDE) HIsland.PERMISSION_FREEZE_PACKAGE
