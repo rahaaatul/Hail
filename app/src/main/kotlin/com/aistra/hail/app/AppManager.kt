@@ -51,7 +51,7 @@ object AppManager {
     }
 
     private fun clearStopState(packageName: String): Boolean {
-        return if (!HPackages.getApplicationInfoOrNull(packageName)) {
+        return if (HPackages.getApplicationInfoOrNull(packageName) == null) {
             HLog.d("clearStopState: package $packageName not installed")
             true
         } else if (!isAppFrozen(packageName)) {
