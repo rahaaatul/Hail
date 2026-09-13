@@ -65,9 +65,11 @@ class AutoFreezeService : NotificationListenerService() {
         super.onDestroy()
         unregisterReceiver(lockReceiver)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        instance = null
     }
 
     companion object {
-        lateinit var instance: AutoFreezeService private set
+        var instance: AutoFreezeService? = null
+            private set
     }
 }
