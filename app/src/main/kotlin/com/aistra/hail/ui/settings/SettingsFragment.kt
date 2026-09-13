@@ -57,6 +57,8 @@ import com.google.android.material.textview.MaterialTextView
 import com.rosan.dhizuku.api.Dhizuku
 import com.rosan.dhizuku.api.DhizukuRequestPermissionListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.callbackFlow
@@ -67,7 +69,11 @@ import me.zhanghai.compose.preference.*
 import rikka.shizuku.Shizuku
 
 class SettingsFragment : MainFragment(), MenuProvider {
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    private var islandPermissionRequest: CompletableDeferred<Boolean>? = null
+        private set
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        islandPermissionRequest?.complete(isGranted)
+    }
     private val _iconPackValues = mutableStateOf(listOf(HailData.ACTION_NONE))
     private val _iconPackNames = mutableStateOf(mapOf<String, String>())
 
@@ -592,10 +598,15 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
                     else -> {
                         lifecycleScope.launch {
+                            islandPermissionRequest?.cancel(CancellationException("Superseded by new request"))
+                            islandPermissionRequest = CompletableDeferred()
                             requestPermissionLauncher.launch(
                                 if (mode == HailData.MODE_ISLAND_HIDE) HIsland.PERMISSION_FREEZE_PACKAGE
                                 else HIsland.PERMISSION_SUSPEND_PACKAGE
                             )
+                            if (islandPermissionRequest?.await() == true) {
+                                rememberState.value = mode
+                            }
                         }
                         false
                     }
