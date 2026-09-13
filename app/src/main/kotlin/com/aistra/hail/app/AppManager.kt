@@ -67,6 +67,7 @@ object AppManager {
         var i = 0
         var denied = false
         var name = String()
+        val isStopModeUnfreeze = HailData.workingMode.endsWith(HailData.STOP) && !frozen
         when (HailData.workingMode) {
             // call setListFrozen for some batch-style working mode here
             // fallback to setAppFrozen otherwise
@@ -77,7 +78,7 @@ object AppManager {
                             i++
                             name = it.name
                         }
-                        it.applicationInfo != null -> denied = true
+                        it.applicationInfo != null && !isStopModeUnfreeze -> denied = true
                     }
                 }
             }
