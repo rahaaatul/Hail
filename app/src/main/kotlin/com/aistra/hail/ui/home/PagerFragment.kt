@@ -578,6 +578,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     val oldTagId = HailData.tags[position].second
                     HailData.tags[position] = tagName to if (defaultTab) 0 else tagId
                     if (!defaultTab) {
+                        // Default tab (position 0) has tagId 0 meaning "no tag" and is not renamed.
+                        // Use snapshot to avoid ConcurrentModificationException since tagIdList is shared mutable state.
+                        // This runs on the main thread (UI), so no synchronization needed.
                         val checkedSnapshot = HailData.checkedList.toList()
                         val toUpdate = checkedSnapshot.filter { oldTagId in it.tagIdList }
                         toUpdate.forEach { it.tagIdList.replaceAll { if (it == oldTagId) tagId else it } }

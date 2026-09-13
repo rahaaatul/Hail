@@ -52,10 +52,10 @@ object AppActions {
                 )
             }
             if (!AppManager.setAppFrozen(packageName, frozen)) {
-                val errorMsg = if (!frozen && HailData.workingMode.endsWith(HailData.STOP)) {
-                    app().getString(R.string.action_unfreeze_stop_failed, packageName)
-                } else {
-                    app().getString(R.string.action_freeze_failed, packageName)
+                val errorMsg = when {
+                    !frozen && HailData.workingMode.endsWith(HailData.STOP) -> app().getString(R.string.action_unfreeze_stop_failed, packageName)
+                    !frozen -> app().getString(R.string.action_unfreeze_failed, packageName)
+                    else -> app().getString(R.string.action_freeze_failed, packageName)
                 }
                 return@withContext Result.failure(IllegalStateException(errorMsg))
             }

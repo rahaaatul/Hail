@@ -1,5 +1,6 @@
 package com.aistra.hail.app
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp
@@ -37,8 +38,11 @@ object AppManager {
         return try {
             HailApp.app.startActivity(intent)
             true
-        } catch (e: Exception) {
-            HLog.e("launchToClearStop failed for $packageName", e)
+        } catch (e: SecurityException) {
+            HLog.e("launchToClearStop failed for $packageName: SecurityException", e)
+            false
+        } catch (e: ActivityNotFoundException) {
+            HLog.e("launchToClearStop failed for $packageName: ActivityNotFoundException", e)
             false
         }
     }
@@ -57,6 +61,7 @@ object AppManager {
         var i = 0
         var denied = false
         var name = String()
+        val isStopMode = HailData.workingMode.endsWith(HailData.STOP)
         when (HailData.workingMode) {
             // call setListFrozen for some batch-style working mode here
             // fallback to setAppFrozen otherwise
@@ -67,8 +72,7 @@ object AppManager {
                             i++
                             name = it.name
                         }
-
-                        it.applicationInfo != null -> denied = true
+                        it.applicationInfo != null && !(isStopMode && !frozen && isAppFrozen(it.packageName)) -> denied = true
                     }
                 }
             }
