@@ -207,7 +207,7 @@ class ApiActivity : ComponentActivity() {
             app.setAutoFreezeService()
         }
         if (HailData.workingMode == HailData.MODE_ISLAND_HIDE) {
-            HIsland.ensureLaunchIntentExists(pkg)
+            HIsland.ensureLaunchIntentExists(packageName)
         }
         packageManager.getLaunchIntentForPackage(pkg)?.let {
             HShortcuts.addDynamicShortcut(pkg)
