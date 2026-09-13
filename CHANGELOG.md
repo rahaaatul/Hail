@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.5] - 2026-09-13
+
+### Fixed
+- Stop-mode unfreeze now properly clears app stop state by launching the app instead of silently returning success
+- Stop-mode unfreeze failures (no launch intent, launch failed) no longer show misleading "Permission denied" toast
+- Fixed silent exception swallowing in stop-mode unfreeze by catching specific exceptions (SecurityException, ActivityNotFoundException) with proper logging
+- Fixed ConcurrentModificationException when renaming/deleting tags across multiple tabs by using snapshot of checked list
+- Added null/empty guard for launchPackage in ActionsRepository to prevent it from being added to unfreeze list
+- Added specific error message for stop-mode unfreeze failures: "Failed to unfreeze (stop mode): no launch intent or launch failed"
+- Added missing HLog.d(String) and HLog.e(String, Throwable) methods
+
 ## [1.11.4] - 2026-09-05
 
 ### Fixed

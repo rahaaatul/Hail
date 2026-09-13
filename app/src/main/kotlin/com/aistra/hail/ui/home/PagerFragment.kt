@@ -578,10 +578,12 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     val oldTagId = HailData.tags[position].second
                     HailData.tags[position] = tagName to if (defaultTab) 0 else tagId
                     if (!defaultTab) {
-                        pagerAdapter.currentList.forEach {
-                            val index = it.tagIdList.indexOf(oldTagId)
-                            if (index != -1) it.tagIdList[index] = tagId
-                        }
+                        // Default tab (position 0) has tagId 0 meaning "no tag" and is not renamed.
+                        // Use snapshot to avoid ConcurrentModificationException since tagIdList is shared mutable state.
+                        // This runs on the main thread (UI), so no synchronization needed.
+                        val checkedSnapshot = HailData.checkedList.toList()
+                        val toUpdate = checkedSnapshot.filter { oldTagId in it.tagIdList }
+                        toUpdate.forEach { it.tagIdList.replaceAll { if (it == oldTagId) tagId else it } }
                         HailData.saveApps()
                     }
                     homeAdapter.notifyItemChanged(position)
@@ -592,11 +594,14 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 if (list != null || position == 0) return@apply
                 setNeutralButton(R.string.action_tag_remove) { _, _ ->
                     val tagIdToRemove = HailData.tags[position].second
-                    pagerAdapter.currentList.forEach {
+                    val toRemove = mutableListOf<String>()
+                    val checkedSnapshot = HailData.checkedList.toList()
+                    checkedSnapshot.forEach {
                         if (it.tagIdList.remove(tagIdToRemove) && it.tagIdList.isEmpty()) {
-                            removeCheckedApp(it.packageName, false)
+                            toRemove.add(it.packageName)
                         }
                     }
+                    toRemove.forEach { removeCheckedApp(it, false) }
                     HailData.tags.removeAt(position)
                     homeAdapter.notifyItemRemoved(position)
                     if (tabLayout.tabCount == 1) tabLayout.isVisible = false
