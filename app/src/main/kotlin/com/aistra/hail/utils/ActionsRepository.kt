@@ -40,10 +40,15 @@ object ActionsRepository {
         launchPackage: String,
         unfreezePackages: List<String>
     ): LaunchAction = withContext(Dispatchers.IO) {
+        val filteredUnfreeze = if (launchPackage.isNullOrBlank()) {
+            unfreezePackages.distinct()
+        } else {
+            unfreezePackages.filter { it != launchPackage }.distinct()
+        }
         val action = LaunchAction(
             id = id,
             launchPackage = launchPackage,
-            unfreezePackages = unfreezePackages.distinct()
+            unfreezePackages = filteredUnfreeze
         )
         val dao = AppMetaCache.database().actionDao()
         dao.saveAction(ActionEntity(id = action.id, launchPackage = action.launchPackage), action.unfreezePackages.mapIndexed { position, packageName ->
