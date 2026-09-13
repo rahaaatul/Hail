@@ -18,15 +18,16 @@ object AppActions {
                 IllegalArgumentException(app().getString(R.string.action_app_unavailable, packageName))
             )
         }
-        if (AppManager.isAppFrozen(packageName) && !AppManager.setAppFrozen(packageName, false)) {
-            return@withContext Result.failure(
-                IllegalStateException(app().getString(R.string.action_unfreeze_failed, packageName))
-            )
-        }
         if (AppManager.isAppFrozen(packageName)) {
-            return@withContext Result.failure(
-                IllegalStateException(app().getString(R.string.action_unfreeze_failed, packageName))
-            )
+            val success = AppManager.setAppFrozen(packageName, false)
+            if (!success) {
+                val errorMsg = if (HailData.workingMode.endsWith(HailData.STOP)) {
+                    app().getString(R.string.action_unfreeze_stop_failed, packageName)
+                } else {
+                    app().getString(R.string.action_unfreeze_failed, packageName)
+                }
+                return@withContext Result.failure(IllegalStateException(errorMsg))
+            }
         }
         Result.success(Unit)
     }
@@ -51,9 +52,12 @@ object AppActions {
                 )
             }
             if (!AppManager.setAppFrozen(packageName, frozen)) {
-                return@withContext Result.failure(
-                    IllegalStateException(app().getString(R.string.action_freeze_failed, packageName))
-                )
+                val errorMsg = when {
+                    !frozen && HailData.workingMode.endsWith(HailData.STOP) -> app().getString(R.string.action_unfreeze_stop_failed, packageName)
+                    !frozen -> app().getString(R.string.action_unfreeze_failed, packageName)
+                    else -> app().getString(R.string.action_freeze_failed, packageName)
+                }
+                return@withContext Result.failure(IllegalStateException(errorMsg))
             }
         }
         Result.success(Unit)
