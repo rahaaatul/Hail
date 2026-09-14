@@ -56,7 +56,8 @@ object HBackup {
                     writeWhitelistJson(zipOutputStream)
                 }
                 if (options.actions) {
-                    writeActionsJson(zipOutputStream)
+                    val actions = ActionsRepository.loadAll()
+                    writeActionsJson(zipOutputStream, actions)
                 }
                 if (options.settings) {
                     writeSettingsJson(context, zipOutputStream)
@@ -111,8 +112,7 @@ object HBackup {
         writeEntry(zipOutputStream, FILE_WHITELIST, jsonArray.toString())
     }
 
-    private suspend fun writeActionsJson(zipOutputStream: ZipOutputStream) {
-        val actions = ActionsRepository.loadAll()
+    private fun writeActionsJson(zipOutputStream: ZipOutputStream, actions: List<LaunchAction>) {
         val jsonArray = JSONArray()
         actions.forEach { action ->
             jsonArray.put(
