@@ -10,7 +10,6 @@ import android.provider.Settings
 import android.util.Log
 import android.view.*
 import androidx.documentfile.provider.DocumentFile
-import java.io.FileNotFoundException
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -87,12 +86,12 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
         if (uri == null) return@registerForActivityResult
+        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
+        val ctx = context ?: return@registerForActivityResult
         if (DocumentsContract.isDocumentUri(context, uri) && DocumentFile.fromSingleUri(context, uri)?.isDirectory == true) {
             HUI.showToast(R.string.pick_file_not_folder)
             return@registerForActivityResult
         }
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
-        val ctx = context ?: return@registerForActivityResult
         lifecycleScope.launch {
             val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
             runCatching {
@@ -112,12 +111,12 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
     private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
+        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
+        val ctx = context ?: return@registerForActivityResult
         if (DocumentsContract.isDocumentUri(context, uri) && DocumentFile.fromSingleUri(context, uri)?.isDirectory == true) {
             HUI.showToast(R.string.pick_file_not_folder)
             return@registerForActivityResult
         }
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
-        val ctx = context ?: return@registerForActivityResult
         lifecycleScope.launch {
             val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
             runCatching {
