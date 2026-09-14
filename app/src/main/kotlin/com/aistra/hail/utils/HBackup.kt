@@ -13,8 +13,6 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
-import java.io.InputStream
-import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
@@ -148,19 +146,15 @@ object HBackup {
         zipOutputStream.closeEntry()
     }
 
-    private fun readAllBytes(inputStream: InputStream): ByteArray {
+    private fun readAppsJson(zipInputStream: ZipInputStream) {
         val buffer = ByteArrayOutputStream()
-        val data = ByteArray(1024)
-        var count = inputStream.read(data)
+        val data = ByteArray(8192)
+        var count = zipInputStream.read(data)
         while (count != -1) {
             buffer.write(data, 0, count)
-            count = inputStream.read(data)
+            count = zipInputStream.read(data)
         }
-        return buffer.toByteArray()
-    }
-
-    private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val jsonString = buffer.toByteArray().toString(Charsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
@@ -172,7 +166,14 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val buffer = ByteArrayOutputStream()
+        val data = ByteArray(8192)
+        var count = zipInputStream.read(data)
+        while (count != -1) {
+            buffer.write(data, 0, count)
+            count = zipInputStream.read(data)
+        }
+        val jsonString = buffer.toByteArray().toString(Charsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         val whitelistPkgs = mutableSetOf<String>()
         synchronized(HailData.checkedListLock) {
@@ -191,7 +192,14 @@ object HBackup {
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val buffer = ByteArrayOutputStream()
+        val data = ByteArray(8192)
+        var count = zipInputStream.read(data)
+        while (count != -1) {
+            buffer.write(data, 0, count)
+            count = zipInputStream.read(data)
+        }
+        val jsonString = buffer.toByteArray().toString(Charsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
@@ -205,7 +213,14 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val buffer = ByteArrayOutputStream()
+        val data = ByteArray(8192)
+        var count = zipInputStream.read(data)
+        while (count != -1) {
+            buffer.write(data, 0, count)
+            count = zipInputStream.read(data)
+        }
+        val jsonString = buffer.toByteArray().toString(Charsets.UTF_8)
         val jsonObject = JSONObject(jsonString)
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit {
