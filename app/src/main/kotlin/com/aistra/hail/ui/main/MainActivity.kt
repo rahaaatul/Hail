@@ -107,12 +107,8 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                 val startDestinationId = navController.graph.startDestinationId
                 val backStackEntry by navController.currentBackStackEntryAsState()
                 val selectedItem = remember(backStackEntry) {
-                    val currentDestId = backStackEntry?.destination?.id
-                    if (currentDestId != null) {
-                        navItems.indexOfFirst { it.id == currentDestId }
-                    } else {
-                        -1
-                    }
+                    val currentDestId = backStackEntry?.destination?.id ?: startDestinationId
+                    navItems.indexOfFirst { it.id == currentDestId }
                 }
                 NavigationSuiteScaffold(
                     navigationSuiteType = navSuiteType,
