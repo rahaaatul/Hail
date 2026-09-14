@@ -27,6 +27,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private var refreshJob: Job? = null
     private var refreshStateJob: Job? = null
+    private var filterJob: Job? = null
     private var lastUpdateTime: Long = 0
     private var appListRefreshJob: Job? = null
 
@@ -103,11 +104,17 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
      * from `apps` and places it in `displayApps`.
      * */
     fun updateDisplayAppList() {
+        filterJob?.cancel()
         apps.value?.let {
-            viewModelScope.launch {
+            filterJob = viewModelScope.launch {
                 displayApps.postValue(filterList(it, query.value))
             }
         }
+    }
+
+    override fun onCleared() {
+        filterJob?.cancel()
+        super.onCleared()
     }
 
 
