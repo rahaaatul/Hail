@@ -19,7 +19,11 @@ class FrozenWorker(context: Context, params: WorkerParameters) : Worker(context,
             Result.success()
         } else {
             HLog.e("Failed to ${if (shouldFreeze) "freeze" else "unfreeze"} $packageName")
-            Result.retry()
+            // A freeze that fails is almost always a permanent condition (wrong
+            // working mode, package not found, or disabled app), so retrying would
+            // loop forever. Unfreeze failures are more likely transient (e.g. a
+            // temporarily unavailable Shizuku/Island service), so allow a retry.
+            if (shouldFreeze) Result.failure() else Result.retry()
         }
     }
 }
