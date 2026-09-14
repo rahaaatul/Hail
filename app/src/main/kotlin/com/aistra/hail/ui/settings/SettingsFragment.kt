@@ -88,7 +88,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         if (uri == null) return@registerForActivityResult
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
-        if (DocumentsContract.isDocumentUri(context, uri) && DocumentFile.fromSingleUri(context, uri)?.isDirectory == true) {
+        if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
             HUI.showToast(R.string.pick_file_not_folder)
             return@registerForActivityResult
         }
@@ -113,7 +113,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         if (uri == null) return@registerForActivityResult
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
-        if (DocumentsContract.isDocumentUri(context, uri) && DocumentFile.fromSingleUri(context, uri)?.isDirectory == true) {
+        if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
             HUI.showToast(R.string.pick_file_not_folder)
             return@registerForActivityResult
         }
