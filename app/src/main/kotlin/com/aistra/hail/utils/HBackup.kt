@@ -137,7 +137,7 @@ object HBackup {
                 is Float -> jsonObject.put(key, value)
                 is Boolean -> jsonObject.put(key, value)
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
-                else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value.javaClass.simpleName}, skipping")
+                else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}, skipping")
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
@@ -154,7 +154,7 @@ object HBackup {
         val buffer = ByteArray(8192)
         var bytesRead: Int
         while (bufferedStream.read(buffer).also { bytesRead = it } != -1) {
-            stringBuilder.append(String(buffer, 0, bytesRead, "UTF-8".toCharset()))
+            stringBuilder.append(String(buffer, 0, bytesRead, Charsets.UTF_8))
         }
         return stringBuilder.toString()
     }
