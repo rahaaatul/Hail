@@ -30,9 +30,11 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
@@ -107,10 +109,10 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             AppTheme {
                 val navSuiteType = calculateNavigationSuiteType()
                 val startDestinationId = navController.graph.startDestinationId
-                val currentDestId = navController.currentDestination?.id
-                val selectedItem = remember(currentDestId) {
-                    val index = navItems.indexOfFirst { it.id == currentDestId }
-                    if (index >= 0) index else -1
+                val backStackEntry by navController.currentBackStackEntryAsState()
+                val selectedItem = remember(backStackEntry) {
+                    val currentDestId = backStackEntry?.destination?.id
+                    navItems.indexOfFirst { it.id == currentDestId }
                 }
                 NavigationSuiteScaffold(
                     layoutType = navSuiteType,
@@ -194,16 +196,24 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         }
     }
 
-    private data class NavBarItem(
+    sealed class NavSuiteItem(
         val id: Int,
         @DrawableRes val iconRes: Int,
         @StringRes val labelRes: Int,
-    )
+    ) {
+        object Home : NavSuiteItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home)
+        object Actions : NavSuiteItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions)
+        object Apps : NavSuiteItem(R.id.nav_apps, R.drawable.ic_round_apps, R.string.title_apps)
+        object Settings : NavSuiteItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings)
+        object About : NavSuiteItem(R.id.nav_about, R.drawable.ic_baseline_info, R.string.title_about)
+    }
 
     private val navItems = listOf(
-        NavBarItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home),
-        NavBarItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
-        NavBarItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings),
+        NavSuiteItem.Home,
+        NavSuiteItem.Actions,
+        NavSuiteItem.Apps,
+        NavSuiteItem.Settings,
+        NavSuiteItem.About,
     )
 
     @Composable
