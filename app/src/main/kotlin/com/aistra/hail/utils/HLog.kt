@@ -8,6 +8,6 @@ object HLog {
     fun e(t: Throwable) = Log.e(TAG, t.stackTraceToString())
     fun e(string: String) = Log.e(TAG, string)
     fun d(string: String) = Log.d(TAG, string)
-    fun w(string: String) = Log.w(TAG, string)
+    fun w(tag: String, string: String) = Log.w(tag, string)
     fun e(string: String, t: Throwable) = Log.e(TAG, string, t)
 }
