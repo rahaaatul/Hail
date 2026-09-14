@@ -219,6 +219,7 @@ object HBackup {
                         }
                         putStringSet(key, stringSet)
                     }
+                    else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
                 }
             }
         }
