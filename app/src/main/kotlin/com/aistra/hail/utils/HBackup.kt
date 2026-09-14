@@ -46,6 +46,7 @@ object HBackup {
         options: BackupOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
+            outputFile.parentFile?.mkdirs()
             val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
             try {
                 if (options.apps) {
