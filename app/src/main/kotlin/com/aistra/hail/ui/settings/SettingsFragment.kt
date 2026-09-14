@@ -96,10 +96,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
             val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
             runCatching {
                 HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch)
-                ctx.contentResolver.openOutputStream(uri)?.use { output ->
-                    file.inputStream().use { input ->
-                        HFiles.copy(input, output)
+                try {
+                    ctx.contentResolver.openOutputStream(uri)?.use { output ->
+                        file.inputStream().use { input ->
+                            HFiles.copy(input, output)
+                        }
                     }
+                } catch (e: java.io.FileNotFoundException) {
+                    file.delete()
+                    HUI.showToast(R.string.operation_failed, "File not found", true)
+                    return@launch
                 }
             }.onSuccess {
                 HUI.showToast(R.string.msg_exported, file.name)
@@ -120,10 +126,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
         lifecycleScope.launch {
             val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
             runCatching {
-                ctx.contentResolver.openInputStream(uri)?.use { input ->
-                    file.outputStream().use { output ->
-                        HFiles.copy(input, output)
+                try {
+                    ctx.contentResolver.openInputStream(uri)?.use { input ->
+                        file.outputStream().use { output ->
+                            HFiles.copy(input, output)
+                        }
                     }
+                } catch (e: java.io.FileNotFoundException) {
+                    file.delete()
+                    HUI.showToast(R.string.operation_failed, "File not found", true)
+                    return@launch
                 }
             }.onSuccess {
                 showRestoreDialog(file)
