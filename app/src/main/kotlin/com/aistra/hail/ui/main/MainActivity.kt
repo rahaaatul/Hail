@@ -194,6 +194,10 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         }
     }
 
+    /**
+     * Navigation suite items for the bottom/app bar.
+     * Each object represents a destination with its icon and label.
+     */
     private sealed class NavSuiteItem(
         val id: Int,
         @DrawableRes val iconRes: Int,
