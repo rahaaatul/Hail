@@ -72,13 +72,14 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             return@registerForActivityResult
         }
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
+        val ctx = context ?: return@registerForActivityResult
         lifecycleScope.launch {
             val options = pendingBackupOptions ?: return@launch
             pendingBackupOptions = null
             val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
             runCatching {
-                HBackup.backup(requireContext(), file, options)
-                context?.contentResolver?.openOutputStream(uri)?.use { output ->
+                HBackup.backup(ctx, file, options)
+                ctx.contentResolver.openOutputStream(uri)?.use { output ->
                     file.inputStream().use { input ->
                         HFiles.copy(input, output)
                     }
@@ -94,10 +95,11 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
+        val ctx = context ?: return@registerForActivityResult
         lifecycleScope.launch {
             val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
             runCatching {
-                context?.contentResolver?.openInputStream(uri)?.use { input ->
+                ctx.contentResolver.openInputStream(uri)?.use { input ->
                     file.outputStream().use { output ->
                         HFiles.copy(input, output)
                     }

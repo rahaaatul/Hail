@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
@@ -151,7 +152,8 @@ object HBackup {
     }
 
     private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
+        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val jsonArray = JSONArray(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
@@ -162,19 +164,18 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
+        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val jsonArray = JSONArray(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
-            if (!HailData.isChecked(pkg)) {
-                HailData.addCheckedApp(pkg, 0, false)
-            }
             HailData.checkedList.firstOrNull { it.packageName == pkg }?.whitelisted = true
         }
         HailData.saveApps()
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
+        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val jsonArray = JSONArray(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
             val id = obj.getString("id")
@@ -187,7 +188,8 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val jsonObject = JSONObject(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
+        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val jsonObject = JSONObject(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit {
             val keys = jsonObject.keys()
@@ -207,7 +209,7 @@ object HBackup {
                         }
                         putStringSet(key, stringSet)
                     }
-                    else -> HLog.e("Unsupported settings type for key '$key': ${value::class.simpleName}")
+                    else -> HLog.e("Unsupported settings type for key '$key': ${value::class.simpleName}") // Intentionally error level: unsupported types indicate corrupted or incompatible settings
                 }
             }
         }
