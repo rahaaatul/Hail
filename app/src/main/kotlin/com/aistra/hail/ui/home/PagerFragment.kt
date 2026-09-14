@@ -105,6 +105,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }.onSuccess {
                 showRestoreDialog(file)
             }.onFailure {
+                file.delete()
                 HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
             }
         }
