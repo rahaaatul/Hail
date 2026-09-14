@@ -113,6 +113,11 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
+    override fun onCleared() {
+        super.onCleared()
+        filterJob?.cancel()
+    }
+
     private val ApplicationInfo.isSystemApp: Boolean
         get() = flags and ApplicationInfo.FLAG_SYSTEM == ApplicationInfo.FLAG_SYSTEM
 
