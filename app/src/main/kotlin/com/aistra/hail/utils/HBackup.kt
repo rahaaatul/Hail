@@ -22,17 +22,17 @@ import java.util.zip.ZipInputStream
 object HBackup {
 
     data class BackupOptions(
-        val apps: Boolean = true,
-        val whitelist: Boolean = true,
-        val actions: Boolean = true,
-        val settings: Boolean = true
+        val apps: Boolean = false,
+        val whitelist: Boolean = false,
+        val actions: Boolean = false,
+        val settings: Boolean = false
     )
 
     data class RestoreOptions(
-        val apps: Boolean = true,
-        val whitelist: Boolean = true,
-        val actions: Boolean = true,
-        val settings: Boolean = true
+        val apps: Boolean = false,
+        val whitelist: Boolean = false,
+        val actions: Boolean = false,
+        val settings: Boolean = false
     )
 
     private const val FILE_APPS = "apps.json"
