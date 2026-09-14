@@ -11,14 +11,11 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.runtime.Composable
+
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -30,6 +27,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -91,7 +89,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         navController = navHostFragment.navController
         navController.addOnDestinationChangedListener(this@MainActivity)
         appBarConfiguration = AppBarConfiguration.Builder(
-            R.id.nav_home, R.id.nav_actions, R.id.nav_settings
+            R.id.nav_home, R.id.nav_actions, R.id.nav_apps, R.id.nav_settings, R.id.nav_about
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
 
@@ -105,22 +103,22 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         composeView.setContent {
             AppTheme {
-                val navSuiteType = calculateNavigationSuiteType()
+                val navSuiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
                 val startDestinationId = navController.graph.startDestinationId
-                val currentDestId = navController.currentDestination?.id
-                val selectedItem = remember(currentDestId) {
-                    val index = navItems.indexOfFirst { it.id == currentDestId }
-                    if (index >= 0) index else -1
+                val backStackEntry by navController.currentBackStackEntryAsState()
+                val selectedItem = remember(backStackEntry) {
+                    val currentDestId = backStackEntry?.destination?.id ?: startDestinationId
+                    navItems.indexOfFirst { it.id == currentDestId }
                 }
                 NavigationSuiteScaffold(
-                    layoutType = navSuiteType,
+                    navigationSuiteType = navSuiteType,
                     navigationSuiteItems = {
                         navItems.forEachIndexed { index, navItem ->
                             val isSelected = selectedItem == index
                             item(
                                 selected = isSelected,
                                 onClick = {
-                                    if (navController.currentDestination?.id != navItem.id) {
+                                    if (backStackEntry?.destination?.id != navItem.id) {
                                         navController.navigate(navItem.id) {
                                             popUpTo(startDestinationId) { saveState = true }
                                             launchSingleTop = true
@@ -175,7 +173,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         when (destination.id) {
             R.id.nav_home -> {
                 fab.setIconResource(R.drawable.ic_round_add)
-                fab.contentDescription = getString(R.string.title_apps)
+                fab.contentDescription = getString(R.string.navigate_to_apps)
                 fab.setOnClickListener { controller.navigate(R.id.nav_apps) }
                 fab.show()
             }
@@ -194,19 +192,28 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         }
     }
 
-    private data class NavBarItem(
+    /**
+     * Navigation suite items for the bottom/app bar.
+     * Each object represents a destination with its icon and label.
+     */
+    private sealed class NavSuiteItem(
         val id: Int,
         @DrawableRes val iconRes: Int,
         @StringRes val labelRes: Int,
-    )
+    ) {
+        object Home : NavSuiteItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home)
+        object Actions : NavSuiteItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions)
+        object Apps : NavSuiteItem(R.id.nav_apps, R.drawable.ic_round_apps, R.string.title_apps)
+        object Settings : NavSuiteItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings)
+        object About : NavSuiteItem(R.id.nav_about, R.drawable.ic_baseline_info, R.string.title_about)
+    }
 
     private val navItems = listOf(
-        NavBarItem(R.id.nav_home, R.drawable.ic_round_frozen, R.string.title_home),
-        NavBarItem(R.id.nav_actions, R.drawable.ic_round_action_flow, R.string.title_actions),
-        NavBarItem(R.id.nav_settings, R.drawable.ic_settings_selector, R.string.title_settings),
+        NavSuiteItem.Home,
+        NavSuiteItem.Actions,
+        NavSuiteItem.Apps,
+        NavSuiteItem.Settings,
+        NavSuiteItem.About,
     )
 
-    @Composable
-    private fun calculateNavigationSuiteType(): NavigationSuiteType =
-        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
 }

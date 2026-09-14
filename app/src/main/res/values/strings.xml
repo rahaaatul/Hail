@@ -4,6 +4,7 @@
     <string name="app_slogan">Freezedom!</string>
     <string name="title_home">Home</string>
     <string name="title_apps">Apps</string>
+    <string name="navigate_to_apps">Navigate to Apps</string>
     <string name="title_actions">Actions</string>
     <string name="action_create_action">Create action</string>
     <string name="action_edit_action">Edit action</string>
