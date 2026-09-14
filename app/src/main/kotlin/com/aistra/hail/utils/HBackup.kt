@@ -182,9 +182,11 @@ object HBackup {
                 HailData.addCheckedApp(pkg, 0, false)
             }
         }
-        HailData.checkedList
-            .filter { it.packageName in whitelistPkgs }
-            .forEach { it.whitelisted = true }
+        synchronized(HailData.checkedListLock) {
+            HailData.checkedList
+                .filter { it.packageName in whitelistPkgs }
+                .forEach { it.whitelisted = true }
+        }
         HailData.saveApps()
     }
 
