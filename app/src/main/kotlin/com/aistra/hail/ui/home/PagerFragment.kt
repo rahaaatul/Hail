@@ -68,11 +68,12 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private var query: String = String()
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
         if (uri == null) return@registerForActivityResult
+        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         lifecycleScope.launch {
             val context = context ?: return@launch
             val options = pendingBackupOptions ?: return@launch
             pendingBackupOptions = null
-            val file = File(context.cacheDir, "backup-${System.currentTimeMillis()}.zip")
+            val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
             runCatching {
                 HBackup.backup(context, file, options).getOrThrow()
                 context.contentResolver.openOutputStream(uri)?.use { output ->
@@ -90,9 +91,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
+        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         lifecycleScope.launch {
             val context = context ?: return@launch
-            val file = File(context.cacheDir, "restore-${System.currentTimeMillis()}.zip")
+            val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
             runCatching {
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     file.outputStream().use { output ->

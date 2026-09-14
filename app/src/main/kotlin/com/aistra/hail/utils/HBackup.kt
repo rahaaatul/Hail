@@ -14,7 +14,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
 import java.io.InputStream
-import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
@@ -148,20 +147,19 @@ object HBackup {
         zipOutputStream.closeEntry()
     }
 
-    private fun readAllBytes(inputStream: InputStream): ByteArray {
-        val buffer = ByteArrayOutputStream()
-        val data = ByteArray(1024)
-        var count = inputStream.read(data)
-        while (count != -1) {
-            buffer.write(data, 0, count)
-            count = inputStream.read(data)
+    private fun readJsonString(zipInputStream: ZipInputStream): String {
+        val buffer = ByteArray(8192)
+        val output = ByteArrayOutputStream()
+        var bytesRead = zipInputStream.read(buffer)
+        while (bytesRead != -1) {
+            output.write(buffer, 0, bytesRead)
+            bytesRead = zipInputStream.read(buffer)
         }
-        return buffer.toByteArray()
+        return String(output.toByteArray())
     }
 
     private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
-        val jsonArray = JSONArray(jsonString)
+        val jsonArray = JSONArray(readJsonString(zipInputStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
@@ -172,27 +170,16 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
-        val jsonArray = JSONArray(jsonString)
-        val whitelistPkgs = mutableSetOf<String>()
-        synchronized(HailData.checkedListLock) {
-            for (i in 0 until jsonArray.length()) {
-                val pkg = jsonArray.getString(i)
-                whitelistPkgs.add(pkg)
-                if (!HailData.isChecked(pkg)) {
-                    HailData.addCheckedApp(pkg, 0, false)
-                }
-            }
-            HailData.checkedList
-                .filter { it.packageName in whitelistPkgs }
-                .forEach { it.whitelisted = true }
+        val jsonArray = JSONArray(readJsonString(zipInputStream))
+        for (i in 0 until jsonArray.length()) {
+            val pkg = jsonArray.getString(i)
+            HailData.checkedList.firstOrNull { it.packageName == pkg }?.whitelisted = true
         }
         HailData.saveApps()
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
-        val jsonArray = JSONArray(jsonString)
+        val jsonArray = JSONArray(readJsonString(zipInputStream))
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
             val id = obj.getString("id")
@@ -205,8 +192,7 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
-        val jsonObject = JSONObject(jsonString)
+        val jsonObject = JSONObject(readJsonString(zipInputStream))
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit {
             val keys = jsonObject.keys()
