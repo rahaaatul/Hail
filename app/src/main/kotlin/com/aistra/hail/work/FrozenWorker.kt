@@ -19,11 +19,16 @@ class FrozenWorker(context: Context, params: WorkerParameters) : Worker(context,
             Result.success()
         } else {
             HLog.e("Failed to ${if (shouldFreeze) "freeze" else "unfreeze"} $packageName")
-            // A freeze that fails is almost always a permanent condition (wrong
-            // working mode, package not found, or disabled app), so retrying would
-            // loop forever. Unfreeze failures are more likely transient (e.g. a
-            // temporarily unavailable Shizuku/Island service), so allow a retry.
-            if (shouldFreeze) Result.failure() else Result.retry()
+            // AppManager.setAppFrozen() returns a plain Boolean: false for both
+            // permanent failures (package not found, permission denied) and
+            // transient ones (Shizuku/Island service temporarily unavailable).
+            // We cannot reliably distinguish them from the return value alone,
+            // so classifying by freeze-vs-unfreeze direction is incorrect in both
+            // directions. Instead, classify by working mode: MODE_DEFAULT always
+            // returns false (no backend service configured), so retrying serves no
+            // purpose. For all other modes the failure could be transient, so retry
+            // and let WorkManager's exponential backoff eventually give up.
+            if (HailData.workingMode == HailData.MODE_DEFAULT) Result.failure() else Result.retry()
         }
     }
 }

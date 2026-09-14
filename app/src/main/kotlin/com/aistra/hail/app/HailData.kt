@@ -233,6 +233,7 @@ object HailData {
         val appsFile = File(appsPath)
         if (!HFiles.write(tmpFile.absolutePath, json)) {
             HLog.e("Failed to write apps.json to ${tmpFile.absolutePath}")
+            tmpFile.delete()
             return false
         }
         if (!tmpFile.renameTo(appsFile)) {
