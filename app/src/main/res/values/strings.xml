@@ -183,6 +183,7 @@
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="action_backup">Backup</string>
+    <string name="action_backup_restore">Backup &amp; Restore</string>
     <string name="action_restore">Restore</string>
     <string name="backup_apps">Apps</string>
     <string name="backup_whitelist">Whitelist</string>

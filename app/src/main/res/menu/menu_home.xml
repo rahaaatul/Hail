@@ -70,7 +70,7 @@
         </menu>
     </item>
     <item
-            android:title="@string/action_backup"
+            android:title="@string/action_backup_restore"
             app:showAsAction="never">
         <menu>
             <item
