@@ -17,7 +17,6 @@ import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -106,7 +105,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         composeView.setContent {
             AppTheme {
-                val navSuiteType = calculateNavigationSuiteType()
+                val navSuiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
                 val startDestinationId = navController.graph.startDestinationId
                 val backStackEntry by navController.currentBackStackEntryAsState()
                 val selectedItem = remember(backStackEntry) {
@@ -114,7 +113,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                     navItems.indexOfFirst { it.id == currentDestId }
                 }
                 NavigationSuiteScaffold(
-                    layoutType = navSuiteType,
+                    navigationSuiteType = navSuiteType,
                     navigationSuiteItems = {
                         navItems.forEachIndexed { index, navItem ->
                             val isSelected = selectedItem == index
@@ -215,7 +214,4 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         NavSuiteItem.About,
     )
 
-    @Composable
-    private fun calculateNavigationSuiteType(): NavigationSuiteType =
-        NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfoV2())
 }
