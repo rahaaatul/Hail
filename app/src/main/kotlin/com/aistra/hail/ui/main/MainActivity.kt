@@ -30,7 +30,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -93,7 +92,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         navController = navHostFragment.navController
         navController.addOnDestinationChangedListener(this@MainActivity)
         appBarConfiguration = AppBarConfiguration.Builder(
-            R.id.nav_home, R.id.nav_actions, R.id.nav_settings
+            R.id.nav_home, R.id.nav_actions, R.id.nav_apps, R.id.nav_settings, R.id.nav_about
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
 
