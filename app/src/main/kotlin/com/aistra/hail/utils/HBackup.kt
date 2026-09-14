@@ -175,14 +175,14 @@ object HBackup {
         val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonArray = JSONArray(jsonString)
         val whitelistPkgs = mutableSetOf<String>()
-        for (i in 0 until jsonArray.length()) {
-            val pkg = jsonArray.getString(i)
-            whitelistPkgs.add(pkg)
-            if (!HailData.isChecked(pkg)) {
-                HailData.addCheckedApp(pkg, 0, false)
-            }
-        }
         synchronized(HailData.checkedListLock) {
+            for (i in 0 until jsonArray.length()) {
+                val pkg = jsonArray.getString(i)
+                whitelistPkgs.add(pkg)
+                if (!HailData.isChecked(pkg)) {
+                    HailData.addCheckedApp(pkg, 0, false)
+                }
+            }
             HailData.checkedList
                 .filter { it.packageName in whitelistPkgs }
                 .forEach { it.whitelisted = true }
