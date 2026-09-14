@@ -9,10 +9,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import org.json.JSONTokener
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.io.InputStream
+import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
@@ -20,17 +22,17 @@ import java.util.zip.ZipInputStream
 object HBackup {
 
     data class BackupOptions(
-        val apps: Boolean = false,
-        val whitelist: Boolean = false,
-        val actions: Boolean = false,
-        val settings: Boolean = false
+        val apps: Boolean = true,
+        val whitelist: Boolean = true,
+        val actions: Boolean = true,
+        val settings: Boolean = true
     )
 
     data class RestoreOptions(
-        val apps: Boolean = false,
-        val whitelist: Boolean = false,
-        val actions: Boolean = false,
-        val settings: Boolean = false
+        val apps: Boolean = true,
+        val whitelist: Boolean = true,
+        val actions: Boolean = true,
+        val settings: Boolean = true
     )
 
     private const val FILE_APPS = "apps.json"
@@ -54,8 +56,7 @@ object HBackup {
                     writeWhitelistJson(zipOutputStream)
                 }
                 if (options.actions) {
-                    val actions = ActionsRepository.loadAll()
-                    writeActionsJson(zipOutputStream, actions)
+                    writeActionsJson(zipOutputStream)
                 }
                 if (options.settings) {
                     writeSettingsJson(context, zipOutputStream)
@@ -110,7 +111,8 @@ object HBackup {
         writeEntry(zipOutputStream, FILE_WHITELIST, jsonArray.toString())
     }
 
-    private fun writeActionsJson(zipOutputStream: ZipOutputStream, actions: List<LaunchAction>) {
+    private suspend fun writeActionsJson(zipOutputStream: ZipOutputStream) {
+        val actions = ActionsRepository.loadAll()
         val jsonArray = JSONArray()
         actions.forEach { action ->
             jsonArray.put(
@@ -134,7 +136,7 @@ object HBackup {
                 is Float -> jsonObject.put(key, value)
                 is Boolean -> jsonObject.put(key, value)
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
-                else -> HLog.e("Unsupported preference type for key '$key': ${value::class.simpleName}")
+                else -> jsonObject.put(key, value.toString())
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
@@ -146,8 +148,20 @@ object HBackup {
         zipOutputStream.closeEntry()
     }
 
+    private fun readAllBytes(inputStream: InputStream): ByteArray {
+        val buffer = ByteArrayOutputStream()
+        val data = ByteArray(1024)
+        var count = inputStream.read(data)
+        while (count != -1) {
+            buffer.write(data, 0, count)
+            count = inputStream.read(data)
+        }
+        return buffer.toByteArray()
+    }
+
     private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(JSONTokener(zipInputStream))
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
@@ -158,19 +172,27 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(JSONTokener(zipInputStream))
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val jsonArray = JSONArray(jsonString)
+        val whitelistPkgs = mutableSetOf<String>()
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
+            whitelistPkgs.add(pkg)
             if (!HailData.isChecked(pkg)) {
                 HailData.addCheckedApp(pkg, 0, false)
             }
-            HailData.checkedList.firstOrNull { it.packageName == pkg }?.whitelisted = true
+        }
+        synchronized(HailData.checkedListLock) {
+            HailData.checkedList
+                .filter { it.packageName in whitelistPkgs }
+                .forEach { it.whitelisted = true }
         }
         HailData.saveApps()
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(JSONTokener(zipInputStream))
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val jsonArray = JSONArray(jsonString)
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
             val id = obj.getString("id")
@@ -183,7 +205,8 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val jsonObject = JSONObject(JSONTokener(zipInputStream))
+        val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
+        val jsonObject = JSONObject(jsonString)
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit {
             val keys = jsonObject.keys()
@@ -203,7 +226,6 @@ object HBackup {
                         }
                         putStringSet(key, stringSet)
                     }
-                    else -> HLog.e("Unsupported settings type for key '$key': ${value::class.simpleName}")
                 }
             }
         }
