@@ -14,8 +14,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.navigation.suite.calculateNavigationSuiteType
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -105,7 +105,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         composeView.setContent {
             AppTheme {
-                val navSuiteType = calculateNavigationSuiteType(currentWindowAdaptiveInfoV2().windowSizeClass)
+                val navSuiteType = NavigationSuiteScaffoldDefaults.navigationSuiteType(currentWindowAdaptiveInfoV2())
                 val startDestinationId = navController.graph.startDestinationId
                 val backStackEntry by navController.currentBackStackEntryAsState()
                 val selectedItem = remember(backStackEntry) {
