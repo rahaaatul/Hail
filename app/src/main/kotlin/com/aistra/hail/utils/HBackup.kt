@@ -1,7 +1,7 @@
 package com.aistra.hail.utils
 
 import android.content.Context
-import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.HailData
@@ -200,26 +200,26 @@ object HBackup {
         val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonObject = JSONObject(jsonString)
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
-        val editor = sp.edit()
-        val keys = jsonObject.keys()
-        while (keys.hasNext()) {
-            val key = keys.next()
-            val value = jsonObject.get(key)
-            when (value) {
-                is String -> editor.putString(key, value)
-                is Int -> editor.putInt(key, value)
-                is Long -> editor.putLong(key, value)
-                is Float -> editor.putFloat(key, value)
-                is Boolean -> editor.putBoolean(key, value)
-                is JSONArray -> {
-                    val stringSet = mutableSetOf<String>()
-                    for (i in 0 until value.length()) {
-                        stringSet.add(value.getString(i))
+        sp.edit {
+            val keys = jsonObject.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val value = jsonObject.get(key)
+                when (value) {
+                    is String -> putString(key, value)
+                    is Int -> putInt(key, value)
+                    is Long -> putLong(key, value)
+                    is Float -> putFloat(key, value)
+                    is Boolean -> putBoolean(key, value)
+                    is JSONArray -> {
+                        val stringSet = mutableSetOf<String>()
+                        for (i in 0 until value.length()) {
+                            stringSet.add(value.getString(i))
+                        }
+                        putStringSet(key, stringSet)
                     }
-                    editor.putStringSet(key, stringSet)
                 }
             }
         }
-        editor.apply()
     }
 }

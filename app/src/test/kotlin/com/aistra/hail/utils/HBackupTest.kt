@@ -44,7 +44,7 @@ class HBackupTest {
         coEvery { ActionsRepository.save(any(), any(), any()) } returns LaunchAction("test-id", "test-pkg", emptyList())
         every { HailData.isChecked(any()) } returns false
         every { HailData.addCheckedApp(any(), any(), any()) } returns Unit
-        every { HailData.saveApps() } returns Unit
+        every { HailData.saveApps() } returns true
     }
 
     @After
