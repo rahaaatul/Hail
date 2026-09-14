@@ -705,6 +705,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun showRestoreDialog(file: File) {
+        var restoreStarted = false
         val checkedItems = booleanArrayOf(true, true, true, true)
         MaterialAlertDialogBuilder(activity).setTitle(R.string.action_restore)
             .setMultiChoiceItems(
@@ -717,6 +718,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 checkedItems
             ) { _, _, _ -> }
             .setPositiveButton(android.R.string.ok) { _, _ ->
+                restoreStarted = true
                 val options = RestoreOptions(
                     apps = checkedItems[0],
                     whitelist = checkedItems[1],
@@ -744,7 +746,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     }
                 }
             }
-            .setNegativeButton(android.R.string.cancel) { _, _ -> file.delete() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .setOnDismissListener {
+                if (!restoreStarted) file.delete()
+            }
             .show()
     }
 
