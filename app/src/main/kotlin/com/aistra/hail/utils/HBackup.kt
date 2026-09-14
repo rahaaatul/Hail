@@ -137,7 +137,7 @@ object HBackup {
                 is Float -> jsonObject.put(key, value)
                 is Boolean -> jsonObject.put(key, value)
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
-                else -> throw IllegalStateException("Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
+                else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}, skipping")
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
@@ -176,6 +176,9 @@ object HBackup {
         val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
+            if (!HailData.isChecked(pkg)) {
+                HailData.addCheckedApp(pkg, 0, false)
+            }
             HailData.checkedList.firstOrNull { it.packageName == pkg }?.whitelisted = true
         }
         HailData.saveApps()
@@ -217,7 +220,7 @@ object HBackup {
                         }
                         putStringSet(key, stringSet)
                     }
-                    else -> HLog.e("Unsupported settings type for key '$key': ${value::class.simpleName}") // Intentionally error level: unsupported types indicate corrupted or incompatible settings
+                    else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
                 }
             }
         }
