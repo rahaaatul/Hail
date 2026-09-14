@@ -71,9 +71,15 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         lifecycleScope.launch {
             val options = pendingBackupOptions ?: return@launch
             pendingBackupOptions = null
-            val file = File(context?.cacheDir, "backup-${System.currentTimeMillis()}.zip")
+            val context = context ?: return@launch
+            val file = File(context.cacheDir, "backup-${System.currentTimeMillis()}.zip")
+            val backupResult = HBackup.backup(context, file, options)
+            if (backupResult.isFailure) {
+                HUI.showToast(R.string.operation_failed, backupResult.exceptionOrNull()?.localizedMessage ?: "Unknown", true)
+                return@launch
+            }
             runCatching {
-                context?.contentResolver?.openOutputStream(uri)?.use { output ->
+                context.contentResolver.openOutputStream(uri)?.use { output ->
                     file.inputStream().use { input ->
                         HFiles.copy(input, output)
                     }
@@ -89,9 +95,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
         lifecycleScope.launch {
-            val file = File(context?.cacheDir, "restore-${System.currentTimeMillis()}.zip")
+            val context = context ?: return@launch
+            val file = File(context.cacheDir, "restore-${System.currentTimeMillis()}.zip")
             runCatching {
-                context?.contentResolver?.openInputStream(uri)?.use { input ->
+                context.contentResolver.openInputStream(uri)?.use { input ->
                     file.outputStream().use { output ->
                         HFiles.copy(input, output)
                     }

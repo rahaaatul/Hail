@@ -45,10 +45,12 @@ object HBackup {
         outputFile: File,
         options: BackupOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            outputFile.parentFile?.mkdirs()
-            val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
-            try {
+        try {
+            val parent = outputFile.parentFile
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                throw IOException("Failed to create parent directories: ${parent.absolutePath}")
+            }
+            ZipOutputStream(FileOutputStream(outputFile)).use { zipOutputStream ->
                 if (options.apps) {
                     writeAppsJson(zipOutputStream)
                 }
@@ -62,9 +64,10 @@ object HBackup {
                 if (options.settings) {
                     writeSettingsJson(context, zipOutputStream)
                 }
-            } finally {
-                zipOutputStream.close()
             }
+            Result.success(Unit)
+        } catch (e: Throwable) {
+            Result.failure(e)
         }
     }
 
@@ -73,9 +76,8 @@ object HBackup {
         inputFile: File,
         options: RestoreOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            val zipInputStream = ZipInputStream(FileInputStream(inputFile))
-            try {
+        try {
+            ZipInputStream(FileInputStream(inputFile)).use { zipInputStream ->
                 var entry = zipInputStream.nextEntry
                 while (entry != null) {
                     val name = entry.name
@@ -88,9 +90,10 @@ object HBackup {
                     zipInputStream.closeEntry()
                     entry = zipInputStream.nextEntry
                 }
-            } finally {
-                zipInputStream.close()
             }
+            Result.success(Unit)
+        } catch (e: Throwable) {
+            Result.failure(e)
         }
     }
 
@@ -135,6 +138,8 @@ object HBackup {
                 is Long -> jsonObject.put(key, value)
                 is Float -> jsonObject.put(key, value)
                 is Boolean -> jsonObject.put(key, value)
+                // SharedPreferences only stores Set<String>; non-String elements are
+                // serialized via toString() and restored as Strings on readSettingsJson.
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
                 else -> jsonObject.put(key, value.toString())
             }
@@ -201,6 +206,7 @@ object HBackup {
         val jsonString = readAllBytes(zipInputStream).toString(StandardCharsets.UTF_8)
         val jsonObject = JSONObject(jsonString)
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
+        val unsupportedKeys = mutableListOf<String>()
         sp.edit {
             val keys = jsonObject.keys()
             while (keys.hasNext()) {
@@ -219,9 +225,12 @@ object HBackup {
                         }
                         putStringSet(key, stringSet)
                     }
-                    else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
+                    else -> unsupportedKeys.add(key)
                 }
             }
+        }
+        if (unsupportedKeys.isNotEmpty()) {
+            throw IOException("Unsupported preference type for keys: ${unsupportedKeys.joinToString()}")
         }
     }
 }
