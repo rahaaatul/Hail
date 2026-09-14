@@ -20,7 +20,8 @@ object HWork {
             OneTimeWorkRequestBuilder<FrozenWorker>().setInputData(
                 workDataOf(
                     HailData.KEY_PACKAGE to packageName,
-                    HailData.KEY_FROZEN to frozen
+                    HailData.KEY_FROZEN to frozen,
+                    HailData.WORKING_MODE to HailData.workingMode
                 )
             ).setInitialDelay(minutes, TimeUnit.MINUTES).build()
         )

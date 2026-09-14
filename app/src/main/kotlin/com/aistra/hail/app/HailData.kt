@@ -6,6 +6,8 @@ import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
+import com.aistra.hail.utils.HLog
+import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -161,6 +163,7 @@ object HailData {
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
     private val tagsPath = "$dir/tags.json"
+    private val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
         mutableListOf<AppInfo>().apply {
@@ -184,24 +187,38 @@ object HailData {
 
     fun isChecked(packageName: String): Boolean {
         if (packageName == BuildConfig.APPLICATION_ID) return false
-        return checkedList.any { it.packageName == packageName }
+        synchronized(checkedListLock) {
+            return checkedList.any { it.packageName == packageName }
+        }
     }
 
-    fun addCheckedApp(packageName: String, tagId: Int = 0, saveApps: Boolean = true) {
+    fun addCheckedApp(packageName: String, tagId: Int = 0, shouldSave: Boolean = true) {
         if (packageName == BuildConfig.APPLICATION_ID) return
-        checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
-        if (saveApps) saveApps()
+        synchronized(checkedListLock) {
+            checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
+        }
+        if (shouldSave) saveApps()
     }
 
-    fun removeCheckedApp(packageName: String, saveApps: Boolean = true) {
-        checkedList.removeAll { it.packageName == packageName }
-        if (saveApps) saveApps()
+    fun removeCheckedApp(packageName: String, shouldSave: Boolean = true) {
+        synchronized(checkedListLock) {
+            checkedList.removeAll { it.packageName == packageName }
+        }
+        if (shouldSave) saveApps()
     }
 
-    fun saveApps() {
+    fun saveApps(): Boolean {
+        val snapshot: List<AppInfo>
+        synchronized(checkedListLock) {
+            snapshot = checkedList.toList()
+        }
+        return saveAppsLocked(snapshot)
+    }
+
+    private fun saveAppsLocked(apps: List<AppInfo>): Boolean {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(appsPath, JSONArray().run {
-            checkedList.forEach {
+        val json = JSONArray().run {
+            apps.forEach {
                 put(
                     JSONObject()
                         .put(KEY_PACKAGE, it.packageName)
@@ -211,7 +228,20 @@ object HailData {
                 )
             }
             toString()
-        })
+        }
+        val tmpFile = File("$appsPath.tmp")
+        val appsFile = File(appsPath)
+        if (!HFiles.write(tmpFile.absolutePath, json)) {
+            HLog.e("Failed to write apps.json to ${tmpFile.absolutePath}")
+            if (!tmpFile.delete()) HLog.e("Failed to delete temp file ${tmpFile.absolutePath}")
+            return false
+        }
+        if (!tmpFile.renameTo(appsFile)) {
+            HLog.e("Failed to rename ${tmpFile.absolutePath} to ${appsFile.absolutePath}")
+            if (!tmpFile.delete()) HLog.e("Failed to delete temp file ${tmpFile.absolutePath}")
+            return false
+        }
+        return true
     }
 
     val tags: MutableList<Pair<String, Int>> by lazy {
