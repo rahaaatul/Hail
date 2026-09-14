@@ -108,7 +108,11 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                 val backStackEntry by navController.currentBackStackEntryAsState()
                 val selectedItem = remember(backStackEntry) {
                     val currentDestId = backStackEntry?.destination?.id
-                    navItems.indexOfFirst { it.id == currentDestId }
+                    if (currentDestId != null) {
+                        navItems.indexOfFirst { it.id == currentDestId }
+                    } else {
+                        -1
+                    }
                 }
                 NavigationSuiteScaffold(
                     navigationSuiteType = navSuiteType,
@@ -118,7 +122,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                             item(
                                 selected = isSelected,
                                 onClick = {
-                                    if (navController.currentDestination?.id != navItem.id) {
+                                    if (backStackEntry?.destination?.id != navItem.id) {
                                         navController.navigate(navItem.id) {
                                             popUpTo(startDestinationId) { saveState = true }
                                             launchSingleTop = true
@@ -173,7 +177,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         when (destination.id) {
             R.id.nav_home -> {
                 fab.setIconResource(R.drawable.ic_round_add)
-                fab.contentDescription = getString(R.string.title_apps)
+                fab.contentDescription = getString(R.string.navigate_to_apps)
                 fab.setOnClickListener { controller.navigate(R.id.nav_apps) }
                 fab.show()
             }
