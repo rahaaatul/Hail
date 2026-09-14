@@ -163,7 +163,7 @@ object HailData {
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
     private val tagsPath = "$dir/tags.json"
-    private val checkedListLock = Object()
+    internal val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
         mutableListOf<AppInfo>().apply {
