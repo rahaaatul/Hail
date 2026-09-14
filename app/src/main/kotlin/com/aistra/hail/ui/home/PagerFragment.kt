@@ -140,7 +140,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         activity.fab.setOnLongClickListener(null)
     }
 
-    private fun updateCurrentList() {
+    internal fun updateCurrentList() {
         val binding = _binding ?: return
         HailData.checkedList.filter { it.isInstalled }.filter {
             if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
