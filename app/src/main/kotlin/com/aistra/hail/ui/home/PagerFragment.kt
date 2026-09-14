@@ -86,7 +86,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
     }
 
-    private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
+    private var restoreLauncher = registerForActivityResult(OpenDocument(arrayOf("application/zip"))) { uri ->
         if (uri == null) return@registerForActivityResult
         lifecycleScope.launch {
             val file = File(context?.cacheDir, "restore-${System.currentTimeMillis()}.zip")
