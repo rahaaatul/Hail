@@ -5,9 +5,12 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.util.Log
 import android.view.*
+import androidx.documentfile.provider.DocumentFile
+import java.io.FileNotFoundException
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
@@ -50,6 +53,8 @@ import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
+import com.aistra.hail.ui.home.HomeFragment
+import com.aistra.hail.ui.home.PagerFragment
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
@@ -82,6 +87,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
         if (uri == null) return@registerForActivityResult
+        if (DocumentsContract.isDocumentUri(context, uri) && DocumentFile.fromSingleUri(context, uri)?.isDirectory == true) {
+            HUI.showToast(R.string.pick_file_not_folder)
+            return@registerForActivityResult
+        }
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
         lifecycleScope.launch {
@@ -103,6 +112,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
     private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
+        if (DocumentsContract.isDocumentUri(context, uri) && DocumentFile.fromSingleUri(context, uri)?.isDirectory == true) {
+            HUI.showToast(R.string.pick_file_not_folder)
+            return@registerForActivityResult
+        }
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
         lifecycleScope.launch {
@@ -366,7 +379,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             horizontalDivider()
             preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
             preference(
-                key = "backup",
+                key = "backup_preference",
                 title = { Text(text = stringResource(R.string.action_backup)) },
                 icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
                 onClick = ::showBackupDialog
@@ -790,6 +803,20 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     val result = HBackup.restore(requireContext(), file, options)
                     dialog.dismiss()
                     result.onSuccess {
+                        if (options.apps) {
+                            parentFragmentManager.fragments.forEach { fragment ->
+                                if (fragment is HomeFragment) {
+                                    fragment.childFragmentManager.fragments.forEach { pager ->
+                                        if (pager is PagerFragment) {
+                                            pager.updateCurrentList()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (options.settings) {
+                            activity.invalidateOptionsMenu()
+                        }
                         HUI.showToast(R.string.msg_imported)
                     }.onFailure {
                         HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
