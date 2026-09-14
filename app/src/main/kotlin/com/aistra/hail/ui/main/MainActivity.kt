@@ -30,10 +30,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
@@ -195,7 +195,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         }
     }
 
-    sealed class NavSuiteItem(
+    private sealed class NavSuiteItem(
         val id: Int,
         @DrawableRes val iconRes: Int,
         @StringRes val labelRes: Int,
