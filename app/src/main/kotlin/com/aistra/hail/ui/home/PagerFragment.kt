@@ -73,6 +73,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             pendingBackupOptions = null
             val file = File(context?.cacheDir, "backup-${System.currentTimeMillis()}.zip")
             runCatching {
+                HBackup.backup(requireContext(), file, options).getOrThrow()
                 context?.contentResolver?.openOutputStream(uri)?.use { output ->
                     file.inputStream().use { input ->
                         HFiles.copy(input, output)
