@@ -136,7 +136,7 @@ object HBackup {
                 is Float -> jsonObject.put(key, value)
                 is Boolean -> jsonObject.put(key, value)
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
-                else -> jsonObject.put(key, value.toString())
+                else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value.javaClass.simpleName}, skipping")
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
