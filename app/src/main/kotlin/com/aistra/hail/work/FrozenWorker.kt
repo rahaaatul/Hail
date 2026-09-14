@@ -5,6 +5,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
+import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HLog
 
 class FrozenWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
@@ -15,20 +16,25 @@ class FrozenWorker(context: Context, params: WorkerParameters) : Worker(context,
             return Result.failure()
         }
         val shouldFreeze = inputData.getBoolean(HailData.KEY_FROZEN, true)
+        val workingMode = inputData.getString(HailData.WORKING_MODE) ?: HailData.workingMode
         return if (AppManager.setAppFrozen(packageName, shouldFreeze)) {
             Result.success()
         } else {
             HLog.e("Failed to ${if (shouldFreeze) "freeze" else "unfreeze"} $packageName")
-            // AppManager.setAppFrozen() returns a plain Boolean: false for both
-            // permanent failures (package not found, permission denied) and
-            // transient ones (Shizuku/Island service temporarily unavailable).
-            // We cannot reliably distinguish them from the return value alone,
-            // so classifying by freeze-vs-unfreeze direction is incorrect in both
-            // directions. Instead, classify by working mode: MODE_DEFAULT always
-            // returns false (no backend service configured), so retrying serves no
-            // purpose. For all other modes the failure could be transient, so retry
-            // and let WorkManager's exponential backoff eventually give up.
-            if (HailData.workingMode == HailData.MODE_DEFAULT) Result.failure() else Result.retry()
+            // setAppFrozen returns a plain Boolean without distinguishing permanent
+            // from transient failures. Classify the failure:
+            // - No backend service configured (MODE_DEFAULT): setAppFrozen always
+            //   returns false in this mode, so retrying is futile.
+            // - Package not installed: won't resolve on retry.
+            // Otherwise: the failure could be transient (e.g. Shizuku/Island
+            // binder temporarily unavailable), so retry. WorkManager's exponential
+            // backoff will eventually stop retrying.
+            val isPackageInstalled = HPackages.getApplicationInfoOrNull(packageName) != null
+            if (!isPackageInstalled || workingMode == HailData.MODE_DEFAULT) {
+                Result.failure()
+            } else {
+                Result.retry()
+            }
         }
     }
 }
