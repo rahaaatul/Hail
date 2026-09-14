@@ -9,10 +9,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import org.json.JSONTokener
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
@@ -44,7 +45,10 @@ object HBackup {
         options: BackupOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            outputFile.parentFile?.mkdirs()
+            val dirCreated = outputFile.parentFile?.mkdirs()
+            if (dirCreated == null || !dirCreated) {
+                return@withContext Result.failure(IllegalStateException("Failed to create directory: ${outputFile.parentFile}"))
+            }
             val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
             try {
                 if (options.apps) {
@@ -134,7 +138,7 @@ object HBackup {
                 is Float -> jsonObject.put(key, value)
                 is Boolean -> jsonObject.put(key, value)
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
-                else -> HLog.e("Unsupported preference type for key '$key': ${value::class.simpleName}")
+                else -> HLog.e("Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
@@ -147,7 +151,7 @@ object HBackup {
     }
 
     private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(JSONTokener(zipInputStream))
+        val jsonArray = JSONArray(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
@@ -158,7 +162,7 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(JSONTokener(zipInputStream))
+        val jsonArray = JSONArray(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
@@ -170,7 +174,7 @@ object HBackup {
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val jsonArray = JSONArray(JSONTokener(zipInputStream))
+        val jsonArray = JSONArray(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
             val id = obj.getString("id")
@@ -183,7 +187,7 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val jsonObject = JSONObject(JSONTokener(zipInputStream))
+        val jsonObject = JSONObject(InputStreamReader(zipInputStream, StandardCharsets.UTF_8).readText())
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit {
             val keys = jsonObject.keys()

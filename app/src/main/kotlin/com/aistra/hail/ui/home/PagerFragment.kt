@@ -67,7 +67,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     MenuProvider {
     private var query: String = String()
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
-        if (uri == null) return@registerForActivityResult
+        if (uri == null) {
+            pendingBackupOptions = null
+            return@registerForActivityResult
+        }
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         lifecycleScope.launch {
             val options = pendingBackupOptions ?: return@launch
@@ -740,7 +743,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     }
                 }
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(android.R.string.cancel) { _, _ -> file.delete() }
             .show()
     }
 
