@@ -6,6 +6,7 @@ import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
+import com.aistra.hail.utils.HLog
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -161,6 +162,7 @@ object HailData {
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
     private val tagsPath = "$dir/tags.json"
+    private val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
         mutableListOf<AppInfo>().apply {
@@ -187,20 +189,32 @@ object HailData {
         return checkedList.any { it.packageName == packageName }
     }
 
-    fun addCheckedApp(packageName: String, tagId: Int = 0, saveApps: Boolean = true) {
+    fun addCheckedApp(packageName: String, tagId: Int = 0, shouldSave: Boolean = true) {
         if (packageName == BuildConfig.APPLICATION_ID) return
-        checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
-        if (saveApps) saveApps()
+        synchronized(checkedListLock) {
+            checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
+            if (shouldSave && !saveAppsLocked()) {
+                HLog.e("Failed to save apps after adding $packageName")
+            }
+        }
     }
 
-    fun removeCheckedApp(packageName: String, saveApps: Boolean = true) {
-        checkedList.removeAll { it.packageName == packageName }
-        if (saveApps) saveApps()
+    fun removeCheckedApp(packageName: String, shouldSave: Boolean = true) {
+        synchronized(checkedListLock) {
+            checkedList.removeAll { it.packageName == packageName }
+            if (shouldSave && !saveAppsLocked()) {
+                HLog.e("Failed to save apps after removing $packageName")
+            }
+        }
     }
 
-    fun saveApps() {
+    fun saveApps(): Boolean {
+        return synchronized(checkedListLock) { saveAppsLocked() }
+    }
+
+    private fun saveAppsLocked(): Boolean {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(appsPath, JSONArray().run {
+        val json = JSONArray().run {
             checkedList.forEach {
                 put(
                     JSONObject()
@@ -211,7 +225,18 @@ object HailData {
                 )
             }
             toString()
-        })
+        }
+        val tmpPath = "$appsPath.tmp"
+        if (!HFiles.write(tmpPath, json)) {
+            HLog.e("Failed to write apps.json to $tmpPath")
+            return false
+        }
+        if (!File(tmpPath).renameTo(File(appsPath))) {
+            HLog.e("Failed to rename $tmpPath to $appsPath")
+            File(tmpPath).delete()
+            return false
+        }
+        return true
     }
 
     val tags: MutableList<Pair<String, Int>> by lazy {
