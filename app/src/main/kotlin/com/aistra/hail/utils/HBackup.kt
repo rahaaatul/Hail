@@ -13,7 +13,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
-import java.nio.charset.Charsets
+import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
@@ -155,7 +155,7 @@ object HBackup {
         val buffer = ByteArray(8192)
         var bytesRead: Int
         while (bufferedStream.read(buffer).also { bytesRead = it } != -1) {
-            stringBuilder.append(String(buffer, 0, bytesRead, Charsets.UTF_8))
+            stringBuilder.append(String(buffer, 0, bytesRead, Charset.forName("UTF-8")))
         }
         return stringBuilder.toString()
     }
@@ -177,6 +177,9 @@ object HBackup {
         val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
+            if (!HailData.isChecked(pkg)) {
+                HailData.addCheckedApp(pkg, 0, false)
+            }
             HailData.checkedList.firstOrNull { it.packageName == pkg }?.whitelisted = true
         }
         HailData.saveApps()
