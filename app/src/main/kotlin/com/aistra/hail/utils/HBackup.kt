@@ -13,8 +13,6 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
-import java.io.InputStreamReader
-import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
@@ -151,9 +149,19 @@ object HBackup {
         zipOutputStream.closeEntry()
     }
 
+    private fun readJsonString(bufferedStream: BufferedInputStream): String {
+        val stringBuilder = StringBuilder()
+        val buffer = ByteArray(8192)
+        var bytesRead: Int
+        while (bufferedStream.read(buffer).also { bytesRead = it } != -1) {
+            stringBuilder.append(String(buffer, 0, bytesRead, "UTF-8".toCharset()))
+        }
+        return stringBuilder.toString()
+    }
+
     private fun readAppsJson(zipInputStream: ZipInputStream) {
         val bufferedStream = BufferedInputStream(zipInputStream, 8192)
-        val jsonArray = JSONArray(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
+        val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             if (!HailData.isChecked(pkg)) {
@@ -165,7 +173,7 @@ object HBackup {
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
         val bufferedStream = BufferedInputStream(zipInputStream, 8192)
-        val jsonArray = JSONArray(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
+        val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
             HailData.checkedList.firstOrNull { it.packageName == pkg }?.whitelisted = true
@@ -175,7 +183,7 @@ object HBackup {
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
         val bufferedStream = BufferedInputStream(zipInputStream, 8192)
-        val jsonArray = JSONArray(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
+        val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
             val id = obj.getString("id")
@@ -189,7 +197,7 @@ object HBackup {
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
         val bufferedStream = BufferedInputStream(zipInputStream, 8192)
-        val jsonObject = JSONObject(String(bufferedStream.readAllBytes(), StandardCharsets.UTF_8))
+        val jsonObject = JSONObject(readJsonString(bufferedStream))
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit {
             val keys = jsonObject.keys()
