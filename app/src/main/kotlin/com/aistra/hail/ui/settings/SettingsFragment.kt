@@ -86,8 +86,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
         if (uri == null) return@registerForActivityResult
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
+        val cacheDir = ctx.cacheDir
         if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
             HUI.showToast(R.string.pick_file_not_folder)
             return@registerForActivityResult
@@ -97,7 +97,12 @@ class SettingsFragment : MainFragment(), MenuProvider {
             runCatching {
                 HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch)
                 try {
-                    ctx.contentResolver.openOutputStream(uri)?.use { output ->
+                    val output = ctx.contentResolver.openOutputStream(uri) ?: run {
+                        file.delete()
+                        HUI.showToast(R.string.operation_failed, "File not found", true)
+                        return@launch
+                    }
+                    output.use {
                         file.inputStream().use { input ->
                             HFiles.copy(input, output)
                         }
@@ -108,6 +113,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     return@launch
                 }
             }.onSuccess {
+                file.delete()
                 HUI.showToast(R.string.msg_exported, file.name)
             }.onFailure {
                 file.delete()
@@ -117,8 +123,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
     }
     private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
+        val cacheDir = ctx.cacheDir
         if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
             HUI.showToast(R.string.pick_file_not_folder)
             return@registerForActivityResult
@@ -127,7 +133,12 @@ class SettingsFragment : MainFragment(), MenuProvider {
             val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
             runCatching {
                 try {
-                    ctx.contentResolver.openInputStream(uri)?.use { input ->
+                    val input = ctx.contentResolver.openInputStream(uri) ?: run {
+                        file.delete()
+                        HUI.showToast(R.string.operation_failed, "File not found", true)
+                        return@launch
+                    }
+                    input.use {
                         file.outputStream().use { output ->
                             HFiles.copy(input, output)
                         }
