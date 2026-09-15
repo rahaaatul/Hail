@@ -5,7 +5,7 @@
 #
 # Installs:
 #   - JDK 26 (Temurin)
-#   - Android SDK cmdline-tools + platform-tools + platform android-36
+#   - Android SDK cmdline-tools + platform-tools + platform android-37
 #   - 7z (p7zip-full) for APK compression
 #
 # The three independent installs (apt packages, JDK download,
@@ -19,7 +19,7 @@
 set -euo pipefail
 
 readonly JAVA_VERSION="26"
-readonly SDK_PLATFORM="android-36"
+readonly SDK_PLATFORM="android-37"
 readonly SDK_DIR="${ANDROID_HOME:-${HOME}/.android/sdk}"
 readonly CMDLINE_TOOLS="${SDK_DIR}/cmdline-tools/latest"
 
