@@ -1,1 +1,8 @@
-{"skills": {"paths": ["superpowers/skills"]}}
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "skills": {
+    "paths": [
+      ".kilo/skills/superpowers"
+    ]
+  }
+}
