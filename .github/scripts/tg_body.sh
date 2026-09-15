@@ -48,14 +48,14 @@ commit_url="https://github.com/${REPO}/commit/${full_hash}"
 version_name="$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.gradle.kts 2>/dev/null | head -1 || echo "unknown")"
 
 subject="$(git log -1 --format='%s' 2>/dev/null || echo "No changes")"
-# For PR builds, use the PR title from the branch name if available
+# For PR builds, use the PR title from GitHub API if available
 if [[ -n "${PR_NUMBER:-}" ]]; then
-  # Try to get PR title from GitHub API (if GH_TOKEN available) or use branch name
+  # Try to get PR title from GitHub API (if GH_TOKEN available)
   pr_title=""
-  if [[ -n "${GH_TOKEN:-}" ]]; then
+  if [[ -n "${GH_TOKEN:-}" ]] && command -v jq >/dev/null 2>&1; then
     pr_title="$(curl -sS -H "Authorization: token ${GH_TOKEN}" \
       "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null | \
-      sed -n 's/.*"title": "\([^"]*\)".*/\1/p' | head -1 || true)"
+      jq -r '.title // empty' 2>/dev/null || true)"
   fi
   if [[ -n "${pr_title}" ]]; then
     subject="${pr_title}"
