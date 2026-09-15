@@ -50,6 +50,19 @@ version_name="$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.grad
 subject="$(git log -1 --format='%s' 2>/dev/null || echo "No changes")"
 # Strip conventional-commit prefix: fix:, feat(scope):, chore(deps):, etc.
 subject="${subject#*: }"
+# For PR builds, override with the PR title from GitHub API if available
+if [[ -n "${PR_NUMBER:-}" ]]; then
+  # Try to get PR title from GitHub API (if GH_TOKEN available)
+  pr_title=""
+  if [[ -n "${GH_TOKEN:-}" ]] && command -v jq >/dev/null 2>&1; then
+    pr_title="$(curl -sS --max-time 10 --connect-timeout 5 -H "Authorization: token ${GH_TOKEN}" \
+      "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null | \
+      jq -r '.title // empty' 2>/dev/null || true)"
+  fi
+  if [[ -n "${pr_title}" ]]; then
+    subject="${pr_title}"
+  fi
+fi
 
 # --- Emit -------------------------------------------------------------------
 
