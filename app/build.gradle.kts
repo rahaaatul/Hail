@@ -21,7 +21,7 @@ android {
     defaultConfig {
         applicationId = "com.aistra.hail"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 43
         versionName = "1.11.4"
         ndk {
