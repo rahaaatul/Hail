@@ -125,7 +125,7 @@ dependencies {
     testImplementation("androidx.test:core-ktx:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("androidx.test.ext:truth:1.7.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("androidx.room3:room3-testing:3.0.2")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.json:json:20260814")
@@ -134,7 +134,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.0")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     androidTestImplementation("io.mockk:mockk-android:1.13.12")
     androidTestImplementation("androidx.room3:room3-testing:3.0.2")
 }
