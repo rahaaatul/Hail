@@ -48,6 +48,19 @@ commit_url="https://github.com/${REPO}/commit/${full_hash}"
 version_name="$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.gradle.kts 2>/dev/null | head -1 || echo "unknown")"
 
 subject="$(git log -1 --format='%s' 2>/dev/null || echo "No changes")"
+# For PR builds, use the PR title from the branch name if available
+if [[ -n "${PR_NUMBER:-}" ]]; then
+  # Try to get PR title from GitHub API (if GH_TOKEN available) or use branch name
+  pr_title=""
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    pr_title="$(curl -sS -H "Authorization: token ${GH_TOKEN}" \
+      "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null | \
+      sed -n 's/.*"title": "\([^"]*\)".*/\1/p' | head -1 || true)"
+  fi
+  if [[ -n "${pr_title}" ]]; then
+    subject="${pr_title}"
+  fi
+fi
 # Strip conventional-commit prefix: fix:, feat(scope):, chore(deps):, etc.
 subject="${subject#*: }"
 
