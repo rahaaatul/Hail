@@ -9,6 +9,7 @@ composeBom = "2026.08.00"
 composePreference = "2.2.0"
 constraintlayout = "2.2.2"
 coreKtx = "1.19.0"
+documentfile = "1.1.0"
 dhizukuApi = "2.6.0"
 hiddenapibypass = "6.1"
 insetter = "0.6.1"
@@ -48,6 +49,7 @@ appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", ve
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
 compose-preference = { module = "me.zhanghai.compose.preference:preference", version.ref = "composePreference" }
 dhizuku-api = { module = "io.github.iamr0s:Dhizuku-API", version.ref = "dhizukuApi" }
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 insetter = { module = "dev.chrisbanes.insetter:insetter", version.ref = "insetter" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
