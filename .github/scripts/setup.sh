@@ -19,7 +19,7 @@
 set -euo pipefail
 
 readonly JAVA_VERSION="26"
-readonly SDK_PLATFORM="android-37"
+readonly SDK_PLATFORM="android-37.0"
 readonly SDK_DIR="${ANDROID_HOME:-${HOME}/.android/sdk}"
 readonly CMDLINE_TOOLS="${SDK_DIR}/cmdline-tools/latest"
 
@@ -116,7 +116,7 @@ fi
 
 # Accept licenses; ignore the broken-pipe warning from `yes` closing early.
 yes | "${CMDLINE_TOOLS}/bin/sdkmanager" --sdk_root="${SDK_DIR}" --licenses >/dev/null 2>&1 || true
-"${CMDLINE_TOOLS}/bin/sdkmanager" --sdk_root="${SDK_DIR}" --install \
+"${CMDLINE_TOOLS}/bin/sdkmanager" --sdk_root="${SDK_DIR}" --channel=3 --install \
   "platform-tools" "platforms;${SDK_PLATFORM}" >/dev/null
 
 echo "==> Toolchain ready"

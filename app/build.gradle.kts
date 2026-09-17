@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.documentfile)
     implementation(libs.androidx.work.runtime)
     implementation(libs.pinyin4j)
     implementation(libs.material)
