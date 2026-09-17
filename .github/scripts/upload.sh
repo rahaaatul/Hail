@@ -49,7 +49,7 @@ name="$(basename "${zip_path}")"
 if [[ "${name}" == *pre-release* ]]; then
   topic="${TOPIC_PRE_RELEASE}"
   label="pre-release topic"
-elif [[ "${name}" == *-pr.apk ]]; then
+elif [[ "${name}" == *-pr.@(apk|7z|zip) ]]; then
   topic="${TOPIC_PR}"
   label="PR topic"
 elif [[ "${name}" == *release* ]]; then
