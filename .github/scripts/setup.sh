@@ -5,7 +5,7 @@
 #
 # Installs:
 #   - JDK 26 (Temurin)
-#   - Android SDK cmdline-tools + platform-tools + platform android-37.0
+#   - Android SDK cmdline-tools + platform-tools + platform android-37
 #   - 7z (p7zip-full) for APK compression
 #
 # The three independent installs (apt packages, JDK download,
@@ -116,7 +116,7 @@ fi
 
 # Accept licenses; ignore the broken-pipe warning from `yes` closing early.
 yes | "${CMDLINE_TOOLS}/bin/sdkmanager" --sdk_root="${SDK_DIR}" --licenses >/dev/null 2>&1 || true
-"${CMDLINE_TOOLS}/bin/sdkmanager" --sdk_root="${SDK_DIR}" --install \
+"${CMDLINE_TOOLS}/bin/sdkmanager" --sdk_root="${SDK_DIR}" --channel=3 --install \
   "platform-tools" "platforms;${SDK_PLATFORM}" >/dev/null
 
 echo "==> Toolchain ready"
