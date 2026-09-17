@@ -10,6 +10,7 @@ composePreference = "2.2.0"
 constraintlayout = "2.2.2"
 coreKtx = "1.19.0"
 dhizukuApi = "2.6.0"
+documentfile = "1.0.1"
 hiddenapibypass = "6.1"
 insetter = "0.6.1"
 kotlinxCoroutinesAndroid = "1.11.0"
@@ -44,6 +45,7 @@ androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", version.ref = "appiconloader" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
 compose-preference = { module = "me.zhanghai.compose.preference:preference", version.ref = "composePreference" }
