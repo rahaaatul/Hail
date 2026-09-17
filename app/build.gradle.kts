@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.documentfile)
     implementation(libs.pinyin4j)
     implementation(libs.material)
     implementation(libs.insetter)
