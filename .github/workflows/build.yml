@@ -136,6 +136,7 @@ jobs:
           PR_NUMBER: ${{ github.event.number }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [[ -n "${{ steps.zip.outputs.zip_path }}" ]]; then
             bash .github/scripts/upload.sh ${{ steps.zip.outputs.zip_path }}
