@@ -30,8 +30,10 @@
 - HomeViewModel exposed as StateFlow for Compose integration
 
 ---
+## Tasks
 
-### Task 1: Update HomeFragment to Use ComposeView
+
+### Task 1: Update HomeFragment to Use ComposeView### Task 1: Update HomeFragment to Use ComposeView
 **Files:**
 - Modify: `app/src/main/java/com/aistra/hail/ui/home/HomeFragment.kt`
 
@@ -103,11 +105,9 @@
 - [ ] Update all methods to update state flows instead of individual `LiveData`
 - [ ] Ensure proper initialization and state update logic for tab operations (create, rename, delete, select)
 
-### Task 7: Validate HomeFragment Migration
-**Files:**
-- No new files to create (validation uses existing files)
+## Validation Checklist
 
-**Steps:**
+
 - [ ] Run `./gradlew assembleDebug` to ensure successful build
 - [ ] Test tab navigation works correctly via `TabRow` taps
 - [ ] Verify horizontal paging works via swipe gestures

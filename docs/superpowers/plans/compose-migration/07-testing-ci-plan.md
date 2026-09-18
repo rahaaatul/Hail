@@ -29,6 +29,8 @@
 - GitHub Actions CI must support Android emulator execution
 
 ---
+## Tasks
+
 ### Task 1: Update Dependencies in gradle/libs.versions.toml
 **Files:**
 - Modify: `gradle/libs.versions.toml`

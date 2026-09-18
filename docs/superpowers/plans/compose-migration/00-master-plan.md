@@ -19,6 +19,8 @@
 - Coil 2.6.0 chosen for better Compose integration over Glide
 
 ---
+## Tasks
+
 ### Task 1: Review Dependency Versions
 **Files:**
 - Read: `docs/superpowers/plans/compose-migration/00-master-plan.md` (this file)
@@ -75,7 +77,7 @@ Each phase corresponds to a detailed plan file:
 8. **07-testing-ci-plan.md** - Testing and CI setup
 9. **08-resource-viewmodel-plan.md** - Resources and ViewModel StateFlow conversion
 
-## Validation Gates
+## Validation Checklist
 
 Each phase must pass:
 - [ ] Local build: `./gradlew assembleDebug`

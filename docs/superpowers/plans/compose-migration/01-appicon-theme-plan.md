@@ -27,6 +27,8 @@
 - Coil 2.6.0 for image loading (replaces AppIconCache)
 
 ---
+## Tasks
+
 ### Task 1: Update Dependencies in gradle/libs.versions.toml
 **Files:**
 - Modify: `gradle/libs.versions.toml`

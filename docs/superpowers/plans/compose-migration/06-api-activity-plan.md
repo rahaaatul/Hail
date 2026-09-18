@@ -26,6 +26,9 @@
 - No ViewModel required for this simple screen
 
 ---
+## Tasks
+
+
 ### Task 1: Validate ApiActivity Uses Compose
 **Files:**
 - Validate: `app/src/main/java/com/aistra/hail/ui/api/ApiActivity.kt`
@@ -51,6 +54,9 @@
 - No new files to create (validation uses existing files)
 
 **Steps:**
+- [ ] Refer to Validation Checklist for validation steps.
+
+## Validation Checklist
 - [ ] Run `./gradlew assembleDebug` to ensure successful build
 - [ ] Test ApiActivity renders correctly in both light/dark theme
 - [ ] Verify scrolling functionality works properly with finger gestures

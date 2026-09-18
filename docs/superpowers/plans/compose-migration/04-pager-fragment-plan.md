@@ -33,6 +33,8 @@
 - PagerViewModel exposed as StateFlow for Compose integration
 
 ---
+## Tasks
+
 ### Task 1: Update PagerFragment to Use ComposeView
 **Files:**
 - Modify: `app/src/main/java/com/aistra/hail/ui/home/PagerFragment.kt`

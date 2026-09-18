@@ -28,6 +28,8 @@
 - No ViewModel or ActionsViewModel exists; state managed in composable
 
 ---
+## Tasks
+
 ### Task 1: Update ActionsFragment to Use ComposeView
 **Files:**
 - Modify: `app/src/main/java/com/aistra/hail/ui/actions/ActionsFragment.kt`

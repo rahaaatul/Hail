@@ -26,6 +26,8 @@
 - No breaking changes: Each screen migration must be independently testable; app must build and run after each screen
 
 ---
+## Tasks
+
 ### Task 1: Review and Understand Migration Strategy
 **Files:**
 - Read: `docs/superpowers/plans/compose-migration/00-main-plan.md` (this file)

@@ -29,6 +29,8 @@
 - All ViewModels must be compatible with StateFlow for Compose integration
 
 ---
+## Tasks
+
 ### Task 1: Create Compose Resource Object
 **Files:**
 - Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/ComposeResources.kt`

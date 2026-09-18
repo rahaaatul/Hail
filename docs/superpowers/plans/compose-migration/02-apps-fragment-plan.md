@@ -32,6 +32,8 @@
 - AppsViewModel exposed as StateFlow for Compose integration (app list and query only)
 
 ---
+## Tasks
+
 ### Task 1: Update AppsFragment to Use ComposeView
 **Files:**
 - Modify: `app/src/main/java/com/aistra/hail/ui/apps/AppsFragment.kt`
