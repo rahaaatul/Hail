@@ -22,7 +22,7 @@
 **Spec:** This plan is based on standard Android testing practices applied to Jetpack Compose migration.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Kotlin 2.4.20
 - Compose UI Testing dependencies must be compatible with Compose version
 - Instrumented tests must run on API level 21+ (practical minimum: 24 for emulators)

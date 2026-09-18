@@ -19,11 +19,11 @@
 **Spec:** This plan is based on comprehensive codebase analysis of all 50+ Kotlin files, 14 layout XMLs, 5 menu XMLs, and resource files.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Material3 1.4.0 (stable, not Expressive)
 - Kotlin 2.4.20
 - AGP 9.4.0
-- Navigation Component 2.10.0 (Fragment-based XML nav graph preserved)
+- Navigation Component 2.10.1 (Fragment-based XML nav graph preserved)
 - Coil 2.6.0 for image loading (replaces AppIconCache)
 
 ---

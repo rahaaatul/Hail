@@ -23,10 +23,10 @@
 **Spec:** This plan is based on comprehensive codebase analysis of the HomeFragment and related components.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
-- Navigation Component 2.10.0 (Fragment-based)
+- Navigation Component 2.10.1 (Fragment-based)
 - HomeViewModel exposed as StateFlow for Compose integration
 
 ---

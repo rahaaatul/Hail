@@ -16,15 +16,15 @@
 **Tech Stack:**
 - Jetpack Compose, Material3
 - Coroutines for async repository calls
-- Accompanist Material3 MaterialDialogs (or Material3 built-in alerts/dialogs) - if needed, but we can use Compose Material3 dialogs
+- Material3 built-in alerts/dialogs
 
 **Spec:** This plan is based on the current ActionsFragment implementation as of the codebase analysis.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
-- Navigation Component 2.10.0 (Fragment-based)
+- Navigation Component 2.10.1 (Fragment-based)
 - No ViewModel or ActionsViewModel exists; state managed in composable
 
 ---

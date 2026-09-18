@@ -24,10 +24,10 @@
 **Spec:** This plan is based on comprehensive codebase analysis of the AppsFragment and related components, including sort functionality (options menu), select all action, context menu (long-press), and swipe-to-refresh.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
-- Navigation Component 2.10.0 (Fragment-based)
+- Navigation Component 2.10.1 (Fragment-based)
 - Coil 2.6.0 for image loading
 - AppsViewModel exposed as StateFlow for Compose integration (app list and query only)
 

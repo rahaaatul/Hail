@@ -222,6 +222,19 @@
 - [ ] Delete the Adapter file
 - [ ] Verify no remaining references through compiler errors or IDE search
 
+### Task 11: Add Swipe-to-Refresh to App Grid
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppGrid.kt`
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/PagerScreen.kt`
+- Modify: `app/src/main/java/com/aistra/hail/ui/home/PagerViewModel.kt`
+
+**Steps:**
+- [ ] Modify `AppGrid` to accept an `onRefresh: () -> Unit` and `isRefreshing: Boolean` parameter
+- [ ] Wrap the `LazyVerticalGrid` in `androidx.compose.material3.SwipeToRefresh` with the `onRefresh` and `isRefreshing` parameters
+- [ ] Update `PagerScreen` to collect a `refreshState` from ViewModel (or use rememberSaveable) and pass it to `AppGrid`
+- [ ] Update `PagerViewModel` to expose a `refresh` function that triggers a reload of apps (if not already present) and update `isRefreshing` state
+- [ ] Note: Since we corrected ViewModel strategy, we may need to add a `refresh` function in ViewModel that updates the apps StateFlow
+
 ## Validation Checklist
 
 After completing all tasks above:
@@ -239,6 +252,7 @@ After completing all tasks above:
 - [ ] State survives configuration changes (rememberSaveable)
 - [ ] Accessibility: TalkBack reads app names, tag info, and selection state
 - [ ] Performance: Smooth scrolling with 100+ apps
+- [ ] Swipe-to-refresh reloads app list
 - [ ] No memory leaks from ComposeView or ViewModel
 - [ ] Existing unit tests for PagerViewModel still pass
 - [ ] No references to PagerAdapter or fragment_pager.xml remain
@@ -250,3 +264,4 @@ After completing all tasks above:
 - [Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)
 - [Material3 Dialogs](https://m3.material.io/components/dialogs/usage)
 - [Compose Multi-Selection Patterns](https://developer.android.com/jetpack/compose/gestures#selection)
+- [Material3 SwipeToRefresh](https://developer.android.com/jetpack/compose/material3#swipe-to-refresh)

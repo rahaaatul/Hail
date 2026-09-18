@@ -12,10 +12,10 @@
 **Spec:** Consolidates information from all individual phase plans and dependency resolution results.
 
 ## Global Constraints
-- Navigation remains at 2.10.0 (Fragment-based, XML nav graph kept)
+- Navigation remains at 2.10.1 (Fragment-based, XML nav graph kept)
 - androidx.compose.foundation:pager used (part of Compose BOM)
 - Material3 1.4.0 is stable (not Expressive)
-- Compose BOM 2026.08.00 is the latest as of September 2026
+- Compose BOM 2026.09.00 is the latest as of September 2026
 - Coil 2.6.0 chosen for better Compose integration over Glide
 
 ---
@@ -44,9 +44,9 @@ After validating with Context7 and web search:
 ```toml
 # gradle/libs.versions.toml
 [versions]
-composeBom = "2026.08.00"
+composeBom = "2026.09.00"
 composeCompiler = "1.6.8"
-navigation = "2.10.0"
+navigation = "2.10.1"
 lifecycle = "2.8.2"
 room = "2.6.0"
 kotlin = "2.4.20"

@@ -22,7 +22,7 @@
 **Spec:** This plan is based on standard Android resource management and ViewModel architecture patterns applied to Jetpack Compose migration.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Kotlin 2.4.20
 - Material3 1.4.0 (stable)
 - Hilt for dependency injection
