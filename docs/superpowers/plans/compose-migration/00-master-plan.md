@@ -11,6 +11,32 @@
 
 **Spec:** Consolidates information from all individual phase plans and dependency resolution results.
 
+## Global Constraints
+- Navigation remains at 2.10.0 (Fragment-based, XML nav graph kept)
+- Accompanist Material3 HorizontalPager 0.37.2 used (consider migrating to androidx.compose.foundation:pager when stable)
+- Material3 1.4.0 is stable (not Expressive)
+- Compose BOM 2026.08.00 is the latest as of September 2026
+- Coil 2.6.0 chosen for better Compose integration over Glide
+
+---
+### Task 1: Review Dependency Versions
+**Files:**
+- Read: `docs/superpowers/plans/compose-migration/00-master-plan.md` (this file)
+
+**Steps:**
+- [ ] Review the resolved dependency versions for the migration
+- [ ] Verify these versions are compatible with each other
+- [ ] Confirm they meet the project's Global Constraints
+
+### Task 2: Understand Migration Phases
+**Files:**
+- Read: All 0X-*.md plan files in this directory
+
+**Steps:**
+- [ ] Familiarize yourself with the 9 migration phases
+- [ ] Understand what each phase accomplishes
+- [ ] Note the validation gates for each phase
+
 ## Dependency Versions (Resolved September 2026)
 
 After validating with Context7 and web search:
@@ -37,16 +63,9 @@ coroutines = "1.8.0"
 coroutinesCore = "1.8.0"
 ```
 
-**Notes:**
-- Navigation remains at 2.10.0 (Fragment-based, XML nav graph kept)
-- Accompanist Material3 HorizontalPager 0.37.2 used (consider migrating to androidx.compose.foundation:pager when stable)
-- Material3 1.4.0 is stable (not Expressive)
-- Compose BOM 2026.08.00 is the latest as of September 2026
-- Coil 2.6.0 chosen for better Compose integration over Glide
-
 ## Migration Phases
 
-See individual plan files for detailed breakdown:
+Each phase corresponds to a detailed plan file:
 
 1. **00-main-plan.md** - Overall migration strategy and constraints
 2. **01-appicon-theme-plan.md** - Infrastructure: Coil + theming + AppIcon
@@ -76,7 +95,6 @@ Each phase must pass:
 - [ ] Accessibility compliance
 
 ## References
-
 - [Compose BOM Versions](https://developer.android.com/jetpack/androidx/releases/compose-bom)
 - [Material3 Stability](https://developer.android.com/jetpack/compose/material3/migration)
 - [Accompanist Status](https://github.com/google/accompanist#maven)

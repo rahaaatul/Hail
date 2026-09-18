@@ -21,71 +21,107 @@
 - Accompanist Material3 HorizontalPager 0.37.2 (implementation detail: may migrate to androidx.compose.foundation:paper when stable)
 - ViewModel with StateFlow (unchanged)
 
-## File Changes
+**Spec:** This plan is based on comprehensive codebase analysis of the HomeFragment and related components.
 
-### 1. Update HomeFragment to Use ComposeView
-#### Task 1: Update HomeFragment.kt
-- [ ] Modify app/src/main/java/com/aistra/hail/ui/home/HomeFragment.kt
-- [ ] Replace ViewBinding inflation with ComposeView in onCreateView
-- [ ] Set ViewCompositionStrategy to DisposeOnViewTreeLifecycleDestroyed
-- [ ] Set content to HailTheme { HomeScreen(viewModel = viewModel, ...) }
+## Global Constraints
+- Jetpack Compose BOM 2026.08.00 (stable)
+- Material3 1.4.0 (stable)
+- Kotlin 2.4.20
+- Navigation Component 2.10.0 (Fragment-based)
+- Accompanist Material3 HorizontalPager 0.37.2 (temporary, may migrate to foundation:pager)
+- HomeViewModel exposed as StateFlow for Compose integration
 
-### 2. Create HomeScreen Composable
-#### Task 2: Create HomeScreen.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/HomeScreen.kt
-- [ ] Implement @Composable fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier)
-- [ ] Collect tab titles and visibility from viewModel StateFlow properties
-- [ ] Implement Column layout or direct content
-- [ ] Add TabRow for tab labels
-- [ ] Add HorizontalPager for swiping between tabs
-- [ ] Each tab/page contains a PagerScreen for the corresponding tab type
-- [ ] Add FAB for adding apps to custom tab
-- [ ] Handle navigation to other destinations via Navigation Component
+---
+### Task 1: Update HomeFragment to Use ComposeView
+**Files:**
+- Modify: `app/src/main/java/com/aistra/hail/ui/home/HomeFragment.kt`
 
-### 3. Create Supporting Composables
-#### Task 3: Create TabRow Implementation
-- [ ] Implement TabRow with Tab components for each tab
-- [ ] Use selected tab index from viewModel StateFlow (e.g., selectedTabIndex)
-- [ ] Handle tab selection callbacks (onClick/{ tabIndex -> viewModel.selectTab(tabIndex) })
+**Steps:**
+- [ ] Replace ViewBinding inflation with `ComposeView` in `onCreateView`
+- [ ] Set `ViewCompositionStrategy` to `DisposeOnViewTreeLifecycleDestroyed`
+- [ ] Set content to `HailTheme { HomeScreen(viewModel = viewModel, ...) }`
+
+### Task 2: Create HomeScreen Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/HomeScreen.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier)`
+- [ ] Collect tab titles and visibility from `viewModel` StateFlow properties
+- [ ] Implement layout with `TabRow` and `HorizontalPager`
+- [ ] Map each tab/page to a `PagerScreen` composable for the corresponding tab type
+- [ ] Add `FAB` for adding apps to custom tab
+- [ ] Handle navigation to other destinations via `Navigation Component`
+
+### Task 3: Create TabRow Implementation
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/HomeTabRow.kt` (or inline in HomeScreen)
+
+**Steps:**
+- [ ] Implement `TabRow` with `Tab` components for each tab
+- [ ] Use selected tab index from `viewModel` StateFlow (e.g., `selectedTabIndex`)
+- [ ] Handle tab selection callbacks (e.g., `onClick = { tabIndex -> viewModel.selectTab(tabIndex) }`)
 - [ ] Apply proper styling, indicators, and dimensions for selected/unselected tabs
+- [ ] Use `scrollableTabRow()` for long tab lists if needed
 
-#### Task 4: Create HorizontalPager Implementation
-- [ ] Import HorizontalPager from androidx.accompanist.material3.horizontalpager (remember this is temporary)
-- [ ] Set page count to match the number of tabs from viewModel
-- [ ] Set current page to match selectedTabIndex from viewModel with bidirectional binding
-- [ ] Each page/tab contains PagerScreen(tabType = tabTypes[page]) or inline equivalent logic
+### Task 4: Create HorizontalPager Implementation
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/HomePager.kt` (or inline in HomeScreen)
+
+**Steps:**
+- [ ] Import `HorizontalPager` from `androidx.accompanist.material3.horizontalpager` (remember this is temporary)
+- [ ] Set `pageCount` to match the number of tabs from `viewModel`
+- [ ] Set `currentPage` to match `selectedTabIndex` from `viewModel` with bidirectional binding
+- [ ] Each `page/tab` contains `PagerScreen(tabType = tabTypes[page])` or inline equivalent logic
 - [ ] Apply proper paging behavior, page transitions, and indicators
+- [ ] Consider using `pageSize = PageSize.FillWidth` for full-width pages
 
-#### Task 5: Create FAB for Custom Tab Creation
-- [ ] Implement FloatingActionButton with onClick = { viewModel.showCreateTabDialog(true) }
-- [ ] Position at bottom end with appropriate padding (e.g., modifier.align(Alignment.BottomEnd).padding(16.dp))
-- [ ] Use Icons.Default.Add for the icon with contentDescription = "Add tab"
-- [ ] Only show FAB when appropriate based on viewModel state (e.g., !viewModel.isEditingTab)
+### Task 5: Create FAB for Custom Tab Creation
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/HomeFab.kt` (or inline in HomeScreen)
 
-#### Task 6: Update HomeViewModel to Expose StateFlow
-- [ ] Modify app/src/main/java/com/aistra/hail/ui/home/HomeViewModel.kt
-- [ ] Replace MutableLiveData with MutableStateFlow for relevant UI state
-- [ ] Expose StateFlow properties for tab titles, visibility, selected tab index, etc.
-- [ ] Implement appropriate UiState data class if beneficial
-- [ ] Update all methods to update state flows instead of individual LiveData
-- [ ] Ensure proper initialization and state update logic for tab operations
+**Steps:**
+- [ ] Implement `FloatingActionButton` with:
+    - `onClick = { viewModel.showCreateTabDialog(true) }`
+    - `modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)`
+- [ ] Use `Icons.Default.Add` for the icon
+- [ ] Set `contentDescription = "Add tab"`
+- [ ] Only show FAB when appropriate based on `viewModel` state (e.g., `!viewModel.isEditingTab`)
 
-### 4. Validate HomeFragment Migration
-#### Task 7: Validate HomeFragment Migration
-- [ ] Run ./gradlew assembleDebug to ensure successful build
-- [ ] Test tab navigation works correctly via TabRow taps
+### Task 6: Update HomeViewModel to Expose StateFlow
+**Files:**
+- Modify: `app/src/main/java/com/aistra/hail/ui/home/HomeViewModel.kt`
+
+**Steps:**
+- [ ] Replace `MutableLiveData` with `MutableStateFlow` for relevant UI state
+- [ ] Expose `StateFlow` properties for:
+    - Tab titles (`tabTitles: StateFlow<List<String>>`)
+    - Tab visibility (`tabVisibility: StateFlow<List<Boolean>>`)
+    - Selected tab index (`selectedTabIndex: StateFlow<Int>`)
+    - Any other relevant state (editing mode, dialog states, etc.)
+- [ ] Implement appropriate `UiState` data class if beneficial (e.g., `HomeUiState`)
+- [ ] Update all methods to update state flows instead of individual `LiveData`
+- [ ] Ensure proper initialization and state update logic for tab operations (create, rename, delete, select)
+
+### Task 7: Validate HomeFragment Migration
+**Files:**
+- No new files to create (validation uses existing files)
+
+**Steps:**
+- [ ] Run `./gradlew assembleDebug` to ensure successful build
+- [ ] Test tab navigation works correctly via `TabRow` taps
 - [ ] Verify horizontal paging works via swipe gestures
-- [ ] Check TabRow and HorizontalPager stay in sync (when one changes, the other updates)
-- [ ] Confirm each tab displays correct content via PagerScreen (all, frequent, recent, custom tabs)
+- [ ] Check `TabRow` and `HorizontalPager` stay in sync (when one changes, the other updates)
+- [ ] Confirm each tab displays correct content via `PagerScreen` (all, frequent, recent, custom tabs)
 - [ ] Test FAB opens custom tab creation dialog properly
-- [ ] Verify navigation to other destinations (Apps, Actions, Settings, About) works via Navigation Component
+- [ ] Verify navigation to other destinations (Apps, Actions, Settings, About) works via `Navigation Component`
 - [ ] Ensure state survives configuration changes (rotation, multi-window)
-- [ ] Confirm TalkBack accessibility works for all tabs, tabs labels, FAB, and page content
+- [ ] Confirm TalkBack accessibility works for all tabs, tab labels, FAB, and page content
 - [ ] Test performance with multiple tabs containing many apps (should be smooth)
-- [ ] Verify that tab creation, renaming, and deletion work correctly through ViewModel
+- [ ] Verify that tab creation, renaming, and deletion work correctly through `ViewModel`
 
 ## References
-
 - [Accompanist Material3 HorizontalPager](https://github.com/google/accompanist/tree/main/horizontal-pager)
 - [Jetpack Compose TabRow](https://developer.android.com/jetpack/compose/components#tab-row)
 - [Jetpack Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)

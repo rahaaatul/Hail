@@ -14,63 +14,102 @@
 **Tech Stack:**
 - Coil 2.6.0 (io.coil-kt:coil-compose)
 - Material3 1.4.0 (androidx.compose.material3:material3)
-- Kotlin 2.4.20, AGP 9.4.0
+- Kotlin 2.4.20, AGP 9.4.0, compileSdk 37
 
-## File Changes
+**Spec:** This plan is based on comprehensive codebase analysis of all 50+ Kotlin files, 14 layout XMLs, 5 menu XMLs, and resource files.
 
-### 1. Update Dependencies
-#### Task 1: Update gradle/libs.versions.toml
-- [ ] Add coil = "2.6.0" and coilCompose = "2.6.0" to [versions] section
-- [ ] Add coil = { module = "io.coil-kt:coil", version.ref = "coil" } and coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" } to [libraries] section
+## Global Constraints
+- Jetpack Compose BOM 2026.08.00 (stable)
+- Material3 1.4.0 (stable, not Expressive)
+- Kotlin 2.4.20
+- AGP 9.4.0
+- Navigation Component 2.10.0 (Fragment-based XML nav graph preserved)
+- Coil 2.6.0 for image loading (replaces AppIconCache)
 
-#### Task 2: Update app/build.gradle.kts
-- [ ] Add implementation(libs.coil) and implementation(libs.coilCompose) to dependencies block
+---
+### Task 1: Update Dependencies in gradle/libs.versions.toml
+**Files:**
+- Modify: `gradle/libs.versions.toml`
 
-### 2. Create AppIcon Data Class + Decoder
-#### Task 3: Create AppIconRequest.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/utils/AppIconRequest.kt
-- [ ] Implement @Immutable data class AppIconRequest with packageName, userId, size, grayscale, synthesizeAdaptive, iconPack fields
-- [ ] Make it implement ImageRequest.Data with proper toString() implementation
+**Steps:**
+- [ ] Add `coil = "2.6.0"` and `coilCompose = "2.6.0"` to the `[versions]` section
+- [ ] Add `coil = { module = "io.coil-kt:coil", version.ref = "coil" }` and `coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }` to the `[libraries]` section
 
-#### Task 4: Create AppIconDecoder
-- [ ] Create AppIconDecoder class in same file or separate file
-- [ ] Implement ImageDecoder<AppIconRequest> with decode() method that reuses AppIconLoader logic
-- [ ] Add SimpleImagePool.Closeable inner class for bitmap management
-- [ ] Add @Inject constructor with Context parameter
+### Task 2: Update Dependencies in app/build.gradle.kts
+**Files:**
+- Modify: `app/build.gradle.kts`
 
-#### Task 5: Configure ImageLoader in HailApp
-- [ ] Modify app/src/main/kotlin/com/aistra/hail/HailApp.kt
-- [ ] Add val imageLoader by lazy { ImageLoader.Builder(this) ... build() }
-- [ ] Configure componentRegistry to add AppIconDecoder.Factory()
-- [ ] Set up memory cache with LruMemoryCache(maxSizePercent = 0.25)
-- [ ] Set up disk cache with FileDiskCache(File(cacheDir, "coil_icons"))
-- [ ] Enable crossfade(true)
+**Steps:**
+- [ ] Add `implementation(libs.coil)` to the dependencies block
+- [ ] Add `implementation(libs.coilCompose)` to the dependencies block
 
-### 3. Create Reusable AppIcon Composable
-#### Task 6: Create AppIcon.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppIcon.kt
-- [ ] Implement @Composable fun AppIcon(request: AppIconRequest, contentDescription: String? = null, modifier: Modifier = Modifier)
-- [ ] Use rememberImagePainter with data = request and crossfade(true) builder
-- [ ] Create Canvas with modifier.size(request.size.dp)
-- [ ] Draw the icon using painter.paint within drawIntoCanvas
-- [ ] Add contentDescription handling for accessibility (via parent or semantics)
+### Task 3: Create AppIconRequest Data Class
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/utils/AppIconRequest.kt`
 
-### 4. Update Theme.kt with Typography and Shapes
-#### Task 7: Update Theme.kt
-- [ ] Modify app/src/main/kotlin/com/aistra/hail/ui/theme/Theme.kt
-- [ ] Define private val DarkColorScheme = darkColorScheme(...) with specific Material3 colors
-- [ ] Define private val LightColorScheme = lightColorScheme(...) with specific Material3 colors
-- [ ] Update @Composable fun HailTheme(...) to use MaterialTheme with colorScheme, typography, and shapes
-- [ ] Add private val Typography = Typography(...) with appropriate text styles
-- [ ] Add private val Shapes = Shapes(...) with rounded corner shapes
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.utils`
+- [ ] Add `@Immutable` annotation to the data class
+- [ ] Implement `data class AppIconRequest(val packageName: String, val userId: Int = 0, val size: Int = Dp.Size.dpToPx(48.dp), val grayscale: Boolean = false, val synthesizeAdaptive: Boolean = HailData.synthesizeAdaptiveIcons, val iconPack: String = HailData.iconPack)`
+- [ ] Make it implement `ImageRequest.Data`
+- [ ] Override `toString()` to return `"appicon://$packageName|$userId|$size|$grayscale|$synthesizeAdaptive|$iconPack"`
 
-### 5. Remove AppIconCache.kt
-#### Task 8: Remove AppIconCache.kt
-- [ ] Delete app/src/main/kotlin/com/aistra/hail/utils/AppIconCache.kt
-- [ ] Verify no remaining references through compiler errors or search
+### Task 4: Create AppIconDecoder
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/utils/AppIconDecoder.kt` (or add to AppIconRequest.kt)
+
+**Steps:**
+- [ ] Create the class `AppIconDecoder @Inject constructor(@Suppress("UNUSED_PARAMETER") context: Context) : ImageDecoder<AppIconRequest>`
+- [ ] Implement the `decode()` method that reuses `AppIconLoader.getOrLoadBitmap` logic
+- [ ] Add inner class `SimpleImagePool.Closeable` for bitmap management
+- [ ] Ensure proper close() and getBitmap() implementations
+
+### Task 5: Configure ImageLoader in HailApp
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/HailApp.kt`
+
+**Steps:**
+- [ ] Add `val imageLoader by lazy { ImageLoader.Builder(this) ... build() }`
+- [ ] Configure `.componentRegistry { add(AppIconDecoder.Factory()) }`
+- [ ] Set up `.memoryCache { LruMemoryCache(maxSizePercent = 0.25) }`
+- [ ] Set up `.diskCache { FileDiskCache(File(cacheDir, "coil_icons")) }`
+- [ ] Enable `.crossfade(true)`
+
+### Task 6: Create Reusable AppIcon Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppIcon.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun AppIcon(request: AppIconRequest, contentDescription: String? = null, modifier: Modifier = Modifier)`
+- [ ] Use `rememberImagePainter(data = request, builder = { crossfade(true) })`
+- [ ] Calculate size from `request.size.dp`
+- [ ] Create `Canvas(modifier = modifier.size(size))`
+- [ ] Draw the icon using `painter.paint?.let { paint -> drawIntoCanvas { it.drawImage(...) } }`
+- [ ] Handle contentDescription for accessibility (note: relies on parent to set semantics)
+
+### Task 7: Update Theme.kt with Typography and Shapes
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/Theme.kt`
+
+**Steps:**
+- [ ] Define `private val DarkColorScheme = darkColorScheme(...)` with specific Material3 colors
+- [ ] Define `private val LightColorScheme = lightColorScheme(...)` with specific Material3 colors
+- [ ] Update `@Composable fun HailTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit)` to use `MaterialTheme` with `colorScheme`, `typography`, and `shapes`
+- [ ] Add `private val Typography = Typography(...)` with appropriate text styles (bodyLarge, bodyMedium, etc.)
+- [ ] Add `private val Shapes = Shapes(...)` with rounded corner shapes (small, medium, large)
+
+### Task 8: Remove AppIconCache.kt
+**Files:**
+- Delete: `app/src/main/kotlin/com/aistra/hail/utils/AppIconCache.kt`
+
+**Steps:**
+- [ ] Delete the file
+- [ ] Verify no remaining references through compiler errors or IDE search
 
 ## Validation Checklist
 
+After completing all tasks above:
 - [ ] App builds successfully (`./gradlew assembleDebug`)
 - [ ] AppIcon composable displays icons correctly in all screens
 - [ ] Icons load with placeholder and error handling
@@ -84,7 +123,6 @@
 - [ ] Performance: Icon loading doesn't cause jank on scroll
 
 ## References
-
 - [Coil Compose Documentation](https://coil-kt.github.io/coil/compose/)
 - [Material3 Theming](https://developer.android.com/jetpack/compose/themes)
 - [Custom ImageDecoder in Coil](https://coil-kt.github.io/coil/custom-decoders/)

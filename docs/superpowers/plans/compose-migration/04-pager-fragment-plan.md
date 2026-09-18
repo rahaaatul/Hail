@@ -22,99 +22,209 @@
 - Accompanist Material3 MaterialDialogs (or Material3 built-in alerts/dialogs)
 - ViewModel with StateFlow (unchanged)
 
-## File Changes
+**Spec:** This plan is based on comprehensive codebase analysis of the PagerFragment and related components.
 
-### 1. Update PagerFragment to Use ComposeView
-#### Task 1: Update PagerFragment.kt
-- [ ] Modify app/src/main/java/com/aistra/hail/ui/home/PagerFragment.kt
-- [ ] Replace ViewBinding inflation with ComposeView in onCreateView
-- [ ] Set ViewCompositionStrategy to DisposeOnViewTreeLifecycleDestroyed
-- [ ] Set content to HailTheme { PagerScreen(viewModel = viewModel, tabType = arguments?.getString("tabType") ?: "all", ...) }
+## Global Constraints
+- Jetpack Compose BOM 2026.08.00 (stable)
+- Material3 1.4.0 (stable)
+- Kotlin 2.4.20
+- Navigation Component 2.10.0 (Fragment-based)
+- Coil 2.6.0 for image loading
+- PagerViewModel exposed as StateFlow for Compose integration
 
-### 2. Create PagerScreen Composable
-#### Task 2: Create PagerScreen.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/PagerScreen.kt
-- [ ] Implement @Composable fun PagerScreen(viewModel: PagerViewModel, tabType: String, modifier: Modifier = Modifier)
-- [ ] Collect viewModel.uiState.collectAsStateWithLifecycle() and individual StateFlow properties
-- [ ] Implement Column layout with fillMaxSize()
-- [ ] Add tab-specific header (PagerHeader) with conditional tag management
-- [ ] Add loading indicator when uiState.isLoading is true
-- [ ] Add main content: AppGrid with appropriate callbacks
-- [ ] Add multi-select toolbar when isMultiSelect is true
-- [ ] Add tag edit dialog when showTagEditDialog is true and tabType is custom
+---
+### Task 1: Update PagerFragment to Use ComposeView
+**Files:**
+- Modify: `app/src/main/java/com/aistra/hail/ui/home/PagerFragment.kt`
 
-### 3. Create Supporting Composables
-#### Task 3: Create PagerHeader.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/PagerHeader.kt
-- [ ] Implement @Composable fun PagerHeader(title: String, onEditText: (), onEditTagsClicked: () -> Unit = {}, canEditTags: Boolean = false, modifier: Modifier = Modifier)
-- [ ] Use Row layout with fillMaxWidth(), padding(16.dp), height(56.dp)
-- [ ] Add Text with title, style=titleMedium, verticalAlignment=Alignment.CenterVertically
-- [ ] Add Spacer with weight(1f)
-- [ ] Conditionally add IconButton with onClick = onEditTagsClicked and Icons.Default.Edit when canEditTags is true
+**Steps:**
+- [ ] Replace ViewBinding inflation with `ComposeView` in `onCreateView`
+- [ ] Set `ViewCompositionStrategy` to `DisposeOnViewTreeLifecycleDestroyed`
+- [ ] Set content to `HailTheme { PagerScreen(viewModel = viewModel, tabType = arguments?.getString("tabType") ?: "all", ...) }`
 
-#### Task 4: Create AppGrid.kt (with tag badges)
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppGrid.kt
-- [ ] Implement @Composable fun AppGrid(apps: List<AppInfo>, onAppClicked: (AppInfo) -> Unit, onAppLongClicked: (AppInfo) -> Unit, isMultiSelect: Boolean, selectedApps: Set<String>, showTagBadge: Boolean = false, modifier: Modifier = Modifier)
-- [ ] Use LazyVerticalGrid with columns = GridCells.Fixed(3) and modifier.fillMaxWidth().padding(8.dp)
-- [ ] Use items(apps) { app -> AppGridItem(...) } with appropriate parameters
+### Task 2: Create PagerScreen Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/PagerScreen.kt`
 
-#### Task 5: Create AppGridItem.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppGridItem.kt
-- [ ] Implement @Composable fun AppGridItem(app: AppInfo, onClick: () -> Unit, onLongClick: () -> Unit, isSelected: Boolean, isMultiSelect: Boolean, tags: List<Tag>, showTagBadge: Boolean, modifier: Modifier = Modifier)
-- [ ] Use MutableInteractionSource() and collectIsPressedAsState() for pressed state
-- [ ] Use Column modifier with size(72.dp), background based on selected/pressed state, clickable, longClickable, interactionSource, padding(8.dp), align(Alignment.Center)
-- [ ] Add AppIcon with request = AppIconRequest(packageName = app.packageName, userId = app.userId), contentDescription = app.label, modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally)
-- [ ] When showTagBadge and tags.isNotEmpty(), add TagChip with text = tags.first().label, onDelete = { /* handle tag removal from app */ }, modifier = Modifier.align(Alignment.TopEnd)
-- [ ] Add Spacer(height=4.dp)
-- [ ] Add Text with app.label, maxLines=1, overflow=TextOverflow.Ellipsis, style=bodyMedium, align=Alignment.CenterHorizontally
-- [ ] When isMultiSelect, add Box(align=Alignment.TopEnd, size=20.dp) with Checkbox(checked=isSelected, onChange={/* handled by toggleable */})
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun PagerScreen(viewModel: PagerViewModel, tabType: String, modifier: Modifier = Modifier)`
+- [ ] Collect `viewModel.uiState.collectAsStateWithLifecycle()` and individual StateFlow properties
+- [ ] Implement `Column` layout with `fillMaxSize()`
+- [ ] Add tab-specific header (`PagerHeader`) with conditional tag management
+- [ ] Add loading indicator when `uiState.isLoading` is true
+- [ ] Add main content: `AppGrid` with appropriate callbacks
+- [ ] Add multi-select toolbar when `isMultiSelect` is true
+- [ ] Add tag edit dialog when `showTagEditDialog` is true and `tabType` is custom
 
-#### Task 6: Create TagChip.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/TagChip.kt
-- [ ] Implement @Composable fun TagChip(text: String, onDelete: () -> Unit, modifier: Modifier = Modifier)
-- [ ] Use Chip with onDeleteRequest = onDelete and modifier = modifier
-- [ ] Add Text(text)
+### Task 3: Create PagerHeader Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/PagerHeader.kt`
 
-#### Task 7: Create MultiSelectToolbar.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/MultiSelectToolbar.kt
-- [ ] Implement @Composable fun MultiSelectToolbar(selectedCount: Int, onTagSelected: (String) -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier)
-- [ ] Use Surface with modifier.fillMaxWidth().height(56.dp)
-- [ ] Use Row with fillMaxWidth() and padding(horizontal = 16.dp)
-- [ ] add Text with text = "$selectedCount selected", style=bodyLarge, verticalAlignment=Alignment.CenterVertically
-- [ ] add Spacer with weight(1f)
-- [ ] add Button with onClick = { /* open tag picker */ }, enabled = selectedCount > 0 and text = "Add to tag"
-- [ ] add Spacer with width(8.dp)
-- [ ] add IconButton with onClick = onCancel and Icons.Default.Close
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun PagerHeader(title: String, onEditText: (), onEditTagsClicked: () -> Unit = {}, canEditTags: Boolean = false, modifier: Modifier = Modifier)`
+- [ ] Use `Row` layout with `fillMaxWidth()`, `padding(16.dp)`, `height(56.dp)`
+- [ ] Add `Text` with `title`, `style=titleMedium`, `verticalAlignment=Alignment.CenterVertically`
+- [ ] Add `Spacer` with `weight(1f)`
+- [ ] Conditionally add `IconButton` with `onClick = onEditTagsClicked` and `Icons.Default.Edit` when `canEditTags` is true
 
-#### Task 8: Create TagEditDialog.kt
-- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/TagEditDialog.kt
-- [ ] Implement @Composable fun TagEditDialog(currentTagName: String, onDismissed: () -> Unit, onSaved: (String) -> Unit, onDeleted: () -> Unit, modifier: Modifier = Modifier)
-- [ ] use rememberDialogState() and rememberCoroutineScope()
-- [ ] use rememberSaveable for tagName initialized to currentTagName
-- [ ] implement AlertDialog with onDismissRequest, title = Text("Edit Tag"), text = TextField with value = tagName, onValueChange = { tagName = it }, label = { Text("Tag name") }, isError = tagName.isBlank(), errorMessage = if (tagName.isBlank()) { Text("Tag name cannot be empty") } else null
-- [ ] add confirm Button with onClick = { if (tagName.isNotBlank()) { onSaved(tagName); onDismissed(); dialogState.dismissDialog() } } and text = "Save"
-- [ ] add dismiss Button with onClick = { onDismissed(); dialogState.dismissDialog() } and text = "Cancel"
-- [ ] conditionally show delete button for custom tabs (implementation detail)
+### Task 4: Create AppGrid Composable (with tag badges)
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppGrid.kt`
 
-### 4. Update PagerViewModel to Expose StateFlow
-#### Task 9: Update PagerViewModel.kt
-- [ ] Modify app/src/main/java/com/aistra/hail/ui/home/PagerViewModel.kt
-- [ ] Replace MutableLiveData with MutableStateFlow for uiState, apps, tags, isMultiSelect, selectedApps, editingTagId, showTagEditDialog, isLoading
-- [ ] Expose StateFlow properties via _uiState.map { it.property } or direct flows
-- [ ] Implement PagerUiState data class with appropriate fields
-- [ ] Update all methods to update _uiState instead of individual LiveData objects
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun AppGrid(apps: List<AppInfo>, onAppClicked: (AppInfo) -> Unit, onAppLongClicked: (AppInfo) -> Unit, isMultiSelect: Boolean, selectedApps: Set<String>, showTagBadge: Boolean = false, modifier: Modifier = Modifier)`
+- [ ] Use `LazyVerticalGrid` with `columns = GridCells.Fixed(3)`
+- [ ] Use `modifier.fillMaxWidth().padding(8.dp)`
+- [ ] Use `items(apps) { app -> AppGridItem(...) }` with appropriate parameters
+
+### Task 5: Create AppGridItem Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppGridItem.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun AppGridItem(app: AppInfo, onClick: () -> Unit, onLongClick: () -> Unit, isSelected: Boolean, isMultiSelect: Boolean, tags: List<Tag>, showTagBadge: Boolean, modifier: Modifier = Modifier)`
+- [ ] Use `MutableInteractionSource()` and `collectIsPressedAsState()` for pressed state
+- [ ] Use `Column` modifier with:
+    - `size(72.dp)`
+    - `background` based on selected/pressed state (selected: primaryContainer, pressed: secondaryContainer, else: surfaceVariant)
+    - `clickable(onClick = onClick)`
+    - `longClickable(onLongClick = onLongClick)`
+    - `interactionSource = interactionSource`
+    - `padding(8.dp)`
+    - `align(Alignment.Center)`
+- [ ] Add `AppIcon` with:
+    - `request = AppIconRequest(packageName = app.packageName, userId = app.userId)`
+    - `contentDescription = app.label`
+    - `modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally)`
+- [ ] When `showTagBadge` and `tags.isNotEmpty()`, add:
+    - `TagChip` with:
+        - `text = tags.first().label`
+        - `onDelete = { /* handle tag removal from app */ }`
+        - `modifier = Modifier.align(Alignment.TopEnd)`
+- [ ] Add `Spacer(height=4.dp)`
+- [ ] Add `Text` with:
+    - `text = app.label`
+    - `maxLines = 1`
+    - `overflow = TextOverflow.Ellipsis`
+    - `style = MaterialTheme.typography.bodyMedium`
+    - `modifier = Modifier.align(Alignment.CenterHorizontally)`
+- [ ] When `isMultiSelect`, add:
+    - `Box(modifier = Modifier.align(Alignment.TopEnd).size(20.dp))`
+    - `Checkbox` with:
+        - `checked = isSelected`
+        - `onChange = { /* handled by toggleable */ }`
+        - `colors = CheckboxDefaults.colors(checkedColor = primary, uncheckedColor = onSurfaceVariant)`
+
+### Task 6: Create TagChip Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/TagChip.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun TagChip(text: String, onDelete: () -> Unit, modifier: Modifier = Modifier)`
+- [ ] Use `Chip` with:
+    - `onDeleteRequest = onDelete`
+    - `modifier = modifier`
+- [ ] Add `Text(text)`
+
+### Task 7: Create MultiSelectToolbar Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/MultiSelectToolbar.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun MultiSelectToolbar(selectedCount: Int, onTagSelected: (String) -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier)`
+- [ ] Use `Surface` with `modifier.fillMaxWidth().height(56.dp)`
+- [ ] Use `Row` with `fillMaxWidth()` and `padding(horizontal = 16.dp)`
+- [ ] Add `Text` with:
+    - `text = "$selectedCount selected"`
+    - `style = bodyLarge`
+    - `verticalAlignment = Alignment.CenterVertically`
+- [ ] Add `Spacer` with `weight(1f)`
+- [ ] Add `Button` with:
+    - `onClick = { /* open tag picker */ }`
+    - `enabled = selectedCount > 0`
+    - `text = "Add to tag"`
+- [ ] Add `Spacer` with `width(8.dp)`
+- [ ] Add `IconButton` with:
+    - `onClick = onCancel`
+    - `Icons.Default.Close`
+
+### Task 8: Create TagEditDialog Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/TagEditDialog.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun TagEditDialog(currentTagName: String, onDismissed: () -> Unit, onSaved: (String) -> Unit, onDeleted: () -> Unit, modifier: Modifier = Modifier)`
+- [ ] Use `rememberDialogState()` and `rememberCoroutineScope()`
+- [ ] Use `rememberSaveable` for `tagName` initialized to `currentTagName`
+- [ ] Implement `AlertDialog` with:
+    - `onDismissRequest = { onDismissed(); dialogState.dismissDialog() }`
+    - `title = { Text("Edit Tag") }`
+    - `text = {`
+        `TextField(`
+            `value = tagName,`
+            `onValueChange = { tagName = it },`
+            `label = { Text("Tag name") },`
+            `isError = tagName.isBlank(),`
+            `errorMessage = if (tagName.isBlank()) { Text("Tag name cannot be empty") } else null`
+        `)`
+    `}`
+- [ ] Add `confirmButton` with:
+    - `TextButton` with:
+        - `onClick = {`
+            `if (tagName.isNotBlank()) {`
+                `onSaved(tagName)`
+                `onDismissed()`
+                `dialogState.dismissDialog()`
+            `}`
+        `}`
+        - `Text("Save")`
+    `}`
+- [ ] Add `dismissButton` with:
+    - `TextButton` with:
+        - `onClick = { onDismissed(); dialogState.dismissDialog() }`
+        - `Text("Cancel")`
+    `}`
+- [ ] Conditionally show delete button for custom tabs (implementation detail)
+
+### Task 9: Update PagerViewModel to Expose StateFlow
+**Files:**
+- Modify: `app/src/main/java/com/aistra/hail/ui/home/PagerViewModel.kt`
+
+**Steps:**
+- [ ] Replace `MutableLiveData` with `MutableStateFlow` for:
+    - `uiState` → `private val _uiState = MutableStateFlow(PagerUiState())`
+    - `apps` → `val apps: StateFlow<List<AppInfo>> = _uiState.map { it.apps }`
+    - `tags` → `val tags: StateFlow<List<Tag>> = _uiState.map { it.tags }`
+    - `isMultiSelect` → `val isMultiSelect: StateFlow<Boolean> = _uiState.map { it.isMultiSelect }`
+    - `selectedApps` → `val selectedApps: StateFlow<Set<String>> = _uiState.map { it.selectedApps }`
+    - `editingTagId` → `val editingTagId: StateFlow<String?> = _uiState.map { it.editingTagId }`
+    - `showTagEditDialog` → `val showTagEditDialog: StateFlow<Boolean> = _uiState.map { it.showTagEditDialog }`
+    - `isLoading` → `val isLoading: StateFlow<Boolean> = _uiState.map { it.isLoading }`
+- [ ] Expose `uiState` as `val uiState: StateFlow<PagerUiState> = _uiState.asStateFlow()`
+- [ ] Implement `PagerUiState` data class with appropriate fields
+- [ ] Update all methods to update `_uiState` instead of individual `LiveData` objects
 - [ ] Ensure proper initialization and state update logic
 
-### 5. Remove XML Layout and Adapter
-#### Task 10: Remove fragment_pager.xml
-- [ ] Delete app/src/main/res/layout/fragment_pager.xml
+### Task 10: Remove PagerAdapter and XML Layout
+**Files:**
+- Delete: `app/src/main/res/layout/fragment_pager.xml`
+- Delete: `app/src/main/java/com/aistra/hail/ui/home/PagerAdapter.kt`
 
-#### Task 11: Remove PagerAdapter.kt
-- [ ] Delete app/src/main/java/com/aistra/hail/ui/home/PagerAdapter.kt
-- [ ] Verify no remaining references through compiler errors
+**Steps:**
+- [ ] Delete the XML layout file
+- [ ] Delete the Adapter file
+- [ ] Verify no remaining references through compiler errors or IDE search
 
 ## Validation Checklist
 
+After completing all tasks above:
 - [ ] PagerFragment builds and displays app grid correctly for each tab type
 - [ ] All apps tab shows all applications
 - [ ] Frequent tab shows most used apps (based on usage stats)
@@ -135,7 +245,6 @@
 - [ ] Tab switching in HomeFragment continues to work (will migrate separately)
 
 ## References
-
 - [Compose LazyGrids](https://developer.android.com/jetpack/compose/lists/grids)
 - [Material3 Chips](https://m3.material.io/components/chips/usage)
 - [Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)
