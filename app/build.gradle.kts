@@ -111,6 +111,7 @@ dependencies {
     implementation(libs.appiconloader)
     implementation(libs.compose.preference)
     implementation(libs.commons.text)
+    implementation(libs.androidx.documentfile)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hiddenapibypass)
     implementation(libs.libsu.core)
