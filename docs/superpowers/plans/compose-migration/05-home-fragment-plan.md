@@ -1,4 +1,4 @@
-# Hail App - Compose Migration Plan: HomeFragment
+# Hail App Compose Migration Plan: HomeFragment Implementation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -24,144 +24,69 @@
 ## File Changes
 
 ### 1. Update HomeFragment to Use ComposeView
-```kotlin
-// app/src/main/java/com/aistra/hail/ui/home/HomeFragment.kt
-package com.aistra.hail.ui.home
-
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.viewinterop.RememberObserver
-import com.aistra.hail.R
-import com.aistra.hail.ui.theme.HomeScreen
-import com.aistra.hail.ui.theme.HailTheme
-
-class HomeFragment : Fragment(R.layout.fragment_home) {
-
-    private val viewModel: HomeViewModel by viewModels { factory }
-
-    // ... existing factory initialization
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                HailTheme {
-                    HomeScreen(
-                        viewModel = viewModel,
-                        // ... pass any necessary callbacks for navigation
-                    )
-                }
-            }
-        }
-    }
-
-    // ... remove existing XML-related code (binding, etc.)
-}
-```
+#### Task 1: Update HomeFragment.kt
+- [ ] Modify app/src/main/java/com/aistra/hail/ui/home/HomeFragment.kt
+- [ ] Replace ViewBinding inflation with ComposeView in onCreateView
+- [ ] Set ViewCompositionStrategy to DisposeOnViewTreeLifecycleDestroyed
+- [ ] Set content to HailTheme { HomeScreen(viewModel = viewModel, ...) }
 
 ### 2. Create HomeScreen Composable
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/ui/theme/HomeScreen.kt
-package com.aistra.hail.ui.theme
+#### Task 2: Create HomeScreen.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/HomeScreen.kt
+- [ ] Implement @Composable fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier)
+- [ ] Collect tab titles and visibility from viewModel StateFlow properties
+- [ ] Implement Column layout or direct content
+- [ ] Add TabRow for tab labels
+- [ ] Add HorizontalPager for swiping between tabs
+- [ ] Each tab/page contains a PagerScreen for the corresponding tab type
+- [ ] Add FAB for adding apps to custom tab
+- [ ] Handle navigation to other destinations via Navigation Component
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.aistra.hail.ui.home.HomeViewModel
-import com.aistra.hail.ui.theme.HailTheme
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.icons.Icons
-import androidx.compose.material3.icons.filled.Add
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Tab
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.Unit
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.LayoutId
-import androidx.compose.ui.layout.LayoutIdReader
-import androidx.compose.layout.OnGloballyPositionedModifier
-import androidx.compose.ui.node.DelegatableNode
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.dimenResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.VerticalGravity
-import androidx.compose.ui.unit.HorizontalGravity
-import androidx.compose.ui.draw.WithDrawScope
-import androidx.compose.ui.draw.DrawScope
-import androidx.compose.ui.draw.DrawContext
-import androidx.compose.ui.draw.InspectableValue
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.Offset
-import androidx.compose.ui.unit.Size
-import androidx.compose.ui.unit.Unspecified
-import androidx.compose.ui.unit.Offset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.IntSize
-            end text
-        
-        }
-    
-    }
-}
+### 3. Create Supporting Composables
+#### Task 3: Create TabRow Implementation
+- [ ] Implement TabRow with Tab components for each tab
+- [ ] Use selected tab index from viewModel StateFlow (e.g., selectedTabIndex)
+- [ ] Handle tab selection callbacks (onClick/{ tabIndex -> viewModel.selectTab(tabIndex) })
+- [ ] Apply proper styling, indicators, and dimensions for selected/unselected tabs
+
+#### Task 4: Create HorizontalPager Implementation
+- [ ] Import HorizontalPager from androidx.accompanist.material3.horizontalpager (remember this is temporary)
+- [ ] Set page count to match the number of tabs from viewModel
+- [ ] Set current page to match selectedTabIndex from viewModel with bidirectional binding
+- [ ] Each page/tab contains PagerScreen(tabType = tabTypes[page]) or inline equivalent logic
+- [ ] Apply proper paging behavior, page transitions, and indicators
+
+#### Task 5: Create FAB for Custom Tab Creation
+- [ ] Implement FloatingActionButton with onClick = { viewModel.showCreateTabDialog(true) }
+- [ ] Position at bottom end with appropriate padding (e.g., modifier.align(Alignment.BottomEnd).padding(16.dp))
+- [ ] Use Icons.Default.Add for the icon with contentDescription = "Add tab"
+- [ ] Only show FAB when appropriate based on viewModel state (e.g., !viewModel.isEditingTab)
+
+#### Task 6: Update HomeViewModel to Expose StateFlow
+- [ ] Modify app/src/main/java/com/aistra/hail/ui/home/HomeViewModel.kt
+- [ ] Replace MutableLiveData with MutableStateFlow for relevant UI state
+- [ ] Expose StateFlow properties for tab titles, visibility, selected tab index, etc.
+- [ ] Implement appropriate UiState data class if beneficial
+- [ ] Update all methods to update state flows instead of individual LiveData
+- [ ] Ensure proper initialization and state update logic for tab operations
+
+### 4. Validate HomeFragment Migration
+#### Task 7: Validate HomeFragment Migration
+- [ ] Run ./gradlew assembleDebug to ensure successful build
+- [ ] Test tab navigation works correctly via TabRow taps
+- [ ] Verify horizontal paging works via swipe gestures
+- [ ] Check TabRow and HorizontalPager stay in sync (when one changes, the other updates)
+- [ ] Confirm each tab displays correct content via PagerScreen (all, frequent, recent, custom tabs)
+- [ ] Test FAB opens custom tab creation dialog properly
+- [ ] Verify navigation to other destinations (Apps, Actions, Settings, About) works via Navigation Component
+- [ ] Ensure state survives configuration changes (rotation, multi-window)
+- [ ] Confirm TalkBack accessibility works for all tabs, tabs labels, FAB, and page content
+- [ ] Test performance with multiple tabs containing many apps (should be smooth)
+- [ ] Verify that tab creation, renaming, and deletion work correctly through ViewModel
+
+## References
+
+- [Accompanist Material3 HorizontalPager](https://github.com/google/accompanist/tree/main/horizontal-pager)
+- [Jetpack Compose TabRow](https://developer.android.com/jetpack/compose/components#tab-row)
+- [Jetpack Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)
+- [Navigation Component with Compose](https://developer.android.com/guide/navigation/navigation-compose)

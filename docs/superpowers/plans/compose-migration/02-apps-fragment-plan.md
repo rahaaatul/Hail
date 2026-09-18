@@ -1,4 +1,4 @@
-# Hail App - Compose Migration Plan: AppsFragment
+# Hail App Compose Migration Plan: AppsFragment Implementation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -23,310 +23,69 @@
 ## File Changes
 
 ### 1. Update AppsFragment to Use ComposeView
-```kotlin
-// app/src/main/java/com/aistra/hail/ui/apps/AppsFragment.kt
-package com.aistra.hail.ui.apps
-
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.viewinterop.RememberObserver
-import com.aistra.hail.R
-import com.aistra.hail.ui.theme.AppsScreen
-import com.aistra.hail.ui.theme.HailTheme
-
-class AppsFragment : Fragment(R.layout.fragment_apps) {
-
-    private val viewModel: AppsViewModel by viewModels { factory }
-
-    // ... existing factory initialization
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                HailTheme {
-                    AppsScreen(
-                        viewModel = viewModel,
-                        // ... pass any necessary callbacks
-                    )
-                }
-            }
-        }
-    }
-
-    // ... remove existing XML-related code (binding, etc.)
-}
-```
+#### Task 1: Update AppsFragment.kt
+- [ ] Modify app/src/main/java/com/aistra/hail/ui/apps/AppsFragment.kt
+- [ ] Change constructor to use Fragment(R.layout.fragment_apps) (placeholder until XML removed)
+- [ ] Replace onCreateView implementation to return ComposeView(requireContext()).apply {
+    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+    setContent { HailTheme { AppsScreen(viewModel = viewModel, ...) } }
+  }
+- [ ] Remove ViewBinding related code (binding variable, _binding references)
 
 ### 2. Create AppsScreen Composable
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/ui/theme/AppsScreen.kt
-package com.aistra.hail.ui.theme
-
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.aistra.hail.ui.apps.AppsViewModel
-import com.aistra.hail.ui.theme.AppIcon
-import com.aistra.hail.ui.theme.AppSearchBar
-import com.aistra.hail.ui.theme.AppFilterChipRow
-import kotlinx.coroutines.flow.collectAsStateWithLifecycle
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AppsScreen(
-    viewModel: AppsViewModel,
-    modifier: Modifier = Modifier
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val apps by uiState.apps.collectAsStateWithLifecycle(emptyList())
-    val query by uiState.query.collectAsStateWithLifecycle("")
-    val selectedFilter by uiState.selectedFilter.collectAsStateWithLifecycle(AllAppsFilter.INSTANCE)
-    val isMultiSelect by uiState.isMultiSelect.collectAsStateWithLifecycle(false)
-    val selectedApps by uiState.selectedApps.collectAsStateWithLifecycle(emptySet())
-
-    Column(modifier
-        .fillMaxSize()
-        .padding(16.dp)
-    ) {
-        AppSearchBar(
-            value = query,
-            onQueryChanged = { viewModel.updateQuery(it) },
-            isMultiSelect = isMultiSelect
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        AppFilterChipRow(
-            filters = viewModel.filters,
-            selectedFilter = selectedFilter,
-            onFilterSelected = { viewModel.selectFilter(it) }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        AppGrid(
-            apps = apps,
-            onAppClicked = { app -> 
-                if (isMultiSelect) {
-                    viewModel.toggleAppSelection(app)
-                } else {
-                    viewModel.openAppDetails(app)
-                }
-            },
-            onAppLongClicked = { 
-                if (!isMultiSelect) viewModel.enableMultiSelect()
-                viewModel.toggleAppSelection(it)
-            },
-            isMultiSelect = isMultiSelect,
-            selectedApps = selectedApps
-        )
-    }
-}
-```
+#### Task 2: Create AppsScreen.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppsScreen.kt
+- [ ] Implement @Composable fun AppsScreen(viewModel: AppsViewModel, modifier: Modifier = Modifier)
+- [ ] Collect viewModel.uiState.collectAsStateWithLifecycle() and individual StateFlow properties
+- [ ] Implement Column layout with padding(16.dp) and fillMaxSize()
+- [ ] Add AppSearchBar, Spacer(height=8.dp), AppFilterChipRow, Spacer(height=8.dp), AppGrid
 
 ### 3. Create Supporting Composables
-```kotlin
-// AppSearchBar.kt
-@Composable
-fun AppSearchBar(
-    value: String,
-    onQueryChanged: (String) -> Unit,
-    isMultiSelect: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = "Search",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onQueryChanged,
-            label = { Text("Search apps") },
-            isEnabled = !isMultiSelect,
-            modifier = Modifier
-                .fillMaxWidth()
-        )
-        if (isMultiSelect) {
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = { /* cancel multi-select */ }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Cancel selection"
-                )
-            }
-        }
-    }
-}
+#### Task 3: Create AppSearchBar.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppSearchBar.kt
+- [ ] Implement @Composable fun AppSearchBar(value: String, onQueryChanged: (String) -> Unit, isMultiSelect: Boolean, modifier: Modifier = Modifier)
+- [ ] Use Row layout with Icons.Default.Search, Spacer(width=8.dp), OutlinedTextField
+- [ ] Show IconButton with Icons.Default.Close when isMultiSelect is true
+- [ ] Set OutlinedTextField isEnabled = !isMultiSelect
 
-// AppFilterChipRow.kt
-@Composable
-fun AppFilterChipRow(
-    filters: List<AppFilter>,
-    selectedFilter: AppFilter,
-    onFilterSelected: (AppFilter) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    HorizontalScrollView(modifier = modifier.fillMaxWidth()) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier
-                .padding(vertical = 4.dp)
-        ) {
-            filters.forEach { filter ->
-                FilterChip(
-                    selected = filter == selectedFilter,
-                    onClick = { onFilterSelected(filter) },
-                    label = { Text(filter.label) }
-                )
-            }
-        }
-    }
-}
+#### Task 4: Create AppFilterChipRow.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppFilterChipRow.kt
+- [ ] Implement @Composable fun AppFilterChipRow(filters: List<AppFilter>, selectedFilter: AppFilter, onFilterSelected: (AppFilter) -> Unit, modifier: Modifier = Modifier)
+- [ ] Use HorizontalScrollView with Row containing FilterChip items
+- [ ] Use Arrangement.spacedBy(8.dp) and padding(vertical = 4.dp) on Row
+- [ ] Implement FilterChip with selected = (filter == selectedFilter) and onClick = { onFilterSelected(filter) }
 
-// AppGrid.kt
-@Composable
-fun AppGrid(
-    apps: List<AppInfo>,
-    onAppClicked: (AppInfo) -> Unit,
-    onAppLongClicked: (AppInfo) -> Unit,
-    isMultiSelect: Boolean,
-    selectedApps: Set<String>,
-    modifier: Modifier = Modifier
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
-        items(apps) { app ->
-            AppItem(
-                app = app,
-                onClick = { onAppClicked(app) },
-                onLongClick = { onAppLongClicked(app) },
-                isSelected = selectedApps.contains(app.packageName),
-                isMultiSelect = isMultiSelect,
-                modifier = Modifier
-                    .clickable { /* handled in AppItem */ }
-                    .toggleable(
-                        value = selectedApps.contains(app.packageName),
-                        onValueChange = { /* handled in AppItem */ },
-                        role = if (isMultiSelect) Role.Checkbox else null
-                    )
-            )
-        }
-    }
-}
+#### Task 5: Create AppGrid.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppGrid.kt
+- [ ] Implement @Composable fun AppGrid(apps: List<AppInfo>, onAppClicked: (AppInfo) -> Unit, onAppLongClicked: (AppInfo) -> Unit, isMultiSelect: Boolean, selectedApps: Set<String>, modifier: Modifier = Modifier)
+- [ ] Use LazyVerticalGrid with columns = GridCells.Fixed(3) and modifier.fillMaxWidth().padding(8.dp)
+- [ ] Use items(apps) { app -> AppItem(...) } with appropriate parameters
 
-// AppItem.kt
-@Composable
-fun AppItem(
-    app: AppInfo,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    isSelected: Boolean,
-    isMultiSelect: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    Column(
-        modifier = modifier
-            .size(72.dp)
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                else if (isPressed) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .clickable(onClick = onClick)
-            .longClickable(onLongClick = onLongClick)
-            .interactionSource(interactionSource)
-            .padding(8.dp)
-            .align(Alignment.Center)
-    ) {
-        AppIcon(
-            request = AppIconRequest(
-                packageName = app.packageName,
-                userId = app.userId
-            ),
-            contentDescription = app.label,
-            modifier = Modifier
-                .size(48.dp)
-                .align(Alignment.CenterHorizontally)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = app.label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-        )
-        if (isMultiSelect) {
-            // Checkbox overlay in top-right
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .size(20.dp)
-            ) {
-                Checkbox(
-                    checked = isSelected,
-                    onChange = { /* handled by toggleable */ },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.primary,
-                        uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
-            }
-        }
-    }
-}
-```
+#### Task 6: Create AppItem.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppItem.kt
+- [ ] Implement @Composable fun AppItem(app: AppInfo, onClick: () -> Unit, onLongClick: () -> Unit, isSelected: Boolean, isMultiSelect: Boolean, modifier: Modifier = Modifier)
+- [ ] Use MutableInteractionSource() and collectIsPressedAsState() for pressed state
+- [ ] Use Column modifier with size(72.dp), background based on selected/pressed state, clickable, longClickable, interactionSource, padding(8.dp), align(Alignment.Center)
+- [ ] Add AppIcon with request = AppIconRequest(packageName = app.packageName, userId = app.userId), contentDescription = app.label, modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally)
+- [ ] Add Spacer(height=4.dp) and Text with app.label, maxLines=1, overflow=TextOverflow.Ellipsis, style=bodyMedium, align=Alignment.CenterHorizontally
+- [ ] When isMultiSelect, add Box(align=Alignment.TopEnd, size=20.dp) with Checkbox(checked=isSelected, onChange={/* handled by toggleable */})
 
 ### 4. Update AppsViewModel to Expose StateFlow
-```kotlin
-// app/src/main/java/com/aistra/hail/ui/apps/AppsViewModel.kt
-// No UI changes needed, but ensure these are exposed as StateFlow:
-class AppsViewModel(...) : ViewModel() {
-    val uiState: MutableStateFlow<AppsUiState> = MutableStateFlow(AppsUiState())
-    val apps: MutableStateFlow<List<AppInfo>> = MutableStateFlow(emptyList())
-    val query: MutableStateFlow<String> = MutableStateFlow("")
-    val selectedFilter: MutableStateFlow<AppFilter> = MutableStateFlow(AllAppsFilter.INSTANCE)
-    val isMultiSelect: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val selectedApps: MutableStateFlow<Set<String>> = MutableStateFlow(emptySet())
-    // ... existing logic updates these flows
-}
-```
+#### Task 7: Update AppsViewModel.kt
+- [ ] Modify app/src/main/java/com/aistra/hail/ui/apps/AppsViewModel.kt
+- [ ] Replace MutableLiveData with MutableStateFlow for uiState, apps, query, selectedFilter, isMultiSelect, selectedApps
+- [ ] Expose StateFlow properties via _uiState.map { it.property } or direct flows
+- [ ] Implement AppsUiState data class with apps, query, selectedFilter, isMultiSelect, selectedApps fields
+- [ ] Update all methods to update _uiState instead of individual LiveData objects
+- [ ] Ensure proper initialization and state update logic
 
 ### 5. Remove XML Layout and Adapter
-```diff
-// app/src/main/res/layout/fragment_apps.xml
-- /* ENTIRE FILE REMOVED */
+#### Task 8: Remove fragment_apps.xml
+- [ ] Delete app/src/main/res/layout/fragment_apps.xml
 
-// app/src/main/java/com/aistra/hail/ui/apps/AppsAdapter.kt
-- /* ENTIRE FILE REMOVED */
-```
+#### Task 9: Remove AppsAdapter.kt
+- [ ] Delete app/src/main/java/com/aistra/hail/ui/apps/AppsAdapter.kt
+- [ ] Verify no remaining references through compiler errors
 
 ## Validation Checklist
 

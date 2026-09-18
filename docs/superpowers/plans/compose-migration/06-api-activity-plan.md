@@ -1,4 +1,4 @@
-# Hail App - Compose Migration Plan: ApiActivity
+# Hail App Compose Migration Plan: ApiActivity Implementation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -21,108 +21,40 @@
 ## File Changes
 
 ### 1. Update ApiActivity to Use Compose
-```kotlin
-// app/src/main/java/com/aistra/hail/ApiActivity.kt
-package com.aistra.hail
-
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
-import com.aistra.hail.ui.theme.ApiScreen
-import com.aistra.hail.ui.theme.HailTheme
-
-class ApiActivity : AppCompatActivity() {
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        // Keep the translucent theme and window flags from XML
-        setContent {
-            HailTheme {
-                ApiScreen(
-                    // ... pass any necessary parameters
-                )
-            }
-        }
-    }
-}
-
-// Note: The activity_api.xml layout can be removed entirely
-```
+#### Task 1: Update ApiActivity.kt
+- [ ] Modify app/src/main/java/com/aistra/hail/ApiActivity.kt
+- [ ] Replace setContentView(R.layout.activity_api) with setContent { HailTheme { ApiScreen() } }
+- [ ] Remove the activity_api.xml layout reference entirely
+- [ ] Keep the translucent theme and window flags from the original XML (these are set in the activity's theme or programmatically)
 
 ### 2. Create ApiScreen Composable
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/ui/theme/ApiScreen.kt
-package com.aistra.hail.ui.theme
+#### Task 2: Create ApiScreen.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/ApiScreen.kt
+- [ ] Implement @Composable fun ApiScreen(modifier: Modifier = Modifier)
+- [ ] Use rememberSaveable for scroll position state (e.g., var scrollPosition by rememberSaveable { mutableStateOf(0f) })
+- [ ] Implement scrolling content using either:
+    Option A: VerticalScroller with scrollable state and text
+    Option B: LazyColumn with itemsIndexed for lines of text
+    Option C: BasicText with modifier.verticalScroll(scrollState)
+- [ ] Use remember to create AnnotatedString from string resource or asset
+- [ ] Apply text styles (bodyMedium, etc.) to the AnnotatedString ranges
+- [ ] Display the formatted text with appropriate padding and scrolling behavior
+- [ ] Preserve the translucent background by using MaterialTheme colors or explicit transparent background
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.*
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.*
-import androidx.compose.ui.unit.dp
-import com.aistra.hail.R
-import com.aistra.hail.ui.theme.HailTheme
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.absoluteFill
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.core.TextLayoutResult
-import androidx.compose.foundation.text.core.TextMeasurer
-import androidx.compose.foundation.text.core.ParagraphIntrinsics
-import androidx.compose.foundation.text.core.ParagraphStyle
-import androidx.compose.foundation.text.drawScope.drawWithCache
-import androidx.compose.foundation.text.drawScope.drawText
-import androidx.compose.foundation.text.drawScope.drawParagraph
-import androidx.compose.foundation.text.drawScope.drawLayout
-import androidx.compose.foundation.text.drawScope.drawPlaceholder
-import androidx.compose.foundation.text.drawScope.drawMultiParagraph
-import androidx.compose.foundation.text.drawScope.drawTextLayout
-import androidx.compose.foundation.text.drawScope.drawTextLayoutResult
-import androidx.compose.foundation.text.drawScope.drawTextMeasurer
-import androidx.compose.foundation.text.drawScope.drawTextStyle
-import androidx.compose.foundation.text.drawScope.drawVariant
-import androidx.compose.foundation.text.drawScope.drawParagraphStyle
-import androidx.compose.foundation.text.drawScope.drawPlaceholderVerticalAlign
-import androidx.compose.foundation.text.drawScope.drawPlaceholderHeight
-import androidx.compose.foundation.text.drawScope.drawPlaceholderWidth
-import androidx.compose.foundation.text.drawScope.drawPlaceholderBaseline
-import androidx.compose.foundation.text.drawScope.drawPlaceholderAlign
-import androidx.compose.foundation.text.drawScope.drawPlaceholderOffset
-import androidx.compose.foundation.text.drawScope.drawPlaceholderRotation
-import androidx.compose.foundation.text.drawScope.drawPlaceholderScale
-import androidx.compose.foundation.text.drawScope.drawPlaceholderSkewX
-import androidx.compose.foundation.text.drawScope.drawPlaceholderSkewY
-import androidx.compose.foundation.text.drawScope.drawPlaceholderPivotX
-import androidx.compose.foundation.text.drawScope.drawPlaceholderPivotY
-import androidx.compose.foundation.text.drawScope.drawPlaceholderAlpha
-import androidx.compose.foundation.text.drawScope.drawPlaceholderColor
-import androidx.compose.foundation.text.drawScope.drawPlaceholderFontSize
-import androidx.compose.foundation.text.drawScope.drawPlaceholderFontWeight
-import androidx.compose.foundation.text.drawScope.drawPlaceholderFontStyle
-import androidx.compose.foundation.text.drawScope.drawPlaceholderFontFamily
-import androidx.compose.foundation.text.drawScope.drawPlaceholderLetterSpacing
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextGeometricTransform
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextDirection
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextAlign
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextIndent
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextDirection
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextAlign
-import androidx.compose.foundation.text.drawScope.drawPlaceholderTextIndent
-            end text
-        
-        }
-    
-    }
-}
+### 3. Validate ApiActivity Migration
+#### Task 3: Validate ApiActivity Migration
+- [ ] Run ./gradlew assembleDebug to ensure successful build
+- [ ] Test ApiActivity renders correctly in both light/dark theme
+- [ ] Verify scrolling functionality works properly with finger gestures
+- [ ] Confirm text is readable and formatted correctly (headings, paragraphs, etc.)
+- [ ] Check that the translucent background and window flags are preserved (activity appears semi-transparent over background)
+- [ ] Ensure no crashes or errors when opening/closing the activity
+- [ ] Verify TalkBack accessibility works for scrolling and reading content
+- [ ] Test configuration changes (rotation) maintain scroll position and state
+
+## References
+
+- [Compose Text Documentation](https://developer.android.com/jetpack/compose/text)
+- [Scrolling in Compose](https://developer.android.com/jetpack/compose/graphics/scrolling)
+- [rememberSaveable API](https://developer.android.com/jetpack/compose/state#remember-saveable)
+- [AnnotatedString Guide](https://developer.android.com/jetpack/compose/text#annotatedstring)

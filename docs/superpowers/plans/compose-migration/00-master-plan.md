@@ -1,8 +1,15 @@
-# Hail App - Jetpack Compose Migration Master Plan
+# Hail App Jetpack Compose Migration Master Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Single source of truth for Compose migration tracking all phases, dependencies, and validation criteria.
+**Goal:** Provide a single source of truth for Compose migration tracking all phases, dependencies, and validation criteria.
+
+**Architecture:** Centralized plan that references all detailed phase plans, ensuring consistency across the migration effort. Tracks dependency versions, validation gates, and open issues throughout the migration process.
+
+**Tech Stack:**
+- Same as individual phase plans (Compose BOM 2026.08.00, Material3 1.4.0, etc.)
+
+**Spec:** Consolidates information from all individual phase plans and dependency resolution results.
 
 ## Dependency Versions (Resolved September 2026)
 

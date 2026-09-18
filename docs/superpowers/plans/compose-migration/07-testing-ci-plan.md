@@ -1,4 +1,4 @@
-# Hail App - Compose Migration Plan: Testing and CI/CD
+# Hail App Compose Migration Plan: Testing and CI/CD Implementation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -22,222 +22,66 @@
 ## File Changes
 
 ### 1. Update Dependencies
-```diff
-// gradle/libs.versions.toml
-[versions]
-+ composeUiTest = "1.6.8"
-+ androidXTestCore = "1.5.0"
-+ androidXTestRunner = "1.5.2"
-+ androidXTestRules = "1.5.0"
-+ mockito = "5.12.0"
+#### Task 1: Update gradle/libs.versions.toml
+- [ ] Add composeUiTest = "1.6.8", androidXTestCore = "1.5.0", androidXTestRunner = "1.5.2", androidXTestRules = "1.5.0", mockito = "5.12.0" to [versions] section
+- [ ] Add composeUiTest = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "composeUiTest" }, androidXTestCore = { module = "androidx.test:core", version.ref = "androidXTestCore" }, androidXTestRunner = { module = "androidx.test:runner", version.ref = "androidXTestRunner" }, androidXTestRules = { module = "androidx.test:rules", version.ref = "androidXTestRules" }, mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" } to [libraries] section
 
-[libraries]
-+ composeUiTest = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "composeUiTest" }
-+ androidXTestCore = { module = "androidx.test:core", version.ref = "androidXTestCore" }
-+ androidXTestRunner = { module = "androidx.test:runner", version.ref = "androidXTestRunner" }
-+ androidXTestRules = { module = "androidx.test:rules", version.ref = "androidXTestRules" }
-+ mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
-
-// app/build.gradle.kts
-dependencies {
-    // ... existing
-    // Compose Testing
-    debugImplementation(libs.composeUiTest)
-    androidTestImplementation(libs.androidXTestCore)
-    androidTestImplementation(libs.androidXTestRunner)
-    androidTestImplementation(libs.androidXTestRules)
-    androidTestImplementation(libs.mockito)
-    
-    // For AndroidJUnitRunner
-    androidTestImplementation("androidx.test.ext:junit")
-}
-```
+#### Task 2: Update app/build.gradle.kts
+- [ ] Add debugImplementation(libs.composeUiTest) for Compose UI testing in debug builds
+- [ ] Add androidTestImplementation(libs.androidXTestCore), androidTestImplementation(libs.androidXTestRunner), androidTestImplementation(libs.androidXTestRules), androidTestImplementation(libs.mockito) for instrumented tests
+- [ ] Add androidTestImplementation("androidx.test.ext:junit") for JUnit test runner
 
 ### 2. Update Build Configuration for Compose Tests
-```diff
-// app/build.gradle.kts
-android {
-    // ... existing
-    buildFeatures {
-        // ... existing
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = composeVersions.composeCompiler.toString()
-    }
-    // Add test options for Compose
-    testOptions {
-        unitTests {
-            includeAndroidResources = true
-        }
-    }
-}
+#### Task 3: Update app/build.gradle.kts android section
+- [ ] Set buildFeatures { compose = true }
+- [ ] Configure composeOptions { kotlinCompilerExtensionVersion = composeVersions.composeCompiler.toString() }
+- [ ] Add testOptions { unitTests { includeAndroidResources = true } }
 
-// Create src/androidTest/java/com/aistra/hail/ui/theme/ComposeTest.kt
-```
+#### Task 4: Create Compose Test Base Class
+- [ ] Create src/androidTest/java/com/aistra/hail/ui/theme/ComposeTest.kt
+- [ ] Implement package com.aistra.hail.ui.theme
+- [ ] Create abstract class ComposeTest
+- [ ] Add @get:Rule val composeTestRule = createComposeRule()
+- [ ] Use @RunWith(AndroidJUnit4::class) annotation
 
-### 3. Create Compose Test Base Class
-```kotlin
-// src/androidTest/java/com/aistra/hail/ui/theme/ComposeTest.kt
-package com.aistra.hail.ui.theme
+### 3. Create Example Compose Test for AppsScreen
+#### Task 5: Create AppsScreenTest.kt
+- [ ] Create src/androidTest/java/com/aistra/hail/ui/theme/AppsScreenTest.kt
+- [ ] Use @HiltAndroidTest and @UninstallModules(AppsViewModel::class) for ViewModel mocking
+- [ ] Use @RunWith(AndroidJUnit4::class) test runner
+- [ ] Extend ComposeTest base class
+- [ ] In @Before setup(), mock ViewModel state flows with test data
+- [ ] Create test method appsScreen_displaysApps() that:
+    - Sets content with HailTheme { AppsScreen(viewModel = mockViewModel) }
+    - Asserts that "Test App 1" and "Test App 2" are displayed using onNodeWithText().assertIsDisplayed()
+- [ ] Create test method appsScreen_searchFiltersApps() that:
+    - Sets content with HailTheme { AppsScreen(viewModel = mockViewModel) }
+    - Performs click on search field and enters test text
+    - Verifies only matching apps are shown (implementation detail)
 
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Rule
-import org.junit.runner.RunWith
+### 4. Update CI/CD Workflow (GitHub Actions)
+#### Task 6: Update .github/workflows/android-ci.yml
+- [ ] Under jobs.build.steps, add instrumented tests step after unit tests and lint
+- [ ] Use: uses: reactivecircus/android-emulator-runner@v2
+- [ ] With parameters:
+    - api-level: 33
+    - target: google_apis
+    - arch: x86_64
+    - avd-name: test-avd
+    - script: ./gradlew connectedAndroidTest
+- [ ] Ensure this runs on push and pull_request to main and migrate/compose branches
 
-@RunWith(AndroidJUnit4::class)
-abstract class ComposeTest {
-
-    @get:Rule
-    val composeTestRule = createComposeRule()
-}
-```
-
-### 4. Create Example Compose Test for AppsScreen
-```kotlin
-// src/androidTest/java/com/aistra/hail/ui/theme/AppsScreenTest.kt
-package com.aistra.hail.ui.theme
-
-import androidx.compose.foundation.layout.isSystemInDarkTheme
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertNotExists
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performGesture
-import androidx.compose.ui.test.tag
-import com.aistra.hail.HailApp
-import com.aistra.hail.ui.apps.AppsViewModel
-import com.aistra.hail.ui.theme.AppsScreen
-import com.aistra.hail.ui.theme.HailTheme
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.UninstallModules
-import dagger.hilt.android.testing.HiltTestApplication
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import javax.inject.Inject
-
-@HiltAndroidTest
-@UninstallModules(AppsViewModel::class)
-@RunWith(AndroidJUnit4::class)
-class AppsScreenTest : ComposeTest() {
-
-    // Mock ViewModel
-    private val mockViewModel: AppsViewModel = mockk(relaxed = true)
-
-    @Before
-    fun setup() {
-        // Mock ViewModel state flows
-        mockViewModel.uiState = MutableStateFlow(AppsUiState(
-            apps = StateFlow(listOf(
-                AppInfo("com.test.app1", "Test App 1", "Description 1", 0, false, ""),
-                AppInfo("com.test.app2", "Test App 2", "Description 2", 0, true, "")
-            )),
-            query = StateFlow(""),
-            selectedFilter = StateFlow(AllAppsFilter.INSTANCE),
-            isMultiSelect = StateFlow(false),
-            selectedApps = StateFlow(emptySet())
-        ))
-    }
-
-    @Test
-    fun appsScreen_displaysApps() {
-        // Given
-        composeTestRule.setContent {
-            HailTheme {
-                AppsScreen(viewModel = mockViewModel)
-            }
-        }
-
-        // Then
-        composeTestRule.onNodeWithText("Test App 1").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Test App 2").assertIsDisplayed()
-    }
-
-    @Test
-    fun appsScreen_searchFiltersApps() {
-        // Given
-        composeTestRule.setContent {
-            HailTheme {
-                AppsScreen(viewModel = mockViewModel)
-            }
-        }
-
-        // When
-        composeTestRule.onNodeWithText("Search apps").performClick()
-        composeTestRule.onNodeWithText("Test App 1").performClick() // This would be the text field
-        // In a real test, we'd enter text and verify filtering
-        // For brevity, we'll skip the exact input steps
-
-        // Then
-        // Would verify only matching apps are shown
-    }
-}
-```
-
-### 5. Update CI/CD Workflow (GitHub Actions)
-```yaml
-# .github/workflows/android-ci.yml
-name: Android CI
-
-on:
-  push:
-    branches: [ main, migrate/compose ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    - name: Build
-      run: ./gradlew assembleDebug
-    - name: Unit Tests
-      run: ./gradlew test
-    - name: Lint
-      run: ./gradlew lint
-    - name: Instrumented Tests
-      uses: reactivecircus/android-emulator-runner@v2
-      with:
-        api-level: 33
-        target: google_apis
-        arch: x86_64
-        avd-name: test-avd
-        script: ./gradlew connectedAndroidTest
-```
+### 5. Update Lint Rules for Compose
+#### Task 7: Update app/build.gradle.kts dependencies
+- [ ] Add implement("androidx.compose.compiler:compiler:1.6.8")
+- [ ] Add debugImplement("androidx.compose.ui:ui-tooling:1.6.8")
+- [ ] Add debugImplement("androidx.compose.ui:ui-tooling-preview:1.6.8")
 
 ### 6. Create Screenshot Test Placeholder (Optional)
-```kotlin
-// src/androidTest/java/com/aistra/hail/ui/theme/ScreenshotTest.kt
-/*
- * Placeholder for screenshot testing using Shot or similar
- * Would require additional setup and dependencies
- */
-```
-
-### 7. Update Lint Rules for Compose
-```diff
-// app/build.gradle.kts
-dependencies {
-    // ... existing
-    // Compose lint
-    implement("androidx.compose.compiler:compiler:1.6.8")
-    debugImplement("androidx.compose.ui:ui-tooling:1.6.8")
-    debugImplement("androidx.compose.ui:ui-tooling-preview:1.6.8")
-}
-```
+#### Task 8: Create ScreenshotTest.kt (optional)
+- [ ] Create src/androidTest/java/com/aistra/hail/ui/theme/ScreenshotTest.kt
+- [ ] Add comment: Placeholder for screenshot testing using Shot or similar
+- [ ] Note: Would require additional setup and dependencies
 
 ## Validation Checklist
 

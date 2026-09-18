@@ -1,4 +1,4 @@
-# Hail App - Compose Infrastructure Plan: AppIcon + Theme
+# Hail App Compose Infrastructure Plan: AppIcon + Theme Implementation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -19,275 +19,55 @@
 ## File Changes
 
 ### 1. Update Dependencies
-```diff
-// gradle/libs.versions.toml
-[versions]
-+ coil = "2.6.0"
-+ coilCompose = "2.6.0"
+#### Task 1: Update gradle/libs.versions.toml
+- [ ] Add coil = "2.6.0" and coilCompose = "2.6.0" to [versions] section
+- [ ] Add coil = { module = "io.coil-kt:coil", version.ref = "coil" } and coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" } to [libraries] section
 
-[libraries]
-+ coil = { module = "io.coil-kt:coil", version.ref = "coil" }
-+ coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
-
-// app/build.gradle.kts
-dependencies {
-    // ... existing
-    implementation(libs.coil)
-    implementation(libs.coilCompose)
-}
-```
+#### Task 2: Update app/build.gradle.kts
+- [ ] Add implementation(libs.coil) and implementation(libs.coilCompose) to dependencies block
 
 ### 2. Create AppIcon Data Class + Decoder
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/utils/AppIconRequest.kt
-package com.aistra.hail.utils
+#### Task 3: Create AppIconRequest.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/utils/AppIconRequest.kt
+- [ ] Implement @Immutable data class AppIconRequest with packageName, userId, size, grayscale, synthesizeAdaptive, iconPack fields
+- [ ] Make it implement ImageRequest.Data with proper toString() implementation
 
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
-import coil.decode.ImageDecoder
-import coil.request.ImageRequest
+#### Task 4: Create AppIconDecoder
+- [ ] Create AppIconDecoder class in same file or separate file
+- [ ] Implement ImageDecoder<AppIconRequest> with decode() method that reuses AppIconLoader logic
+- [ ] Add SimpleImagePool.Closeable inner class for bitmap management
+- [ ] Add @Inject constructor with Context parameter
 
-/**
- * Data class representing an image request for app icons.
- * Contains all parameters needed for deterministic caching.
- */
-@Immutable
-data class AppIconRequest(
-    val packageName: String,
-    val userId: Int = 0,
-    val size: Int = Dp.Size.dpToPx(48.dp), // from resources
-    val grayscale: Boolean = false,
-    val synthesizeAdaptive: Boolean = HailData.synthesizeAdaptiveIcons,
-    val iconPack: String = HailData.iconPack
-) : ImageRequest.Data {
-    override fun toString(): String = 
-        "appicon://$packageName|$userId|$size|$grayscale|$synthesizeAdaptive|$iconPack"
-}
+#### Task 5: Configure ImageLoader in HailApp
+- [ ] Modify app/src/main/kotlin/com/aistra/hail/HailApp.kt
+- [ ] Add val imageLoader by lazy { ImageLoader.Builder(this) ... build() }
+- [ ] Configure componentRegistry to add AppIconDecoder.Factory()
+- [ ] Set up memory cache with LruMemoryCache(maxSizePercent = 0.25)
+- [ ] Set up disk cache with FileDiskCache(File(cacheDir, "coil_icons"))
+- [ ] Enable crossfade(true)
 
-/**
- * Custom ImageDecoder that wraps existing AppIconLoader logic.
- * Reuses the same memory/disk caching strategy as AppIconCache.
- */
-class AppIconDecoder @Inject constructor(
-    @Suppress("UNUSED_PARAMETER") context: Context
-) : ImageDecoder<AppIconRequest> {
-    override fun decode(
-        pool: ImagePool,
-        data: AppIconRequest,
-        size: IntSize,
-        options: ImageOptions,
-        callback: ImageDecoder.DecodeCallback
-    ): Closeable? {
-        // Reuse AppIconCache.getOrLoadBitmap logic here
-        val context = LocalDensity.current
-        val bitmap = AppIconLoader.getOrLoadBitmap(
-            context,
-            data.packageName,
-            data.userId,
-            data.size,
-            data.grayscale,
-            data.synthesizeAdaptive,
-            data.iconPack
-        )
-        return if (bitmap != null) {
-            SimpleImagePool.Closeable(pool, bitmap) { }
-        } else null
-    }
-}
+### 3. Create Reusable AppIcon Composable
+#### Task 6: Create AppIcon.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AppIcon.kt
+- [ ] Implement @Composable fun AppIcon(request: AppIconRequest, contentDescription: String? = null, modifier: Modifier = Modifier)
+- [ ] Use rememberImagePainter with data = request and crossfade(true) builder
+- [ ] Create Canvas with modifier.size(request.size.dp)
+- [ ] Draw the icon using painter.paint within drawIntoCanvas
+- [ ] Add contentDescription handling for accessibility (via parent or semantics)
 
-/** Simple wrapper for pool-managed bitmap */
-private class SimpleImagePool.Closeable(
-    pool: ImagePool,
-    private val bitmap: Bitmap,
-    private val release: () -> Unit
-) : Closeable {
-    override fun close() = release()
-    override fun getBitmap(pool: ImagePool): Bitmap = bitmap
-}
-```
+### 4. Update Theme.kt with Typography and Shapes
+#### Task 7: Update Theme.kt
+- [ ] Modify app/src/main/kotlin/com/aistra/hail/ui/theme/Theme.kt
+- [ ] Define private val DarkColorScheme = darkColorScheme(...) with specific Material3 colors
+- [ ] Define private val LightColorScheme = lightColorScheme(...) with specific Material3 colors
+- [ ] Update @Composable fun HailTheme(...) to use MaterialTheme with colorScheme, typography, and shapes
+- [ ] Add private val Typography = Typography(...) with appropriate text styles
+- [ ] Add private val Shapes = Shapes(...) with rounded corner shapes
 
-### 3. Configure ImageLoader in HailApp
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/HailApp.kt
-class HailApp : Application() {
-    // ... existing code
-    
-    val imageLoader by lazy {
-        ImageLoader.Builder(this)
-            .componentRegistry { 
-                add(AppIconDecoder.Factory()) 
-            }
-            .memoryCache { 
-                LruMemoryCache(maxSizePercent = 0.25) 
-            }
-            .diskCache { 
-                FileDiskCache(File(cacheDir, "coil_icons")) 
-            }
-            .crossfade(true) 
-            .build()
-    }
-    
-    // ... existing methods
-}
-```
-
-### 4. Create Reusable AppIcon Composable
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/ui/theme/AppIcon.kt
-package com.aistra.hail.ui.theme
-
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.intoCanvas
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
-import coil.decode.ImageDecoder
-import coil.drawable.DrawablePainter
-import coil.request.ImageRequest
-import coil.compose.rememberImagePainter
-import com.aistra.hail.R
-import com.aistra.hail.utils.AppIconRequest
-import javax.inject.Inject
-
-/**
- * Composable that loads and displays an app icon using Coil.
- * Replaces the old AppIconView and AppIconCache usage.
- * 
- * @param request The AppIconRequest containing all parameters for loading the icon
- * @param contentDescription Optional description for accessibility
- * @param modifier Modifier to apply to the composable
- */
-@Composable
-fun AppIcon(
-    request: AppIconRequest,
-    contentDescription: String? = null,
-    modifier: Modifier = Modifier
-) {
-    val painter = rememberImagePainter(
-        data = request,
-        builder = { 
-            crossfade(true)
-        }
-    )
-
-    // Default size from resources if not specified in request
-    val size = request.size.dp
-
-    // Create a circular clipping shape for adaptive icons
-    val shape = CircleShape
-
-    Canvas(modifier = modifier.size(size)) {
-        // Draw the icon with the painter
-        drawContext.canvas.nativeCanvas.saveLayer(null)
-        painter?.paint?.let { paint ->
-            drawIntoCanvas { 
-                it.drawImage(
-                    painter.imageBitmap ?: return@drawIntoCanvas,
-                    topLeft = Offset(0f, 0f),
-                    size = Size(size.value, size.value),
-                    paint = paint
-                )
-            }
-        }
-        drawContext.canvas.nativeCanvas.restore()
-    }
-    
-    // Optional: Add accessibility description
-    // Note: In a real implementation, we would use Semantics property
-    // For now, we rely on the parent to set contentDescription
-}
-```
-
-### 5. Update Theme.kt with Typography and Shapes
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/ui/theme/Theme.kt
-package com.aistra.hail.ui.theme
-
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
-import com.aistra.hail.R
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFBB86FC),
-    secondary = Color(0xFF03DAC6),
-    background = Color(0xFF121212),
-    surface = Color(0xFF121212),
-    error = Color(0xFFCF6679),
-    onPrimary = Color(0xFF212121),
-    onSecondary = Color(0xFF212121),
-    onBackground = Color(0xFFFFFFFF),
-    onSurface = Color(0xFFFFFFFF),
-    onError = Color(0xFF212121)
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF6750A4),
-    secondary = Color(0xFF625B71),
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    error = Color(0xFFB3261E),
-    onPrimary = Color(0xFFFFFFFF),
-    onSecondary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF212121),
-    onSurface = Color(0xFF212121),
-    onError = Color(0xFFFFFFFF)
-)
-
-@Composable
-fun HailTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
-}
-
-private val Typography = Typography(
-    bodyLarge = TextStyle(fontWeight = FontWeight.Normal, fontSize = 16.sp),
-    bodyMedium = TextStyle(fontWeight = FontWeight.Normal, fontSize = 14.sp),
-    bodySmall = TextStyle(fontWeight = FontWeight.Normal, fontSize = 12.sp),
-    labelLarge = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp),
-    labelMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp),
-    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 11.sp),
-    titleLarge = TextStyle(fontWeight = FontWeight.Bold, fontSize = 22.sp),
-    titleMedium = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp),
-    titleSmall = TextStyle(fontWeight = FontWeight.Bold, fontSize = 14.sp)
-)
-
-private val Shapes = Shapes(
-    small = RoundedCornerShape(4.dp),
-    medium = RoundedCornerShape(8.dp),
-    large = RoundedCornerShape(16.dp)
-)
-```
-
-### 6. Remove AppIconCache.kt (After Verification)
-```diff
-// app/src/main/kotlin/com/aistra/hail/utils/AppIconCache.kt
-- /* ENTIRE FILE REMOVED */
-```
+### 5. Remove AppIconCache.kt
+#### Task 8: Remove AppIconCache.kt
+- [ ] Delete app/src/main/kotlin/com/aistra/hail/utils/AppIconCache.kt
+- [ ] Verify no remaining references through compiler errors or search
 
 ## Validation Checklist
 
@@ -296,7 +76,7 @@ private val Shapes = Shapes(
 - [ ] Icons load with placeholder and error handling
 - [ ] Memory and disk caching works (verify via Coil logs)
 - [ ] Theme colors and typography applied correctly in light/dark mode
-- [ ] No regression in existing icon-dependent features ( AppsFragment, ActionsFragment, etc.)
+- [ ] No regression in existing icon-dependent features (AppsFragment, ActionsFragment, etc.)
 - [ ] AppIconCache.kt removed and no references remain
 - [ ] Coil dependency resolves without conflicts
 - [ ] ImageLoader singleton properly initialized in HailApp

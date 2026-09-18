@@ -1,4 +1,4 @@
-# Hail App - Compose Migration Plan: ActionsFragment
+# Hail App Compose Migration Plan: ActionsFragment Implementation
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -23,409 +23,75 @@
 ## File Changes
 
 ### 1. Update ActionsFragment to Use ComposeView
-```kotlin
-// app/src/main/java/com/aistra/hail/ui/actions/ActionsFragment.kt
-package com.aistra.hail.ui.actions
-
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.viewinterop.RememberObserver
-import com.aistra.hail.R
-import com.aistra.hail.ui.theme.ActionsScreen
-import com.aistra.hail.ui.theme.HailTheme
-
-class ActionsFragment : Fragment(R.layout.fragment_actions) {
-
-    private val viewModel: ActionsViewModel by viewModels { factory }
-
-    // ... existing factory initialization
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                HailTheme {
-                    ActionsScreen(
-                        viewModel = viewModel,
-                        // ... pass any necessary callbacks
-                    )
-                }
-            }
-        }
-    }
-
-    // ... remove existing XML-related code (binding, etc.)
-}
-```
+#### Task 1: Update ActionsFragment.kt
+- [ ] Modify app/src/main/java/com/aistra/hail/ui/actions/ActionsFragment.kt
+- [ ] Replace ViewBinding inflation with ComposeView in onCreateView
+- [ ] Set ViewCompositionStrategy to DisposeOnViewTreeLifecycleDestroyed
+- [ ] Set content to HailTheme { ActionsScreen(viewModel = viewModel, ...) }
 
 ### 2. Create ActionsScreen Composable
-```kotlin
-// app/src/main/kotlin/com/aistra/hail/ui/theme/ActionsScreen.kt
-package com.aistra.hail.ui.theme
-
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.aistra.hail.ui.actions.ActionsViewModel
-import com.aistra.hail.ui.theme.AppIcon
-import com.aistra.hail.ui.theme.ActionItem
-import com.aistra.hail.ui.theme.ActionHeader
-import com.aistra.hail.ui.theme.AddActionFab
-import kotlinx.coroutines.flow.collectAsStateWithLifecycle
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ActionsScreen(
-    viewModel: ActionsViewModel,
-    modifier: Modifier = Modifier
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val actions by uiState.actions.collectAsStateWithLifecycle(emptyList())
-    val isLoading by uiState.isLoading.collectAsStateWithLifecycle(false)
-    val showAddDialog by uiState.showAddDialog.collectAsStateWithLifecycle(false)
-    val editingActionId by uiState.editingActionId.collectAsStateWithLifecycle<String?>(null)
-
-    Column(modifier
-        .fillMaxSize()
-    ) {
-        // Header with title and add button
-        ActionHeader(
-            title = "Actions",
-            onAddClicked = { viewModel.showAddDialog(true) }
-        )
-        
-        // Loading indicator
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(24.dp)
-            )
-        } else {
-            // Actions list
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                // Group actions by type or show as flat list
-                items(actions) { action ->
-                    ActionItem(
-                        action = action,
-                        onClicked = { viewModel.onActionClicked(action) },
-                        onEdited = { viewModel.startEditing(action.id) },
-                        onDeleted = { viewModel.deleteAction(action.id) },
-                        onToggleChanged = { enabled -> 
-                            viewModel.updateActionEnabled(action.id, enabled)
-                        }
-                    )
-                }
-                
-                // Add action button at the end
-                item {
-                    AddActionFab(
-                        onClicked = { viewModel.showAddDialog(true) }
-                    )
-                }
-            }
-        }
-        
-        // Dialogs
-        if (showAddDialog) {
-            ActionDialog(
-                action = null, // null indicates add mode
-                onDismissed = { viewModel.showAddDialog(false) },
-                onSaved = { actionData -> 
-                    viewModel.saveAction(actionData)
-                    viewModel.showAddDialog(false)
-                }
-            )
-        }
-        
-        if (editingActionId != null) {
-            val actionToEdit = actions.firstOrNull { it.id == editingActionId }
-            actionToEdit?.let { action ->
-                ActionDialog(
-                    action = action,
-                    onDismissed = { viewModel.editingActionId = null },
-                    onSaved = { actionData -> 
-                        viewModel.updateAction(actionData)
-                        viewModel.editingActionId = null
-                    }
-                )
-            }
-        }
-    }
-}
-```
+#### Task 2: Create ActionsScreen.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/ActionsScreen.kt
+- [ ] Implement @Composable fun ActionsScreen(viewModel: ActionsViewModel, modifier: Modifier = Modifier)
+- [ ] Collect viewModel.uiState.collectAsStateWithLifecycle() and individual StateFlow properties
+- [ ] Implement Column layout with fillMaxSize()
+- [ ] Add ActionHeader, loading indicator (if needed), LazyColumn for actions list, and ActionDialogs
 
 ### 3. Create Supporting Composables
-```kotlin
-// ActionHeader.kt
-@Composable
-fun ActionHeader(
-    title: String,
-    onAddClicked: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .height(56.dp)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            verticalAlignment = Alignment.CenterVertically
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(
-            onClick = onAddClicked
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add action"
-            )
-        }
-    }
-}
+#### Task 3: Create ActionHeader.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/ActionHeader.kt
+- [ ] Implement @Composable fun ActionHeader(title: String, onAddClicked: () -> Unit, modifier: Modifier = Modifier)
+- [ ] Use Row layout with fillMaxWidth(), padding(16.dp), height(56.dp)
+- [ ] Add Text with title, style=titleMedium, verticalAlignment=Alignment.CenterVertically
+- [ ] Add Spacer with weight(1f)
+- [ ] Add IconButton with onClick = onAddClicked and Icons.Default.Add
 
-// ActionItem.kt
-@Composable
-fun ActionItem(
-    action: ActionItemData, // Assuming this is the data class
-    onClicked: () -> Unit,
-    onEdited: () -> Unit,
-    onDeleted: () -> Unit,
-    onToggleChanged: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(
-                if (isPressed) MaterialTheme.colorScheme.secondaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .clickable(onClick = onClicked)
-            .ripple(bounded = false, interactionSource = interactionSource)
-            .padding(16.dp)
-            .padding(horizontal = 8.dp)
-    ) {
-        // Icon
-        AppIcon(
-            request = AppIconRequest(
-                packageName = action.appPackageName,
-                userId = action.userId
-            ),
-            contentDescription = "${action.label} icon",
-            modifier = Modifier
-                .size(40.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        // Details
-        Column(
-            modifier = Modifier
-                .weight(1f)
-        ) {
-            Text(
-                text = action.label,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = action.description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(8.dp))
-        
-        // Toggle switch
-        Switch(
-            checked = action.enabled,
-            onCheckedChange = onToggleChanged,
-            colors = SwitchDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.onSurface
-            )
-        )
-        
-        Spacer(modifier = Modifier.width(8.dp))
-        
-        // Edit button
-        IconButton(
-            onClick = onEdited
-        ) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = "Edit action"
-            )
-        }
-        
-        Spacer(modifier = Modifier.width(4.dp))
-        
-        // Delete button
-        IconButton(
-            onClick = onDeleted
-        ) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = "Delete action"
-            )
-        }
-    }
-}
+#### Task 4: Create ActionItem.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/ActionItem.kt
+- [ ] Implement @Composable fun ActionItem(action: ActionItemData, onClicked: () -> Unit, onEdited: () -> Unit, onDeleted: () -> Unit, onToggleChanged: (Boolean) -> Unit, modifier: Modifier = Modifier)
+- [ ] Use MutableInteractionSource() and collectIsPressedAsState() for pressed state
+- [ ] Use Row modifier with fillMaxWidth(), background based on pressed state, clickable, ripple, padding(16.dp), padding(horizontal=8.dp)
+- [ ] Add AppIcon with request = AppIconRequest(packageName = action.appPackageName, userId = action.userId), contentDescription = "${action.label} icon", modifier = Modifier.size(40.dp)
+- [ ] Add Spacer(width=12.dp)
+- [ ] Add Column with weight(1f) containing Text(action.label, style=bodyLarge) and Text(action.description, style=bodySmall, color=onSurfaceVariant)
+- [ ] Add Spacer(width=8.dp)
+- [ ] Add Switch with checked = action.enabled, onCheckedChange = onToggleChanged, colors = SwitchDefaults.colors(thumbColor=primary, trackColor=onSurface)
+- [ ] Add Spacer(width=8.dp)
+- [ ] Add IconButton with onClick = onEdited and Icons.Default.Edit
+- [ ] Add Spacer(width=4.dp)
+- [ ] Add IconButton with onClick = onDeleted and Icons.Default.Delete
 
-// AddActionFab.kt
-@Composable
-fun AddActionFab(
-    onClicked: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    FloatingActionButton(
-        onClick = onClicked,
-        modifier = modifier
-            .align(Alignment.BottomEnd)
-            .padding(16.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = "Add action"
-        )
-    }
-}
+#### Task 5: Create AddActionFab.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/AddActionFab.kt
+- [ ] Implement @Composable fun AddActionFab(onClicked: () -> Unit, modifier: Modifier = Modifier)
+- [ ] Use FloatingActionButton with onClick = onClicked and modifier = modifier.align(Alignment.BottomEnd).padding(16.dp)
+- [ ] Add Icon with imageVector = Icons.Default.Add and contentDescription = "Add action"
 
-// ActionDialog.kt
-@Composable
-fun ActionDialog(
-    action: ActionItemData?, // null for add, non-null for edit
-    onDismissed: () -> Unit,
-    onSaved: (ActionItemData) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val dialogState = rememberDialogState()
-    val scope = rememberCoroutineScope()
-    
-    // Form fields (would be lifted from dialog content)
-    val label by rememberSaveable { mutableStateOf(action?.label ?: "") }
-    val description by rememberSaveable { mutableStateOf(action?.description ?: "") }
-    val enabled by rememberSaveable { mutableStateOf(action?.enabled ?: true) }
-    
-    AlertDialog(
-        onDismissRequest = {
-            onDismissed()
-            dialogState.dismissDialog()
-        },
-        title = { Text(if (action == null) "Add Action" else "Edit Action") },
-        text = {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                TextField(
-                    value = label,
-                    onValueChange = { label = it },
-                    label = { Text("Label") },
-                    placeholder = { Text("Enter action label") }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description (optional)") },
-                    placeholder = { Text("Enter description") }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Enabled")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Switch(
-                        checked = enabled,
-                        onCheckedChange = { enabled = it }
-                    )
-                }
-                // App picker would be another dialog launched from here
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { /* open app picker dialog */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Text("Select App")
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val actionData = ActionItemData(
-                        id = action?.id ?: java.util.UUID.randomUUID().toString(),
-                        label = label,
-                        description = description,
-                        enabled = enabled,
-                        // ... other required fields
-                    )
-                    onSaved(actionData)
-                    onDismissed()
-                    dialogState.dismissDialog()
-                }
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    onDismissed()
-                    dialogState.dismissDialog()
-                }
-            ) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-```
+#### Task 6: Create ActionDialog.kt
+- [ ] Create app/src/main/kotlin/com/aistra/hail/ui/theme/ActionDialog.kt
+- [ ] Implement @Composable fun ActionDialog(action: ActionItemData?, onDismissed: () -> Unit, onSaved: (ActionItemData) -> Unit, modifier: Modifier = Modifier)
+- [ ] Use rememberDialogState() and rememberCoroutineScope()
+- [ ] Use rememberSaveable for form fields (label, description, elevated) initialized from action or defaults
+- [ ] Implement AlertDialog with onDismissRequest, title, text fields (TextField for label and description, Row with Text and Switch for enabled), and confirm/dismiss buttons
+- [ ] Add app picker Button that launches separate dialog (implementation detail)
+- [ ] Handle save action: create ActionItemData, call onSaved, then onDismissed and dialogState.dismissDialog()
 
 ### 4. Update ActionsViewModel to Expose StateFlow
-```kotlin
-// app/src/main/java/com/aistra/hail/ui/actions/ActionsViewModel.kt
-// No UI changes needed, but ensure these are exposed as StateFlow:
-class ActionsViewModel(...) : ViewModel() {
-    val uiState: MutableStateFlow<ActionsUiState> = MutableStateFlow(ActionsUiState())
-    val actions: MutableStateFlow<List<ActionItemData>> = MutableStateFlow(emptyList())
-    val isLoading: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val showAddDialog: MutableStateFlow<Boolean> = MutableStateFlow(false)
-    val editingActionId: MutableStateFlow<String?> = MutableStateFlow(null)
-    // ... existing logic updates these flows
-}
-```
+#### Task 7: Update ActionsViewModel.kt
+- [ ] Modify app/src/main/java/com/aistra/hail/ui/actions/ActionsViewModel.kt
+- [ ] Replace MutableLiveData with MutableStateFlow for uiState, actions, isLoading, showAddDialog, editingActionId
+- [ ] Expose StateFlow properties via _uiState.map { it.property } or direct flows
+- [ ] Implement ActionsUiState data class with appropriate fields
+- [ ] Update all methods to update _uiState instead of individual LiveData objects
+- [ ] Ensure proper initialization and state update logic
 
 ### 5. Remove XML Layout and Adapter
-```diff
-// app/src/main/res/layout/fragment_actions.xml
-- /* ENTIRE FILE REMOVED */
+#### Task 8: Remove fragment_actions.xml
+- [ ] Delete app/src/main/res/layout/fragment_actions.xml
 
-// app/src/main/java/com/aistra/hail/ui/actions/ActionsAdapter.kt
-- /* ENTIRE FILE REMOVED */
-```
+#### Task 9: Remove ActionsAdapter.kt
+- [ ] Delete app/src/main/java/com/aistra/hail/ui/actions/ActionsAdapter.kt
+- [ ] Verify no remaining references through compiler errors
 
 ## Validation Checklist
 
