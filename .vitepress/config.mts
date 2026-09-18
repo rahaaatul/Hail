@@ -20,18 +20,36 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/what-is-hail' },
+      { text: 'App Management', link: '/guide/app-management' },
+      { text: 'Actions', link: '/guide/actions' },
+      { text: 'Backup & Restore', link: '/guide/backup-restore' },
       { text: 'Working Mode', link: '/guide/working-mode' },
-      { text: 'API', link: '/guide/api' }
+      { text: 'API', link: '/guide/api' },
+      { text: "What's New", link: '/guide/changelog' }
     ],
     sidebar: [
       {
-        text: 'Documentation',
+        text: 'Getting Started',
         items: [
           { text: 'What is Hail', link: '/guide/what-is-hail' },
+          { text: 'App Management', link: '/guide/app-management' },
           { text: 'Freeze', link: '/guide/freeze' },
           { text: 'Working Mode', link: '/guide/working-mode' },
-          { text: 'Revert', link: '/guide/revert' },
-          { text: 'API', link: '/guide/api' }
+          { text: 'Revert', link: '/guide/revert' }
+        ]
+      },
+      {
+        text: 'Features',
+        items: [
+          { text: 'Actions', link: '/guide/actions' },
+          { text: 'Backup & Restore', link: '/guide/backup-restore' }
+        ]
+      },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'API', link: '/guide/api' },
+          { text: "What's New", link: '/guide/changelog' }
         ]
       }
     ],
@@ -43,7 +61,7 @@ export default defineConfig({
       copyright: 'Copyright (C) 2021-2026 Aistra'
     },
     editLink: {
-      pattern: 'https://github.com/rahaaatul/Hail/edit/main/docs/:path'
+      pattern: 'https://github.com/rahaaatul/Hail/edit/docs/:path'
     },
     outline: {
       label: 'On this page'

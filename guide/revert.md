@@ -1,28 +1,28 @@
 # Revert
 
-## By adb
+Use the same working mode that froze an app whenever possible. Hail's normal unfreeze operation is the safest way to restore an app.
 
-Replace `com.package.name` to the package name of target app.
+## By ADB
+
+Replace `com.package.name` with the target package name.
 
 ```shell
-# Enable app
+# Enable a disabled app
 adb shell pm enable com.package.name
-# Unhide app (root required)
+
+# Unhide an app; root is required
 adb shell su -c pm unhide com.package.name
-# Unsuspend app
+
+# Unsuspend an app
 adb shell pm unsuspend com.package.name
 ```
 
-## Modify file
+For force-stop mode, launch the app again or use Hail's unfreeze operation. A stopped app does not require a separate `pm` command to become launchable.
 
-Access `/data/system/users/0/package-restrictions.xml`, this file stores the restrictions about apps. You can modify, rename or just delete it.
+## Device Owner
 
-- **Enable app**: Modify the value of `enabled` from 2 (DISABLED) or 3 (DISABLED_USER) to 1 (ENABLED)
+If Hail is the device owner, remove device-owner status before uninstalling Hail. Frozen apps remain frozen after device-owner removal, so unfreeze important apps first.
 
-- **Unhide app**: Modify the value of `hidden` from true to false
+## System Apps
 
-- **Unsuspend app**: Modify the value of `suspended` from true to false
-
-## Wipe data by recovery
-
-None of my business :(
+Do not edit Android system restriction files or wipe application data as a shortcut for restoring an app. Those operations can damage the system partition or erase user data. Use the matching Hail mode or the Android package commands above, and recover system changes with a known-good backup or device recovery procedure.

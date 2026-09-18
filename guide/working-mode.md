@@ -1,14 +1,14 @@
 # Working Mode
 
-**Any app that has been frozen on Hail will need to be unfrozen by the same working mode.**
+**An app frozen with one Hail working mode must be unfrozen with the same working mode.**
 
-1. For devices supporting wireless debugging (Android 11+) or rooted devices, `Shizuku` is recommended.
+For devices with wireless debugging on Android 11 or later, or for rooted devices, Shizuku is recommended. Root is an alternative on rooted devices and can be slower.
 
-2. For rooted devices, `Root` is an alternative. **It is slower.**
+## Root Shell
 
-In Root mode, Hail starts a cached libsu shell in the background when the app process starts. This moves the root authorization delay away from the first freeze or unfreeze action while keeping the UI responsive. The shell is reused for all Root operations in that process, including operations on different apps.
+In Root mode, Hail warms a cached libsu shell when the main app is opened. The shell is reused for Root operations while Hail is running, including operations on different apps and bulk actions.
 
-If Root mode is not selected, no root shell is started. Switching away from Root mode closes the cached shell. If root authorization is denied or the shell exits unexpectedly, the failed shell is discarded and the next Root operation attempts to acquire a new one. A new shell is also acquired after Hail is restarted.
+If Root mode is not selected, no root shell is started. Switching away from Root mode closes the cached shell. If authorization is denied or the shell exits unexpectedly, the failed shell is discarded and the next Root operation acquires a new one. Hail also acquires a new shell after restart.
 
 | Privilege | Force Stop | Disable | Hide | Suspend | Uninstall/Reinstall (System Apps) |
 |---|---|---|---|---|---|
@@ -23,36 +23,28 @@ If Root mode is not selected, no root shell is started. Switching away from Root
 ## Device Owner
 
 ::: danger
-You must remove Hail as a device owner before you can uninstall it
+Remove Hail as device owner before uninstalling it. Frozen apps remain frozen after removal.
 :::
 
-### Set device owner by adb
+### Set Device Owner by ADB
 
-[Android Debug Bridge (adb) Guide](https://developer.android.com/studio/command-line/adb)
-
-[Download Android SDK Platform-Tools](https://developer.android.com/studio/releases/platform-tools)
-
-Issue adb command:
+Install Android Debug Bridge (adb) and Android SDK Platform-Tools, then run:
 
 ```shell
 adb shell dpm set-device-owner com.aistra.hail/.receiver.DeviceAdminReceiver
 ```
 
-In response, adb prints this message if device owner has been successfully set:
+A successful command prints:
 
-```
+```text
 Success: Device owner set to package com.aistra.hail. Active admin set to component {com.aistra.hail/com.aistra.hail.receiver.DeviceAdminReceiver}
 ```
 
-Search the message by search engine otherwise.
-
-### Remove device owner
-
-Settings > Remove Device Owner
+Remove device-owner status from **Settings > Remove Device Owner**.
 
 ## Privileged System App
 
-The following privapp-permissions is required:
+A privileged system app installation requires these permissions:
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -66,22 +58,18 @@ The following privapp-permissions is required:
 </permissions>
 ```
 
-To use this mode, you should install Hail as a privileged system app.
-
-The recommended approach is to import Hail when building your ROM, here's an example for `Android.bp`:
+Install Hail as a privileged system app. When building a ROM, import it with `privileged: true` and include the permission file, for example:
 
 ```bp
 android_app_import {
     name: "Hail",
     apk: "Hail.apk",
     privileged: true,
-
     dex_preopt: {
         enabled: false,
     },
     presigned: true,
     preprocessed: true,
-
     required: ["privapp-permissions_com.aistra.hail.xml"]
 }
 
