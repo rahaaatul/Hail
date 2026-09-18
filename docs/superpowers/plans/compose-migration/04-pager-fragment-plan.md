@@ -19,7 +19,7 @@
 **Tech Stack:**
 - Jetpack Compose, Material3
 - Coil for image loading (via AppIcon composable)
-- Accompanist Material3 MaterialDialogs (or Material3 built-in alerts/dialogs)
+- Material3 built-in alerts/dialogs
 - ViewModel with StateFlow (unchanged)
 
 **Spec:** This plan is based on comprehensive codebase analysis of the PagerFragment and related components.

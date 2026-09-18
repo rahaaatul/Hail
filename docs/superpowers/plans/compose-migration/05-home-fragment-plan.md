@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate HomeFragment from XML layout + ViewBinding + ViewPager2 + TabLayout to Jetpack Compose using TabRow and Accompanist HorizontalPager (or androidx.compose.foundation:pager when stable), preserving all functionality: tab navigation, FAB, and hosting PagerFragment pages.
+**Goal:** Migrate HomeFragment from XML layout + ViewBinding + ViewPager2 + TabLayout to Jetpack Compose using TabRow and androidx.compose.foundation:pager, preserving all functionality: tab navigation, FAB, and hosting PagerFragment pages.
 
 **Architecture:** 
 - Replace `fragment_home.xml` with a `ComposeView` in `HomeFragment.onCreateView`
 - Create `@Composable HomeScreen` that hosts the UI
 - Use `TabRow` for tab labels at the top
-- Use `HorizontalPager` (from Accompanist Material3 0.37.2) for swiping between tabs
+- Use `Pager` (from androidx.compose.foundation) for swiping between tabs
 - Each tab page is a `PagerScreen` composable (could inline the PagerFragment logic here, but we'll keep separation by calling the same PagerScreen used in PagerFragment)
 - Use `rememberSaveable` for UI state (selected tab index, scroll state)
 - Use `StateFlow` from ViewModel collected with `collectAsState()` for tab titles and visibility
@@ -17,8 +17,7 @@
 - Navigation to other destinations (Apps, Actions, etc.) remains via Navigation Component (kept in XML nav graph)
 
 **Tech Stack:**
-- Jetpack Compose, Material3
-- Accompanist Material3 HorizontalPager 0.37.2 (implementation detail: may migrate to androidx.compose.foundation:paper when stable)
+- Jetpack Compose, Material3 (includes foundation pager)
 - ViewModel with StateFlow (unchanged)
 
 **Spec:** This plan is based on comprehensive codebase analysis of the HomeFragment and related components.
@@ -28,10 +27,10 @@
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
 - Navigation Component 2.10.0 (Fragment-based)
-- Accompanist Material3 HorizontalPager 0.37.2 (temporary, may migrate to foundation:pager)
 - HomeViewModel exposed as StateFlow for Compose integration
 
 ---
+
 ### Task 1: Update HomeFragment to Use ComposeView
 **Files:**
 - Modify: `app/src/main/java/com/aistra/hail/ui/home/HomeFragment.kt`
@@ -49,7 +48,7 @@
 - [ ] Create the file with package `com.aistra.hail.ui.theme`
 - [ ] Implement `@Composable fun HomeScreen(viewModel: HomeViewModel, modifier: Modifier = Modifier)`
 - [ ] Collect tab titles and visibility from `viewModel` StateFlow properties
-- [ ] Implement layout with `TabRow` and `HorizontalPager`
+- [ ] Implement layout with `TabRow` and `Pager`
 - [ ] Map each tab/page to a `PagerScreen` composable for the corresponding tab type
 - [ ] Add `FAB` for adding apps to custom tab
 - [ ] Handle navigation to other destinations via `Navigation Component`
@@ -65,12 +64,12 @@
 - [ ] Apply proper styling, indicators, and dimensions for selected/unselected tabs
 - [ ] Use `scrollableTabRow()` for long tab lists if needed
 
-### Task 4: Create HorizontalPager Implementation
+### Task 4: Create Pager Implementation
 **Files:**
 - Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/HomePager.kt` (or inline in HomeScreen)
 
 **Steps:**
-- [ ] Import `HorizontalPager` from `androidx.accompanist.material3.horizontalpager` (remember this is temporary)
+- [ ] Import `Pager` from `androidx.compose.foundation.lazy`
 - [ ] Set `pageCount` to match the number of tabs from `viewModel`
 - [ ] Set `currentPage` to match `selectedTabIndex` from `viewModel` with bidirectional binding
 - [ ] Each `page/tab` contains `PagerScreen(tabType = tabTypes[page])` or inline equivalent logic
@@ -112,7 +111,7 @@
 - [ ] Run `./gradlew assembleDebug` to ensure successful build
 - [ ] Test tab navigation works correctly via `TabRow` taps
 - [ ] Verify horizontal paging works via swipe gestures
-- [ ] Check `TabRow` and `HorizontalPager` stay in sync (when one changes, the other updates)
+- [ ] Check `TabRow` and `Pager` stay in sync (when one changes, the other updates)
 - [ ] Confirm each tab displays correct content via `PagerScreen` (all, frequent, recent, custom tabs)
 - [ ] Test FAB opens custom tab creation dialog properly
 - [ ] Verify navigation to other destinations (Apps, Actions, Settings, About) works via `Navigation Component`
@@ -122,7 +121,6 @@
 - [ ] Verify that tab creation, renaming, and deletion work correctly through `ViewModel`
 
 ## References
-- [Accompanist Material3 HorizontalPager](https://github.com/google/accompanist/tree/main/horizontal-pager)
 - [Jetpack Compose TabRow](https://developer.android.com/jetpack/compose/components#tab-row)
 - [Jetpack Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)
 - [Navigation Component with Compose](https://developer.android.com/guide/navigation/navigation-compose)
