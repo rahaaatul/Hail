@@ -2,33 +2,30 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate ActionsFragment from XML layout + ViewBinding + RecyclerView.Adapter to Jetpack Compose using LazyColumn, preserving all functionality: action items list, headers, switches, dialogs (add/edit action, app picker), and icon loading via Coil.
+**Goal:** Migrate ActionsFragment from XML layout + ViewBinding + RecyclerView.Adapter to Jetpack Compose using LazyColumn, preserving all functionality: action items list (icon, name, dependencies), long-press menu (Edit Action, Create Shortcut, Duplicate, Delete), direct execution on item click, and app picker dialog for selecting unfreeze and launch apps.
 
-**Architecture:** 
+**Architecture:**
 - Replace `fragment_actions.xml` with a `ComposeView` in `ActionsFragment.onCreateView`
-- Create `@Composable ActionsScreen` that hosts the UI
-- Break down into smaller composables: `ActionItem`, `ActionHeader`, `AddActionFab`, `ActionDialog`, `AppPickerDialog`
-- Use `rememberSaveable` for UI state (expanded sections, dialog visibility)
-- Use `StateFlow` from ViewModel collected with `collectAsState()` for actions list
+- Create `@Composable ActionsScreen` that hosts the UI and manages state (since no ViewModel exists)
+- Break down into smaller composables: `ActionItem`, `ActionDialog`, `AppPickerDialog`
+- Use `remember` and `LaunchedEffect` for loading actions from ActionsRepository and handling UI state
 - Replace `ActionsAdapter` with `LazyColumn` items
-- Replace `AppIconCache` with `AppIcon` composable from theme
-- Preserve `ActionsViewModel` (no changes needed) but expose `StateFlow` for UI
+- Use `AppIcon` composable from theme for icon loading (or async image loading if needed)
+- Preserve the existing long-press menu functionality and app picker dialogs in Compose
 
 **Tech Stack:**
 - Jetpack Compose, Material3
-- Coil for image loading (via AppIcon composable)
-- Accompanist Material3 MaterialDialogs (or Material3 built-in alerts/dialogs)
-- ViewModel with StateFlow (unchanged)
+- Coroutines for async repository calls
+- Accompanist Material3 MaterialDialogs (or Material3 built-in alerts/dialogs) - if needed, but we can use Compose Material3 dialogs
 
-**Spec:** This plan is based on comprehensive codebase analysis of the ActionsFragment and related components.
+**Spec:** This plan is based on the current ActionsFragment implementation as of the codebase analysis.
 
 ## Global Constraints
 - Jetpack Compose BOM 2026.08.00 (stable)
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
 - Navigation Component 2.10.0 (Fragment-based)
-- Coil 2.6.0 for image loading
-- ActionsViewModel exposed as StateFlow for Compose integration
+- No ViewModel or ActionsViewModel exists; state managed in composable
 
 ---
 ### Task 1: Update ActionsFragment to Use ComposeView
@@ -36,9 +33,10 @@
 - Modify: `app/src/main/java/com/aistra/hail/ui/actions/ActionsFragment.kt`
 
 **Steps:**
-- [ ] Replace ViewBinding inflation with `ComposeView` in `onCreateView`
+- [ ] Remove ViewBinding inflation and replace with `ComposeView` in `onCreateView`
 - [ ] Set `ViewCompositionStrategy` to `DisposeOnViewTreeLifecycleDestroyed`
-- [ ] Set content to `HailTheme { ActionsScreen(viewModel = viewModel, ...) }`
+- [ ] Set content to `HailTheme { ActionsScreen(/* state holder */) }`
+- [ ] Remove unused imports and ViewBinding reference
 
 ### Task 2: Create ActionsScreen Composable
 **Files:**
@@ -46,154 +44,116 @@
 
 **Steps:**
 - [ ] Create the file with package `com.aistra.hail.ui.theme`
-- [ ] Implement `@Composable fun ActionsScreen(viewModel: ActionsViewModel, modifier: Modifier = Modifier)`
-- [ ] Collect `viewModel.uiState.collectAsStateWithLifecycle()` and individual StateFlow properties
-- [ ] Implement `Column` layout with `fillMaxSize()`
-- [ ] Add `ActionHeader`, loading indicator (if needed), `LazyColumn` for actions list, and `ActionDialogs`
+- [ ] Implement `@Composable fun ActionsScreen(onNavigateToHome: () -> Unit)` (if needed for navigation, but fragment is already in navigation graph)
+- [ ] Inside ActionsScreen, manage state for:
+    - `actions` list: `val actions by remember { mutableStateOf(emptyList<LaunchAction>()) }`
+    - `isLoading` Boolean: `val isLoading by remember { mutableStateOf(false) }`
+    - `showDialog` Boolean: `val showDialog by remember { mutableStateOf(false) }`
+    - `editingActionId`: `val editingActionId by remember { mutableStateOf<String?>(null) }`
+    - `selectedUnfreezePackages`: `val selectedUnfreezePackages by remember { mutableStateOf(setOf<String>()) }`
+    - `selectedLaunchPackage`: `val selectedLaunchPackage by remember { mutableStateOf<String?>(null) }`
+- [ ] Load actions in `LaunchedEffect(Unit)` when entering the screen, setting `isLoading` true, calling `ActionsRepository.loadAll()`, updating `actions` and setting `isLoading` false
+- [ ] Implement UI with:
+    - If `isLoading`, show a circular progress indicator
+    - Else, show a `LazyColumn` with `items(actions)` each as an `ActionItem`
+    - The `ActionItem` should handle click (to execute action) and long-click (to show edit menu)
+- [ ] Handle the edit menu options by setting appropriate state and opening dialogs (we'll create dialog composables for edit and app picker)
+- [ ] Note: There is no FAB or header in the current UI
 
-### Task 3: Create ActionHeader Composable
-**Files:**
-- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/ActionHeader.kt`
-
-**Steps:**
-- [ ] Create the file with package `com.aistra.hail.ui.theme`
-- [ ] Implement `@Composable fun ActionHeader(title: String, onAddClicked: () -> Unit, modifier: Modifier = Modifier)`
-- [ ] Use `Row` layout with `fillMaxWidth()`, `padding(16.dp)`, `height(56.dp)`
-- [ ] Add `Text` with `title`, `style=titleMedium`, `verticalAlignment=Alignment.CenterVertically`
-- [ ] Add `Spacer` with `weight(1f)`
-- [ ] Add `IconButton` with `onClick = onAddClicked` and `Icons.Default.Add`
-
-### Task 4: Create ActionItem Composable
+### Task 3: Create ActionItem Composable
 **Files:**
 - Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/ActionItem.kt`
 
 **Steps:**
 - [ ] Create the file with package `com.aistra.hail.ui.theme`
-- [ ] Implement `@Composable fun ActionItem(action: ActionItemData, onClicked: () -> Unit, onEdited: () -> Unit, onDeleted: () -> Unit, onToggleChanged: (Boolean) -> Unit, modifier: Modifier = Modifier)`
-- [ ] Use `MutableInteractionSource()` and `collectIsPressedAsState()` for pressed state
-- [ ] Use `Row` modifier with:
+- [ ] Implement `@Composable fun ActionItem(action: LaunchAction, onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modifier = Modifier)`
+- [ ] Use `Row` layout with:
     - `fillMaxWidth()`
-    - `background` based on pressed state (pressed: secondaryContainer, else: surfaceVariant)
-    - `clickable(onClick = onClicked)`
-    - `ripple(bounded = false, interactionSource = interactionSource)`
     - `padding(16.dp)`
-    - `padding(horizontal = 8.dp)`
-- [ ] Add `AppIcon` with:
-    - `request = AppIconRequest(packageName = action.appPackageName, userId = action.userId)`
-    - `contentDescription = "${action.label} icon"`
-    - `modifier = Modifier.size(40.dp)`
-- [ ] Add `Spacer(width=12.dp)`
-- [ ] Add `Column` with `weight(1f)` containing:
-    - `Text(action.label, style=bodyLarge)`
-    - `Text(action.description, style=bodySmall, color=onSurfaceVariant)`
-- [ ] Add `Spacer(width=8.dp)`
-- [ ] Add `Switch` with:
-    - `checked = action.enabled`
-    - `onCheckedChange = onToggleChanged`
-    - `colors = SwitchDefaults.colors(thumbColor=primary, trackColor=onSurface)`
-- [ ] Add `Spacer(width=8.dp)`
-- [ ] Add `IconButton` with `onClick = onEdited` and `Icons.Default.Edit`
-- [ ] Add `Spacer(width=4.dp)`
-- [ ] Add `IconButton` with `onClick = onDeleted` and `Icons.Default.Delete`
+    - `clickable(onClick = onClick)`
+    - `background` with optional ripple or indication (we can use `clickable` with `indication` parameter)
+    - For long press, we can use `pointerInput` to detect long press and call `onLongClick`, or use `detectTapGestures` (but simpler: we can use `clickable` for click and add `longClickable` for long click? Actually, Compose has `clickable` and we can add `longClickable` as a separate modifier? We can use `combinedClickable` or we can use `pointerInput`. Let's use `pointerInput` for long press and `clickable` for regular click? Alternatively, we can use `Modifier.pointerInput` to detect both. However, for simplicity, we can make the item clickable for execution and long-clickable for the menu. We'll use:
+        - `modifier = modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onLongPress = { onLongClick() },
+                    onTap = { onClick() }
+                )
+            }
+            .padding(16.dp)
+        `
+    - Or we can use two separate modifiers: `clickable` and `longClickable` but note that longClickable will also call the click action after the long click? We want to avoid that. So we'll use `pointerInput` as above.
+- [ ] Inside the Row:
+    - Add `AppIcon` composable (we need to create or use existing one) with:
+        - `request = AppIconRequest(packageName = action.launchPackage, userId = HPackages.myUserId)` (assuming we have HPackages object)
+        - `contentDescription = "${AppInfo(action.launchPackage).name} icon"`
+        - `modifier = Modifier.size(40.dp)`
+    - Add `Spacer(width=12.dp)`
+    - Add `Column` with `weight(1f)` containing:
+        - `Text(appName, style=bodyLarge)` where appName is loaded from AppInfo(action.launchPackage).name
+        - `Text(dependenciesText, style=bodySmall, color=onSurfaceVariant)` where dependenciesText is action.unfreezePackages.joinToString(", ") { AppInfo(it).name }
+    - Add `Spacer(width=8.dp)` (optional, for alignment)
+- [ ] Note: No toggle switch, no labels, no descriptions as per current implementation
 
-### Task 5: Create AddActionFab Composable
-**Files:**
-- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AddActionFab.kt`
-
-**Steps:**
-- [ ] Create the file with package `com.aistra.hail.ui.theme`
-- [ ] Implement `@Composable fun AddActionFab(onClicked: () -> Unit, modifier: Modifier = Modifier)`
-- [ ] Use `FloatingActionButton` with:
-    - `onClick = onClicked`
-    - `modifier = modifier.align(Alignment.BottomEnd).padding(16.dp)`
-- [ ] Add `Icon` with:
-    - `imageVector = Icons.Default.Add`
-    - `contentDescription = "Add action"`
-
-### Task 6: Create ActionDialog Composable
+### Task 4: Create ActionDialog Composable (for editing/creating action)
 **Files:**
 - Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/ActionDialog.kt`
 
 **Steps:**
 - [ ] Create the file with package `com.aistra.hail.ui.theme`
-- [ ] Implement `@Composable fun ActionDialog(action: ActionItemData?, onDismissed: () -> Unit, onSaved: (ActionItemData) -> Unit, modifier: Modifier = Modifier)`
-- [ ] Use `rememberDialogState()` and `rememberCoroutineScope()`
-- [ ] Use `rememberSaveable` for form fields (`label`, `description`, `enabled`) initialized from `action` or defaults
-- [ ] Implement `AlertDialog` with:
-    - `onDismissRequest = { onDismissed(); dialogState.dismissDialog() }`
-    - `title = { Text(if (action == null) "Add Action" else "Edit Action") }`
-    - `text = {` 
-        `Column(modifier = Modifier.padding(vertical = 8.dp)) {`
-            `TextField(`
-                `value = label,`
-                `onValueChange = { label = it },`
-                `label = { Text("Label") },`
-                `placeholder = { Text("Enter action label") }`
-            `)`
-            `Spacer(modifier = Modifier.height(8.dp))`
-            `TextField(`
-                `value = description,`
-                `onValueChange = { description = it },`
-                `label = { Text("Description (optional)") },`
-                `placeholder = { Text("Enter description") }`
-            `)`
-            `Spacer(modifier = Modifier.height(8.dp))`
-            `Row(verticalAlignment = Alignment.CenterVertically) {`
-                `Text("Enabled")`
-                `Spacer(modifier = Modifier.width(8.dp))`
-                `Switch(`
-                    `checked = enabled,`
-                    `onCheckedChange = { enabled = it }`
-                `)`
-            `}`
-            `Spacer(modifier = Modifier.height(8.dp))`
-            `Button(`
-                `onClick = { /* open app picker dialog */ },`
-                `modifier = Modifier.fillMaxWidth()`
-            `) {`
-                `Text("Select App")`
-            `}`
-        `}`
-    `}`
-- [ ] Add `confirmButton` with:
-    - `TextButton` with:
-        - `onClick = {`
-            `val actionData = ActionItemData(`
-                `id = action?.id ?: java.util.UUID.randomUUID().toString(),`
-                `label = label,`
-                `description = description,`
-                `enabled = enabled,`
-                `// ... other required fields`
-            `)`
-            `onSaved(actionData)`
-            `onDismissed()`
-            `dialogState.dismissDialog()`
-        `}`
-        - `Text("Save")`
-    `}`
-- [ ] Add `dismissButton` with:
-    - `TextButton` with:
-        - `onClick = { onDismissed(); dialogState.dismissDialog() }`
-        - `Text("Cancel")`
-    `}`
+- [ ] Implement `@Composable fun ActionDialog(isVisible: Boolean, onDismiss: () -> Unit, onSave: (LaunchAction) -> Unit, editingAction: LaunchAction?, modifier: Modifier = Modifier)`
+- [ ] Use `if (isVisible) { AlertDialog ... }` or `ModalBottomSheet` or `Dialog` - we'll use `AlertDialog` for consistency with existing dialogs.
+- [ ] Inside the dialog:
+    - Title: "Edit Action" if editingAction != null else "Create Action"
+    - Text field area:
+        - Two buttons: "Select Unfreeze Apps" and "Select Launch App"
+        - The buttons should show the current selection as text (e.g., comma-separated list of unfreeze app names, or the launch app name)
+    - We'll manage the state for selected unfreeze and launch packages within the dialog (or we can lift state up to ActionsScreen and pass down)
+    - Since the dialog is used for both edit and create, we need to initialize the selections from the editingAction if present.
+- [ ] We'll create a state inside the dialog for:
+    - `selectedUnfreeze` (mutableStateOf(setOf<String>()))
+    - `selectedLaunch` (mutableStateOf<String?>())
+- [ ] Initialize these from editingAction if present, else empty.
+- [ ] The "Select Unfreeze Apps" button opens an app picker dialog in multi-select mode.
+- [ ] The "Select Launch App" button opens an app picker dialog in single-select mode.
+- [ ] When the user selects apps in the picker, we update the respective state.
+- [ ] The dialog has a Save button and a Cancel button.
+- [ ] On Save, we validate: at least one unfreeze app and one launch app selected, and the launch app is not in the unfreeze list (as per repository logic). Then we create a LaunchAction object and call onSave.
+- [ ] On Cancel or outside touch, we call onDismiss.
 
-### Task 7: Update ActionsViewModel to Expose StateFlow
+### Task 5: Create AppPickerDialog Composable
 **Files:**
-- Modify: `app/src/main/java/com/aistra/hail/ui/actions/ActionsViewModel.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppPickerDialog.kt`
 
 **Steps:**
-- [ ] Replace `MutableLiveData` with `MutableStateFlow` for:
-    - `uiState` → `private val _uiState = MutableStateFlow(ActionsUiState())`
-    - `actions` → `val actions: StateFlow<List<ActionItemData>> = _uiState.map { it.actions }`
-    - `isLoading` → `val isLoading: StateFlow<Boolean> = _uiState.map { it.isLoading }`
-    - `showAddDialog` → `val showAddDialog: StateFlow<Boolean> = _uiState.map { it.showAddDialog }`
-    - `editingActionId` → `val editingActionId: StateFlow<String?> = _uiState.map { it.editingActionId }`
-- [ ] Expose `uiState` as `val uiState: StateFlow<ActionsUiState> = _uiState.asStateFlow()`
-- [ ] Implement `ActionsUiState` data class with appropriate fields
-- [ ] Update all methods to update `_uiState` instead of individual `LiveData` objects
-- [ ] Ensure proper initialization and state update logic
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun AppPickerDialog(isVisible: Boolean, onDismiss: () -> Unit, onSelected: (Set<String>) -> Unit, multiSelect: Boolean, preSelected: Set<String> = emptySet(), modifier: Modifier = Modifier)`
+- [ ] This dialog will replicate the functionality of showAppPicker in the fragment but in Compose.
+- [ ] We'll need to load the list of installed apps (similar to the fragment) and filter by search text.
+- [ ] We'll use:
+    - An `TextField` for search
+    - A `LazyVerticalGrid` (or `LazyColumn` with grid) to display app icons and names
+    - An adapter-like state to hold the selected apps (for multi-select) or single selection (for single-select)
+- [ ] We'll load the apps list in a `LaunchedEffect` or `remember` using `AppMetaCache.getInstalledApplicationsCacheFirst()` (same as fragment)
+- [ ] We'll filter the apps based on the search query.
+- [ ] Each grid item will show the app icon and name, and a checkmark if selected (in multi-select) or a radio button (in single-select). We can use `Checkbox` or `RadioButton` or just change the background color.
+- [ ] The dialog has OK and Cancel buttons.
+- [ ] On OK, we call onSelected with the current selected set.
+- [ ] On Cancel, we call onDismiss.
 
-### Task 8: Remove ActionsAdapter and XML Layout
+### Task 6: Integrate Dialogs in ActionsScreen
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/ActionsScreen.kt` (from Task 2)
+
+**Steps:**
+- [ ] In ActionsScreen, manage state for showing the action dialog and app picker dialog.
+- [ ] When the user long-clicks on an ActionItem, we set the editingActionId to that action's id, and set the dialog state to show the ActionDialog (with editingAction loaded from ActionsRepository.loadById(editingActionId)).
+- [ ] When the user clicks on an ActionItem, we execute the action (using ActionExecutor.prepare(action) and startActivity).
+- [ ] We'll need to load the editingAction when the dialog is about to show, or we can pass the action directly to the dialog.
+- [ ] Alternatively, we can pass the action object to the ActionDialog instead of the id, to avoid an extra repository call.
+- [ ] We'll also manage the state for the app picker dialog when launched from the ActionDialog.
+
+### Task 7: Remove ActionsAdapter and XML Layout
 **Files:**
 - Delete: `app/src/main/res/layout/fragment_actions.xml`
 - Delete: `app/src/main/java/com/aistra/hail/ui/actions/ActionsAdapter.kt`
@@ -203,29 +163,40 @@
 - [ ] Delete the Adapter file
 - [ ] Verify no remaining references through compiler errors or IDE search
 
-## Validation Checklist
+### Task 8: Update ActionsRepository (Optional - if we decide to expose StateFlow)
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/utils/ActionsRepository.kt` (only if we choose to expose a StateFlow for better Compose integration)
 
+**Steps:**
+- [ ] This task is optional. If we decide to keep state management in the composable, we can skip this.
+- [ ] If we want to expose a StateFlow from the repository, we would:
+    - Add a private MutableStateFlow<List<LaunchAction>> to hold the actions
+    - Expose it as a StateFlow
+    - Update it whenever loadAll, save, delete, duplicate are called
+- [ ] However, to keep the migration focused and not change the repository unless necessary, we can skip this task and manage state in the composable.
+
+## Validation Checklist
 After completing all tasks above:
 - [ ] ActionsFragment builds and displays action list correctly
-- [ ] Action items show icon, label, description, and toggle switch
-- [ ] Toggle switch updates action enabled state via ViewModel
-- [ ] Floating Action Button opens add action dialog
-- [ ] Add action dialog captures label, description, enabled state, and launches app picker
-- [ ] Edit action dialog pre-fills with existing action data
-- [ ] Save button creates/updates action via ViewModel
-- [ ] Delete button removes action via ViewModel
-- [ ] App picker dialog (to be implemented) allows selecting an app for the action
-- [ ] Dialogs animate in/out correctly
-- [ ] State survives configuration changes (rememberSaveable)
-- [ ] Accessibility: TalkBack reads action details and switch states
+- [ ] Action items show icon (from launch package), name (from launch package), and dependencies list (unfreeze package names as comma-separated text)
+- [ ] Clicking an action item executes the action (launches the launch app)
+- [ ] Long-pressing an action item shows a menu with Edit Action, Create Shortcut, Duplicate, Delete options
+- [ ] Selecting Edit Action opens the ActionDialog with the current action's data pre-filled in the app picker buttons
+- [ ] The ActionDialog allows selecting unfreeze apps (multi-select) and launch app (single-select) via the app picker dialog
+- [ ] Validation in ActionDialog requires at least one unfreeze app and one launch app (and launch app not in unfreeze list)
+- [ ] Saving the action updates the list (via ActionsRepository.save) and refreshes the UI
+- [ ] Duplicate and Delete options work as expected
+- [ ] Create Shortcut option works as expected
+- [ ] The app picker dialog functions correctly (search, selection, etc.)
+- [ ] State survives configuration changes (using remember)
+- [ ] Accessibility: TalkBack reads action details correctly
 - [ ] Performance: Smooth scrolling with 100+ actions
-- [ ] No memory leaks from ComposeView or ViewModel
-- [ ] Existing unit tests for ActionsViewModel still pass
+- [ ] No memory leaks from ComposeView or coroutines
 - [ ] No references to ActionsAdapter or fragment_actions.xml remain
 
 ## References
 - [Compose LazyLists](https://developer.android.com/jetpack/compose/lists/lists)
 - [Material3 Dialogs](https://m3.material.io/components/dialogs/usage)
-- [Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)
-- [Material3 Switch](https://m3.material.io/components/switches/usage)
-- [Compose Dialog State Handling](https://developer.android.com/jetpack/compose/state#dialogs)
+- [Compose State Handling](https://developer.android.com/jetpack/compose/state)
+- [AppIcon Coil Integration](https://developer.android.com/jetpack/compose/images#loading-images-from-internet) (but we are using local app icons, so we can use AsyncImage or existing AppIconCache)
+- [Coroutine Scope in Compose](https://developer.android.com/jetpack/compose/side-effects#launched-effect)

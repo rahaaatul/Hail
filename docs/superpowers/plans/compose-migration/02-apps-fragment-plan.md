@@ -2,25 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate AppsFragment from XML layout + ViewBinding + RecyclerView.Adapter to Jetpack Compose using LazyVerticalGrid, preserving all functionality: app grid display, search, filtering, context menu, multi-select, and icon loading via Coil.
+**Goal:** Migrate AppsFragment from XML layout + ViewBinding + RecyclerView.Adapter to Jetpack Compose using LazyVerticalGrid, preserving all functionality: app grid display, search, filtering, sort, select all, context menu, multi-select, swipe-to-refresh, and icon loading via Coil.
 
 **Architecture:** 
 - Replace `fragment_apps.xml` with a `ComposeView` in `AppsFragment.onCreateView`
 - Create `@Composable AppsScreen` that hosts the UI
-- Break down into smaller composables: `AppSearchBar`, `AppFilterChipRow`, `AppGrid`, `AppContextMenu`, `AppMultiSelectToolbar`
+- Break down into smaller composables: `AppSearchBar`, `AppFilterChipRow`, `AppGrid`, `AppContextMenu`, `AppMultiSelectToolbar`, `AppSortMenu`
 - Use `rememberSaveable` for UI state (search text, selected filter, grid columns, multi-select state)
-- Use `StateFlow` from ViewModel collected with `collectAsState()` for app list and filtering results
+- Use `StateFlow` from ViewModel collected with `collectAsState()` for app list and filtering results (but note: selectedFilter, isMultiSelect, selectedApps are managed via rememberSaveable and HailData, not ViewModel)
 - Replace `AppsAdapter` with `LazyVerticalGrid` items
 - Replace `AppIconCache` with `AppIcon` composable from theme
-- Preserve `AppsViewModel` (no changes needed) but expose `StateFlow` for UI
+- Preserve `AppsViewModel` (no changes needed) but expose `StateFlow` for app list and query only
 
 **Tech Stack:**
 - Jetpack Compose, Material3
 - Coil for image loading (via AppIcon composable)
 - Accompanist Material3 Ripple (if needed) or Material3 built-in
-- ViewModel with StateFlow (unchanged)
+- Accompanist SwipeRefresh (for swipe-to-refresh)
+- ViewModel with StateFlow (for app list and query)
 
-**Spec:** This plan is based on comprehensive codebase analysis of the AppsFragment and related components.
+**Spec:** This plan is based on comprehensive codebase analysis of the AppsFragment and related components, including sort functionality (options menu), select all action, context menu (long-press), and swipe-to-refresh.
 
 ## Global Constraints
 - Jetpack Compose BOM 2026.08.00 (stable)
@@ -28,7 +29,8 @@
 - Kotlin 2.4.20
 - Navigation Component 2.10.0 (Fragment-based)
 - Coil 2.6.0 for image loading
-- AppsViewModel exposed as StateFlow for Compose integration
+- Accompanist SwipeRefresh 0.36.0 for swipe-to-refresh
+- AppsViewModel exposed as StateFlow for Compose integration (app list and query only)
 
 ---
 ### Task 1: Update AppsFragment to Use ComposeView
@@ -118,35 +120,84 @@
     - `style = MaterialTheme.typography.bodyMedium`
     - `modifier = Modifier.align(Alignment.CenterHorizontally)`
 - [ ] When `isMultiSelect`, add:
-    - `Box(modifier = Modifier.align(Alignment.TopEnd).size(20.dp))`
-    - `Checkbox` with:
-        - `checked = isSelected`
-        - `onChange = { /* handled by toggleable */ }`
-        - `colors = CheckboxDefaults.colors(checkedColor = primary, uncheckedColor = onSurfaceVariant)`
+     - `Box(modifier = Modifier.align(Alignment.TopEnd).size(20.dp))`
+     - `Checkbox` with:
+         - `checked = isSelected`
+         - `onChange = { /* handled by toggleable */ }`
+         - `colors = CheckboxDefaults.colors(checkedColor = primary, uncheckedColor = onSurfaceVariant)`
 
-### Task 7: Update AppsViewModel to Expose StateFlow
+### Task 8: Create AppSortMenu Composable
+**Files:**
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppSortMenu.kt`
+
+**Steps:**
+- [ ] Create the file with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun AppSortMenu(sortBy: SortBy, onSortByChanged: (SortBy) -> Unit, modifier: Modifier = Modifier)`
+- [ ] Use `DropdownMenu` with `ExpandedBox` containing radio items for each sort option (e.g., Alphabetical, Installation Date, Usage Frequency)
+- [ ] Each radio item uses `RadioButton` and `Text` to display the sort option label
+- [ ] Set `selected` based on `sortBy` parameter and call `onSortByChanged` when selected
+- [ ] Integrate with AppsScreen to show in options menu (or toolbar menu) via `IconButton` with `Icons.Default.SortByAlpha` or similar
+
+### Task 9: Update AppMultiSelectToolbar to Include Select All Action
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppMultiSelectToolbar.kt` (create if doesn't exist)
+
+**Steps:**
+- [ ] Create the file if not exists with package `com.aistra.hail.ui.theme`
+- [ ] Implement `@Composable fun AppMultiSelectToolbar(selectedCount: Int, totalCount: Int, onSelectAllClicked: () -> Unit, onClearSelectionClicked: () -> Unit, onCloseClicked: () -> Unit, modifier: Modifier = Modifier)`
+- [ ] Use `Row` with `Arrangement.spaceBetween` containing:
+    - Text showing "{selectedCount} of {totalCount} selected"
+    - `Row` with `Spacing` of 8.dp containing:
+        - `IconButton` with `Icons.Default.SelectAll` and `onClick = onSelectAllClicked` (enabled when selectedCount < totalCount)
+        - `IconButton` with `Icons.Default.ClearAll` and `onClick = onClearSelectionClicked`
+        - `IconButton` with `Icons.Default.Close` and `onClick = onCloseClicked`
+- [ ] Update AppsScreen to pass the new callbacks and state
+
+### Task 10: Implement Context Menu (Long-Press on Items)
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppItem.kt`
+- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppContextMenu.kt`
+
+**Steps:**
+- [ ] Modify `AppItem` to accept an additional parameter: `onContextMenuClicked: (AppInfo) -> Unit`
+- [ ] In `AppItem`, when `isMultiSelect` is false, show a context menu (e.g., `Popup` or `DropdownMenu`) on long press (already handled by `onLongClick` parameter)
+- [ ] Create `AppContextMenu` composable that takes an `app: AppInfo` and `onDismiss: () -> Unit`
+- [ ] Use `Popup` or `DropdownMenu` with options like "Open", "App info", "Uninstall", etc. (based on existing XML context menu)
+- [ ] Update `AppItem` to call `onContextMenuClicked` when the context menu item is selected (or handle within AppItem)
+- [ ] Update `AppGrid` to pass the context menu callback and handle it (e.g., show the popup)
+
+### Task 11: Add Swipe-to-Refresh to App Grid
+**Files:**
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppGrid.kt`
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppsScreen.kt`
+
+**Steps:**
+- [ ] Add `implementation("com.google.accompanist:accompanist-swiperefresh:0.36.0")` to build.gradle if not already present
+- [ ] Modify `AppGrid` to accept an `onRefresh: () -> Unit` and `isRefreshing: Boolean` parameter
+- [ ] Wrap the `LazyVerticalGrid` in `AccordionSwipeToRefresh` (or `SwipeToRefresh` from Accompanist) with the `onRefresh` and `isRefreshing` parameters
+- [ ] Update `AppsScreen` to collect a `refreshState` from ViewModel (or use rememberSaveable) and pass it to `AppGrid`
+- [ ] Update `AppsViewModel` to expose a `refresh` function that triggers a reload of apps (if not already present) and update `isRefreshing` state
+- [ ] Note: Since we corrected ViewModel strategy, we may need to add a `refresh` function in ViewModel that updates the apps StateFlow
+
+### Task 12: Update AppsViewModel to Expose StateFlow for App List and Query Only
 **Files:**
 - Modify: `app/src/main/java/com/aistra/hail/ui/apps/AppsViewModel.kt`
 
 **Steps:**
 - [ ] Replace `MutableLiveData` with `MutableStateFlow` for:
-    - `uiState` → `private val _uiState = MutableStateFlow(AppsUiState())`
+    - `uiState` → `private val _uiState = MutableStateFlow(AppsUiState())` but only for apps and query (selectedFilter, isMultiSelect, selectedApps removed)
     - `apps` → `val apps: StateFlow<List<AppInfo>> = _uiState.map { it.apps }`
     - `query` → `val query: StateFlow<String> = _uiState.map { it.query }`
-    - `selectedFilter` → `val selectedFilter: StateFlow<AppFilter> = _uiState.map { it.selectedFilter }`
-    - `isMultiSelect` → `val isMultiSelect: StateFlow<Boolean> = _uiState.map { it.isMultiSelect }`
-    - `selectedApps` → `val selectedApps: StateFlow<Set<String>> = _uiState.map { it.selectedApps }`
-- [ ] Expose `uiState` as `val uiState: StateFlow<AppsUiState> = _uiState.asStateFlow()`
+- [ ] Expose `uiState` as `val uiState: StateFlow<AppsUiState> = _uiState.asStateFlow()` (but note: AppsUiState will only contain apps and query)
 - [ ] Implement `AppsUiState` data class with:
     - `apps: List<AppInfo> = emptyList()`
     - `query: String = ""`
-    - `selectedFilter: AppFilter = AllAppsFilter.INSTANCE`
-    - `isMultiSelect: Boolean = false`
-    - `selectedApps: Set<String> = emptySet()`
-- [ ] Update `init { loadApps() }` and all methods (`updateQuery`, `selectFilter`, etc.) to update `_uiState` instead of individual `LiveData`
-- [ ] Implement `private fun loadApps()` and `private fun filterApps()` with proper state updates using `_uiState.update { it.copy(...) }`
+    - (Removed: selectedFilter, isMultiSelect, selectedApps)
+- [ ] Update `init { loadApps() }` and `updateQuery` method to update `_uiState` with only apps and query.
+- [ ] Implement `private fun loadApps()` and `private fun filterApps()` with proper state updates using `_uiState.update { it.copy(...) }` (only updating apps and query).
+- [ ] Note: selectedFilter, isMultiSelect, selectedApps are managed via rememberSaveable in Compose and synchronized with HailData via events (not in ViewModel).
 
-### Task 8: Remove AppsAdapter and XML Layout
+### Task 13: Remove AppsAdapter and XML Layout
 **Files:**
 - Delete: `app/src/main/res/layout/fragment_apps.xml`
 - Delete: `app/src/main/java/com/aistra/hail/ui/apps/AppsAdapter.kt`
@@ -161,16 +212,20 @@
 After completing all tasks above:
 - [ ] AppsFragment builds and displays app grid correctly
 - [ ] Search functionality filters apps in real-time
+- [ ] Sort functionality works via options menu
 - [ ] Filter chips work and persist selection
 - [ ] App icons load via Coil with proper placeholders
 - [ ] Long press enters multi-select mode
 - [ ] Multi-select toolbar appears with action icons (when implemented)
+- [ ] Select all action works in multi-select mode
 - [ ] Single tap opens app details (preserve existing navigation)
-- [ ] Context menu (3-dot menu) works for individual apps
+- [ ] Toolbar context menu (3-dot menu) works for individual apps
+- [ ] Long-press context menu works for individual apps
 - [ ] Grid adapts to orientation changes
 - [ ] State survives process death (rememberSaveable)
 - [ ] Accessibility: TalkBack reads app names and states
 - [ ] Performance: Smooth scrolling with 100+ apps
+- [ ] Swipe-to-refresh reloads app list
 - [ ] No memory leaks from ComposeView or ViewModel
 - [ ] Existing unit tests for AppsViewModel still pass
 - [ ] No references to AppsAdapter or fragment_apps.xml remain
@@ -180,3 +235,6 @@ After completing all tasks above:
 - [Compose StateFlow Integration](https://developer.android.com/jetpack/compose/stateflow)
 - [Material3 Filter Chips](https://m3.material.io/components/chips/usage#filter-chips)
 - [Compose Multi-Selection Patterns](https://developer.android.com/jetpack/compose/gestures#selection)
+- [Material3 DropdownMenu](https://m3.material.io/components/menus/usage)
+- [Accompanist SwipeRefresh](https://google.github.io/accompanist/swiperefresh/)
+- [Material3 Icons](https://m3.material.io/components/icons/overview)
