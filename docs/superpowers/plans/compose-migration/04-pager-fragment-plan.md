@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate PagerFragment (which is actually a Fragment used as a page in HomeFragment's ViewPager2) from XML layout + ViewBinding + RecyclerView.Adapter to Jetpack Compose using LazyVerticalGrid, preserving all functionality: app grid with tabs, multi-select, tag management, and icon loading via Coil.
+**Goal:** Migrate PagerFragment (which is actually a Fragment used as a page in HomeFragment's ViewPager2) from XML layout + ViewBinding + RecyclerView.Adapter to Jetpack Compose using LazyVerticalGrid, preserving all functionality: app grid with tabs, multi-select, tag management, and icon loading via AppIconLoader, and create a PagerViewModel to manage UI state.
 
 **Architecture:** 
 - Note: PagerFragment is not a top-level navigation destination but a child fragment of HomeFragment that displays app grids for each tab (All, Frequent, Recent, Custom tabs)
@@ -10,26 +10,26 @@
 - Create `@Composable PagerScreen` that hosts the UI for a single tab
 - Break down into smaller composables: `AppGridItem`, `TagChip`, `MultiSelectToolbar`, `TagEditDialog`
 - Use `rememberSaveable` for UI state (selected apps, tag edit mode)
-- Use `StateFlow` from ViewModel collected with `collectAsState()` for apps list and tags
+- Create `PagerViewModel` that exposes `StateFlow` for apps list, tags, query, multi-select state, etc.
+- Use `StateFlow` from `PagerViewModel` collected with `collectAsState()` for UI state
 - Replace `PagerAdapter` (which is actually a RecyclerView.Adapter) with `LazyVerticalGrid` items
-- Replace `AppIconCache` with `AppIcon` composable from theme
-- Preserve `PagerViewModel` (no changes needed) but expose `StateFlow` for UI
+- Replace `AppIconCache` with `AppIcon` composable from theme (which uses AppIconLoader)
 - Note: The tab switching logic remains in HomeFragment (which will migrate separately)
 
 **Tech Stack:**
 - Jetpack Compose, Material3
-- Coil for image loading (via AppIcon composable)
+- AppIconLoader 1.5.0 for image loading (via AppIcon composable)
 - Material3 built-in alerts/dialogs
 - ViewModel with StateFlow (unchanged)
 
 **Spec:** This plan is based on comprehensive codebase analysis of the PagerFragment and related components.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
-- Navigation Component 2.10.0 (Fragment-based)
-- Coil 2.6.0 for image loading
+- Navigation Component 2.10.1 (Fragment-based)
+- AppIconLoader 1.5.0 for image loading
 - PagerViewModel exposed as StateFlow for Compose integration
 
 ---

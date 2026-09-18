@@ -17,8 +17,8 @@
 **Tech Stack:**
 - Jetpack Compose, Material3
 - Coil for image loading (via AppIcon composable)
-- Accompanist Material3 Ripple (if needed) or Material3 built-in
-- Accompanist SwipeRefresh (for swipe-to-refresh)
+- Material3 Ripple (or Material3 built-in)
+- Material3 SwipeToRefresh (for swipe-to-refresh)
 - ViewModel with StateFlow (for app list and query)
 
 **Spec:** This plan is based on comprehensive codebase analysis of the AppsFragment and related components, including sort functionality (options menu), select all action, context menu (long-press), and swipe-to-refresh.
@@ -29,7 +29,6 @@
 - Kotlin 2.4.20
 - Navigation Component 2.10.0 (Fragment-based)
 - Coil 2.6.0 for image loading
-- Accompanist SwipeRefresh 0.36.0 for swipe-to-refresh
 - AppsViewModel exposed as StateFlow for Compose integration (app list and query only)
 
 ---
@@ -172,9 +171,8 @@
 - Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppsScreen.kt`
 
 **Steps:**
-- [ ] Add `implementation("com.google.accompanist:accompanist-swiperefresh:0.36.0")` to build.gradle if not already present
 - [ ] Modify `AppGrid` to accept an `onRefresh: () -> Unit` and `isRefreshing: Boolean` parameter
-- [ ] Wrap the `LazyVerticalGrid` in `AccordionSwipeToRefresh` (or `SwipeToRefresh` from Accompanist) with the `onRefresh` and `isRefreshing` parameters
+- [ ] Wrap the `LazyVerticalGrid` in `androidx.compose.material3.SwipeToRefresh` with the `onRefresh` and `isRefreshing` parameters
 - [ ] Update `AppsScreen` to collect a `refreshState` from ViewModel (or use rememberSaveable) and pass it to `AppGrid`
 - [ ] Update `AppsViewModel` to expose a `refresh` function that triggers a reload of apps (if not already present) and update `isRefreshing` state
 - [ ] Note: Since we corrected ViewModel strategy, we may need to add a `refresh` function in ViewModel that updates the apps StateFlow
@@ -207,6 +205,26 @@
 - [ ] Delete the Adapter file
 - [ ] Verify no remaining references through compiler errors or IDE search
 
+### Task 14: Handle Additional Functionality
+**Files:**
+- Modify: `app/src/main/java/com/aistra/hail/ui/apps/AppsFragment.kt`
+- Modify: `app/src/main/java/com/aistra/hail/ui/apps/AppsViewModel.kt`
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppScreen.kt` (AppsScreen)
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppItem.kt`
+- Modify: `app/src/main/kotlin/com/aistra/hail/ui/theme/AppSearchBar.kt`
+
+**Steps:**
+- [ ] Implement duplicate filtering optimization using `lastAppsHash` and `lastQuery` to avoid unnecessary reloads
+- [ ] Enhance select all action logic to check/uncheck all apps based on current filter and selection state
+- [ ] Add reinstall action (`action_reinstall`) handling in context menu and multi-select toolbar
+- [ ] Implement complex uninstall logic: device owner, profile owner, admin active checks before uninstall
+- [ ] Add extract APK action using Storage Access Framework (`CreateDocument`) to save APK to user-selected location
+- [ ] Implement nine-key search feature: modify SearchView input type to support nine-key modal (if applicable)
+- [ ] Add app bar lift-on-scroll behavior for scrolling UI
+- [ ] Apply default insetter applications to refresh and recycler view equivalents (padding adjustments)
+- [ ] Enhance HailData integration: persist sort/filter selections, sync checked apps state with ViewModel via events
+- [ ] Adapt ViewModel methods (`updateAppList()`, `updateDisplayAppList()`, `postQuery()`) to work with Compose state flows and trigger UI updates
+
 ## Validation Checklist
 
 After completing all tasks above:
@@ -226,6 +244,16 @@ After completing all tasks above:
 - [ ] Accessibility: TalkBack reads app names and states
 - [ ] Performance: Smooth scrolling with 100+ apps
 - [ ] Swipe-to-refresh reloads app list
+- [ ] Duplicate filtering optimization prevents unnecessary reloads
+- [ ] Select all action correctly checks/unchecks all apps based on current filter
+- [ ] Reinstall action works from context menu and multi-select toolbar
+- [ ] Complex uninstall logic respects device/profile/admin restrictions
+- [ ] Extract APK action saves APK to user-selected location via Storage Access Framework
+- [ ] Nine-key search feature functional (if applicable)
+- [ ] App bar lift-on-scroll behavior works
+- [ ] Default insetter applications applied correctly
+- [ ] HailData integration persists sort/filter selections and syncs checked apps state
+- [ ] ViewModel methods correctly trigger UI updates via state flows
 - [ ] No memory leaks from ComposeView or ViewModel
 - [ ] Existing unit tests for AppsViewModel still pass
 - [ ] No references to AppsAdapter or fragment_apps.xml remain
@@ -236,5 +264,5 @@ After completing all tasks above:
 - [Material3 Filter Chips](https://m3.material.io/components/chips/usage#filter-chips)
 - [Compose Multi-Selection Patterns](https://developer.android.com/jetpack/compose/gestures#selection)
 - [Material3 DropdownMenu](https://m3.material.io/components/menus/usage)
-- [Accompanist SwipeRefresh](https://google.github.io/accompanist/swiperefresh/)
+- [Material3 SwipeToRefresh](https://developer.android.com/jetpack/compose/material3#swipe-to-refresh)
 - [Material3 Icons](https://m3.material.io/components/icons/overview)

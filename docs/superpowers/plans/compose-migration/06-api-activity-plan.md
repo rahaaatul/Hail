@@ -2,57 +2,49 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Migrate ApiActivity from XML layout + ViewBinding to Jetpack Compose using setContent, preserving all functionality: translucent activity showing API documentation or help content.
+**Goal:** Validate that ApiActivity is already using Jetpack Compose via setContent, and ensure it correctly handles all API intents (launch, freeze/unfreeze, lock screen, etc.) with appropriate Compose UI (RedirectBottomSheet, ErrorDialog). No migration from XML is needed.
 
 **Architecture:** 
-- Replace `activity_api.xml` with a ComposeView in ApiActivity (or use setContent directly since it's an Activity)
-- Create `@Composable ApiScreen` that hosts the UI
-- Use `ScrollableState` and `VerticalScroller` for scrolling text content
-- Use `rememberSaveable` for UI state (scroll position)
-- Use `AnnotatedString` to display formatted API documentation (from strings or assets)
-- Preserve the translucent theme and window flags
-- No ViewModel needed for this simple screen
+- Validate that ApiActivity already uses `setContent { AppTheme { ... } }` (no XML layout)
+- Ensure the existing Compose UI (RedirectBottomSheet, ErrorDialog) correctly handles all API intents
+- Preserve the translucent theme and window flags (already set via activity theme)
+- Confirm no ViewModel is needed (current implementation does not use one)
 
 **Tech Stack:**
 - Jetpack Compose, Material3
-- Core Compose text handling for scrolling and formatted text
 - Activity-ktx for setContent extension
+- Core Compose text handling for scrolling and formatted text
+- Kotlin coroutines for asynchronous tasks
 
-**Spec:** This plan is based on comprehensive codebase analysis of the ApiActivity and related components.
+**Spec:** This plan is based on validating the existing Compose implementation of ApiActivity and ensuring it handles all API intents correctly.
 
 ## Global Constraints
-- Jetpack Compose BOM 2026.08.00 (stable)
+- Jetpack Compose BOM 2026.09.00 (stable)
 - Material3 1.4.0 (stable)
 - Kotlin 2.4.20
 - ApiActivity must remain translucent (preserve theme and window flags from XML)
 - No ViewModel required for this simple screen
 
 ---
-### Task 1: Update ApiActivity to Use Compose
+### Task 1: Validate ApiActivity Uses Compose
 **Files:**
-- Modify: `app/src/main/java/com/aistra/hail/ApiActivity.kt`
+- Validate: `app/src/main/java/com/aistra/hail/ui/api/ApiActivity.kt`
 
 **Steps:**
-- [ ] Replace `setContentView(R.layout.activity_api)` with `setContent { HailTheme { ApiScreen() } }`
-- [ ] Remove the `activity_api.xml` layout reference entirely
-- [ ] Keep the translucent theme and window flags from the original XML (these are set in the activity's theme or programmatically)
+- [ ] Validate that `onCreate` does not call `setContentView` and instead uses `setContent { AppTheme { ... } }`
+- [ ] Verify that the translucent theme is preserved (check that the activity's theme is set to `@style/Theme.Hail.Translucent` or window flags are set appropriately)
+- [ ] Ensure no XML layout file is referenced (remove any reference to `activity_api.xml` if present)
 
-### Task 2: Create ApiScreen Composable
+### Task 2: Validate Existing Compose UI
 **Files:**
-- Create: `app/src/main/kotlin/com/aistra/hail/ui/theme/ApiScreen.kt`
+- Validate: `app/src/main/java/com/aistra/hail/ui/api/ApiActivity.kt`
 
 **Steps:**
-- [ ] Create the file with package `com.aistra.hail.ui.theme`
-- [ ] Implement `@Composable fun ApiScreen(modifier: Modifier = Modifier)`
-- [ ] Use `rememberSaveable` for scroll position state (e.g., `var scrollPosition by rememberSaveable { mutableStateOf(0f) }`)
-- [ ] Implement scrolling content using one of these approaches:
-    Option A: `VerticalScroller` with scrollable state and text
-    Option B: `LazyColumn` with `itemsIndexed` for lines of text
-    Option C: `BasicText` with `modifier.verticalScroll(scrollState)`
-- [ ] Use `remember` to create `AnnotatedString` from string resource or asset
-- [ ] Apply text styles (bodyMedium, etc.) to the `AnnotatedString` ranges
-- [ ] Display the formatted text with appropriate padding and scrolling behavior
-- [ ] Preserve the translucent background by using `MaterialTheme` colors or explicit transparent background
+- [ ] Validate that the `RedirectBottomSheet` composable correctly handles the `Intent.ACTION_SHOW_APP_INFO` action and displays app info with action buttons.
+- [ ] Validate that the `ErrorDialog` composable correctly displays error messages.
+- [ ] Verify that all API intents (ACTION_VIEW, HailApi actions) are handled and appropriate UI is shown.
+- [ ] Ensure the translucent background is maintained in all UI states.
+- [ ] Confirm that the UI responds correctly to configuration changes (rotation, multi-window).
 
 ### Task 3: Validate ApiActivity Migration
 **Files:**
