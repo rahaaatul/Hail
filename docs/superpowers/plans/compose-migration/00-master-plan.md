@@ -7,7 +7,7 @@
 **Architecture:** Centralized plan that references all detailed phase plans, ensuring consistency across the migration effort. Tracks dependency versions, validation gates, and open issues throughout the migration process.
 
 **Tech Stack:**
-- Same as individual phase plans (Compose BOM 2026.08.00, Material3 1.4.0, etc.)
+- Same as individual phase plans (Compose BOM 2026.09.00, Material3 1.4.0, etc.)
 
 **Spec:** Consolidates information from all individual phase plans and dependency resolution results.
 

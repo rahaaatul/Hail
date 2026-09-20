@@ -7,12 +7,12 @@
 **Architecture:** Incremental screen-by-screen migration using `ComposeView` inside existing Fragments/layouts. Keep Navigation Component (NavHostFragment + XML nav graph) intact. Each screen becomes a `@Composable` function rendered in a `ComposeView` within its existing Fragment container. Shared state (ViewModels, HailData, AppManager) remains unchanged.
 
 **Tech Stack:**
-- Jetpack Compose BOM 2026.08.00 (stable) / Material3 1.4.0
+- Jetpack Compose BOM 2026.09.00 (stable) / Material3 1.4.0
 - Kotlin 2.4.20, AGP 9.4.0, compileSdk 37
-- Navigation Component 2.10.0 (Fragment-based, kept as-is)
+- Navigation Component 2.10.1 (Fragment-based, kept as-is)
 - Coil 2.6.0 for async image loading (replaces AppIconCache)
-- Room 2.6.0 (kept, DAOs extended with Flow queries)
-- me.zhanghai.compose.preference 2.3.0 (already used in SettingsFragment)
+- Room 3.0.2 (kept, DAOs extended with Flow queries)
+- me.zhanghai.compose.preference 2.2.0 (already used in SettingsFragment)
 
 **Spec:** This plan is based on comprehensive codebase analysis of all 50+ Kotlin files, 14 layout XMLs, 5 menu XMLs, and resource files.
 
