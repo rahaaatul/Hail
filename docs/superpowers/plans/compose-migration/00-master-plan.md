@@ -7,7 +7,7 @@
 **Architecture:** Centralized plan that references all detailed phase plans, ensuring consistency across the migration effort. Tracks dependency versions, validation gates, and open issues throughout the migration process.
 
 **Tech Stack:**
-- Same as individual phase plans (Compose BOM 2026.08.00, Material3 1.4.0, etc.)
+- Same as individual phase plans (Compose BOM 2026.09.00, Material3 1.4.0, etc.)
 
 **Spec:** Consolidates information from all individual phase plans and dependency resolution results.
 
@@ -50,13 +50,13 @@ composeBom = "2026.09.00"
 composeCompiler = "1.6.8"
 navigation = "2.10.1"
 lifecycle = "2.8.2"
-room = "2.6.0"
+room = "3.0.2"
 kotlin = "2.4.20"
 agp = "9.4.0"
 compileSdk = "37"
 material3 = "1.4.0"
 material3WindowSizeClass = "1.2.0"
-preference = "2.3.0"
+preference = "2.2.0"
 coil = "2.6.0"
 coilCompose = "2.6.0"
 coroutines = "1.8.0"
