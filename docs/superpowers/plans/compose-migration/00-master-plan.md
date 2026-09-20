@@ -7,7 +7,7 @@
 **Architecture:** Centralized plan that references all detailed phase plans, ensuring consistency across the migration effort. Tracks dependency versions, validation gates, and open issues throughout the migration process.
 
 **Tech Stack:**
-- Same as individual phase plans (Compose BOM 2026.09.00, Material3 1.4.0, etc.)
+- Same as individual phase plans (Compose BOM 2026.09.00, Material3 1.4.0, Coil 2.7.0, etc.)
 
 **Spec:** Consolidates information from all individual phase plans and dependency resolution results.
 
@@ -16,7 +16,7 @@
 - androidx.compose.foundation:pager used (part of Compose BOM)
 - Material3 1.4.0 is stable (not Expressive)
 - Compose BOM 2026.09.00 is the latest as of September 2026
-- Coil 2.6.0 chosen for better Compose integration over Glide
+- Coil 2.7.0 chosen for better Compose integration over Glide
 
 ---
 ## Tasks
@@ -57,8 +57,8 @@ compileSdk = "37"
 material3 = "1.4.0"
 material3WindowSizeClass = "1.2.0"
 preference = "2.2.0"
-coil = "2.6.0"
-coilCompose = "2.6.0"
+coil = "2.7.0"
+coilCompose = "2.7.0"
 coroutines = "1.8.0"
 coroutinesCore = "1.8.0"
 ```

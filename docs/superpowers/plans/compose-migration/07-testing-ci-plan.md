@@ -36,7 +36,7 @@
 - Modify: `gradle/libs.versions.toml`
 
 **Steps:**
-- [ ] Add `composeUiTest = "1.6.8"`, `androidXTestCore = "1.5.0"`, `androidXTestRunner = "1.5.2"`, `androidXTestRules = "1.5.0"`, `mockito = "5.12.0"` to the `[versions]` section
+- [ ] Add `composeUiTest = "1.11.4"`, `androidXTestCore = "1.7.0"`, `androidXTestRunner = "1.7.0"`, `androidXTestRules = "1.7.0"`, `mockito = "5.23.0"` to the `[versions]` section
 - [ ] Add `composeUiTest = { module = "androidx.compose.ui:ui-test-junit4", version.ref = "composeUiTest" }`, `androidXTestCore = { module = "androidx.test:core", version.ref = "androidXTestCore" }`, `androidXTestRunner = { module = "androidx.test:runner", version.ref = "androidXTestRunner" }`, `androidXTestRules = { module = "androidx.test:rules", version.ref = "androidXTestRules" }`, `mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }` to the `[libraries]` section
 
 ### Task 2: Update Dependencies in app/build.gradle.kts
@@ -140,12 +140,7 @@ After completing all tasks above:
 
 ## Mitigation Strategies
 
-- **Pager migration complexity (very high):** Break into subtasks (ComposeView, PagerScreen composable, header, grid, multi-select toolbar, tag edit dialog), use rememberSaveable for UI state, validate each tab type independently, and add swipe-to-refresh for app lists.
-- **State persistence verification:** Use rememberSaveable for UI state (selected tab, scroll state, multi-select state) and ensure ViewModels are Hilt-injected and survive configuration changes; test rotation and multi-window scenarios.
-- **Performance benchmarks:** Use LazyVerticalGrid/LazyColumn for efficient rendering, baseline profiles, test on low-end devices (API 24 emulator), and monitor frame timing with Macrobenchmark.
-- **Accessibility compliance:** Test with TalkBack, add contentDescription to icons and interactive elements, use semantic properties for state (selected, checked), and verify focus order.
-- **State management and ViewModel conversion:** Ensure all ViewModels expose StateFlow for Compose integration, use collectAsStateWithLifecycle for lifecycle-aware collection, and avoid exposing MutableStateFlow directly to UI.
-- **Migration rollback risk:** Use feature branch `migrate/compose`, sequential PRs (one per screen), CI validation (build, unit tests, lint, connectedAndroidTest on emulator), manual QA on physical device, and internal tester releases before production.
+See Mitigation Strategies in `00-master-plan.md`.
 
 ## References
 - [Compose Testing Documentation](https://developer.android.com/jetpack/compose/testing)

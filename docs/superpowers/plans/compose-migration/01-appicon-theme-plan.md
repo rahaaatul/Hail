@@ -12,7 +12,7 @@
 5. Remove AppIconCache.kt after verification
 
 **Tech Stack:**
-- Coil 2.6.0 (io.coil-kt:coil-compose)
+- Coil 2.7.0 (io.coil-kt:coil-compose)
 - Material3 1.4.0 (androidx.compose.material3:material3)
 - Kotlin 2.4.20, AGP 9.4.0, compileSdk 37
 
@@ -24,7 +24,7 @@
 - Kotlin 2.4.20
 - AGP 9.4.0
 - Navigation Component 2.10.1 (Fragment-based XML nav graph preserved)
-- Coil 2.6.0 for image loading (replaces AppIconCache)
+- Coil 2.7.0 for image loading (replaces AppIconCache)
 
 ---
 ## Tasks
@@ -34,7 +34,7 @@
 - Modify: `gradle/libs.versions.toml`
 
 **Steps:**
-- [ ] Add `coil = "2.6.0"` and `coilCompose = "2.6.0"` to the `[versions]` section
+- [ ] Add `coil = "2.7.0"` and `coilCompose = "2.7.0"` to the `[versions]` section
 - [ ] Add `coil = { module = "io.coil-kt:coil", version.ref = "coil" }` and `coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }` to the `[libraries]` section
 
 ### Task 2: Update Dependencies in app/build.gradle.kts
@@ -126,12 +126,7 @@ After completing all tasks above:
 
 ## Mitigation Strategies
 
-- **Pager migration complexity (very high):** Break into subtasks (ComposeView, PagerScreen composable, header, grid, multi-select toolbar, tag edit dialog), use rememberSaveable for UI state, validate each tab type independently, and add swipe-to-refresh for app lists.
-- **State persistence verification:** Use rememberSaveable for UI state (selected tab, scroll state, multi-select state) and ensure ViewModels are Hilt-injected and survive configuration changes; test rotation and multi-window scenarios.
-- **Performance benchmarks:** Use LazyVerticalGrid/LazyColumn for efficient rendering, baseline profiles, test on low-end devices (API 24 emulator), and monitor frame timing with Macrobenchmark.
-- **Accessibility compliance:** Test with TalkBack, add contentDescription to icons and interactive elements, use semantic properties for state (selected, checked), and verify focus order.
-- **State management and ViewModel conversion:** Ensure all ViewModels expose StateFlow for Compose integration, use collectAsStateWithLifecycle for lifecycle-aware collection, and avoid exposing MutableStateFlow directly to UI.
-- **Migration rollback risk:** Use feature branch `migrate/compose`, sequential PRs (one per screen), CI validation (build, unit tests, lint, connectedAndroidTest on emulator), manual QA on physical device, and internal tester releases before production.
+See Mitigation Strategies in `00-master-plan.md`.
 
 ## References
 - [Coil Compose Documentation](https://coil-kt.github.io/coil/compose/)

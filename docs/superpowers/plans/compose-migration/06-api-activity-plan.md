@@ -68,12 +68,7 @@
 
 ## Mitigation Strategies
 
-- **Pager migration complexity (very high):** Break into subtasks (ComposeView, PagerScreen composable, header, grid, multi-select toolbar, tag edit dialog), use rememberSaveable for UI state, validate each tab type independently, and add swipe-to-refresh for app lists.
-- **State persistence verification:** Use rememberSaveable for UI state (selected tab, scroll state, multi-select state) and ensure ViewModels are Hilt-injected and survive configuration changes; test rotation and multi-window scenarios.
-- **Performance benchmarks:** Use LazyVerticalGrid/LazyColumn for efficient rendering, baseline profiles, test on low-end devices (API 24 emulator), and monitor frame timing with Macrobenchmark.
-- **Accessibility compliance:** Test with TalkBack, add contentDescription to icons and interactive elements, use semantic properties for state (selected, checked), and verify focus order.
-- **State management and ViewModel conversion:** Ensure all ViewModels expose StateFlow for Compose integration, use collectAsStateWithLifecycle for lifecycle-aware collection, and avoid exposing MutableStateFlow directly to UI.
-- **Migration rollback risk:** Use feature branch `migrate/compose`, sequential PRs (one per screen), CI validation (build, unit tests, lint, connectedAndroidTest on emulator), manual QA on physical device, and internal tester releases before production.
+See Mitigation Strategies in `00-master-plan.md`.
 
 ## References
 - [Compose Text Documentation](https://developer.android.com/jetpack/compose/text)
