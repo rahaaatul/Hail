@@ -56,6 +56,7 @@ class PagerViewModel : ViewModel() {
     }
 
     fun refresh() {
+        _uiState.value = _uiState.value.copy(isRefreshing = true)
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })

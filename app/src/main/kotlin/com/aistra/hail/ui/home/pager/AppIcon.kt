@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.colorFilter
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HPackages
@@ -60,3 +61,4 @@ data class AppIconRequest(
     val packageName: String,
     val userId: Int = HPackages.myUserId,
 )
+

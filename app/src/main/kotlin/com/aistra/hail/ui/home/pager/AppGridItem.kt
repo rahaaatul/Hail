@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HPackages
@@ -37,7 +38,7 @@ fun AppGridItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val isFrozen = app.state == AppInfo.State.FROZEN || app.whitelisted
+    val isFrozen = app.state == AppInfo.State.FROZEN
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         isPressed -> MaterialTheme.colorScheme.secondaryContainer
@@ -94,3 +95,4 @@ fun AppGridItem(
         }
     }
 }
+
