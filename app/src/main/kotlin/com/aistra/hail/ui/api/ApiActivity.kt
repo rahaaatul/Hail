@@ -44,6 +44,14 @@ class ApiActivity : ComponentActivity() {
         }.onFailure(::setErrorDialog)
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        runCatching {
+            if (handleAction(intent?.action)) finish()
+        }.onFailure(::setErrorDialog)
+    }
+
     private fun handleAction(action: String?): Boolean {
         when (action) {
             Intent.ACTION_SHOW_APP_INFO -> {
