@@ -24,6 +24,8 @@ data class PagerUiState(
     val isRefreshing: Boolean = false,
 )
 
+data class Tag(val label: String, val id: Int)
+
 class PagerViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(PagerUiState())
     val uiState: StateFlow<PagerUiState> = _uiState.asStateFlow()
@@ -43,6 +45,10 @@ class PagerViewModel : ViewModel() {
         viewModelScope.launch {
             _tags.value = HailData.tags.map { Tag(it.first, it.second) }
         }
+    }
+
+    fun updateTags() {
+        _tags.value = HailData.tags.map { Tag(it.first, it.second) }
     }
 
     fun setTabType(tabType: String) {

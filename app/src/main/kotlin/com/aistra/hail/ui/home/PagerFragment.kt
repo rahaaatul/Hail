@@ -19,6 +19,7 @@ import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
@@ -37,7 +38,6 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
-import com.aistra.hail.app.HailApi.addTag
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.extensions.*
@@ -70,6 +70,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     private val adapter: HomeAdapter? get() = (parentFragment as? HomeFragment)?.binding?.pager?.adapter as? HomeAdapter
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
     private var currentTabType: String = "all"
+    private val appsList = mutableStateOf<List<AppInfo>>(emptyList())
 
     private fun resolveTabType(): String = arguments?.getString("tabType") ?: tag?.first ?: "all"
 
@@ -100,6 +101,11 @@ class PagerFragment : MainFragment(), MenuProvider {
     ): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                viewModel.apps.collect { appsList.value = it }
+            }
+        }
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
@@ -112,9 +118,14 @@ class PagerFragment : MainFragment(), MenuProvider {
                         onAppClick = { info -> onItemClick(info) },
                         onAppLongClick = { info -> onItemLongClick(info) },
                         onMultiSelectToggle = { onMultiselectClick() },
-                        onTagSelected = { /* handled by parent */ },
+                        onTagSelected = { showTagPickerDialog() },
                         onCancelMultiselect = { deselect() },
-                        onTagEdit = { showTagDialog() },
+                        onTagEdit = { viewModel.updateTags() },
+                        onCheckedChange = { app ->
+                            if (app in selectedList) selectedList.remove(app) else selectedList.add(app)
+                            updateCurrentList()
+                            updateBarTitle()
+                        },
                         onRefresh = { viewModel.refresh() },
                     )
                 }
@@ -333,7 +344,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     }
 
     private fun onMultiselectLongClick() {
-        val currentList = viewModel.apps.value
+        val currentList = appsList.value
         if (currentList.isEmpty()) {
             HUI.showToast(R.string.no_items_to_select)
             return
@@ -426,7 +437,7 @@ class PagerFragment : MainFragment(), MenuProvider {
         }.setNegativeButton(R.string.action_deselect) { _, _ ->
             deselect()
         }.setNeutralButton(R.string.action_select_all) { _, _ ->
-            val toAdd = viewModel.apps.value.filterNot { it in selectedList }
+            val toAdd = appsList.value.filterNot { it in selectedList }
             selectedList.addAll(toAdd)
             updateCurrentList()
             updateBarTitle()
@@ -545,9 +556,43 @@ class PagerFragment : MainFragment(), MenuProvider {
         }
     }
 
+    private fun addTagToSelectedApps(tagName: String) {
+        if (!isAdded) return
+        val tagId = HailData.tags.find { it.first == tagName }?.second ?: return
+        selectedList.forEach { app ->
+            if (tagId !in app.tagIdList) {
+                app.tagIdList.add(tagId)
+            }
+        }
+        HailData.saveApps()
+        updateCurrentList()
+    }
+
+    private fun showTagPickerDialog() {
+        if (!isAdded || selectedList.isEmpty()) return
+        val checkedItems = BooleanArray(HailData.tags.size) { false }
+        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setMultiChoiceItems(
+            HailData.tags.map { it.first }.toTypedArray(), checkedItems
+        ) { _, index, isChecked ->
+            checkedItems[index] = isChecked
+        }.setPositiveButton(android.R.string.ok) { _, _ ->
+            checkedItems.forEachIndexed { index, checked ->
+                if (checked) {
+                    val tagId = HailData.tags[index].second
+                    selectedList.forEach { app ->
+                        if (tagId !in app.tagIdList) {
+                            app.tagIdList.add(tagId)
+                        }
+                    }
+                }
+            }
+            HailData.saveApps()
+            updateCurrentList()
+        }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
     private fun showTagDialog(list: List<AppInfo>? = null) {
         val tabLayout = tabs ?: return
-        val homeAdapter = adapter ?: return
 
         val binding = DialogInputBinding.inflate(layoutInflater)
         binding.inputLayout.setHint(R.string.tag)
@@ -559,7 +604,6 @@ class PagerFragment : MainFragment(), MenuProvider {
                 if (HailData.tags.any { it.first == tagName || it.second == tagId }) return@setPositiveButton
                 if (list != null) {
                     HailData.tags.add(tagName to tagId)
-                    homeAdapter.notifyItemInserted(homeAdapter.itemCount - 1)
                     if (query.isEmpty() && tabLayout.tabCount == 2) tabLayout.isVisible = true
                     if (list == selectedList) triStateTagDialog() else tagDialog(list.first())
                 } else {
@@ -573,9 +617,9 @@ class PagerFragment : MainFragment(), MenuProvider {
                         toUpdate.forEach { it.tagIdList.replaceAll { if (it == oldTagId) tagId else it } }
                         HailData.saveApps()
                     }
-                    homeAdapter.notifyItemChanged(position)
                 }
                 HailData.saveTags()
+                viewModel.updateTags()
             }.apply {
                 val position = tabLayout.selectedTabPosition
                 if (list != null || position == 0) return@apply
@@ -590,10 +634,10 @@ class PagerFragment : MainFragment(), MenuProvider {
                     }
                     toRemove.forEach { removeCheckedApp(it, false) }
                     HailData.tags.removeAt(position)
-                    homeAdapter.notifyItemRemoved(position)
                     if (tabLayout.tabCount == 1) tabLayout.isVisible = false
                     HailData.saveApps()
                     HailData.saveTags()
+                    viewModel.updateTags()
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
@@ -652,8 +696,8 @@ class PagerFragment : MainFragment(), MenuProvider {
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_freeze_current -> setListFrozen(true, viewModel.apps.value.filterNot { it.whitelisted })
-            R.id.action_unfreeze_current -> setListFrozen(false, viewModel.apps.value)
+            R.id.action_freeze_current -> setListFrozen(true, appsList.value.filterNot { it.whitelisted })
+            R.id.action_unfreeze_current -> setListFrozen(false, appsList.value)
             R.id.action_freeze_all -> setListFrozen(true)
             R.id.action_unfreeze_all -> setListFrozen(false)
             R.id.action_freeze_non_whitelisted -> setListFrozen(true, HailData.checkedList.filterNot { it.whitelisted })
@@ -666,7 +710,7 @@ class PagerFragment : MainFragment(), MenuProvider {
                 }
                 HUI.showToast(getString(R.string.msg_imported, size.toString()))
             }
-            R.id.action_export_current -> exportToClipboard(viewModel.apps.value)
+            R.id.action_export_current -> exportToClipboard(appsList.value)
             R.id.action_export_all -> exportToClipboard(HailData.checkedList)
         }
         return false

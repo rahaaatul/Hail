@@ -16,8 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
 
-data class Tag(val label: String, val id: Int)
-
 @Composable
 fun AppGrid(
     apps: List<AppInfo>,
@@ -29,6 +27,7 @@ fun AppGrid(
     tags: List<Tag> = emptyList(),
     onRefresh: () -> Unit = {},
     isRefreshing: Boolean = false,
+    onCheckedChange: (AppInfo) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     SwipeToRefresh(
@@ -58,6 +57,7 @@ fun AppGrid(
                         isMultiSelect = isMultiSelect,
                         tags = tags,
                         showTagBadge = showTagBadge,
+                        onCheckedChange = { onCheckedChange(app) },
                     )
                 }
             }

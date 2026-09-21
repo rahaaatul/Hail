@@ -17,9 +17,9 @@ import androidx.compose.runtime.mutableInteractionSourceOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.CircleShape
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HPackages
@@ -34,6 +34,7 @@ fun AppGridItem(
     tags: List<Tag> = emptyList(),
     showTagBadge: Boolean = false,
     onDeleteTag: (String) -> Unit = {},
+    onCheckedChange: (AppInfo) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -85,7 +86,7 @@ fun AppGridItem(
             ) {
                 androidx.compose.material3.Checkbox(
                     checked = isSelected,
-                    onCheckedChange = { },
+                    onCheckedChange = { onCheckedChange(app) },
                     colors = androidx.compose.material3.CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
                         uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MultiSelectToolbar(
     selectedCount: Int,
-    onTagSelected: (String) -> Unit,
+    onTagSelected: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
