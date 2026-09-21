@@ -228,6 +228,16 @@ or use following `schema`:
 
 - `hail://lock_freeze`
 
+## Development Setup
+
+Build toolchain (JDK 26, Android SDK) is installed inside the workspace under `.gradle/` (gitignored, no setup needed).
+
+```shell
+./gradlew assembleDebug    # build
+./gradlew lint             # lint
+./gradlew test             # unit tests
+```
+
 ## Help Translate
 
 To translate Hail into your language, or to improve an existing translation,
