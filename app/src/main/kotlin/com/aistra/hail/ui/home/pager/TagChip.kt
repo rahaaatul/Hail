@@ -1,4 +1,4 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.material3.Chip
 import androidx.compose.material3.Text
@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 @Composable
 fun TagChip(text: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     Chip(
-        onClick = { },
+        onClick = onDelete,
         onDeleteRequest = onDelete,
         modifier = modifier,
     ) {

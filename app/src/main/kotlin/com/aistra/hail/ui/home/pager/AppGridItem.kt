@@ -1,7 +1,7 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,12 +10,6 @@ import androidx.compose.foundation.layout.absoluteSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.longClickable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectIsPressedAsState
 import androidx.compose.runtime.getValue
@@ -24,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorMatrixColorFilter
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.utils.HPackages
@@ -42,6 +36,7 @@ fun AppGridItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val isFrozen = app.state == AppInfo.State.FROZEN || app.whitelisted
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         isPressed -> MaterialTheme.colorScheme.secondaryContainer
@@ -52,9 +47,11 @@ fun AppGridItem(
         modifier = modifier
             .size(72.dp)
             .background(backgroundColor, shape = CircleShape)
-            .clickable(onClick = onClick)
-            .longClickable(onLongClick = onLongClick)
-            .interactionSource(interactionSource)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+                interactionSource = interactionSource,
+            )
             .padding(8.dp)
             .align(Alignment.Center),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -83,10 +80,10 @@ fun AppGridItem(
             Box(
                 modifier = Modifier.align(Alignment.TopEnd).size(20.dp),
             ) {
-                Checkbox(
+                androidx.compose.material3.Checkbox(
                     checked = isSelected,
-                    onCheckedChange = null,
-                    colors = CheckboxDefaults.colors(
+                    onCheckedChange = { },
+                    colors = androidx.compose.material3.CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
                         uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),

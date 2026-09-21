@@ -1,4 +1,4 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
@@ -10,9 +10,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.asImageBitmap
+import com.aistra.hail.R
 import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.AppIconCache
 
 @Composable
 fun AppIcon(
@@ -25,10 +26,10 @@ fun AppIcon(
 
     LaunchedEffect(request.packageName, request.userId) {
         bitmap = runCatching {
-            val info = com.aistra.hail.utils.HPackages.getApplicationInfoOrNull(request.packageName)
+            val info = HPackages.getApplicationInfoOrNull(request.packageName)
             if (info != null) {
-                val size = context.resources.getDimensionPixelSize(androidx.appcompat.R.dimen.app_icon_size)
-                com.aistra.hail.utils.AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
+                val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
+                AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
             } else {
                 null
             }

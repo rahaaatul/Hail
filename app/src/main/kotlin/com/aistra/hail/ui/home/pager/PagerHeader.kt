@@ -1,7 +1,6 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.weight
@@ -18,7 +17,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PagerHeader(
     title: String,
-    onEditText: (),
+    onEditText: () -> Unit = {},
     onEditTagsClicked: () -> Unit = {},
     canEditTags: Boolean = false,
     modifier: Modifier = Modifier,

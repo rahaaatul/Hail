@@ -43,7 +43,7 @@ import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.extensions.*
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.ui.theme.PagerScreen
+import com.aistra.hail.ui.home.pager.PagerScreen
 import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork
 import com.google.android.material.color.MaterialColors
@@ -69,6 +69,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     private val tabs: TabLayout? get() = (parentFragment as? HomeFragment)?.binding?.tabs
     private val adapter: HomeAdapter? get() = (parentFragment as? HomeFragment)?.binding?.pager?.adapter as? HomeAdapter
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
+    private var currentTabType: String = "all"
 
     private val viewModel: PagerViewModel by viewModels()
 
@@ -88,8 +89,8 @@ class PagerFragment : MainFragment(), MenuProvider {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
-        viewModel.setTabType(tabType)
+        currentTabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
+        viewModel.setTabType(currentTabType)
     }
 
     override fun onCreateView(
@@ -97,14 +98,13 @@ class PagerFragment : MainFragment(), MenuProvider {
     ): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-        val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AppTheme {
                     PagerScreen(
                         viewModel = viewModel,
-                        tabType = tabType,
+                        tabType = currentTabType,
                         isMultiSelect = multiselect,
                         selectedApps = selectedList.map { it.packageName }.toSet(),
                         onAppClick = { info -> onItemClick(info) },
@@ -127,7 +127,10 @@ class PagerFragment : MainFragment(), MenuProvider {
         updateCurrentList()
         updateBarTitle()
         val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
-        viewModel.setTabType(tabType)
+        if (currentTabType != tabType) {
+            currentTabType = tabType
+            viewModel.setTabType(tabType)
+        }
         tabs?.let { tabLayout ->
             tabLayout.getTabAt(tabLayout.selectedTabPosition)?.view?.setOnLongClickListener {
                 if (isResumed) showTagDialog()

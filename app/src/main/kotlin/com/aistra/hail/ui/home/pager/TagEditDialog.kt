@@ -1,4 +1,4 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.launch
 
 @Composable
 fun TagEditDialog(
@@ -32,7 +31,7 @@ fun TagEditDialog(
                 onValueChange = { tagName = it },
                 label = { Text("Tag name") },
                 isError = tagName.isBlank(),
-                errorMessage = if (tagName.isBlank()) { Text("Tag name cannot be empty") } else null,
+                supportingText = { if (tagName.isBlank()) Text("Tag name cannot be empty") },
             )
         },
         confirmButton = {

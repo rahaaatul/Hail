@@ -1,4 +1,4 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
-import com.aistra.hail.utils.HPackages
 
 data class Tag(val label: String, val id: Int)
 
@@ -34,7 +33,7 @@ fun AppGrid(
         isRefreshing = isRefreshing,
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Adaptive(minSize = 72.dp),
             modifier = modifier.fillMaxWidth().padding(8.dp),
         ) {
             items(apps) { app ->

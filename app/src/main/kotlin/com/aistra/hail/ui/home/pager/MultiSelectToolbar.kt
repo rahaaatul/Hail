@@ -1,4 +1,4 @@
-package com.aistra.hail.ui.theme
+package com.aistra.hail.ui.home.pager
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +36,7 @@ fun MultiSelectToolbar(
                 modifier = Modifier.weight(1f),
             )
             Button(
-                onClick = { /* open tag picker */ },
+                onClick = onTagSelected,
                 enabled = selectedCount > 0,
             ) {
                 Text("Add to tag")
