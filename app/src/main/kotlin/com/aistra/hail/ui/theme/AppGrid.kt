@@ -1,0 +1,53 @@
+package com.aistra.hail.ui.theme
+
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.SwipeToRefresh
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.aistra.hail.app.AppInfo
+import com.aistra.hail.utils.HPackages
+
+data class Tag(val label: String, val id: Int)
+
+@Composable
+fun AppGrid(
+    apps: List<AppInfo>,
+    onAppClicked: (AppInfo) -> Unit,
+    onAppLongClicked: (AppInfo) -> Unit,
+    isMultiSelect: Boolean,
+    selectedApps: Set<String>,
+    showTagBadge: Boolean = false,
+    tags: List<Tag> = emptyList(),
+    onRefresh: () -> Unit = {},
+    isRefreshing: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    SwipeToRefresh(
+        onRefresh = onRefresh,
+        isRefreshing = isRefreshing,
+    ) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = modifier.fillMaxWidth().padding(8.dp),
+        ) {
+            items(apps) { app ->
+                AppGridItem(
+                    app = app,
+                    onClick = { onAppClicked(app) },
+                    onLongClick = { onAppLongClicked(app) },
+                    isSelected = app.packageName in selectedApps,
+                    isMultiSelect = isMultiSelect,
+                    tags = tags,
+                    showTagBadge = showTagBadge,
+                )
+            }
+        }
+    }
+}

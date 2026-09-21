@@ -1,9 +1,10 @@
 package com.aistra.hail.ui.home
 
 import android.os.Bundle
-import android.provider.Settings
 import android.text.InputType
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.OnBackPressedCallback
@@ -14,8 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Alignment
@@ -27,12 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
@@ -41,10 +40,10 @@ import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailApi.addTag
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
-import com.aistra.hail.databinding.FragmentPagerBinding
 import com.aistra.hail.extensions.*
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.PagerScreen
 import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork
 import com.google.android.material.color.MaterialColors
@@ -57,12 +56,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 
-class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAdapter.OnItemLongClickListener,
-    MenuProvider {
+class PagerFragment : MainFragment(), MenuProvider {
     private var query: String = String()
-    private var _binding: FragmentPagerBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var pagerAdapter: PagerAdapter
     private var _menu: Menu? = null
     private val menu get() = _menu!!
     private var multiselect: Boolean
@@ -74,6 +69,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private val tabs: TabLayout? get() = (parentFragment as? HomeFragment)?.binding?.tabs
     private val adapter: HomeAdapter? get() = (parentFragment as? HomeFragment)?.binding?.pager?.adapter as? HomeAdapter
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
+
+    private val viewModel: PagerViewModel by viewModels()
 
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
@@ -88,40 +85,39 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
         })
     }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
+        viewModel.setTabType(tabType)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-        _binding = FragmentPagerBinding.inflate(inflater, container, false)
-        pagerAdapter = PagerAdapter(selectedList).apply {
-            onItemClickListener = this@PagerFragment
-            onItemLongClickListener = this@PagerFragment
-        }
-        binding.recyclerView.run {
-            layoutManager = GridLayoutManager(
-                activity, resources.getInteger(
-                    if (HailData.compactIcon) R.integer.home_span_compact else R.integer.home_span
-                )
-            )
-            adapter = pagerAdapter
-            applyDefaultInsetter { paddingRelative(isRtl, bottom = isLandscape) }
-
-        }
-
-        binding.refresh.apply {
-            setOnRefreshListener {
-                updateCurrentList()
-                binding.refresh.isRefreshing = false
-            }
-            applyDefaultInsetter { marginRelative(isRtl, start = !isLandscape, end = true) }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                AppMetaCache.revision.collect { updateCurrentList() }
+        val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
+        return ComposeView(requireContext()).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                AppTheme {
+                    PagerScreen(
+                        viewModel = viewModel,
+                        tabType = tabType,
+                        isMultiSelect = multiselect,
+                        selectedApps = selectedList.map { it.packageName }.toSet(),
+                        onAppClick = { info -> onItemClick(info) },
+                        onAppLongClick = { info -> onItemLongClick(info) },
+                        onMultiSelectToggle = { onMultiselectClick() },
+                        onTagSelected = { /* handled by parent */ },
+                        onCancelMultiselect = { deselect() },
+                        onTagEdit = { showTagDialog() },
+                        onRefresh = { viewModel.refresh() },
+                    )
+                }
             }
         }
-        return binding.root
     }
 
     override fun onResume() {
@@ -130,7 +126,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         AppMetaCache.prefetchPackages(HailData.checkedList.map { it.packageName })
         updateCurrentList()
         updateBarTitle()
-        activity.appbar.setLiftOnScrollTargetView(binding.recyclerView)
+        val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
+        viewModel.setTabType(tabType)
         tabs?.let { tabLayout ->
             tabLayout.getTabAt(tabLayout.selectedTabPosition)?.view?.setOnLongClickListener {
                 if (isResumed) showTagDialog()
@@ -141,19 +138,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     internal fun updateCurrentList() {
-        val binding = _binding ?: return
-        HailData.checkedList.filter { it.isInstalled }.filter {
-            if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
-            else ((HailData.nineKeySearch && NineKeySearch.search(
-                query, it.packageName, it.name
-            )) || FuzzySearch.search(it.packageName, query) || FuzzySearch.search(
-                it.name, query
-            ) || PinyinSearch.searchPinyinAll(it.name, query))
-        }.sortedWith(NameComparator).let {
-            binding.empty.isVisible = it.isEmpty()
-            pagerAdapter.submitList(it)
-            app.setAutoFreezeService()
-        }
+        viewModel.refreshApps()
+        app.setAutoFreezeService()
     }
 
     private fun updateBarTitle() {
@@ -163,7 +149,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             else getString(R.string.app_name)
     }
 
-    override fun onItemClick(info: AppInfo) {
+    fun onItemClick(info: AppInfo) {
         if (!isAdded) return
         if (multiselect) {
             if (info in selectedList) selectedList.remove(info)
@@ -180,7 +166,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         launchApp(info.packageName)
     }
 
-    override fun onItemLongClick(info: AppInfo): Boolean {
+    fun onItemLongClick(info: AppInfo): Boolean {
         if (info.applicationInfo == null && (!multiselect || info !in selectedList)) {
             exportToClipboard(listOf(info))
             return true
@@ -342,7 +328,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun onMultiselectLongClick() {
-        val currentList = pagerAdapter.currentList
+        val currentList = viewModel.uiState.value.apps
         if (currentList.isEmpty()) {
             HUI.showToast(R.string.no_items_to_select)
             return
@@ -435,7 +421,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }.setNegativeButton(R.string.action_deselect) { _, _ ->
             deselect()
         }.setNeutralButton(R.string.action_select_all) { _, _ ->
-            val toAdd = pagerAdapter.currentList.filterNot { it in selectedList }
+            val toAdd = viewModel.uiState.value.apps.filterNot { it in selectedList }
             selectedList.addAll(toAdd)
             updateCurrentList()
             updateBarTitle()
@@ -545,7 +531,6 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             AppActions.freezePackages(frozen, filtered.map { it.packageName }).onSuccess {
                 AppMetaCache.invalidateState(filtered.map { it.packageName })
                 if (updateList) updateCurrentList()
-                pagerAdapter.refreshVisualState()
                 HUI.showToast(
                     if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, filtered.size.toString()
                 )
@@ -556,7 +541,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun showTagDialog(list: List<AppInfo>? = null) {
-        val tabLayout = tabs ?: return  // The view has been destroyed; return directly.
+        val tabLayout = tabs ?: return
         val homeAdapter = adapter ?: return
 
         val binding = DialogInputBinding.inflate(layoutInflater)
@@ -567,20 +552,17 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 val tagName = binding.editText.text.toString()
                 val tagId = tagName.hashCode()
                 if (HailData.tags.any { it.first == tagName || it.second == tagId }) return@setPositiveButton
-                if (list != null) { // Add tag
+                if (list != null) {
                     HailData.tags.add(tagName to tagId)
                     homeAdapter.notifyItemInserted(homeAdapter.itemCount - 1)
                     if (query.isEmpty() && tabLayout.tabCount == 2) tabLayout.isVisible = true
                     if (list == selectedList) triStateTagDialog() else tagDialog(list.first())
-                } else { // Rename tag
+                } else {
                     val position = tabLayout.selectedTabPosition
                     val defaultTab = position == 0
                     val oldTagId = HailData.tags[position].second
                     HailData.tags[position] = tagName to if (defaultTab) 0 else tagId
                     if (!defaultTab) {
-                        // Default tab (position 0) has tagId 0 meaning "no tag" and is not renamed.
-                        // Use snapshot to avoid ConcurrentModificationException since tagIdList is shared mutable state.
-                        // This runs on the main thread (UI), so no synchronization needed.
                         val checkedSnapshot = HailData.checkedList.toList()
                         val toUpdate = checkedSnapshot.filter { oldTagId in it.tagIdList }
                         toUpdate.forEach { it.tagIdList.replaceAll { if (it == oldTagId) tagId else it } }
@@ -665,13 +647,11 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_freeze_current -> setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted })
-
-            R.id.action_unfreeze_current -> setListFrozen(false, pagerAdapter.currentList)
+            R.id.action_freeze_current -> setListFrozen(true, viewModel.uiState.value.apps.filterNot { it.whitelisted })
+            R.id.action_unfreeze_current -> setListFrozen(false, viewModel.uiState.value.apps)
             R.id.action_freeze_all -> setListFrozen(true)
             R.id.action_unfreeze_all -> setListFrozen(false)
             R.id.action_freeze_non_whitelisted -> setListFrozen(true, HailData.checkedList.filterNot { it.whitelisted })
-
             R.id.action_import_clipboard -> importFromClipboard()
             R.id.action_import_frozen -> lifecycleScope.launch {
                 val size = importFrozenApp()
@@ -681,8 +661,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 }
                 HUI.showToast(getString(R.string.msg_imported, size.toString()))
             }
-
-            R.id.action_export_current -> exportToClipboard(pagerAdapter.currentList)
+            R.id.action_export_current -> exportToClipboard(viewModel.uiState.value.apps)
             R.id.action_export_all -> exportToClipboard(HailData.checkedList)
         }
         return false
@@ -704,6 +683,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     tabs?.run {
                         isVisible = query.isEmpty() && tabCount > 1
                     }
+                    viewModel.setQuery(query)
                     updateCurrentList()
                 } else inited = true
                 return true
@@ -724,8 +704,6 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     override fun onDestroyView() {
         _menu = null
-        pagerAdapter.onDestroy()
         super.onDestroyView()
-        _binding = null
     }
 }
