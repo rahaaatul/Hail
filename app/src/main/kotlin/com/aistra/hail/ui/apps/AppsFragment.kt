@@ -42,7 +42,7 @@ class AppsFragment : MainFragment(), MenuProvider {
         registerForActivityResult(CreateDocument("application/vnd.android.package-archive")) { uri ->
         val pkg = exportApkPkg
         this.exportApkPkg = null
-            if (pkg == null || uri == null) return@registerForActivityResult
+        if (pkg == null || uri == null) return@registerForActivityResult
             lifecycleScope.launch {
                 val applicationInfo = HPackages.getApplicationInfoOrNull(pkg) ?: return@launch
                 val dialog =

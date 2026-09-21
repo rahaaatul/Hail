@@ -97,7 +97,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun updateDisplayAppList() {
-        _apps.value?.let {
+        _apps.value.let {
             viewModelScope.launch {
                 _displayApps.value = filterList(it, _query.value)
             }

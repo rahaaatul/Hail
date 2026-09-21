@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.pm.ApplicationInfo
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -218,10 +217,6 @@ private fun launchApp(activity: Activity, packageName: String) {
             }
         }
     }
-}
-
-private fun extractApk(launcher: ActivityResultLauncher<String>, pkg: String) {
-    launcher.launch(HPackages.getUnhiddenPackageInfoOrNull(pkg)?.exportFileName ?: pkg)
 }
 
 private fun uninstallApp(activity: Activity, name: CharSequence, pkg: String, viewModel: AppsViewModel) {
