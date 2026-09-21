@@ -71,6 +71,8 @@ class PagerFragment : MainFragment(), MenuProvider {
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
     private var currentTabType: String = "all"
 
+    private fun resolveTabType(): String = arguments?.getString("tabType") ?: tag?.first ?: "all"
+
     private val viewModel: PagerViewModel by viewModels()
 
     override fun onAttach(context: android.content.Context) {
@@ -89,7 +91,7 @@ class PagerFragment : MainFragment(), MenuProvider {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        currentTabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
+        currentTabType = resolveTabType()
         viewModel.setTabType(currentTabType)
     }
 
@@ -126,7 +128,7 @@ class PagerFragment : MainFragment(), MenuProvider {
         AppMetaCache.prefetchPackages(HailData.checkedList.map { it.packageName })
         updateCurrentList()
         updateBarTitle()
-        val tabType = arguments?.getString("tabType") ?: tag?.first ?: "all"
+        val tabType = resolveTabType()
         if (currentTabType != tabType) {
             currentTabType = tabType
             viewModel.setTabType(tabType)
@@ -331,7 +333,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     }
 
     private fun onMultiselectLongClick() {
-        val currentList = viewModel.uiState.value.apps
+        val currentList = viewModel.apps.value
         if (currentList.isEmpty()) {
             HUI.showToast(R.string.no_items_to_select)
             return
@@ -424,7 +426,7 @@ class PagerFragment : MainFragment(), MenuProvider {
         }.setNegativeButton(R.string.action_deselect) { _, _ ->
             deselect()
         }.setNeutralButton(R.string.action_select_all) { _, _ ->
-            val toAdd = viewModel.uiState.value.apps.filterNot { it in selectedList }
+            val toAdd = viewModel.apps.value.filterNot { it in selectedList }
             selectedList.addAll(toAdd)
             updateCurrentList()
             updateBarTitle()
@@ -650,8 +652,8 @@ class PagerFragment : MainFragment(), MenuProvider {
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.action_freeze_current -> setListFrozen(true, viewModel.uiState.value.apps.filterNot { it.whitelisted })
-            R.id.action_unfreeze_current -> setListFrozen(false, viewModel.uiState.value.apps)
+            R.id.action_freeze_current -> setListFrozen(true, viewModel.apps.value.filterNot { it.whitelisted })
+            R.id.action_unfreeze_current -> setListFrozen(false, viewModel.apps.value)
             R.id.action_freeze_all -> setListFrozen(true)
             R.id.action_unfreeze_all -> setListFrozen(false)
             R.id.action_freeze_non_whitelisted -> setListFrozen(true, HailData.checkedList.filterNot { it.whitelisted })
@@ -664,7 +666,7 @@ class PagerFragment : MainFragment(), MenuProvider {
                 }
                 HUI.showToast(getString(R.string.msg_imported, size.toString()))
             }
-            R.id.action_export_current -> exportToClipboard(viewModel.uiState.value.apps)
+            R.id.action_export_current -> exportToClipboard(viewModel.apps.value)
             R.id.action_export_all -> exportToClipboard(HailData.checkedList)
         }
         return false

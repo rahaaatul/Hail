@@ -32,6 +32,7 @@ fun AppGridItem(
     isMultiSelect: Boolean,
     tags: List<Tag> = emptyList(),
     showTagBadge: Boolean = false,
+    onDeleteTag: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -64,8 +65,8 @@ fun AppGridItem(
         )
         if (showTagBadge && tags.isNotEmpty()) {
             TagChip(
-                text = tags.first().label,
-                onDelete = { },
+                text = tags.joinToString(", ") { it.label },
+                onDelete = onDeleteTag,
                 modifier = Modifier.align(Alignment.TopEnd),
             )
         }
