@@ -18,9 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ColorMatrixColorFilter
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
+import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HPackages
 
 @Composable
@@ -59,6 +59,7 @@ fun AppGridItem(
         AppIcon(
             request = AppIconRequest(packageName = app.packageName, userId = HPackages.myUserId),
             contentDescription = app.name,
+            grayscale = HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN,
             modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally),
         )
         if (showTagBadge && tags.isNotEmpty()) {
