@@ -28,9 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ColorMatrixColorFilter
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aistra.hail.R
@@ -80,8 +78,9 @@ fun AppGridItem(
 
     val enabled = !(HailData.grayscaleIcon && frozen)
 
-    AppIconCache.loadIconBitmapAsync(context, info, HPackages.myUserId, null).let { job ->
-        loadJob = job
+    LaunchedEffect(info.packageName) {
+        loadJob?.cancel()
+        loadJob = AppIconCache.loadIconBitmapAsync(context, info, HPackages.myUserId, null)
     }
 
     Box(

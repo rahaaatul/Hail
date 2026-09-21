@@ -30,7 +30,6 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             AppMetaCache.installedApplicationsReady.first { it }
             updateAppList()
         }
-        updateAppList()
     }
 
     private var refreshJob: Job? = null
@@ -83,7 +82,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             } else if (appList.isNotEmpty()) {
                 appListRefreshJob = viewModelScope.launch {
                     withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }.let { refreshed ->
-                        val currentPackages = _apps.value?.map { it.packageName }?.toSet() ?: emptySet()
+                        val currentPackages = _apps.value.map { it.packageName }.toSet()
                         val newPackages = refreshed.map { it.packageName }.toSet()
                         if (currentPackages != newPackages) {
                             _apps.value = refreshed
