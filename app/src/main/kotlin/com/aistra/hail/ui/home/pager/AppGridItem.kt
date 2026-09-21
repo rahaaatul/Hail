@@ -15,9 +15,9 @@ import androidx.compose.runtime.collectIsPressedAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableInteractionSourceOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
