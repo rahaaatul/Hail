@@ -9,9 +9,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.colorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import com.aistra.hail.R
+import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.AppIconCache
 
@@ -19,21 +20,22 @@ import com.aistra.hail.utils.AppIconCache
 fun AppIcon(
     request: AppIconRequest,
     contentDescription: String?,
+    grayscale: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     LaunchedEffect(request.packageName, request.userId) {
-        bitmap = runCatching {
+        try {
             val info = HPackages.getApplicationInfoOrNull(request.packageName)
             if (info != null) {
                 val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
-                AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
-            } else {
-                null
+                bitmap = AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
             }
-        }.getOrNull()
+        } catch (e: Exception) {
+            bitmap = null
+        }
     }
 
     bitmap?.let { bmp ->
@@ -41,6 +43,15 @@ fun AppIcon(
             bitmap = bmp.asImageBitmap(),
             contentDescription = contentDescription,
             modifier = modifier
+                .colorFilter(
+                    if (grayscale) {
+                        androidx.compose.ui.graphics.ColorMatrixColorFilter(
+                            android.graphics.ColorMatrix().apply { setSaturation(0f) }
+                        )
+                    } else {
+                        null
+                    }
+                )
         )
     }
 }
