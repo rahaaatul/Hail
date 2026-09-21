@@ -3,19 +3,27 @@ package com.aistra.hail.ui.apps
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class AppsViewModel(application: Application) : AndroidViewModel(application) {
-    val apps = MutableLiveData<List<ApplicationInfo>>()
-    val isRefreshing = MutableLiveData(false)
-    val query = MutableLiveData("")
-    val displayApps = MutableLiveData<List<ApplicationInfo>>()
+    private val _apps = MutableStateFlow<List<ApplicationInfo>>(emptyList())
+    val apps: StateFlow<List<ApplicationInfo>> = _apps.asStateFlow()
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    private val _displayApps = MutableStateFlow<List<ApplicationInfo>>(emptyList())
+    val displayApps: StateFlow<List<ApplicationInfo>> = _displayApps.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -30,17 +38,14 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     private var lastUpdateTime: Long = 0
     private var appListRefreshJob: Job? = null
 
-    /**
-     * Delaying changes to the refreshing state prevents the progress bar from flickering.
-     * */
     private fun postRefreshState(state: Boolean, delayTime: Long = 200L) {
         if (!state) {
             refreshStateJob?.cancel()
-            isRefreshing.postValue(false)
+            _isRefreshing.value = false
         } else if (refreshStateJob == null || refreshStateJob!!.isCompleted) {
             refreshStateJob = viewModelScope.launch {
                 delay(delayTime)
-                isRefreshing.postValue(true)
+                _isRefreshing.value = true
             }
         }
     }
@@ -48,19 +53,15 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     fun postQuery(text: String, delayTime: Long = 300L) {
         refreshJob?.cancel()
         if (delayTime == 0L)
-            query.postValue(text)
+            _query.value = text
         else {
             refreshJob = viewModelScope.launch {
                 delay(delayTime)
-                query.postValue(text)
+                _query.value = text
             }
         }
     }
 
-    /**
-     * This method is only used to refresh all the applications that the user has installed
-     * and has no filtering or sorting effect.
-     * */
     fun updateAppList(forceRefresh: Boolean = false) {
         val now = System.currentTimeMillis()
         if (!forceRefresh && now - lastUpdateTime < 1000) return
@@ -74,7 +75,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
             }
             if (appList.isNotEmpty()) {
-                apps.postValue(appList)
+                _apps.value = appList
                 updateDisplayAppList()
             }
             if (forceRefresh) {
@@ -82,10 +83,10 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             } else if (appList.isNotEmpty()) {
                 appListRefreshJob = viewModelScope.launch {
                     withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }.let { refreshed ->
-                        val currentPackages = apps.value?.map { it.packageName }?.toSet() ?: emptySet()
+                        val currentPackages = _apps.value?.map { it.packageName }?.toSet() ?: emptySet()
                         val newPackages = refreshed.map { it.packageName }.toSet()
                         if (currentPackages != newPackages) {
-                            apps.postValue(refreshed)
+                            _apps.value = refreshed
                             updateDisplayAppList()
                         }
                         AppMetaCache.prefetch(refreshed)
@@ -96,20 +97,13 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * The list that the user actually sees.
-     *
-     * This method is different from `updateAppList()` in that it filters and rearranges the data
-     * from `apps` and places it in `displayApps`.
-     * */
     fun updateDisplayAppList() {
-        apps.value?.let {
+        _apps.value?.let {
             viewModelScope.launch {
-                displayApps.postValue(filterList(it, query.value))
+                _displayApps.value = filterList(it, _query.value)
             }
         }
     }
-
 
     private val ApplicationInfo.isSystemApp: Boolean
         get() = flags and ApplicationInfo.FLAG_SYSTEM == ApplicationInfo.FLAG_SYSTEM
@@ -130,7 +124,6 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
                         && ((HailData.filterFrozenApps && frozen)
                         || (HailData.filterUnfrozenApps && !frozen))
-                        // Search apps
                         && ((HailData.nineKeySearch
                         && (NineKeySearch.search(query, it.packageName, name)))
                         || FuzzySearch.search(it.packageName, query)
