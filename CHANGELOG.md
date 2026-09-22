@@ -1,0 +1,182 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [1.11.5] - 2026-09-13
+
+### Fixed
+- Stop-mode unfreeze now properly clears app stop state by launching the app instead of silently returning success (#43)
+- Stop-mode unfreeze failures (no launch intent, launch failed) no longer show misleading "Permission denied" toast (#43)
+- Fixed silent exception swallowing in stop-mode unfreeze by catching specific exceptions (SecurityException, ActivityNotFoundException) with proper logging (#43)
+- Fixed ConcurrentModificationException when renaming/deleting tags across multiple tabs by using snapshot of checked list (#43)
+- Added null/empty guard for launchPackage in ActionsRepository to prevent it from being added to unfreeze list (#43)
+- Added specific error message for stop-mode unfreeze failures: "Failed to unfreeze (stop mode): no launch intent or launch failed" (#43)
+- Added missing HLog.d(String) and HLog.e(String, Throwable) methods (#43)
+- AutoFreezeWorker no longer crashes with NPE when AutoFreezeService isn't running — added thread-safe notification tracking (ConcurrentHashMap) and null-safe access in worker (#40)
+- Fixed zombie AutoFreezeService instance reference by clearing it in onDestroy() (#40)
+- Fixed Island mode permission callback race condition — cancel previous deferred on rapid mode switching (#40)
+- PagerFragment: Fixed tag ID replacement when renaming tags — use snapshot + replaceAll instead of index-based mutation (#42)
+- PagerFragment: Fixed tag removal — collect packages to remove first, then batch remove to avoid ConcurrentModificationException (#42)
+- ActionsRepository: Filter out launch package from unfreeze list to avoid redundant operations (#42)
+- ApiActivity: Fixed Island mode launch — use target package name instead of app's own package name (#42)
+- AppActions: Improved error messages for stop mode unfreeze failures with specific "no launch intent" message (#42)
+
+## [1.11.4] - 2026-09-05
+
+### Fixed
+- Root mode no longer prompts for Magisk root permission in the background when Hail is not open or the automation service is off. The cached root shell is now warmed only when the main app is opened, instead of on every process start, so background triggers such as auto-freeze workers and receivers no longer acquire a new shell and trigger repeated root prompts.
+- Auto-freeze worker stops retrying after three attempts instead of failing indefinitely, which previously caused WorkManager to keep restarting the process and re-prompting for root.
+- "Unfreeze and remove from home" now actually removes the app from the home screen. The freeze/unfreeze operation was fire-and-forget, so the removal check ran before the async unfreeze completed and was skipped; the operation now completes before the removal runs.
+- `pm` freeze/unfreeze operations in Root mode are more reliable: `checkSU` now verifies that the shell is genuinely running as root by checking the `whoami` output, so a re-acquired non-root shell is no longer treated as a valid root shell.
+
+## [1.11.3] - 2026-08-31
+
+### Highlights
+- New Actions tab for creating and managing launch shortcuts with two or multiple apps
+- Home and Actions screens now have dedicated add FABs
+
+### Added
+- Actions screen for creating and managing launch actions
+- Create, edit, duplicate, and delete actions
+- Pin actions to the home screen
+- Silent background app list refresh with cancelable pull-to-refresh
+- Faster app picker with cached app data
+
+### Changed
+- Apps access moved from bottom navigation to Home FAB
+- Bottom navigation now shows Home, Actions, and Settings
+- Settings screen opens faster
+- Apps tab shows cached data instantly on cold start
+- Shortcut icons load in the background
+
+### Fixed
+- Apps context menu shows the correct app name
+- App list stays up to date when switching between screens
+- Clearer message when freezing an app fails
+
+### Translations
+- Updated Spanish, Chinese (Simplified), and Ukrainian translations via Weblate
+
+## [1.11.2] - 2026-08-27
+
+### Highlights
+- Faster app loading with persistent metadata and icon caching
+
+### Added
+- Room-backed cache for all installed app metadata
+- Disk-backed icon cache with background warming
+- Settings action to clear and rebuild app caches
+- Battery optimization exemption option for background auto-freeze
+
+### Changed
+- App metadata and icons load from memory or disk before querying Android
+- Uninstalled app metadata is retained but hidden from Home and Apps lists
+- App inventory refreshes when the Apps screen resumes or is manually refreshed
+
+### Fixed
+- Frozen and unfrozen app visuals now update immediately without changing tabs
+
+## [1.11.1] - 2026-08-27
+
+### Highlights
+- Persistent root shell support for all Root working modes
+
+### Added
+- Faster Root mode startup through cached libsu shell warm-up
+
+### Changed
+- Root shell warm-up runs in the background, so the first freeze or unfreeze no longer waits for shell startup
+- All Root operations reuse one shell while Hail is running, including freeze, unfreeze, and bulk operations
+- Root shell access is released when switching away from Root mode
+- Failed or unexpectedly closed shells are reacquired automatically on the next Root operation
+
+## [1.11.0] - 2026-08-26
+
+### Highlights
+- More reliable Root mode support across Android versions
+- Safer app launching in `Island/Insular - Hide` mode, including stock ROMs with compatibility differences
+- Faster bulk app management with select all / deselect all controls and an "All" apps filter
+- Updated Xposed integration with libxposed and clearer module information
+
+### Added
+- Select all / deselect all controls in the Apps tab, including long-press support and visual feedback
+- "All" filter option to display both user and system apps
+
+### Changed
+- About page access moved from bottom navigation to Settings
+- Xposed integration now uses libxposed, with clearer module information
+- Root and Shizuku command execution improved for more consistent operation
+
+### Fixed
+- Root modes not working on older Android versions, thanks to @LuoYunXi0407
+- `Island/Insular - Hide` mode unable to launch apps on some stock ROMs, thanks to @andy-math
+- Interface crash caused by a `NullPointerException`, thanks to @lerdb
+- Dynamic shortcut removal when biometric login is enabled (#377)
+- Foreground service behavior for Android's `specialUse` requirement (#409)
+- `pm` commands failing on older Android versions due to `--user current` (#416)
+- Launch intent existence check in `Island/Insular - Hide` mode
+- Hail being frozen through Select All, API intents, or bulk operations
+
+### Removed
+- Confirmation dialog when switching to the System apps filter
+- About tab from the bottom navigation bar
+
+### Translations
+- Updated Turkish, Spanish, Korean, Chinese, Indonesian, Ukrainian, Bengali, Italian, Belarusian, French, Russian, Tamil, Portuguese, Urdu, German, Japanese, Polish, Norwegian Bokmål, Finnish, Arabic, Persian, and Vietnamese translations
+
+## [1.10.4] - 2026-08-21
+
+### Added
+- Long-press on multiselect button to select all/deselect all apps in current tab
+- Back press in multiselect mode now deselects all and exits multiselect
+- Visual feedback: icon changes from select_all to checkmark with color tint
+- Self-protection: Hail app cannot be selected for freeze/unfreeze operations (visible in list but checkbox disabled)
+
+### Fixed
+- Prevent accidental self-freeze via Select All, API intents, or bulk operations
+
+## [1.10.3] - 2026-08-18
+
+### Removed
+- About tab from bottom navigation bar
+
+### Added
+- About access from Settings tab via info icon
+- Back navigation button now appears on About page
+- Bottom navigation and nav rail hide when viewing About page
+
+## [1.10.2] - 2026-08-18
+
+### Added
+- "All" filter option in Apps tab to display both user and system apps
+
+### Removed
+Confirmation dialog when switching to System apps filter
+
+## [1.10.1] - 2026-08-18
+
+### Added
+- Select all / deselect all toggle in Apps tab toolbar
+
+### Fixed
+- Dynamic shortcuts removal when biometric login is enabled (#377)
+- Foreground service specialUse property (#409)
+- `pm` commands failing on older Android versions due to `--user current` (#416)
+- Launch intent existence check in Island/Insular Hide mode
+
+### Translations
+- Turkish, Spanish, Korean, Chinese (Simplified), Indonesian, Ukrainian, Bengali, Italian
+
+## [1.10.0] - 2026-07-15
+
+### Added
+- Compose Preference support
+- Pinyin search support for app filtering
+
+### Changed
+- Migrated to Android Gradle Plugin 9.x
+- Updated Kotlin to 2.3.21
+- Updated Material3 to 1.13.0
+
+### Fixed
+- Various translation updates via Weblate

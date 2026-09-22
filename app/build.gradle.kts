@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -15,14 +16,18 @@ android {
     }.standardOutput.asText.get().trim()
 
     namespace = "com.aistra.hail"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.aistra.hail"
-        minSdk = 23
-        targetSdk = 36
-        versionCode = 35
-        versionName = "1.11.0"
+        minSdk = 24
+        targetSdk = 37
+        versionCode = 43
+        versionName = "1.11.4"
+        ndk {
+            val abi = project.findProperty("abi") as String?
+            if (abi != null) abiFilters += abi
+        }
     }
 
     buildTypes {
@@ -30,10 +35,13 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-g$commitHash"
         }
+        create("pr") {
+            applicationIdSuffix = ".pr"
+            versionNameSuffix = System.getenv("PR_NUMBER")?.let { "-$it" } ?: ""
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            if (!commitSubject.startsWith("[release]")) versionNameSuffix = "-g$commitHash"
             signingConfig = if (signingProps.exists()) {
                 val props = `java.util`.Properties().apply { load(signingProps.reader()) }
                 signingConfigs.create("release") {
@@ -62,22 +70,19 @@ android {
         includeInApk = false
         includeInBundle = false
     }
-}
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach {
-            if (it is com.android.build.api.variant.impl.VariantOutputImpl)
-                it.outputFileName = "Hail-v${it.versionName.get()}.apk"
+    testOptions {
+        unitTests.all {
+            it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
 }
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(26)
     }
 }
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(26)
 }
 
 dependencies {
@@ -96,7 +101,8 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.documentfile)
     implementation(libs.pinyin4j)
     implementation(libs.material)
     implementation(libs.insetter)
@@ -108,5 +114,28 @@ dependencies {
     implementation(libs.commons.text)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hiddenapibypass)
+    implementation(libs.libsu.core)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.sqlite.wrapper)
+    implementation(libs.androidx.sqlite)
+    ksp(libs.androidx.room.compiler)
     compileOnly(libs.libxposed.api)
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.test:core:1.7.0")
+    testImplementation("androidx.test:core-ktx:1.7.0")
+    testImplementation("androidx.test.ext:junit:1.3.0")
+    testImplementation("androidx.test.ext:truth:1.7.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+    testImplementation("androidx.room3:room3-testing:3.0.2")
+    testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.json:json:20260814")
+
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+    androidTestImplementation("io.mockk:mockk-android:1.13.12")
+    androidTestImplementation("androidx.room3:room3-testing:3.0.2")
 }

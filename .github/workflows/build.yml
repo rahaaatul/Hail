@@ -1,0 +1,205 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+          - pre-release
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.version.outputs.version_name }}
+      tag: ${{ steps.version.outputs.tag }}
+      build_type: ${{ steps.build_type.outputs.build_type }}
+    env:
+      BUILD_TYPE: ${{ github.event.inputs.build_type || 'debug' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup toolchain
+        run: bash .github/scripts/setup.sh
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION_NAME=$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -1)
+          if [ -z "$VERSION_NAME" ]; then
+            echo "::error::Could not extract versionName from app/build.gradle.kts"
+            exit 1
+          fi
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "==> Version: $VERSION_NAME"
+
+      - name: Resolve build type
+        id: build_type
+        run: echo "build_type=${BUILD_TYPE}" >> $GITHUB_OUTPUT
+
+      - name: Validate signing secrets
+        if: ${{ steps.build_type.outputs.build_type != 'debug' }}
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.KEYSTORE }}" ]; then
+            echo "::error::Missing secret KEYSTORE"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "::error::Missing secret KEYSTORE_PASSWORD"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_ALIAS }}" ]; then
+            echo "::error::Missing secret KEYSTORE_ALIAS"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" ]; then
+            echo "::error::Missing secret KEYSTORE_ALIAS_PASSWORD"
+            exit 1
+          fi
+          echo "==> Signing secrets present"
+
+      - name: Build debug APK
+        if: ${{ steps.build_type.outputs.build_type == 'debug' }}
+        id: build_debug
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          RUNNER_DEBUG: 1
+        run: |
+          set -x
+          if [[ -n "${PR_NUMBER:-}" ]]; then
+            bash .github/scripts/pr.sh
+          else
+            bash .github/scripts/debug.sh
+          fi
+          apk_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name 'Hail-*-pr.apk' -o -name 'Hail-*-debug.apk' \) | head -1)
+          if [[ -z "$apk_path" ]]; then
+            echo "::error::No APK found after build"
+            exit 1
+          fi
+          echo "apk_path=$apk_path" >> $GITHUB_OUTPUT
+          echo "==> Built: $apk_path"
+
+      - name: Build release APK
+        if: ${{ steps.build_type.outputs.build_type != 'debug' }}
+        id: build_release
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
+          RELEASE_TYPE: ${{ steps.build_type.outputs.build_type }}
+        run: |
+          bash .github/scripts/release.sh
+          apk_path=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name 'Hail-v*-*' | head -1)
+          if [[ -z "$apk_path" ]]; then
+            echo "::error::No release APK found after build"
+            exit 1
+          fi
+          echo "apk_path=$apk_path" >> $GITHUB_OUTPUT
+          echo "==> Built: $apk_path"
+
+      - name: Compress APK
+        id: zip
+        if: ${{ steps.build_type.outputs.build_type == 'debug' }}
+        env:
+          RUNNER_DEBUG: 1
+        run: |
+          set -x
+          bash .github/scripts/zip.sh "${{ steps.build_debug.outputs.apk_path }}"
+          zip_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name '*.7z' -o -name '*.zip' \) | head -1)
+          if [[ -z "$zip_path" ]]; then
+            echo "::error::No compressed APK found after zip"
+            exit 1
+          fi
+          echo "zip_path=$zip_path" >> $GITHUB_OUTPUT
+          echo "==> Compressed: $zip_path"
+
+      - name: Upload Telegram
+        if: always()
+        continue-on-error: true
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ -n "${{ steps.zip.outputs.zip_path }}" ]]; then
+            bash .github/scripts/upload.sh ${{ steps.zip.outputs.zip_path }}
+          else
+            bash .github/scripts/upload.sh ${{ steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release
+          path: ${{ steps.zip.outputs.zip_path != '' && steps.zip.outputs.zip_path || steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}
+          retention-days: 7
+
+  create-release:
+    if: ${{ needs.build.outputs.build_type != 'debug' }}
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts/
+
+      - name: Read changelog
+        id: changelog
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "body<<EOF" >> $GITHUB_OUTPUT
+            echo "No changelog found." >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          VERSION="${{ needs.build.outputs.version_name }}"
+          {
+            echo "body<<EOF"
+            sed -n "/^## \[${VERSION}\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' | sed '/^$/d'
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Flatten release APK
+        id: flatten
+        shell: bash
+        run: |
+          apk_path=$(find artifacts -type f -name '*.apk' | head -1)
+          if [[ -z "$apk_path" ]]; then
+            echo "::error::No APK found in downloaded artifacts"
+            exit 1
+          fi
+          flat="Hail-v${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.build_type }}.apk"
+          cp "$apk_path" "$flat"
+          echo "apk_path=$flat" >> $GITHUB_OUTPUT
+          echo "==> Flattened: $apk_path -> $flat"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.build.outputs.tag }}
+          name: v${{ needs.build.outputs.version_name }}
+          body: ${{ steps.changelog.outputs.body }}
+          prerelease: ${{ needs.build.outputs.build_type == 'pre-release' }}
+          overwrite_files: true
+          files: ${{ steps.flatten.outputs.apk_path }}

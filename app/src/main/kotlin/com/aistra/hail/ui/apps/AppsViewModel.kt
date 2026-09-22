@@ -5,11 +5,11 @@ import android.content.pm.ApplicationInfo
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.aistra.hail.HailApp
-import com.aistra.hail.app.AppManager
+import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 class AppsViewModel(application: Application) : AndroidViewModel(application) {
     val apps = MutableLiveData<List<ApplicationInfo>>()
@@ -18,11 +18,17 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     val displayApps = MutableLiveData<List<ApplicationInfo>>()
 
     init {
+        viewModelScope.launch {
+            AppMetaCache.installedApplicationsReady.first { it }
+            updateAppList()
+        }
         updateAppList()
     }
 
     private var refreshJob: Job? = null
     private var refreshStateJob: Job? = null
+    private var lastUpdateTime: Long = 0
+    private var appListRefreshJob: Job? = null
 
     /**
      * Delaying changes to the refreshing state prevents the progress bar from flickering.
@@ -55,10 +61,38 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
      * This method is only used to refresh all the applications that the user has installed
      * and has no filtering or sorting effect.
      * */
-    fun updateAppList() {
-        viewModelScope.launch {
+    fun updateAppList(forceRefresh: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh && now - lastUpdateTime < 1000) return
+        lastUpdateTime = now
+        if (forceRefresh) {
+            appListRefreshJob?.cancel()
             postRefreshState(true)
-            apps.postValue(HPackages.getInstalledApplications())
+        }
+        viewModelScope.launch {
+            val appList = withContext(Dispatchers.IO) {
+                AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
+            }
+            if (appList.isNotEmpty()) {
+                apps.postValue(appList)
+                updateDisplayAppList()
+            }
+            if (forceRefresh) {
+                postRefreshState(false)
+            } else if (appList.isNotEmpty()) {
+                appListRefreshJob = viewModelScope.launch {
+                    withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }.let { refreshed ->
+                        val currentPackages = apps.value?.map { it.packageName }?.toSet() ?: emptySet()
+                        val newPackages = refreshed.map { it.packageName }.toSet()
+                        if (currentPackages != newPackages) {
+                            apps.postValue(refreshed)
+                            updateDisplayAppList()
+                        }
+                        AppMetaCache.prefetch(refreshed)
+                        AppIconCache.prefetch(getApplication(), refreshed)
+                    }
+                }
+            }
         }
     }
 
@@ -71,9 +105,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     fun updateDisplayAppList() {
         apps.value?.let {
             viewModelScope.launch {
-                postRefreshState(true)
                 displayApps.postValue(filterList(it, query.value))
-                postRefreshState(false)
             }
         }
     }
@@ -81,35 +113,37 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val ApplicationInfo.isSystemApp: Boolean
         get() = flags and ApplicationInfo.FLAG_SYSTEM == ApplicationInfo.FLAG_SYSTEM
-    private val ApplicationInfo.isAppFrozen get() = AppManager.isAppFrozen(packageName)
 
     private suspend fun filterList(
         appList: List<ApplicationInfo>,
         query: String?
     ): List<ApplicationInfo> {
-        val pm = getApplication<HailApp>().packageManager
         return withContext(Dispatchers.Default) {
             return@withContext appList.filter {
-                ((HailData.filterUserApps && !it.isSystemApp)
-                        || (HailData.filterSystemApps && it.isSystemApp))
+                val metadata = AppMetaCache.get(it.packageName)
+                val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
+                val name = metadata?.name ?: it.packageName
+                val frozen = metadata?.state == AppInfo.State.FROZEN
+                (HailData.filterAllApps
+                        || (HailData.filterUserApps && !isSystemApp)
+                        || (HailData.filterSystemApps && isSystemApp))
 
-                        && ((HailData.filterFrozenApps && it.isAppFrozen)
-                        || (HailData.filterUnfrozenApps && !it.isAppFrozen))
+                        && ((HailData.filterFrozenApps && frozen)
+                        || (HailData.filterUnfrozenApps && !frozen))
                         // Search apps
                         && ((HailData.nineKeySearch
-                        && (NineKeySearch.search(query, it.packageName, it.loadLabel(pm).toString())))
+                        && (NineKeySearch.search(query, it.packageName, name)))
                         || FuzzySearch.search(it.packageName, query)
-                        || FuzzySearch.search(it.loadLabel(pm).toString(), query)
-                        || PinyinSearch.searchPinyinAll(it.loadLabel(pm).toString(), query))
+                        || FuzzySearch.search(name, query)
+                        || PinyinSearch.searchPinyinAll(name, query))
             }.run {
                 when (HailData.sortBy) {
                     HailData.SORT_INSTALL -> sortedBy {
-                        HPackages.getUnhiddenPackageInfoOrNull(it.packageName)
-                            ?.firstInstallTime ?: 0
+                        AppMetaCache.get(it.packageName)?.firstInstallTime ?: 0
                     }
 
                     HailData.SORT_UPDATE -> sortedByDescending {
-                        HPackages.getUnhiddenPackageInfoOrNull(it.packageName)?.lastUpdateTime ?: 0
+                        AppMetaCache.get(it.packageName)?.lastUpdateTime ?: 0
                     }
 
                     else -> sortedWith(NameComparator)

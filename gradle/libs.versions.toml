@@ -1,27 +1,32 @@
 [versions]
-androidGradlePlugin = "9.2.1"
-kotlin = "2.3.21"
-appcompat = "1.7.1"
+androidGradlePlugin = "9.4.0"
+kotlin = "2.4.20"
+appcompat = "1.8.0"
 appiconloader = "1.5.0"
-biometricKtx = "1.2.0-alpha05"
+biometricKtx = "1.4.0-alpha02"
 commonsText = "1.15.0"
-composeBom = "2025.12.01"
-composePreference = "1.1.1"
-constraintlayout = "2.2.1"
-coreKtx = "1.17.0"
-dhizukuApi = "2.5.4"
+composeBom = "2026.09.00"
+composePreference = "2.2.0"
+constraintlayout = "2.2.2"
+coreKtx = "1.19.0"
+dhizukuApi = "2.6.0"
+documentfile = "1.0.1"
 hiddenapibypass = "6.1"
 insetter = "0.6.1"
-kotlinxCoroutinesAndroid = "1.10.2"
-lifecycleLivedataKtx = "2.10.0"
-material = "1.13.0"
-navigationKtx = "2.9.6"
+kotlinxCoroutinesAndroid = "1.11.0"
+lifecycleLivedataKtx = "2.11.0"
+material = "1.14.0"
+navigationKtx = "2.10.1"
 pinyin4j = "2.5.1"
 preferenceKtx = "1.2.1"
 shizuku = "13.1.5"
 swiperefreshlayout = "1.2.0"
-workRuntimeKtx = "2.11.0"
+workRuntime = "2.11.2"
 libxposed = "102.0.0"
+libsu = "6.0.0"
+room = "3.0.2"
+ksp = "2.3.12"
+sqlite = "2.7.0"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
@@ -38,11 +43,12 @@ androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx",
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationKtx" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
+androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", version.ref = "appiconloader" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
-compose-preference = { module = "me.zhanghai.compose.preference:library", version.ref = "composePreference" }
+compose-preference = { module = "me.zhanghai.compose.preference:preference", version.ref = "composePreference" }
 dhizuku-api = { module = "io.github.iamr0s:Dhizuku-API", version.ref = "dhizukuApi" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 insetter = { module = "dev.chrisbanes.insetter:insetter", version.ref = "insetter" }
@@ -52,7 +58,13 @@ pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4j" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposed" }
+libsu-core = { module = "com.github.topjohnwu.libsu:core", version.ref = "libsu" }
+androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
+androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
+androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -5,4 +5,11 @@
 /signing.properties
 *.iml
 *.jks
-*.keystore
+*.keystore.secrets
+/.maven/
+/.kilocode/
+/.kilo
+/.secrets
+commits_since_v1.10.3.txt
+/.vscode/
+/.worktrees/

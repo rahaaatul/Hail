@@ -7,10 +7,12 @@ import android.widget.CompoundButton
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.aistra.hail.app.AppManager
+import com.aistra.hail.BuildConfig
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.AppInfo
 import com.aistra.hail.databinding.ItemAppsBinding
 import com.aistra.hail.utils.AppIconCache
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HPackages
 import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.Job
@@ -67,7 +69,9 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
         fun bindInfo(info: ApplicationInfo) {
             updating = true
             this.info = info
-            val frozen = AppManager.isAppFrozen(pkg)
+            val metadata = AppMetaCache.get(pkg)
+            val frozen = metadata?.state == AppInfo.State.FROZEN
+            val isSelf = pkg == BuildConfig.APPLICATION_ID
 
             binding.appIcon.apply {
                 loadIconJob = AppIconCache.loadIconBitmapAsync(
@@ -75,7 +79,7 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
                 )
             }
             binding.appName.apply {
-                val name = info.loadLabel(context.packageManager)
+                val name = metadata?.name ?: pkg
                 text = if (!HailData.grayscaleIcon && frozen) "❄️$name" else name
                 isEnabled = !HailData.grayscaleIcon || !frozen
                 if (HPackages.isAppUninstalled(pkg)) setTextColor(
@@ -89,7 +93,10 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
                 text = pkg
                 isEnabled = !HailData.grayscaleIcon || !frozen
             }
-            binding.appStar.isChecked = HailData.isChecked(pkg)
+            binding.appStar.apply {
+                isEnabled = !isSelf
+                isChecked = if (isSelf) false else HailData.isChecked(pkg)
+            }
             updating = false
         }
     }

@@ -1,16 +1,12 @@
-English | [简体中文](README.zh_CN.md) | [日本語](README.ja.md)
-
-# Hail 雹
-
-[![Android CI status](https://github.com/aistra0528/Hail/workflows/Android%20CI/badge.svg)](https://github.com/aistra0528/Hail/actions)
-[![Translation status](https://hosted.weblate.org/widgets/hail/-/svg-badge.svg)](https://hosted.weblate.org/engage/hail/)
-[![Downloads](https://img.shields.io/github/downloads/aistra0528/Hail/total.svg)](https://github.com/aistra0528/Hail/releases)
-[![License](https://img.shields.io/github/license/aistra0528/Hail)](LICENSE)
+# Hail 
 
 Hail is a free-as-in-freedom software to freeze Android
-apps. [GitHub Releases](https://github.com/aistra0528/Hail/releases)
+apps.
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.aistra.hail/)
+[![Android CI status](https://github.com/rahaaatul/Hail/workflows/Build/badge.svg)](https://github.com/rahaaatul/Hail/actions)
+[![Translation status](https://hosted.weblate.org/widgets/hail/-/svg-badge.svg)](https://hosted.weblate.org/engage/hail/)
+[![Downloads](https://img.shields.io/github/downloads/rahaaatul/Hail/total.svg)](https://github.com/rahaaatul/Hail/releases)
+[![License](https://img.shields.io/github/license/rahaaatul/Hail)](LICENSE)
 
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.png" width="32%" /> <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.png" width="32%" />
 
@@ -53,6 +49,14 @@ background.
 1. For devices supporting wireless debugging (Android 11+) or rooted devices, `Shizuku` is recommended.
 
 2. For rooted devices, `Root` is an alternative. **It is slower.**
+
+In Root mode, Hail starts a cached libsu shell in the background when the app process starts. This moves the root
+authorization delay away from the first freeze or unfreeze action while keeping the UI responsive. The shell is reused
+for all Root operations in that process, including operations on different apps.
+
+If Root mode is not selected, no root shell is started. Switching away from Root mode closes the cached shell. If root
+authorization is denied or the shell exits unexpectedly, the failed shell is discarded and the next Root operation
+attempts to acquire a new one. A new shell is also acquired after Hail is restarted.
 
 | Privilege                                                                                         | Force Stop | Disable | Hide | Suspend | Uninstall/Reinstall (System Apps) |
 |---------------------------------------------------------------------------------------------------|------------|---------|------|---------|-----------------------------------|
@@ -233,7 +237,7 @@ use [Weblate](https://hosted.weblate.org/engage/hail/).
     Copyright (C) 2021-2026 Aistra
     Copyright (C) 2022-2026 Hail contributors
 
-    This program is free software: you can redistribute it and/or modify
+    This program is a free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.

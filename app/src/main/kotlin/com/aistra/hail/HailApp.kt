@@ -5,23 +5,51 @@ import android.app.UiModeManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.os.StrictMode
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.services.AutoFreezeService
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
+import com.aistra.hail.utils.HShell
 import com.aistra.hail.utils.HTarget
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class HailApp : Application() {
+    private val preferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == HailData.WORKING_MODE) syncRootShell()
+    }
+
     override fun onCreate() {
         super.onCreate()
         app = this
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectAll()
+                    .penaltyLog()
+                    .build()
+            )
+        }
+        AppMetaCache.warmUp()
+        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
         // DirtyDataUpdater.update(app)
         if (!HTarget.S) setAppTheme(HailData.appTheme)
         if (HailData.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
+    }
+
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    fun syncRootShell() {
+        if (HailData.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()
     }
 
     fun setAutoFreezeService(autoFreezeAfterLock: Boolean = HailData.autoFreezeAfterLock, context: Context = app) {
@@ -66,5 +94,9 @@ class HailApp : Application() {
 
     companion object {
         lateinit var app: HailApp private set
+
+        fun setAppForTest(testApp: HailApp) {
+            app = testApp
+        }
     }
 }

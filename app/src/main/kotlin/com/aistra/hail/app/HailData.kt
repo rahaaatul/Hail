@@ -6,12 +6,14 @@ import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
+import com.aistra.hail.utils.HLog
+import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
 
 object HailData {
     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
-    const val URL_GITHUB = "https://github.com/aistra0528/Hail"
+    const val URL_GITHUB = "https://github.com/rahaaatul/Hail"
     const val URL_README = "$URL_GITHUB#readme"
     const val URL_RELEASES = "$URL_GITHUB/releases"
     const val URL_TELEGRAM = "https://t.me/+yvRXYTounDIxODFl"
@@ -37,6 +39,7 @@ object HailData {
     const val SORT_UPDATE = "update"
     const val FILTER_USER_APPS = "filter_user_apps"
     const val FILTER_SYSTEM_APPS = "filter_system_apps"
+    const val FILTER_ALL_APPS = "filter_all_apps"
     const val FILTER_FROZEN_APPS = "filter_frozen_apps"
     const val FILTER_UNFROZEN_APPS = "filter_unfrozen_apps"
     const val OWNER = "owner_"
@@ -130,10 +133,11 @@ object HailData {
         ACTION_LOCK_FREEZE
     )
 
-    private val sp = PreferenceManager.getDefaultSharedPreferences(app)
+    private val sp by lazy { PreferenceManager.getDefaultSharedPreferences(app) }
     val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
     val filterUserApps get() = sp.getBoolean(FILTER_USER_APPS, true)
     val filterSystemApps get() = sp.getBoolean(FILTER_SYSTEM_APPS, false)
+    val filterAllApps get() = sp.getBoolean(FILTER_ALL_APPS, true)
     val filterFrozenApps get() = sp.getBoolean(FILTER_FROZEN_APPS, true)
     val filterUnfrozenApps get() = sp.getBoolean(FILTER_UNFROZEN_APPS, true)
     val workingMode get() = sp.getString(WORKING_MODE, MODE_DEFAULT)!!
@@ -159,6 +163,7 @@ object HailData {
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
     private val tagsPath = "$dir/tags.json"
+    private val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
         mutableListOf<AppInfo>().apply {
@@ -180,22 +185,40 @@ object HailData {
         }
     }
 
-    fun isChecked(packageName: String): Boolean = checkedList.any { it.packageName == packageName }
-
-    fun addCheckedApp(packageName: String, tagId: Int = 0, saveApps: Boolean = true) {
-        checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
-        if (saveApps) saveApps()
+    fun isChecked(packageName: String): Boolean {
+        if (packageName == BuildConfig.APPLICATION_ID) return false
+        synchronized(checkedListLock) {
+            return checkedList.any { it.packageName == packageName }
+        }
     }
 
-    fun removeCheckedApp(packageName: String, saveApps: Boolean = true) {
-        checkedList.removeAll { it.packageName == packageName }
-        if (saveApps) saveApps()
+    fun addCheckedApp(packageName: String, tagId: Int = 0, shouldSave: Boolean = true) {
+        if (packageName == BuildConfig.APPLICATION_ID) return
+        synchronized(checkedListLock) {
+            checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
+        }
+        if (shouldSave) saveApps()
     }
 
-    fun saveApps() {
+    fun removeCheckedApp(packageName: String, shouldSave: Boolean = true) {
+        synchronized(checkedListLock) {
+            checkedList.removeAll { it.packageName == packageName }
+        }
+        if (shouldSave) saveApps()
+    }
+
+    fun saveApps(): Boolean {
+        val snapshot: List<AppInfo>
+        synchronized(checkedListLock) {
+            snapshot = checkedList.toList()
+        }
+        return saveAppsLocked(snapshot)
+    }
+
+    private fun saveAppsLocked(apps: List<AppInfo>): Boolean {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(appsPath, JSONArray().run {
-            checkedList.forEach {
+        val json = JSONArray().run {
+            apps.forEach {
                 put(
                     JSONObject()
                         .put(KEY_PACKAGE, it.packageName)
@@ -205,7 +228,20 @@ object HailData {
                 )
             }
             toString()
-        })
+        }
+        val tmpFile = File("$appsPath.tmp")
+        val appsFile = File(appsPath)
+        if (!HFiles.write(tmpFile.absolutePath, json)) {
+            HLog.e("Failed to write apps.json to ${tmpFile.absolutePath}")
+            tmpFile.delete()
+            return false
+        }
+        if (!tmpFile.renameTo(appsFile)) {
+            HLog.e("Failed to rename ${tmpFile.absolutePath} to ${appsFile.absolutePath}")
+            tmpFile.delete()
+            return false
+        }
+        return true
     }
 
     val tags: MutableList<Pair<String, Int>> by lazy {
