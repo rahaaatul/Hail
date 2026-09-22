@@ -15,8 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.AppIconCache
-import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HLog
+import com.aistra.hail.utils.HPackages
 
 data class AppIconRequest(
     val packageName: String,
@@ -63,4 +63,3 @@ fun AppIcon(
         )
     )
 }
-

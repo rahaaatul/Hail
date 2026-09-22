@@ -85,4 +85,3 @@ class PagerViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(apps = filtered, isLoading = false)
     }
 }
-

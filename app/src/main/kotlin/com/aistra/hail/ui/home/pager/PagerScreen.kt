@@ -115,4 +115,3 @@ fun PagerScreen(
         }
     }
 }
-
