@@ -16,6 +16,7 @@ import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
@@ -45,10 +46,10 @@ fun PagerScreen(
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     val showTagBadge = tabType !in listOf("all", "frequent", "recent")
     val canEditTags = tabType !in listOf("all", "frequent", "recent")
-    val title = when {
-        tabType == "all" -> "All"
-        tabType == "frequent" -> "Frequent"
-        tabType == "recent" -> "Recent"
+    val title = when (tabType) {
+        "all" -> stringResource(R.string.filter_all_apps)
+        "frequent" -> stringResource(R.string.filter_frequent_apps)
+        "recent" -> stringResource(R.string.filter_recent_apps)
         else -> tags.find { it.label == tabType }?.label ?: tabType
     }
     var showTagEditDialog by rememberSaveable { mutableStateOf(false) }

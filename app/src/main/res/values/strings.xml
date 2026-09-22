@@ -84,6 +84,8 @@
     <string name="filter_by">Filter</string>
     <string name="filter_user_apps">User</string>
     <string name="filter_all_apps">All</string>
+    <string name="filter_frequent_apps">Frequent</string>
+    <string name="filter_recent_apps">Recent</string>
     <string name="filter_system_apps">System</string>
     <string name="filter_frozen_apps">Frozen</string>
     <string name="filter_unfrozen_apps">Unfrozen</string>
