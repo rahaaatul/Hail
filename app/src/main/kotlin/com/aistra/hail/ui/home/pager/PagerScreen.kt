@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,65 +56,69 @@ fun PagerScreen(
     var showTagEditDialog by rememberSaveable { mutableStateOf(false) }
     var tagToEdit by rememberSaveable { mutableStateOf<Tag?>(null) }
 
-    val selectedAppPackages = selectedApps()
-
-    Column(modifier = modifier.fillMaxSize()) {
-        PagerHeader(
-            title = title,
-            onEditTagsClicked = {
-                tagToEdit = tags.find { it.label == tabType }
-                showTagEditDialog = true
-            },
-            canEditTags = canEditTags,
-        )
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            AppGrid(
-                apps = uiState.apps,
-                onAppClicked = onAppClick,
-                onAppLongClicked = onAppLongClick,
-                isMultiSelect = isMultiSelect,
-                selectedApps = selectedAppPackages,
-                showTagBadge = showTagBadge,
-                tags = tags,
-                onRefresh = onRefresh,
-                isRefreshing = isRefreshing,
-                onCheckedChange = onCheckedChange,
-                onDeleteTag = onDeleteTag,
-            )
-        }
-        if (isMultiSelect) {
-            MultiSelectToolbar(
-                selectedCount = selectedAppPackages.size,
-                onTagSelected = onTagSelected,
-                onCancel = onCancelMultiselect,
-            )
-        }
+    val selectedAppPackages = remember(selectedApps) {
+        derivedStateOf { selectedApps() }
     }
-    if (showTagEditDialog) {
-        tagToEdit?.let { tag ->
-            TagEditDialog(
-                currentTagName = tag.label,
-                onDismissed = { showTagEditDialog = false },
-                onSaved = { newName ->
-                    val idx = HailData.tags.indexOf(tag.label to tag.id)
-                    if (idx >= 0) {
-                        HailData.tags[idx] = newName to tag.id
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            PagerHeader(
+                title = title,
+                onEditTagsClicked = {
+                    tagToEdit = tags.find { it.label == tabType }
+                    showTagEditDialog = true
+                },
+                canEditTags = canEditTags,
+            )
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                AppGrid(
+                    apps = uiState.apps,
+                    onAppClicked = onAppClick,
+                    onAppLongClicked = onAppLongClick,
+                    isMultiSelect = isMultiSelect,
+                    selectedApps = selectedAppPackages.value,
+                    showTagBadge = showTagBadge,
+                    tags = tags,
+                    onRefresh = onRefresh,
+                    isRefreshing = isRefreshing,
+                    onCheckedChange = onCheckedChange,
+                    onDeleteTag = onDeleteTag,
+                )
+            }
+            if (isMultiSelect) {
+                MultiSelectToolbar(
+                    selectedCount = selectedAppPackages.value.size,
+                    onTagSelected = onTagSelected,
+                    onCancel = onCancelMultiselect,
+                )
+            }
+        }
+        if (showTagEditDialog) {
+            tagToEdit?.let { tag ->
+                TagEditDialog(
+                    currentTagName = tag.label,
+                    onDismissed = { showTagEditDialog = false },
+                    onSaved = { newName ->
+                        val idx = HailData.tags.indexOf(tag.label to tag.id)
+                        if (idx >= 0) {
+                            HailData.tags[idx] = newName to tag.id
+                            HailData.saveTags()
+                            onTagEdit()
+                        }
+                        showTagEditDialog = false
+                    },
+                    onDeleted = {
+                        HailData.tags.remove(tag.label to tag.id)
                         HailData.saveTags()
                         onTagEdit()
-                    }
-                    showTagEditDialog = false
-                },
-                onDeleted = {
-                    HailData.tags.remove(tag.label to tag.id)
-                    HailData.saveTags()
-                    onTagEdit()
-                    showTagEditDialog = false
-                },
-            )
+                        showTagEditDialog = false
+                    },
+                )
+            }
         }
     }
 }

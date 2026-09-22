@@ -54,9 +54,11 @@ fun AppIcon(
     val fallbackBitmap = remember(defaultIcon, iconSize) {
         runCatching { defaultIcon.toBitmapOrNull(width = iconSize, height = iconSize) }.getOrNull()
     }
-    val imageBitmap = bitmap?.asImageBitmap()
-        ?: fallbackBitmap?.asImageBitmap()
-        ?: ImageBitmap(1, 1)
+    val imageBitmap = remember(bitmap, fallbackBitmap) {
+        runCatching { bitmap?.asImageBitmap() }.getOrNull()
+            ?: runCatching { fallbackBitmap?.asImageBitmap() }.getOrNull()
+            ?: ImageBitmap(1, 1)
+    }
     Image(
         bitmap = imageBitmap,
         contentDescription = contentDescription,
