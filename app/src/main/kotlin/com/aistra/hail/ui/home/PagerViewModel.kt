@@ -44,6 +44,7 @@ class PagerViewModel : ViewModel() {
     init {
         viewModelScope.launch {
             _tags.value = HailData.tags.map { Tag(it.first, it.second) }
+            HailData.tagsFlow.collect { updateTags() }
         }
     }
 

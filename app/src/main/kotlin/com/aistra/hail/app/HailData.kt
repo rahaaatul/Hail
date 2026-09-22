@@ -7,6 +7,7 @@ import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
 import com.aistra.hail.utils.HLog
+import kotlinx.coroutines.flow.MutableSharedFlow
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
@@ -244,6 +245,8 @@ object HailData {
         return true
     }
 
+    val tagsFlow = MutableSharedFlow<Unit>()
+
     val tags: MutableList<Pair<String, Int>> by lazy {
         mutableListOf<Pair<String, Int>>().apply {
             runCatching {
@@ -259,6 +262,7 @@ object HailData {
 
     fun saveTags() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
+        tagsFlow.tryEmit(Unit)
         HFiles.write(tagsPath, JSONArray().run {
             tags.forEach {
                 put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
