@@ -589,7 +589,7 @@ class PagerFragment : MainFragment(), MenuProvider {
         MaterialAlertDialogBuilder(activity).setTitle(if (list != null) R.string.action_tag_add else R.string.action_tag_set)
             .setView(binding.root).setPositiveButton(android.R.string.ok) { _, _ ->
                 val tagName = binding.editText.text.toString()
-                val tagId = tagName.hashCode().xor(tagName.length * 0x9e3779b9.toInt())
+                val tagId = HailData.tags.map { it.second }.maxOrNull()?.plus(1) ?: 1
                 if (HailData.tags.any { it.first == tagName || it.second == tagId }) return@setPositiveButton
                 if (list != null) {
                     HailData.tags.add(tagName to tagId)

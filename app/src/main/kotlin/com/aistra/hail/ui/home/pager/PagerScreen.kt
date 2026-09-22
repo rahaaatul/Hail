@@ -2,19 +2,20 @@ package com.aistra.hail.ui.home.pager
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Dialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
@@ -51,11 +52,15 @@ fun PagerScreen(
         else -> tags.find { it.label == tabType }?.label ?: tabType
     }
     var showTagEditDialog by rememberSaveable { mutableStateOf(false) }
+    var tagToEdit by remember { mutableStateOf<Tag?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         PagerHeader(
             title = title,
-            onEditTagsClicked = { showTagEditDialog = true },
+            onEditTagsClicked = {
+                tagToEdit = tags.find { it.label == tabType }
+                showTagEditDialog = true
+            },
             canEditTags = canEditTags,
         )
         if (isLoading) {
@@ -68,7 +73,7 @@ fun PagerScreen(
                 onAppClicked = onAppClick,
                 onAppLongClicked = onAppLongClick,
                 isMultiSelect = isMultiSelect,
-                        selectedApps = selectedApps(),
+                selectedApps = selectedApps(),
                 showTagBadge = showTagBadge,
                 tags = tags,
                 onRefresh = onRefresh,
@@ -83,32 +88,30 @@ fun PagerScreen(
                 onCancel = onCancelMultiselect,
             )
         }
-        if (tabType !in listOf("all", "frequent", "recent")) {
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-        }
     }
-    if (showTagEditDialog && (tabType !in listOf("all", "frequent", "recent"))) {
-        val currentTag = tags.find { it.label == tabType }
-        currentTag?.let { tag ->
-            TagEditDialog(
-                currentTagName = tag.label,
-                onDismissed = { showTagEditDialog = false },
-                onSaved = { newName ->
-                    val idx = HailData.tags.indexOf(tag.label to tag.id)
-                    if (idx >= 0) {
-                        HailData.tags[idx] = newName to tag.id
+    if (showTagEditDialog) {
+        tagToEdit?.let { tag ->
+            Dialog(onDismissRequest = { showTagEditDialog = false }) {
+                TagEditDialog(
+                    currentTagName = tag.label,
+                    onDismissed = { showTagEditDialog = false },
+                    onSaved = { newName ->
+                        val idx = HailData.tags.indexOf(tag.label to tag.id)
+                        if (idx >= 0) {
+                            HailData.tags[idx] = newName to tag.id
+                            HailData.saveTags()
+                            onTagEdit()
+                        }
+                        showTagEditDialog = false
+                    },
+                    onDeleted = {
+                        HailData.tags.remove(tag.label to tag.id)
                         HailData.saveTags()
                         onTagEdit()
-                    }
-                    showTagEditDialog = false
-                },
-                onDeleted = {
-                    HailData.tags.remove(tag.label to tag.id)
-                    HailData.saveTags()
-                    onTagEdit()
-                    showTagEditDialog = false
-                },
-            )
+                        showTagEditDialog = false
+                    },
+                )
+            }
         }
     }
 }
