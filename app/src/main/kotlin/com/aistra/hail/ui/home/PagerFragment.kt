@@ -18,10 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
@@ -72,6 +71,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
     private var currentTabType: String = "all"
     private val appsList = mutableStateOf<List<AppInfo>>(emptyList())
+    private val selectedAppPackages = mutableStateOf<Set<String>>(emptySet())
 
     private fun resolveTabType(): String = arguments?.getString("tabType") ?: tag?.first ?: "all"
 
@@ -105,24 +105,21 @@ class PagerFragment : MainFragment(), MenuProvider {
         viewModel.updateTags()
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                viewModel.apps.collect { appsList.value = it }
+                viewModel.apps.collect {
+                    appsList.value = it
+                    selectedAppPackages.value = selectedList.map { app -> app.packageName }.toSet()
+                }
             }
         }
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AppTheme {
-                    val selectedAppPackages = remember {
-                        derivedStateOf {
-                            appsList.value
-                            selectedList.map { it.packageName }.toSet()
-                        }
-                    }.value
                     PagerScreen(
                         viewModel = viewModel,
                         tabType = currentTabType,
                         isMultiSelect = multiselect,
-                        selectedApps = selectedAppPackages,
+                        selectedApps = selectedAppPackages.value,
                         onAppClick = { info -> onItemClick(info) },
                         onAppLongClick = { info -> onItemLongClick(info) },
                         onMultiSelectToggle = { onMultiselectClick() },
