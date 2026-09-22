@@ -4,11 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsStateWithLifecycle
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
@@ -29,7 +25,7 @@ fun PagerScreen(
     viewModel: PagerViewModel,
     tabType: String,
     isMultiSelect: Boolean = false,
-    selectedApps: () -> Set<String> = { emptySet() },
+    selectedApps: Set<String> = emptySet(),
     onAppClick: (AppInfo) -> Unit = {},
     onAppLongClick: (AppInfo) -> Unit = {},
     onMultiSelectToggle: () -> Unit = {},
@@ -47,16 +43,16 @@ fun PagerScreen(
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     val showTagBadge = tabType !in listOf("all", "frequent", "recent")
     val canEditTags = tabType !in listOf("all", "frequent", "recent")
-    val title = when (tabType) {
-        "all" -> stringResource(R.string.filter_all_apps)
-        "frequent" -> stringResource(R.string.filter_frequent_apps)
-        "recent" -> stringResource(R.string.filter_recent_apps)
-        else -> tags.find { it.label == tabType }?.label ?: tabType
+    val title = remember(tabType, tags) {
+        when (tabType) {
+            "all" -> stringResource(R.string.filter_all_apps)
+            "frequent" -> stringResource(R.string.filter_frequent_apps)
+            "recent" -> stringResource(R.string.filter_recent_apps)
+            else -> tags.find { it.label == tabType }?.label ?: tabType
+        }
     }
     var showTagEditDialog by rememberSaveable { mutableStateOf(false) }
     var tagToEdit by rememberSaveable { mutableStateOf<Tag?>(null) }
-
-    val selectedAppPackages = derivedStateOf { selectedApps() }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -78,7 +74,7 @@ fun PagerScreen(
                     onAppClicked = onAppClick,
                     onAppLongClicked = onAppLongClick,
                     isMultiSelect = isMultiSelect,
-                    selectedApps = selectedAppPackages.value,
+                    selectedApps = selectedApps,
                     showTagBadge = showTagBadge,
                     tags = tags,
                     onRefresh = onRefresh,
@@ -89,7 +85,7 @@ fun PagerScreen(
             }
             if (isMultiSelect) {
                 MultiSelectToolbar(
-                    selectedCount = selectedAppPackages.value.size,
+                    selectedCount = selectedApps.size,
                     onTagSelected = onTagSelected,
                     onCancel = onCancelMultiselect,
                 )

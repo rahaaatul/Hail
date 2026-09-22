@@ -114,7 +114,7 @@ class PagerFragment : MainFragment(), MenuProvider {
                         viewModel = viewModel,
                         tabType = currentTabType,
                         isMultiSelect = multiselect,
-                        selectedApps = { selectedList.map { it.packageName }.toSet() },
+                        selectedApps = selectedList.map { it.packageName }.toSet(),
                         onAppClick = { info -> onItemClick(info) },
                         onAppLongClick = { info -> onItemLongClick(info) },
                         onMultiSelectToggle = { onMultiselectClick() },

@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 @Composable
 fun TagChip(text: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     Chip(
-        onClick = onDelete,
+        onClick = {},
         onDeleteRequest = onDelete,
         modifier = modifier,
     ) {

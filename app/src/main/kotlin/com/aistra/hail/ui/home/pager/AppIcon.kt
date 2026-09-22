@@ -20,6 +20,8 @@ import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.HPackages
 
+private val EMPTY_IMAGE_BITMAP = ImageBitmap(1, 1)
+
 data class AppIconRequest(
     val packageName: String,
     val userId: Int = HPackages.myUserId,
@@ -57,7 +59,7 @@ fun AppIcon(
     val imageBitmap = remember(bitmap, fallbackBitmap) {
         runCatching { bitmap?.asImageBitmap() }.getOrNull()
             ?: runCatching { fallbackBitmap?.asImageBitmap() }.getOrNull()
-            ?: remember { ImageBitmap(1, 1) }
+            ?: EMPTY_IMAGE_BITMAP
     }
     Image(
         bitmap = imageBitmap,

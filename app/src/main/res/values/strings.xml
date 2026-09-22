@@ -92,6 +92,8 @@
     <string name="frozen_app_indicator">❄️</string>
     <string name="whitelisted_app_indicator">🔒</string>
     <string name="edit_tag">Edit Tag</string>
+    <string name="tag_name_label">Tag name</string>
+    <string name="tag_name_empty_error">Tag name cannot be empty</string>
     <string name="sort_by">Sort by</string>
     <string name="sort_name">Name</string>
     <string name="sort_install">First install</string>

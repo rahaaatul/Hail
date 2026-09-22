@@ -26,14 +26,14 @@ fun TagEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismissed,
-        title = { Text(stringResource(R.string.edit_tag)) },
+        title = { Text(remember { stringResource(R.string.edit_tag) }) },
         text = {
             TextField(
                 value = tagName,
                 onValueChange = { tagName = it },
-                label = { Text("Tag name") },
+                label = { Text(stringResource(R.string.tag_name_label)) },
                 isError = tagName.isBlank(),
-                supportingText = { if (tagName.isBlank()) Text("Tag name cannot be empty") },
+                supportingText = { if (tagName.isBlank()) Text(stringResource(R.string.tag_name_empty_error)) },
             )
         },
         confirmButton = {
