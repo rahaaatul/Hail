@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,11 +112,17 @@ class PagerFragment : MainFragment(), MenuProvider {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AppTheme {
+                    val selectedAppPackages = remember {
+                        derivedStateOf {
+                            appsList.value
+                            selectedList.map { it.packageName }.toSet()
+                        }
+                    }.value
                     PagerScreen(
                         viewModel = viewModel,
                         tabType = currentTabType,
                         isMultiSelect = multiselect,
-                        selectedApps = remember(selectedList.size) { selectedList.map { it.packageName }.toSet() },
+                        selectedApps = selectedAppPackages,
                         onAppClick = { info -> onItemClick(info) },
                         onAppLongClick = { info -> onItemLongClick(info) },
                         onMultiSelectToggle = { onMultiselectClick() },
