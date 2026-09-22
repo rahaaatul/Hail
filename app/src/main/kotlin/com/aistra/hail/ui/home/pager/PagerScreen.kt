@@ -52,7 +52,7 @@ fun PagerScreen(
         else -> tags.find { it.label == tabType }?.label ?: tabType
     }
     var showTagEditDialog by rememberSaveable { mutableStateOf(false) }
-    var tagToEdit by remember { mutableStateOf<Tag?>(null) }
+    var tagToEdit by rememberSaveable { mutableStateOf<Tag?>(null) }
 
     Column(modifier = modifier.fillMaxSize()) {
         PagerHeader(
