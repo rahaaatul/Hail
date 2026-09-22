@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectIsPressedAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableInteractionSourceOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,8 +59,7 @@ fun AppGridItem(
                 onLongClick = onLongClick,
                 interactionSource = interactionSource,
             )
-            .padding(8.dp)
-            .align(Alignment.Center),
+            .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AppIcon(
