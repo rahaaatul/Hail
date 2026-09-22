@@ -245,7 +245,7 @@ object HailData {
         return true
     }
 
-    val tagsFlow = MutableSharedFlow<Unit>()
+    val tagsFlow = MutableSharedFlow<Unit>(replay = 1)
 
     val tags: MutableList<Pair<String, Int>> by lazy {
         mutableListOf<Pair<String, Int>>().apply {
@@ -262,13 +262,13 @@ object HailData {
 
     fun saveTags() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        tagsFlow.tryEmit(Unit)
-        HFiles.write(tagsPath, JSONArray().run {
+        val success = HFiles.write(tagsPath, JSONArray().run {
             tags.forEach {
                 put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
             }
             toString()
         })
+        if (success) tagsFlow.tryEmit(Unit)
     }
 
     fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }

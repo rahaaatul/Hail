@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.NameComparator
 import com.aistra.hail.utils.NineKeySearch
@@ -44,7 +45,13 @@ class PagerViewModel : ViewModel() {
     init {
         viewModelScope.launch {
             _tags.value = HailData.tags.map { Tag(it.first, it.second) }
-            HailData.tagsFlow.collect { updateTags() }
+            HailData.tagsFlow.collect {
+                try {
+                    updateTags()
+                } catch (e: Exception) {
+                    HLog.e("Failed to update tags: ${e.message}", e)
+                }
+            }
         }
     }
 
