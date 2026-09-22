@@ -90,8 +90,8 @@ fun AppGridItem(
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
-        val frozenIndicator = stringResource(R.string.frozen_app_indicator)
-        val whitelistedIndicator = stringResource(R.string.whitelisted_app_indicator)
+        val frozenIndicator = remember { stringResource(R.string.frozen_app_indicator) }
+        val whitelistedIndicator = remember { stringResource(R.string.whitelisted_app_indicator) }
         val nameWithIndicators = buildString {
             if (!HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN) append(frozenIndicator)
             if (app.whitelisted) append(whitelistedIndicator)

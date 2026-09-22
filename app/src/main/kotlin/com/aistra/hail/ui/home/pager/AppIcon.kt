@@ -50,14 +50,14 @@ fun AppIcon(
         }
     }
 
-    val defaultIcon = context.packageManager.defaultActivityIcon
-    val fallbackBitmap = remember(defaultIcon, iconSize) {
+    val fallbackBitmap = remember(iconSize) {
+        val defaultIcon = context.packageManager.defaultActivityIcon
         runCatching { defaultIcon.toBitmapOrNull(width = iconSize, height = iconSize) }.getOrNull()
     }
     val imageBitmap = remember(bitmap, fallbackBitmap) {
         runCatching { bitmap?.asImageBitmap() }.getOrNull()
             ?: runCatching { fallbackBitmap?.asImageBitmap() }.getOrNull()
-            ?: ImageBitmap(1, 1)
+            ?: remember { ImageBitmap(1, 1) }
     }
     Image(
         bitmap = imageBitmap,

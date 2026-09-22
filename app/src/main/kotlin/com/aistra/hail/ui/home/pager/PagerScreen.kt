@@ -56,9 +56,7 @@ fun PagerScreen(
     var showTagEditDialog by rememberSaveable { mutableStateOf(false) }
     var tagToEdit by rememberSaveable { mutableStateOf<Tag?>(null) }
 
-    val selectedAppPackages = remember(selectedApps) {
-        derivedStateOf { selectedApps() }
-    }
+    val selectedAppPackages = derivedStateOf { selectedApps() }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
