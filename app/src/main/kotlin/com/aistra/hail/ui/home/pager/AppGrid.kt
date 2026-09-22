@@ -13,7 +13,9 @@ import androidx.compose.material3.SwipeToRefresh
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.ui.home.Tag
 
@@ -45,7 +47,7 @@ fun AppGrid(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("Nothing here")
+                        Text(stringResource(R.string.nothing_here))
                     }
                 }
             } else {
