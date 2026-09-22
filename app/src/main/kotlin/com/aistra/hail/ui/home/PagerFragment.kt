@@ -41,9 +41,9 @@ import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.extensions.*
+import com.aistra.hail.ui.home.pager.PagerScreen
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.ui.home.pager.PagerScreen
 import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork
 import com.google.android.material.color.MaterialColors
