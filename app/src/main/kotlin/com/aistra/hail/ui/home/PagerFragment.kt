@@ -145,13 +145,13 @@ class PagerFragment : MainFragment(), MenuProvider {
         super.onResume()
         AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
         AppMetaCache.prefetchPackages(HailData.checkedList.map { it.packageName })
-        updateCurrentList()
-        updateBarTitle()
         val tabType = resolveTabType()
         if (currentTabType != tabType) {
             currentTabType = tabType
             viewModel.setTabType(tabType)
         }
+        updateCurrentList()
+        updateBarTitle()
         tabs?.let { tabLayout ->
             tabLayout.getTabAt(tabLayout.selectedTabPosition)?.view?.setOnLongClickListener {
                 if (isResumed) showTagDialog()

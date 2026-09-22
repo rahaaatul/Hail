@@ -61,7 +61,6 @@ class PagerViewModel : ViewModel() {
 
     fun setTabType(tabType: String) {
         tagId = HailData.tags.find { it.first == tabType }?.second ?: 0
-        refreshApps()
     }
 
     fun setQuery(newQuery: String) {
