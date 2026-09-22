@@ -37,6 +37,7 @@ fun PagerScreen(
     onCancelMultiselect: () -> Unit = {},
     onTagEdit: () -> Unit = {},
     onCheckedChange: (AppInfo) -> Unit = {},
+    onDeleteTag: (AppInfo, Int) -> Unit = { _, _ -> },
     onRefresh: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -80,6 +81,7 @@ fun PagerScreen(
                 onRefresh = onRefresh,
                 isRefreshing = isRefreshing,
                 onCheckedChange = onCheckedChange,
+                onDeleteTag = onDeleteTag,
             )
         }
         if (isMultiSelect) {

@@ -3,6 +3,7 @@ package com.aistra.hail.ui.home.pager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -34,7 +35,7 @@ fun AppGridItem(
     isMultiSelect: Boolean,
     tags: List<Tag> = emptyList(),
     showTagBadge: Boolean = false,
-    onDeleteTag: (String) -> Unit = {},
+    onDeleteTag: (AppInfo, Int) -> Unit = { _, _ -> },
     onCheckedChange: (AppInfo) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -65,12 +66,24 @@ fun AppGridItem(
             grayscale = HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN,
             modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally),
         )
-        if (showTagBadge && tags.isNotEmpty()) {
-            TagChip(
-                text = tags.joinToString(", ") { it.label },
-                onDelete = onDeleteTag,
-                modifier = Modifier.align(Alignment.TopEnd),
-            )
+        if (showTagBadge) {
+            val appTags = tags.filter { it.id in app.tagIdList }
+            if (appTags.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 2.dp, end = 2.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    appTags.forEach { tag ->
+                        TagChip(
+                            text = tag.label,
+                            onDelete = { onDeleteTag(app, tag.id) },
+                            modifier = Modifier.padding(start = 2.dp),
+                        )
+                    }
+                }
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         val nameWithIndicators = buildString {

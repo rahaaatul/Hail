@@ -31,6 +31,7 @@ fun AppGrid(
     onRefresh: () -> Unit = {},
     isRefreshing: Boolean = false,
     onCheckedChange: (AppInfo) -> Unit = {},
+    onDeleteTag: (AppInfo, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     SwipeToRefresh(
@@ -61,6 +62,7 @@ fun AppGrid(
                         tags = tags,
                         showTagBadge = showTagBadge,
                         onCheckedChange = { onCheckedChange(app) },
+                        onDeleteTag = onDeleteTag,
                     )
                 }
             }

@@ -126,6 +126,14 @@ class PagerFragment : MainFragment(), MenuProvider {
                             updateCurrentList()
                             updateBarTitle()
                         },
+                        onDeleteTag = { app, tagId ->
+                            if (tagId in app.tagIdList) {
+                                app.tagIdList.remove(tagId)
+                                if (app.tagIdList.isEmpty()) removeCheckedApp(app.packageName, false)
+                                HailData.saveApps()
+                                updateCurrentList()
+                            }
+                        },
                         onRefresh = { viewModel.refresh() },
                     )
                 }

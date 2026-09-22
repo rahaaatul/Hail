@@ -66,10 +66,13 @@ class PagerViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(isRefreshing = true)
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
-            AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
-            refreshApps()
-            if (seq == refreshSeq) {
-                _uiState.value = _uiState.value.copy(isRefreshing = false)
+            try {
+                AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
+                refreshApps()
+            } finally {
+                if (seq == refreshSeq) {
+                    _uiState.value = _uiState.value.copy(isRefreshing = false)
+                }
             }
         }
     }
