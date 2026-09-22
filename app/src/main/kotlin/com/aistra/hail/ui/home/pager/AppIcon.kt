@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,7 +57,7 @@ fun AppIcon(
         val defaultIcon = context.packageManager.defaultActivityIcon
         runCatching { defaultIcon.toBitmapOrNull(width = iconSize, height = iconSize) }.getOrNull()
     }
-    val imageBitmap = remember(bitmap, fallbackBitmap) {
+    val imageBitmap by derivedStateOf {
         runCatching { bitmap?.asImageBitmap() }.getOrNull()
             ?: runCatching { fallbackBitmap?.asImageBitmap() }.getOrNull()
             ?: EMPTY_IMAGE_BITMAP

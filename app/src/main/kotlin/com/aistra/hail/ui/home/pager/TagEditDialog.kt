@@ -23,17 +23,20 @@ fun TagEditDialog(
     modifier: Modifier = Modifier,
 ) {
     var tagName by rememberSaveable { mutableStateOf(currentTagName) }
+    val editTagTitle = remember { stringResource(R.string.edit_tag) }
+    val tagNameLabel = remember { stringResource(R.string.tag_name_label) }
+    val tagNameEmptyError = remember { stringResource(R.string.tag_name_empty_error) }
 
     AlertDialog(
         onDismissRequest = onDismissed,
-        title = { Text(remember { stringResource(R.string.edit_tag) }) },
+        title = { Text(editTagTitle) },
         text = {
             TextField(
                 value = tagName,
                 onValueChange = { tagName = it },
-                label = { Text(stringResource(R.string.tag_name_label)) },
+                label = { Text(tagNameLabel) },
                 isError = tagName.isBlank(),
-                supportingText = { if (tagName.isBlank()) Text(stringResource(R.string.tag_name_empty_error)) },
+                supportingText = { if (tagName.isBlank()) Text(tagNameEmptyError) },
             )
         },
         confirmButton = {
