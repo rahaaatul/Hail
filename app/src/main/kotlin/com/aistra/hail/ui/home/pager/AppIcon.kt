@@ -17,6 +17,11 @@ import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.AppIconCache
 
+data class AppIconRequest(
+    val packageName: String,
+    val userId: Int = HPackages.myUserId,
+)
+
 @Composable
 fun AppIcon(
     request: AppIconRequest,
@@ -28,37 +33,30 @@ fun AppIcon(
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     LaunchedEffect(request.packageName, request.userId) {
-        try {
-            val info = HPackages.getApplicationInfoOrNull(request.packageName)
-            if (info != null) {
+        val info = HPackages.getApplicationInfoOrNull(request.packageName)
+        bitmap = if (info != null) {
+            runCatching {
                 val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
-                bitmap = AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
-            }
-        } catch (e: Exception) {
-            bitmap = null
+                AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
+            }.onFailure { /* fall back to default icon below */ }.getOrNull()
+        } else {
+            null
         }
     }
 
-    bitmap?.let { bmp ->
-        Image(
-            bitmap = bmp.asImageBitmap(),
-            contentDescription = contentDescription,
-            modifier = modifier
-                .colorFilter(
-                    if (grayscale) {
-                        androidx.compose.ui.graphics.ColorMatrixColorFilter(
-                            android.graphics.ColorMatrix().apply { setSaturation(0f) }
-                        )
-                    } else {
-                        null
-                    }
+    val imageBitmap = bitmap ?: context.packageManager.defaultActivityIcon.asImageBitmap()
+    Image(
+        bitmap = imageBitmap,
+        contentDescription = contentDescription,
+        modifier = modifier.colorFilter(
+            if (grayscale) {
+                androidx.compose.ui.graphics.ColorMatrixColorFilter(
+                    android.graphics.ColorMatrix().apply { setSaturation(0f) }
                 )
+            } else {
+                null
+            }
         )
-    }
+    )
 }
-
-data class AppIconRequest(
-    val packageName: String,
-    val userId: Int = HPackages.myUserId,
-)
 
