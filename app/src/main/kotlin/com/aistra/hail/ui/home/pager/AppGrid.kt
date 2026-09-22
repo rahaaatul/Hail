@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
+import com.aistra.hail.ui.home.Tag
 
 @Composable
 fun AppGrid(
@@ -22,7 +23,7 @@ fun AppGrid(
     onAppClicked: (AppInfo) -> Unit,
     onAppLongClicked: (AppInfo) -> Unit,
     isMultiSelect: Boolean,
-    selectedApps: Set<String>,
+    selectedApps: () -> Set<String>,
     showTagBadge: Boolean = false,
     tags: List<Tag> = emptyList(),
     onRefresh: () -> Unit = {},
@@ -53,7 +54,7 @@ fun AppGrid(
                         app = app,
                         onClick = { onAppClicked(app) },
                         onLongClick = { onAppLongClicked(app) },
-                        isSelected = app.packageName in selectedApps,
+                        isSelected = app.packageName in selectedApps(),
                         isMultiSelect = isMultiSelect,
                         tags = tags,
                         showTagBadge = showTagBadge,

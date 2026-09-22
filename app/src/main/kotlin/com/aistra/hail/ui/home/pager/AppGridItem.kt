@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
+import com.aistra.hail.ui.home.Tag
 import com.aistra.hail.utils.HPackages
 
 @Composable
@@ -39,7 +40,6 @@ fun AppGridItem(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val isFrozen = app.state == AppInfo.State.FROZEN
     val backgroundColor = when {
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         isPressed -> MaterialTheme.colorScheme.secondaryContainer

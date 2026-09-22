@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.weight
 import androidx.compose.material3.icons.Icons
-import androidx.compose.material3.icons.Default.Edit
+import androidx.compose.material3.icons.Outlined.Edit
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PagerHeader(
     title: String,
-    onEditText: () -> Unit = {},
     onEditTagsClicked: () -> Unit = {},
     canEditTags: Boolean = false,
     modifier: Modifier = Modifier,
@@ -33,7 +32,7 @@ fun PagerHeader(
         )
         if (canEditTags) {
             IconButton(onClick = onEditTagsClicked) {
-                Icon(Icons.Default.Edit, contentDescription = null)
+                Icon(Icons.Outlined.Edit, contentDescription = null)
             }
         }
     }

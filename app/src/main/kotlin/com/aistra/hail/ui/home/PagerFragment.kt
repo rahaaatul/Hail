@@ -101,6 +101,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     ): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        viewModel.updateTags()
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 viewModel.apps.collect { appsList.value = it }
@@ -114,7 +115,7 @@ class PagerFragment : MainFragment(), MenuProvider {
                         viewModel = viewModel,
                         tabType = currentTabType,
                         isMultiSelect = multiselect,
-                        selectedApps = selectedList.map { it.packageName }.toSet(),
+                        selectedApps = { selectedList.map { it.packageName }.toSet() },
                         onAppClick = { info -> onItemClick(info) },
                         onAppLongClick = { info -> onItemLongClick(info) },
                         onMultiSelectToggle = { onMultiselectClick() },
@@ -556,18 +557,6 @@ class PagerFragment : MainFragment(), MenuProvider {
         }
     }
 
-    private fun addTagToSelectedApps(tagName: String) {
-        if (!isAdded) return
-        val tagId = HailData.tags.find { it.first == tagName }?.second ?: return
-        selectedList.forEach { app ->
-            if (tagId !in app.tagIdList) {
-                app.tagIdList.add(tagId)
-            }
-        }
-        HailData.saveApps()
-        updateCurrentList()
-    }
-
     private fun showTagPickerDialog() {
         if (!isAdded || selectedList.isEmpty()) return
         val checkedItems = BooleanArray(HailData.tags.size) { false }
@@ -600,7 +589,7 @@ class PagerFragment : MainFragment(), MenuProvider {
         MaterialAlertDialogBuilder(activity).setTitle(if (list != null) R.string.action_tag_add else R.string.action_tag_set)
             .setView(binding.root).setPositiveButton(android.R.string.ok) { _, _ ->
                 val tagName = binding.editText.text.toString()
-                val tagId = tagName.hashCode()
+                val tagId = tagName.hashCode().xor(tagName.length * 0x9e3779b9.toInt())
                 if (HailData.tags.any { it.first == tagName || it.second == tagId }) return@setPositiveButton
                 if (list != null) {
                     HailData.tags.add(tagName to tagId)

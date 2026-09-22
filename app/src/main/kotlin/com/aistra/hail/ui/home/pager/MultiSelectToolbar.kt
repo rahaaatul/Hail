@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.icons.Icons
-import androidx.compose.material3.icons.Default.Close
+import androidx.compose.material3.icons.Outlined.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,7 +43,7 @@ fun MultiSelectToolbar(
             }
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = onCancel) {
-                Icon(Icons.Default.Close, contentDescription = null)
+                Icon(Icons.Outlined.Close, contentDescription = null)
             }
         }
     }

@@ -20,13 +20,14 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.home.PagerViewModel
+import com.aistra.hail.ui.home.Tag
 
 @Composable
 fun PagerScreen(
     viewModel: PagerViewModel,
     tabType: String,
     isMultiSelect: Boolean = false,
-    selectedApps: Set<String> = emptySet(),
+    selectedApps: () -> Set<String> = { emptySet() },
     onAppClick: (AppInfo) -> Unit = {},
     onAppLongClick: (AppInfo) -> Unit = {},
     onMultiSelectToggle: () -> Unit = {},
@@ -54,7 +55,6 @@ fun PagerScreen(
     Column(modifier = modifier.fillMaxSize()) {
         PagerHeader(
             title = title,
-            onEditText = { },
             onEditTagsClicked = { showTagEditDialog = true },
             canEditTags = canEditTags,
         )
@@ -68,7 +68,7 @@ fun PagerScreen(
                 onAppClicked = onAppClick,
                 onAppLongClicked = onAppLongClick,
                 isMultiSelect = isMultiSelect,
-                selectedApps = selectedApps,
+                        selectedApps = selectedApps(),
                 showTagBadge = showTagBadge,
                 tags = tags,
                 onRefresh = onRefresh,
@@ -78,37 +78,37 @@ fun PagerScreen(
         }
         if (isMultiSelect) {
             MultiSelectToolbar(
-                selectedCount = selectedApps.size,
+                selectedCount = selectedApps().size,
                 onTagSelected = onTagSelected,
                 onCancel = onCancelMultiselect,
             )
         }
-        if (showTagEditDialog && (tabType !in listOf("all", "frequent", "recent"))) {
-            val currentTag = tags.find { it.label == tabType }
-            currentTag?.let { tag ->
-                TagEditDialog(
-                    currentTagName = tag.label,
-                    onDismissed = { showTagEditDialog = false },
-                    onSaved = { newName ->
-                        val idx = HailData.tags.indexOf(tag.label to tag.id)
-                        if (idx >= 0) {
-                            HailData.tags[idx] = newName to tag.id
-                            HailData.saveTags()
-                            onTagEdit()
-                        }
-                        showTagEditDialog = false
-                    },
-                    onDeleted = {
-                        HailData.tags.remove(tag.label to tag.id)
-                        HailData.saveTags()
-                        onTagEdit()
-                        showTagEditDialog = false
-                    },
-                )
-            }
-        }
         if (tabType !in listOf("all", "frequent", "recent")) {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+        }
+    }
+    if (showTagEditDialog && (tabType !in listOf("all", "frequent", "recent"))) {
+        val currentTag = tags.find { it.label == tabType }
+        currentTag?.let { tag ->
+            TagEditDialog(
+                currentTagName = tag.label,
+                onDismissed = { showTagEditDialog = false },
+                onSaved = { newName ->
+                    val idx = HailData.tags.indexOf(tag.label to tag.id)
+                    if (idx >= 0) {
+                        HailData.tags[idx] = newName to tag.id
+                        HailData.saveTags()
+                        onTagEdit()
+                    }
+                    showTagEditDialog = false
+                },
+                onDeleted = {
+                    HailData.tags.remove(tag.label to tag.id)
+                    HailData.saveTags()
+                    onTagEdit()
+                    showTagEditDialog = false
+                },
+            )
         }
     }
 }

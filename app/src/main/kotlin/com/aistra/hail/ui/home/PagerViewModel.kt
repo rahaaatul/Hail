@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
-import com.aistra.hail.ui.home.pager.Tag
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.FuzzySearch
 import com.aistra.hail.utils.NameComparator
@@ -40,6 +39,7 @@ class PagerViewModel : ViewModel() {
     private var query: String = ""
     private var tagId: Int = 0
     private var refreshJob: Job? = null
+    private var refreshSeq = 0
 
     init {
         viewModelScope.launch {
@@ -62,12 +62,15 @@ class PagerViewModel : ViewModel() {
     }
 
     fun refresh() {
+        val seq = ++refreshSeq
         _uiState.value = _uiState.value.copy(isRefreshing = true)
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
             refreshApps()
-            _uiState.value = _uiState.value.copy(isRefreshing = false)
+            if (seq == refreshSeq) {
+                _uiState.value = _uiState.value.copy(isRefreshing = false)
+            }
         }
     }
 
