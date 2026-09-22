@@ -10,11 +10,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.colorFilter
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.ColorMatrixColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toBitmapOrNull
 import com.aistra.hail.R
-import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.HPackages
@@ -32,14 +33,14 @@ fun AppIcon(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val iconSize = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
     LaunchedEffect(request.packageName, request.userId) {
         val info = HPackages.getApplicationInfoOrNull(request.packageName)
         bitmap = if (info != null) {
             try {
-                val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
-                AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
+                AppIconCache.getOrLoadBitmap(context, info, request.userId, iconSize)
             } catch (e: Exception) {
                 HLog.e("Failed to load icon for ${request.packageName}", e)
                 null
@@ -49,7 +50,13 @@ fun AppIcon(
         }
     }
 
-    val imageBitmap = bitmap ?: context.packageManager.defaultActivityIcon.asImageBitmap()
+    val defaultIcon = context.packageManager.defaultActivityIcon
+    val fallbackBitmap = remember(defaultIcon, iconSize) {
+        runCatching { defaultIcon.toBitmapOrNull(width = iconSize, height = iconSize) }.getOrNull()
+    }
+    val imageBitmap = bitmap?.asImageBitmap()
+        ?: fallbackBitmap?.asImageBitmap()
+        ?: ImageBitmap(1, 1)
     Image(
         bitmap = imageBitmap,
         contentDescription = contentDescription,

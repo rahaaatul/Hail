@@ -11,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.aistra.hail.R
 
 @Composable
 fun TagEditDialog(
@@ -24,7 +26,7 @@ fun TagEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismissed,
-        title = { Text("Edit Tag") },
+        title = { Text(stringResource(R.string.edit_tag)) },
         text = {
             TextField(
                 value = tagName,

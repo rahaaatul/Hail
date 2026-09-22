@@ -6,12 +6,15 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.absoluteSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectIsPressedAsState
 import androidx.compose.runtime.getValue
@@ -20,7 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.home.Tag
@@ -86,9 +90,11 @@ fun AppGridItem(
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
+        val frozenIndicator = stringResource(R.string.frozen_app_indicator)
+        val whitelistedIndicator = stringResource(R.string.whitelisted_app_indicator)
         val nameWithIndicators = buildString {
-            if (!HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN) append("❄️")
-            if (app.whitelisted) append("🔒")
+            if (!HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN) append(frozenIndicator)
+            if (app.whitelisted) append(whitelistedIndicator)
             append(app.name)
         }
         Text(

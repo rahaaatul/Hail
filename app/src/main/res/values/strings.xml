@@ -89,6 +89,9 @@
     <string name="filter_system_apps">System</string>
     <string name="filter_frozen_apps">Frozen</string>
     <string name="filter_unfrozen_apps">Unfrozen</string>
+    <string name="frozen_app_indicator">❄️</string>
+    <string name="whitelisted_app_indicator">🔒</string>
+    <string name="edit_tag">Edit Tag</string>
     <string name="sort_by">Sort by</string>
     <string name="sort_name">Name</string>
     <string name="sort_install">First install</string>

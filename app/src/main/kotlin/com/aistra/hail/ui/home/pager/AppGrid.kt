@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.Text
 import androidx.compose.material3.SwipeToRefresh
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,7 +25,7 @@ fun AppGrid(
     onAppClicked: (AppInfo) -> Unit,
     onAppLongClicked: (AppInfo) -> Unit,
     isMultiSelect: Boolean,
-    selectedApps: () -> Set<String>,
+    selectedApps: Set<String>,
     showTagBadge: Boolean = false,
     tags: List<Tag> = emptyList(),
     onRefresh: () -> Unit = {},
@@ -57,7 +57,7 @@ fun AppGrid(
                         app = app,
                         onClick = { onAppClicked(app) },
                         onLongClick = { onAppLongClicked(app) },
-                        isSelected = app.packageName in selectedApps(),
+                        isSelected = app.packageName in selectedApps,
                         isMultiSelect = isMultiSelect,
                         tags = tags,
                         showTagBadge = showTagBadge,
