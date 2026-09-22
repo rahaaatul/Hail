@@ -67,7 +67,6 @@ class PagerFragment : MainFragment(), MenuProvider {
         get() = (parentFragment as HomeFragment).multiselect
     private val selectedList get() = (parentFragment as HomeFragment).selectedList
     private val tabs: TabLayout? get() = (parentFragment as? HomeFragment)?.binding?.tabs
-    private val adapter: HomeAdapter? get() = (parentFragment as? HomeFragment)?.binding?.pager?.adapter as? HomeAdapter
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
     private var currentTabType: String = "all"
     private val appsList = mutableStateOf<List<AppInfo>>(emptyList())
