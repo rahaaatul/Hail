@@ -14,8 +14,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
-import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.AppIconCache
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HLog
 
 data class AppIconRequest(
     val packageName: String,
@@ -35,10 +36,13 @@ fun AppIcon(
     LaunchedEffect(request.packageName, request.userId) {
         val info = HPackages.getApplicationInfoOrNull(request.packageName)
         bitmap = if (info != null) {
-            runCatching {
+            try {
                 val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
                 AppIconCache.getOrLoadBitmap(context, info, request.userId, size)
-            }.onFailure { /* fall back to default icon below */ }.getOrNull()
+            } catch (e: Exception) {
+                HLog.e("Failed to load icon for ${request.packageName}", e)
+                null
+            }
         } else {
             null
         }

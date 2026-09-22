@@ -74,8 +74,8 @@ fun AppGridItem(
         }
         Spacer(modifier = Modifier.height(4.dp))
         val nameWithIndicators = buildString {
-            if (!HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN) append("\u2744\uFE0F")
-            if (app.whitelisted) append("\uD83D\uDD12")
+            if (!HailData.grayscaleIcon && app.state == AppInfo.State.FROZEN) append("❄️")
+            if (app.whitelisted) append("🔒")
             append(app.name)
         }
         Text(
