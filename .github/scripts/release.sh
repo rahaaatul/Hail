@@ -12,9 +12,8 @@
 #   KEYSTORE_ALIAS_PASSWORD — key password
 #   RELEASE_TYPE            — "release" or "pre-release" (affects filename only)
 #
-# Signing properties are written to ./signing.properties and the keystore
-# to ./keystore.jks. Both are gitignored. The build is non-reproducible:
-# re-running overwrites these files.
+# Signing properties and keystore are written to a temporary directory
+# and cleaned up on exit. The build fails closed if no signing material exists.
 
 set -euo pipefail
 
@@ -22,14 +21,17 @@ cd "$(dirname "$0")/../.."
 
 RELEASE_TYPE="${RELEASE_TYPE:-release}"
 
-# --- Signing setup ----------------------------------------------------------
+# --- Signing setup (ephemeral, cleaned up on exit) ----------------------------
+
+tmpdir="$(mktemp -d)"
+trap 'rm -f "$tmpdir/keystore.jks" "$tmpdir/signing.properties"; rm -rf "$tmpdir"' EXIT
 
 if [[ -n "${KEYSTORE:-}" ]]; then
-  echo "${KEYSTORE}" | base64 --decode > keystore.jks
-  printf 'storeFile=../keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
-    "${KEYSTORE_PASSWORD}" "${KEYSTORE_ALIAS}" "${KEYSTORE_ALIAS_PASSWORD}" \
-    > signing.properties
-elif [[ ! -f signing.properties ]]; then
+  echo "${KEYSTORE}" | base64 --decode > "$tmpdir/keystore.jks"
+  printf 'storeFile=%s/keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+    "$tmpdir" "${KEYSTORE_PASSWORD}" "${KEYSTORE_ALIAS}" "${KEYSTORE_ALIAS_PASSWORD}" \
+    > "$tmpdir/signing.properties"
+elif [[ ! -f "$tmpdir/signing.properties" ]]; then
   echo "::error::No signing material: set KEYSTORE env or provide signing.properties"
   exit 1
 fi

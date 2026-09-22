@@ -50,7 +50,9 @@ android {
                     keyAlias = props.getProperty("keyAlias")
                     keyPassword = props.getProperty("keyPassword")
                 }
-            } else signingConfigs.getByName("debug")
+            } else {
+                throw GradleException("Release signing material is missing: signing.properties not found")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )

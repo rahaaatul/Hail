@@ -99,8 +99,9 @@ response="$(curl -sS -w '\n%{http_code}' \
 http_code="$(tail -n1 <<<"${response}")"
 body="$(sed '$d' <<<"${response}")"
 
-if [[ "${http_code}" != "200" ]]; then
-  echo "::warning::upload.sh: Telegram document to ${label} failed (HTTP ${http_code:-unknown}): ${body}"
-else
-  echo "==> Sent ${zip_path} to ${label}"
-fi
+  if [[ "${http_code}" != "200" ]]; then
+    echo "::error::upload.sh: Telegram document to ${label} failed (HTTP ${http_code:-unknown}): ${body}"
+    exit 1
+  else
+    echo "==> Sent ${zip_path} to ${label}"
+  fi
