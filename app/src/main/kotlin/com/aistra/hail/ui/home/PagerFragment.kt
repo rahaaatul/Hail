@@ -752,3 +752,4 @@ class PagerFragment : MainFragment(), MenuProvider {
         super.onDestroyView()
     }
 }
+
