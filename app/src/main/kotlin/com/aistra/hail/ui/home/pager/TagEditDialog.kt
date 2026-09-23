@@ -26,6 +26,9 @@ fun TagEditDialog(
     val editTagTitle = remember { stringResource(R.string.edit_tag) }
     val tagNameLabel = remember { stringResource(R.string.tag_name_label) }
     val tagNameEmptyError = remember { stringResource(R.string.tag_name_empty_error) }
+    val supportingText = remember(tagName) {
+        if (tagName.isBlank()) { Text(tagNameEmptyError) } else { null }
+    }
 
     AlertDialog(
         onDismissRequest = onDismissed,
@@ -36,7 +39,7 @@ fun TagEditDialog(
                 onValueChange = { tagName = it },
                 label = { Text(tagNameLabel) },
                 isError = tagName.isBlank(),
-                supportingText = remember(tagName) { { if (tagName.isBlank()) Text(tagNameEmptyError) } },
+                supportingText = supportingText,
             )
         },
         confirmButton = {
@@ -57,3 +60,4 @@ fun TagEditDialog(
         modifier = modifier,
     )
 }
+

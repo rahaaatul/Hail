@@ -17,7 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
-import com.aistra.hail.ui.home.Tag
+import com.aistra.hail.ui.home.PagerViewModel.Tag
 
 @Composable
 fun AppGrid(
@@ -69,3 +69,4 @@ fun AppGrid(
         }
     }
 }
+

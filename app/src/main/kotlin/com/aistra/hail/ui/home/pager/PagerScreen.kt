@@ -18,7 +18,7 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.home.PagerViewModel
-import com.aistra.hail.ui.home.Tag
+import com.aistra.hail.ui.home.PagerViewModel.Tag
 
 @Composable
 fun PagerScreen(
@@ -116,3 +116,4 @@ fun PagerScreen(
         }
     }
 }
+

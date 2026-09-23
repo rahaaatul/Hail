@@ -40,7 +40,7 @@ class PagerViewModel : ViewModel() {
     private var query: String = ""
     private var tagId: Int = 0
     private var refreshJob: Job? = null
-    private var refreshSeq = 0
+    private var activeRefreshCount = 0
 
     init {
         viewModelScope.launch {
@@ -69,7 +69,7 @@ class PagerViewModel : ViewModel() {
     }
 
     fun refresh() {
-        val seq = ++refreshSeq
+        activeRefreshCount++
         _uiState.value = _uiState.value.copy(isRefreshing = true)
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
@@ -77,7 +77,8 @@ class PagerViewModel : ViewModel() {
                 AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
                 refreshApps()
             } finally {
-                if (seq == refreshSeq) {
+                activeRefreshCount--
+                if (activeRefreshCount == 0) {
                     _uiState.value = _uiState.value.copy(isRefreshing = false)
                 }
             }
@@ -95,3 +96,4 @@ class PagerViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(apps = filtered, isLoading = false)
     }
 }
+

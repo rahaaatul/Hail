@@ -26,7 +26,7 @@ import androidx.compose.ui.res.stringResource
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
-import com.aistra.hail.ui.home.Tag
+import com.aistra.hail.ui.home.PagerViewModel.Tag
 import com.aistra.hail.utils.HPackages
 
 @Composable
@@ -118,3 +118,4 @@ fun AppGridItem(
         }
     }
 }
+
