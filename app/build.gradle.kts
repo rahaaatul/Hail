@@ -78,11 +78,11 @@ android {
 }
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(26)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 kotlin {
-    jvmToolchain(26)
+    jvmToolchain(21)
 }
 
 dependencies {
@@ -104,6 +104,8 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.pinyin4j)
     implementation(libs.material)
+    implementation(libs.coil)
+    implementation(libs.coil.compose)
     implementation(libs.insetter)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
