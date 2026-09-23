@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 
 data class PagerUiState(
     val apps: List<AppInfo> = emptyList(),
@@ -40,7 +41,7 @@ class PagerViewModel : ViewModel() {
     private var query: String = ""
     private var tagId: Int = 0
     private var refreshJob: Job? = null
-    private var activeRefreshCount = 0
+    private val activeRefreshCount = AtomicInteger(0)
 
     init {
         viewModelScope.launch {
@@ -69,7 +70,7 @@ class PagerViewModel : ViewModel() {
     }
 
     fun refresh() {
-        activeRefreshCount++
+        activeRefreshCount.incrementAndGet()
         _uiState.value = _uiState.value.copy(isRefreshing = true)
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
@@ -77,8 +78,7 @@ class PagerViewModel : ViewModel() {
                 AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
                 refreshApps()
             } finally {
-                activeRefreshCount--
-                if (activeRefreshCount == 0) {
+                if (activeRefreshCount.decrementAndGet() == 0) {
                     _uiState.value = _uiState.value.copy(isRefreshing = false)
                 }
             }
