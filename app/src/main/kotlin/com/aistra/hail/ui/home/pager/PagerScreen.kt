@@ -43,7 +43,7 @@ fun PagerScreen(
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     val showTagBadge = tabType !in listOf("all", "frequent", "recent")
     val canEditTags = tabType !in listOf("all", "frequent", "recent")
-    val title = remember(tabType, tags) {
+    val title = remember(tabType, tags.map { it.label to it.id }) {
         when (tabType) {
             "all" -> stringResource(R.string.filter_all_apps)
             "frequent" -> stringResource(R.string.filter_frequent_apps)
@@ -58,9 +58,11 @@ fun PagerScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             PagerHeader(
                 title = title,
-                onEditTagsClicked = {
-                    tagToEdit = tags.find { it.label == tabType }
-                    showTagEditDialog = true
+                onEditTagsClicked = remember(tags, tabType) {
+                    {
+                        tagToEdit = tags.find { it.label == tabType }
+                        showTagEditDialog = true
+                    }
                 },
                 canEditTags = canEditTags,
             )

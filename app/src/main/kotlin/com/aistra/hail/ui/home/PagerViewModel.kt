@@ -47,10 +47,12 @@ class PagerViewModel : ViewModel() {
         viewModelScope.launch {
             _tags.value = HailData.tags.map { Tag(it.first, it.second) }
             HailData.tagsFlow.collect {
-                try {
-                    updateTags()
-                } catch (e: Exception) {
-                    HLog.e("Failed to update tags: ${e.message}", e)
+                if (!isCleared) {
+                    try {
+                        updateTags()
+                    } catch (e: Exception) {
+                        HLog.e("Failed to update tags: ${e.message}", e)
+                    }
                 }
             }
         }
@@ -78,7 +80,7 @@ class PagerViewModel : ViewModel() {
                 AppMetaCache.invalidateState(HailData.checkedList.map { it.packageName })
                 refreshApps()
             } finally {
-                if (activeRefreshCount.decrementAndGet() == 0) {
+                if (activeRefreshCount.decrementAndGet() == 0 && !isCleared) {
                     _uiState.value = _uiState.value.copy(isRefreshing = false)
                 }
             }

@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
@@ -25,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.state.ToggleableState
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -115,7 +115,7 @@ class PagerFragment : MainFragment(), MenuProvider {
                         viewModel = viewModel,
                         tabType = currentTabType,
                         isMultiSelect = multiselect,
-                        selectedApps = selectedList.map { info -> info.packageName }.toSet(),
+                        selectedApps = remember(selectedList.size) { selectedList.map { it.packageName }.toSet() },
                         onAppClick = { info -> onItemClick(info) },
                         onAppLongClick = { info -> onItemLongClick(info) },
                         onMultiSelectToggle = { onMultiselectClick() },
@@ -493,7 +493,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     private fun TriStateTagList(initialStates: Array<ToggleableState>, states: MutableList<ToggleableState>) = Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+        Spacer(modifier = Modifier.height(8.dp))
         HailData.tags.forEachIndexed { index, tag ->
             Row(modifier = Modifier.fillMaxWidth().clickable {
                 states[index] = if (initialStates[index] == ToggleableState.Indeterminate) when (states[index]) {

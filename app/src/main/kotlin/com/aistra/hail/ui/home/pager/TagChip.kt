@@ -6,8 +6,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-fun TagChip(text: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun TagChip(
+    text: String,
+    onDelete: () -> Unit,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
     Chip(
+        onClick = onClick ?: {},
         onDeleteRequest = onDelete,
         modifier = modifier,
     ) {
