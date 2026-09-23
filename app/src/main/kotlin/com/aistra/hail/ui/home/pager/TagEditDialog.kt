@@ -25,8 +25,8 @@ fun TagEditDialog(
     var tagName by rememberSaveable { mutableStateOf(currentTagName) }
     val editTagTitle = remember { stringResource(R.string.edit_tag) }
     val tagNameLabel = remember { stringResource(R.string.tag_name_label) }
-    val tagNameEmptyError = stringResource(R.string.tag_name_empty_error)
-    val supportingText = { if (tagName.isBlank()) Text(tagNameEmptyError) }
+    val tagNameEmptyError = remember { stringResource(R.string.tag_name_empty_error) }
+    val supportingText = remember(tagName) { { if (tagName.isBlank()) Text(tagNameEmptyError) } }
 
     AlertDialog(
         onDismissRequest = onDismissed,

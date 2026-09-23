@@ -9,16 +9,13 @@ import androidx.compose.ui.Modifier
 fun TagChip(
     text: String,
     onDelete: () -> Unit,
-    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Chip(
-        onClick = onClick ?: {},
         onDeleteRequest = onDelete,
         modifier = modifier,
     ) {
         Text(text)
     }
 }
-
 
