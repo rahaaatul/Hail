@@ -72,6 +72,7 @@ class PagerViewModel : ViewModel() {
     }
 
     fun refresh() {
+        if (isCleared) return
         activeRefreshCount.incrementAndGet()
         _uiState.value = _uiState.value.copy(isRefreshing = true)
         refreshJob?.cancel()

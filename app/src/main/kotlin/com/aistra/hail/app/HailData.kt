@@ -262,13 +262,13 @@ object HailData {
 
     fun saveTags() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(tagsPath, JSONArray().run {
+        val written = HFiles.write(tagsPath, JSONArray().run {
             tags.forEach {
                 put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
             }
             toString()
         })
-        tagsFlow.tryEmit(Unit)
+        if (written) tagsFlow.tryEmit(Unit)
     }
 
     fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }
