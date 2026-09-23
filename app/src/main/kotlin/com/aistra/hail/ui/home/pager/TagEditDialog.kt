@@ -27,7 +27,7 @@ fun TagEditDialog(
     val tagNameLabel = remember { stringResource(R.string.tag_name_label) }
     val tagNameEmptyError = remember { stringResource(R.string.tag_name_empty_error) }
     val supportingText = remember(tagName) {
-        if (tagName.isBlank()) { Text(tagNameEmptyError) } else { null }
+        { if (tagName.isBlank()) Text(tagNameEmptyError) }
     }
 
     AlertDialog(
