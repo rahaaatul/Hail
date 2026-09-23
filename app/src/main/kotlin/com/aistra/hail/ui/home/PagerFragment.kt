@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
@@ -492,7 +493,7 @@ class PagerFragment : MainFragment(), MenuProvider {
     private fun TriStateTagList(initialStates: Array<ToggleableState>, states: MutableList<ToggleableState>) = Column(
         modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
         HailData.tags.forEachIndexed { index, tag ->
             Row(modifier = Modifier.fillMaxWidth().clickable {
                 states[index] = if (initialStates[index] == ToggleableState.Indeterminate) when (states[index]) {
