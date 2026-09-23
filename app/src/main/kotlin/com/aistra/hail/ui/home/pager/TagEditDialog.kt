@@ -36,7 +36,7 @@ fun TagEditDialog(
                 onValueChange = { tagName = it },
                 label = { Text(tagNameLabel) },
                 isError = tagName.isBlank(),
-                supportingText = { if (tagName.isBlank()) Text(tagNameEmptyError) },
+                supportingText = remember(tagName) { { if (tagName.isBlank()) Text(tagNameEmptyError) } },
             )
         },
         confirmButton = {
