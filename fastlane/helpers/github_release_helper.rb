@@ -1,6 +1,18 @@
 require "open3"
 require "digest/sha2"
 
+module Fastlane
+  module Actions
+    class << self
+      def run(action_name, options = {})
+        klass = action_class_ref(action_name.to_s)
+        raise "Unknown fastlane action: #{action_name}" unless klass
+        klass.run(options)
+      end
+    end
+  end
+end
+
 class GithubReleaseHelper
   def self.publish(tag:, repository:, api_token:, name:, description:, asset_path:, prerelease: false)
     raise "tag is required" unless tag

@@ -4,15 +4,17 @@ require_relative "../helpers/telegram_helper"
 class TelegramHelperSpec < Minitest::Test
   def test_missing_token_returns_dry_run_without_running_curl
     capture_called = false
-    with_capture3 do |*_args|
+    Open3.stub(:capture3, ->(*_args) {
       capture_called = true
       ["", "", successful_status]
-      TelegramHelper.notify(
+    }) do
+      result = TelegramHelper.notify(
         artifact: "app.apk",
         build_type: "debug",
         token: "",
         group: "123"
       )
+      assert_equal({ status: :dry_run }, result)
     end
 
     refute capture_called

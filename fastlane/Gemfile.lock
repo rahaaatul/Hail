@@ -167,6 +167,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
+    minitest-mock (5.27.0)
     multi_json (1.21.2)
     multipart-post (2.0.0)
     mutex_m (0.3.0)
@@ -229,6 +230,7 @@ DEPENDENCIES
   dotenv
   fastlane (~> 2.210.0)
   minitest
+  minitest-mock
   multi_json
 
 BUNDLED WITH

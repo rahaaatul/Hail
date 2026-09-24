@@ -147,11 +147,10 @@ class GithubReleaseHelperSpec < Minitest::Test
   end
 
   def with_temp_artifact(contents)
-    Tempfile.create(["hail-release", ".apk"]) do |file|
-      file.binmode
-      file.write(contents)
-      file.close
-      yield file.path
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "app.apk")
+      File.open(path, "wb") { |f| f.binmode; f.write(contents) }
+      yield path
     end
   end
 end
