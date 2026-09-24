@@ -95,6 +95,23 @@ jobs:
           fi
           echo "==> Signing secrets present"
 
+      - name: Prepare signing configuration
+        if: ${{ steps.build_type.outputs.build_type != 'debug' }}
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
+        run: |
+          echo "$KEYSTORE" | base64 --decode > "$GITHUB_WORKSPACE/release.keystore"
+          cat > signing.properties <<EOF
+          storeFile=$GITHUB_WORKSPACE/release.keystore
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEYSTORE_ALIAS
+          keyPassword=$KEYSTORE_ALIAS_PASSWORD
+          EOF
+          echo "==> signing.properties created"
+
       - name: Build debug APK
         if: ${{ steps.build_type.outputs.build_type == 'debug' }}
         id: build_debug
@@ -157,13 +174,18 @@ jobs:
           else
             ARTIFACT="${{ steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}"
           fi
+          if [[ -z "$ARTIFACT" || ! -f "$ARTIFACT" ]]; then
+            echo "No build artifact available; skipping Telegram notification"
+            exit 0
+          fi
           TG_BODY="$(bash .github/scripts/tg_body.sh)"
-          echo "${TG_BODY}" > telegram_caption.html
+          CAPTION_FILE="$GITHUB_WORKSPACE/telegram_caption.html"
+          printf '%s\n' "$TG_BODY" > "$CAPTION_FILE"
           bundle exec fastlane telegram_notify \
-            artifact:"${ARTIFACT}" \
+            artifact:"$ARTIFACT" \
             build_type:"${{ steps.build_type.outputs.build_type }}" \
             pr_number:"${{ github.event.number }}" \
-            caption_file:"telegram_caption.html"
+            caption_file:"$CAPTION_FILE"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

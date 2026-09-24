@@ -30,6 +30,18 @@ android {
         }
     }
 
+    signingConfigs {
+        if (signingProps.exists()) {
+            create("release") {
+                val props = `java.util`.Properties().apply { load(signingProps.reader()) }
+                storeFile = file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -43,15 +55,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = if (signingProps.exists()) {
-                val props = `java.util`.Properties().apply { load(signingProps.reader()) }
-                signingConfigs.create("release") {
-                    storeFile = file(props.getProperty("storeFile"))
-                    storePassword = props.getProperty("storePassword")
-                    keyAlias = props.getProperty("keyAlias")
-                    keyPassword = props.getProperty("keyPassword")
-                }
+                signingConfigs.getByName("release")
             } else {
-                throw GradleException("Release signing material is missing: signing.properties not found")
+                logger.lifecycle("signing.properties not found; release APK will be unsigned")
+                null
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
