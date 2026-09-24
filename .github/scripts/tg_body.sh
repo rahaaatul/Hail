@@ -34,12 +34,11 @@ readonly REPO="${REPO:-rahaaatul/Hail}"
 
 # --- HTML escaping helper ---------------------------------------------------
 escape_html() {
-  local str="$1"
-  str="${str//&/&}"
-  str="${str//</<}"
-  str="${str//>/>}"
-  str="${str//\"/"}"
-  printf '%s' "$str"
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g'
 }
 
 # --- Derive values ----------------------------------------------------------
