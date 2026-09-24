@@ -9,4 +9,21 @@ class BuildHelpers
     raise "Expected exactly one #{pattern}, found #{apks.size}" unless apks.size == 1
     apks.first
   end
+
+  def self.setup_signing(tmpdir)
+    if ENV["KEYSTORE"]
+      keystore = File.join(tmpdir, "keystore.jks")
+      File.binwrite(keystore, Base64.strict_decode64(ENV["KEYSTORE"]))
+      props = File.join(tmpdir, "signing.properties")
+      File.write(props, "storeFile=#{keystore}\n" \
+        "storePassword=#{ENV["KEYSTORE_PASSWORD"]}\n" \
+        "keyAlias=#{ENV["KEYSTORE_ALIAS"]}\n" \
+        "keyPassword=#{ENV["KEYSTORE_ALIAS_PASSWORD"]}\n")
+      props
+    elsif File.file?("signing.properties")
+      "signing.properties"
+    else
+      raise "Release signing material is missing: set KEYSTORE env or provide signing.properties"
+    end
+  end
 end

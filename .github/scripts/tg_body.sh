@@ -96,3 +96,4 @@ cat <<EOF
 <b>Learn more</b>
 <blockquote><a href="${commit_url}">${short_hash}</a></blockquote>
 EOF
+

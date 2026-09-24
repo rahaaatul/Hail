@@ -32,6 +32,7 @@ jobs:
       build_type: ${{ steps.build_type.outputs.build_type }}
     env:
       BUILD_TYPE: ${{ github.event.inputs.build_type || 'debug' }}
+      BUNDLE_GEMFILE: ${{ github.workspace }}/fastlane/Gemfile
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -41,9 +42,7 @@ jobs:
         with:
           ruby-version: 3.3.6
           bundler-cache: true
-
-      - name: Install Fastlane
-        run: bundle install --jobs=4 --retry=3
+          working-directory: fastlane
 
       - name: Setup toolchain
         run: bash .github/scripts/setup.sh
@@ -100,14 +99,9 @@ jobs:
         if: ${{ steps.build_type.outputs.build_type == 'debug' }}
         id: build_debug
         env:
-          PR_NUMBER: ${{ github.event.number }}
           RUNNER_DEBUG: 1
         run: |
-          if [[ -n "${PR_NUMBER:-}" ]]; then
-            bundle exec fastlane build_pr pr_number:${{ github.event.number }}
-          else
-            bundle exec fastlane build_debug
-          fi
+          bundle exec fastlane build_debug
           apk_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name 'Hail-*-pr.apk' -o -name 'Hail-*-debug.apk' \) | head -1)
           if [[ -z "$apk_path" ]]; then
             echo "::error::No APK found after build"
@@ -154,7 +148,6 @@ jobs:
       - name: Upload Telegram
         if: always()
         env:
-          PR_NUMBER: ${{ github.event.number }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -164,13 +157,13 @@ jobs:
           else
             ARTIFACT="${{ steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}"
           fi
+          TG_BODY="$(bash .github/scripts/tg_body.sh)"
+          echo "${TG_BODY}" > telegram_caption.html
           bundle exec fastlane telegram_notify \
             artifact:"${ARTIFACT}" \
             build_type:"${{ steps.build_type.outputs.build_type }}" \
             pr_number:"${{ github.event.number }}" \
-            caption:"$(bash .github/scripts/tg_body.sh)" \
-            token:"${TG_TOKEN}" \
-            group:"${TG_GROUP}"
+            caption_file:"telegram_caption.html"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -185,6 +178,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/fastlane/Gemfile
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -194,9 +189,7 @@ jobs:
         with:
           ruby-version: 3.3.6
           bundler-cache: true
-
-      - name: Install Fastlane
-        run: bundle install --jobs=4 --retry=3
+          working-directory: fastlane
 
       - name: Download artifact
         uses: actions/download-artifact@v8
@@ -240,6 +233,6 @@ jobs:
             repository:"${{ github.repository }}" \
             api_token:"${{ secrets.GH_TOKEN }}" \
             name:"v${{ needs.build.outputs.version_name }}" \
-            description:"${{ steps.changelog.outputs.body }}" \
+            description_file:"${{ github.workspace }}/CHANGELOG.md" \
             asset_path:"${{ steps.flatten.outputs.apk_path }}" \
             prerelease:"${{ needs.build.outputs.build_type == 'pre-release' }}"
