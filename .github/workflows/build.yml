@@ -232,7 +232,7 @@ jobs:
             tag:"${{ needs.build.outputs.tag }}" \
             repository:"${{ github.repository }}" \
             api_token:"${{ secrets.GH_TOKEN }}" \
-            name:"v${{ needs.build.outputs.version_name }}" \
+            name:"${{ needs.build.outputs.version_name }}" \
             description_file:"${{ github.workspace }}/CHANGELOG.md" \
             asset_path:"${{ steps.flatten.outputs.apk_path }}" \
             prerelease:"${{ needs.build.outputs.build_type == 'pre-release' }}"
