@@ -12,6 +12,7 @@ fun TagChip(
     modifier: Modifier = Modifier,
 ) {
     Chip(
+        onClick = {},
         onDeleteRequest = onDelete,
         modifier = modifier,
     ) {
