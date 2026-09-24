@@ -18,7 +18,7 @@ platform :android do
 
   desc "Build debug APK"
   lane :build_debug do
-    gradle(task: "assembleDebug")
+    gradle(task: "assembleDebug", project_dir: ".")
     apk_path = Dir.glob("app/build/outputs/apk/debug/*.apk").first
     raise "No debug APK found" unless apk_path
     commit = `git rev-parse --short HEAD`.strip rescue "unknown"
@@ -33,7 +33,7 @@ platform :android do
   desc "Build PR APK"
   lane :build_pr do |options|
     pr_number = BuildHelpers.validate_pr_number(options[:pr_number])
-    gradle(task: "assemblePr")
+    gradle(task: "assemblePr", project_dir: ".")
     apk_path = Dir.glob("app/build/outputs/apk/pr/*.apk").first
     raise "No PR APK found" unless apk_path
     dest = "app/build/outputs/apk/pr/Hail-#{pr_number}-pr.apk"
@@ -52,7 +52,7 @@ platform :android do
       require "fileutils"; FileUtils.cp(signing_props, "signing.properties")
     end
     begin
-      gradle(task: "assembleRelease")
+      gradle(task: "assembleRelease", project_dir: ".")
       apk_path = Dir.glob("app/build/outputs/apk/release/*.apk").first
       raise "No release APK found" unless apk_path
       vname = version_name
