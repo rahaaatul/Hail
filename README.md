@@ -230,10 +230,44 @@ or use following `schema`:
 
 ## Development Setup
 
-Build toolchain (JDK 26, Android SDK) is installed inside the workspace under `.gradle/` (gitignored, no setup needed).
+Building Hail requires **JDK 26** and the **Android SDK (API 37)**. These are
+**not** committed to the repository: `.gradle/` is gitignored and only holds
+Gradle's own caches and wrapper, so it does **not** provide a JDK or SDK. Set
+them up once as described below.
+
+The Gradle build configures a Java 26 toolchain in
+[`app/build.gradle.kts`](app/build.gradle.kts), so Gradle will pick up any JDK 26
+found via `JAVA_HOME`, the `PATH`, or toolchain auto-provisioning.
+
+### On Linux/macOS
+
+Run the bundled setup script, the same one CI uses in
+[`build.yml`](.github/workflows/build.yml):
 
 ```shell
-./gradlew assembleDebug    # build
+bash .github/scripts/setup.sh
+```
+
+It installs Temurin JDK 26 to `$HOME/.local` (and exports `JAVA_HOME`) and the
+Android SDK (cmdline-tools, platform-tools, and platform `android-37`) to
+`$HOME/.android/sdk` (or `$ANDROID_HOME` if set). It is idempotent.
+
+> `android.yml` and `release.yml` do **not** use this script: they provision only
+> JDK 26 via `actions/setup-java` and rely on the Android SDK preinstalled on the
+> runner. `build.yml` is the reference for a self-contained local-style setup.
+
+### Manual setup
+
+1. Install [JDK 26](https://adoptium.net/temurin/releases/?version=26) and set
+   `JAVA_HOME`.
+2. Install the Android SDK with at least `platform-tools` and platform
+   `android-37`; set `ANDROID_HOME`/`ANDROID_SDK_ROOT` to the SDK root
+   (defaults to `$HOME/.android/sdk`).
+
+### Build
+
+```shell
+./gradlew assembleDebug    # build the app
 ./gradlew lint             # lint
 ./gradlew test             # unit tests
 ```
