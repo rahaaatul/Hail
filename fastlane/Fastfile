@@ -4,7 +4,10 @@ require_relative "helpers/build_helpers"
 
 platform :android do
   def version_name
-    `sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.gradle.kts`.strip
+    content = File.read("app/build.gradle.kts")
+    match = content.match(/versionName\s*=\s*["']([^"']+)["']/)
+    raise "versionName not found in app/build.gradle.kts" unless match
+    match[1]
   end
 
   desc "Validate store metadata"
@@ -20,7 +23,9 @@ platform :android do
     raise "No debug APK found" unless apk_path
     commit = `git rev-parse --short HEAD`.strip rescue "unknown"
     dest = "app/build/outputs/apk/debug/Hail-#{commit}-debug.apk"
-    sh "cp #{apk_path} #{dest} && rm -f #{apk_path}"
+    require "fileutils"
+    FileUtils.cp(apk_path, dest)
+    FileUtils.rm_f(apk_path)
     lane_context[:apk_path] = dest
     lane_context[:version_name] = version_name
   end
@@ -32,7 +37,9 @@ platform :android do
     apk_path = Dir.glob("app/build/outputs/apk/pr/*.apk").first
     raise "No PR APK found" unless apk_path
     dest = "app/build/outputs/apk/pr/Hail-#{pr_number}-pr.apk"
-    sh "cp #{apk_path} #{dest} && rm -f #{apk_path}"
+    require "fileutils"
+    FileUtils.cp(apk_path, dest)
+    FileUtils.rm_f(apk_path)
     lane_context[:apk_path] = dest
   end
 
@@ -42,7 +49,7 @@ platform :android do
     tmpdir = Dir.mktmpdir
     signing_props = BuildHelpers.setup_signing(tmpdir)
     unless signing_props == "signing.properties"
-      sh "cp #{signing_props} signing.properties"
+      require "fileutils"; FileUtils.cp(signing_props, "signing.properties")
     end
     begin
       gradle(task: "assembleRelease")
@@ -50,7 +57,9 @@ platform :android do
       raise "No release APK found" unless apk_path
       vname = version_name
       dest = "app/build/outputs/apk/release/Hail-v#{vname}-#{release_type}.apk"
-      sh "cp #{apk_path} #{dest} && rm -f #{apk_path}"
+      require "fileutils"
+      FileUtils.cp(apk_path, dest)
+      FileUtils.rm_f(apk_path)
       lane_context[:apk_path] = dest
       lane_context[:version_name] = vname
     ensure
@@ -81,7 +90,13 @@ platform :android do
   desc "Send Telegram notification"
   lane :telegram_notify do |options|
     require_relative "../fastlane/helpers/telegram_helper"
-    caption = options[:caption_file] ? File.read(options[:caption_file]) : (options[:caption] || "")
+    if options[:caption_file]
+      file = options[:caption_file]
+      raise "caption_file not found: #{file}" unless File.file?(file)
+      caption = File.read(file)
+    else
+      caption = options[:caption] || ""
+    end
     TelegramHelper.notify(
       artifact: options[:artifact],
       build_type: options[:build_type],
@@ -115,16 +130,6 @@ platform :android do
       build_type: build_type,
       pr_number: options[:pr_number],
       caption_file: options[:caption_file]
-    ) if options[:notify] != false
-  end
-
-  desc "Notify on PR builds"
-  lane :notify do |options|
-    telegram_notify(
-      artifact: options[:artifact],
-      build_type: options[:build_type],
-      pr_number: options[:pr_number],
-      caption: options[:caption] || ""
     ) if options[:notify] != false
   end
 end
