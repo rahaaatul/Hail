@@ -9,6 +9,8 @@ import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.widget.ImageView
 import androidx.collection.LruCache
+import coil.load
+import coil.request.CachePolicy
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import kotlinx.coroutines.*
@@ -192,7 +194,9 @@ object AppIconCache : CoroutineScope {
 
             if (view.tag == info.packageName) {
                 if (bitmap != null) {
-                    view.setImageBitmap(bitmap)
+                    view.load(bitmap) {
+                        memoryCachePolicy(CachePolicy.DISABLED)
+                    }
                 } else {
                     view.setImageDrawable(if (HTarget.O) context.packageManager.defaultActivityIcon else null)
                 }
