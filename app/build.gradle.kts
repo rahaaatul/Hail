@@ -78,11 +78,11 @@ android {
 }
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(26)
     }
 }
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(26)
 }
 
 dependencies {
