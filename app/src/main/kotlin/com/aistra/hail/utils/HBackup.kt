@@ -45,9 +45,9 @@ object HBackup {
         options: BackupOptions
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val dirCreated = outputFile.parentFile?.mkdirs()
-            if (dirCreated == null || !dirCreated) {
-                return@withContext Result.failure(IllegalStateException("Failed to create directory: ${outputFile.parentFile}"))
+            val parentDir = outputFile.parentFile
+            if (parentDir != null && !parentDir.isDirectory && !parentDir.mkdirs()) {
+                return@withContext Result.failure(IllegalStateException("Failed to create directory: $parentDir"))
             }
             val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
             try {
