@@ -118,6 +118,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.sqlite.wrapper)
     implementation(libs.androidx.sqlite)
+    implementation(libs.coil)
+    implementation(libs.coil.compose)
     ksp(libs.androidx.room.compiler)
     compileOnly(libs.libxposed.api)
 
