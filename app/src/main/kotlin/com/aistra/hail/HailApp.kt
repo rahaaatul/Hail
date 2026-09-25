@@ -11,13 +11,18 @@ import android.os.StrictMode
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.LruMemoryCache
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.services.AutoFreezeService
+import com.aistra.hail.utils.AppIconDecoder
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
 import com.aistra.hail.utils.HShell
 import com.aistra.hail.utils.HTarget
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,6 +52,15 @@ class HailApp : Application() {
     }
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    val imageLoader by lazy {
+        ImageLoader.Builder(this)
+            .componentRegistry { add(AppIconDecoder.Factory()) }
+            .memoryCache { LruMemoryCache(maxSizePercent = 0.25) }
+            .diskCache { DiskCache(File(cacheDir, "coil_icons")) }
+            .crossfade(true)
+            .build()
+    }
 
     fun syncRootShell() {
         if (HailData.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()

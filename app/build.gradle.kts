@@ -78,11 +78,11 @@ android {
 }
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(26)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 kotlin {
-    jvmToolchain(26)
+    jvmToolchain(21)
 }
 
 dependencies {
@@ -119,7 +119,7 @@ dependencies {
     implementation(libs.androidx.room.sqlite.wrapper)
     implementation(libs.androidx.sqlite)
     implementation(libs.coil)
-    implementation(libs.coil.compose)
+    implementation(libs.coilCompose)
     ksp(libs.androidx.room.compiler)
     compileOnly(libs.libxposed.api)
 

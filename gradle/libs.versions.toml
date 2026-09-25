@@ -6,7 +6,8 @@ appiconloader = "1.5.0"
 biometricKtx = "1.4.0-alpha02"
 commonsText = "1.15.0"
 documentfile = "1.1.0"
-coil = "3.3.0"
+coil = "2.7.0"
+coilCompose = "2.7.0"
 composeBom = "2026.09.00"
 composePreference = "2.2.0"
 constraintlayout = "2.2.2"
@@ -48,8 +49,8 @@ androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", version.ref = "appiconloader" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
-coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+coilCompose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 compose-preference = { module = "me.zhanghai.compose.preference:preference", version.ref = "composePreference" }
 dhizuku-api = { module = "io.github.iamr0s:Dhizuku-API", version.ref = "dhizukuApi" }
