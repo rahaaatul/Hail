@@ -349,22 +349,22 @@ class HBackupTest {
     }
 
     @Test
-    fun `restore skips a json number wider than 64 bits instead of truncating it`() = runTest {
-        // org.json returns a BigInteger for an integer wider than 64 bits, which no
-        // preference can hold: Long is the widest type SharedPreferences has. BigInteger
-        // truncates silently (toLong keeps the low 64 bits) and Double saturates, so the key
-        // is skipped and logged rather than restored as a value with the wrong magnitude.
-        val huge = "12345678901234567890123"
+    fun `restore reads an undeclared number as the type the file itself claims`() = runTest {
+        // Nothing is recorded, so the JSON's own type has to decide, and which class org.json
+        // hands back depends on the implementation. A fraction is a BigDecimal on the org.json
+        // artifact the tests run against and a Double on AOSP, and only a Float preference ever
+        // wrote decimal notation, so both are a Float; an integer too wide for a Long is
+        // skipped instead, because no preference can hold it.
         val editor = mockPreferences()
-        val zipFile = zipWithSettings("""{"a_long":$huge}""")
+        val zipFile = zipWithSettings("""{"a_fraction":7.5,"a_wide":12345678901234567890123}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
         val result = HBackup.restore(HailApp.app, zipFile, options)
 
         assertTrue(result.isSuccess)
+        verify { editor.putFloat("a_fraction", 7.5f) }
         verify(exactly = 0) { editor.putLong(any(), any()) }
-        verify(exactly = 0) { editor.putFloat(any(), any()) }
-        verify { HLog.w(any(), match { it.contains("a_long") && it.contains(huge) }) }
+        verify { HLog.w(any(), match { it.contains("a_wide") }) }
     }
 
     @Test
@@ -414,6 +414,85 @@ class HBackupTest {
     }
 
     @Test
+    fun `restore reads an unrecorded float preference from a bare whole number`() = runTest {
+        // A backup taken by a build that predates the tag: home_font_size_f is a bare 15, with
+        // no type marker and nothing recorded to consult, which is the common upgrade path -
+        // back up on the current release, install the fixed build, clear app data, restore.
+        // Both sliders can only produce whole numbers, so this is the value the file really
+        // holds; taking the JSON's Integer at face value stores it under a Float key as an Int
+        // and the user gets the default back, silently and on every later restore too.
+        val editor = mockPreferences()
+        val zipFile = zipWithSettings("""{"${HailData.HOME_FONT_SIZE}":15,"${HailData.AUTO_FREEZE_DELAY}":10}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify { editor.putFloat(HailData.HOME_FONT_SIZE, 15f) }
+        verify { editor.putFloat(HailData.AUTO_FREEZE_DELAY, 10f) }
+        verify(exactly = 0) { editor.putInt(any(), any()) }
+        verify(exactly = 0) { editor.putLong(any(), any()) }
+        verify(exactly = 0) { editor.putString(any(), any()) }
+    }
+
+    @Test
+    fun `restore repairs a float key an earlier build stored as an int`() = runTest {
+        // The state every #91 reporter is in today: an earlier restore put an Int under a Float
+        // key, and that Int is now the recorded type. Believing it reproduces the corruption
+        // forever, and it is self-perpetuating - the next backup sees an Int in sp.all, writes a
+        // bare 15, and the untagged form is what a clean install then stores as an Int again.
+        // The recorded type is evidence, not authority: where the file's spelling and the
+        // recorded type disagree, the file is the only one of the two that a consistent writer
+        // could not have produced by accident.
+        val editor = mockPreferences(HailData.HOME_FONT_SIZE to 15, "a_float" to 7)
+        val zipFile = zipWithSettings("""{"${HailData.HOME_FONT_SIZE}":"15.0","a_float":"7.0"}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        // The declared key, and an undeclared one whose only evidence is the spelling.
+        verify { editor.putFloat(HailData.HOME_FONT_SIZE, 15f) }
+        verify { editor.putFloat("a_float", 7f) }
+        verify(exactly = 0) { editor.putInt(any(), any()) }
+    }
+
+    @Test
+    fun `restore repairs a float key an earlier build stored as a string`() = runTest {
+        // The other shape the damage takes: before the tag was recognised, a Float read on a
+        // clean install fell through to the is String arm and was written back as the string
+        // "15.0". getFloat then reports the key as absent, so the repair has to see past a
+        // recorded String too - but only for a key the app declares a Float, because a genuine
+        // String preference is spelled the same way and must not be converted.
+        val editor = mockPreferences(HailData.AUTO_FREEZE_DELAY to "10.0", "a_string" to "15.0")
+        val zipFile = zipWithSettings("""{"${HailData.AUTO_FREEZE_DELAY}":"10.0","a_string":"15.0"}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify { editor.putFloat(HailData.AUTO_FREEZE_DELAY, 10f) }
+        verify { editor.putString("a_string", "15.0") }
+    }
+
+    @Test
+    fun `restore keeps an undeclared int preference stored as an int`() = runTest {
+        // The other half of the boundary the repair has to respect: an Int key recorded as an
+        // Int with a bare whole number in the file is not damage, it is the ordinary case, and
+        // letting the file's Float spelling override it would rewrite every Int preference the
+        // app has. The recorded type is only overruled when the file actually says Float.
+        val editor = mockPreferences("an_int" to 15)
+        val zipFile = zipWithSettings("""{"an_int":15}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify { editor.putInt("an_int", 15) }
+        verify(exactly = 0) { editor.putFloat(any(), any()) }
+    }
+
+    @Test
     fun `restore keeps a recorded string preference that reads like a float as a string`() = runTest {
         // The inference is confined to a key with no recorded type. A String preference is
         // recorded as a String, so it keeps its type even when its content happens to be
@@ -452,8 +531,8 @@ class HBackupTest {
         // The value is a JSON string, so it arrives as the Double toNumberOrNull parses out of
         // it rather than as the BigDecimal a bare 1e30 would give; this is the path the hand
         // written Long bounds live on, and toLong() would saturate it to Long.MAX_VALUE. The
-        // bare-number spelling of the same overflow goes through longValueExact instead, which
-        // the wider-than-64-bits test above already covers.
+        // bare-number spelling of the same overflow is covered by the undeclared-number test
+        // above, which reaches it through a class this classpath does not produce.
         val editor = mockPreferences("a_long" to 1L)
         val zipFile = zipWithSettings("""{"a_long":"1e30"}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
@@ -494,5 +573,79 @@ class HBackupTest {
         assertTrue(result.isSuccess)
         verify(exactly = 0) { editor.putInt(any(), any()) }
         verify { HLog.w(any(), match { it.contains("an_int") && it.contains("7.5") }) }
+    }
+
+    @Test
+    fun `restore keeps a Long at the top of the range instead of skipping it`() = runTest {
+        // A Long is already exact: the check that a Long cannot survive is about the 53 bits a
+        // Double carries, and routing an integral type through toDouble() applies it where it
+        // does not belong. Long.MAX_VALUE rounds up to 2^63, which is one past the end, so the
+        // value was rejected as too wide - along with the 1024 Longs below it, whose Double also
+        // rounds to 2^63. toLong() on a Long returns it unchanged, so this used to restore and
+        // must again: no preference holds anything wider, so nothing here is unrepresentable.
+        val editor = mockPreferences("a_long" to 1L)
+        val zipFile = zipWithSettings("""{"a_long":9223372036854775807}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify { editor.putLong("a_long", Long.MAX_VALUE) }
+        verify(exactly = 0) { editor.putFloat(any(), any()) }
+    }
+
+    @Test
+    fun `restore keeps a Long just below the top of the range`() = runTest {
+        // The value whose Double rounds up to 2^63 and was therefore skipped as though it were
+        // out of range. A Long preference can hold it exactly, and it is a value a user can have.
+        val editor = mockPreferences("a_long" to 1L)
+        val zipFile = zipWithSettings("""{"a_long":9223372036854774784}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify { editor.putLong("a_long", 9223372036854774784L) }
+    }
+
+    @Test
+    fun `restore skips a long that reached the reader as a double past 2 to the 53`() = runTest {
+        // The other side of the same rule, and the part that has to keep the range check. A
+        // Double carries 53 bits, so an integral value this large has already been rounded off
+        // somewhere upstream and the digits the file held are gone: 2^53+1 and 2^53 both arrive
+        // as the same Double. Writing that back would invent 9007199254740992, a number the
+        // file never contained, so it is skipped and logged instead.
+        val editor = mockPreferences("a_long" to 1L)
+        val zipFile = zipWithSettings("""{"a_long":"9007199254740993"}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify(exactly = 0) { editor.putLong(any(), any()) }
+        verify(exactly = 0) { editor.putFloat(any(), any()) }
+        verify { HLog.w(any(), match { it.contains("a_long") && it.contains("Long") }) }
+    }
+
+    @Test
+    fun `restore skips an integer too wide for any preference however org json reports it`() = runTest {
+        // A bare integer wider than 64 bits reaches this code in different classes depending on
+        // which org.json parsed the file: a BigInteger from the org.json:json artifact on the
+        // unit test classpath, and a Double from AOSP's parser, whose Long.parseLong throws on
+        // the overflow and whose Double.parseDouble then succeeds. Both name the same file, so
+        // both have to give the same answer. Storing the magnitude as a Float - which is what
+        // falls out of asking only "is this a finite Float" - writes 1.2345678E22f under a Long
+        // key: right order of magnitude, digits nobody chose, and nothing logged.
+        val huge = "12345678901234567890123"
+        val editor = mockPreferences()
+        val zipFile = zipWithSettings("""{"a_long":$huge}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify(exactly = 0) { editor.putLong(any(), any()) }
+        verify(exactly = 0) { editor.putFloat(any(), any()) }
+        verify { HLog.w(any(), match { it.contains("a_long") && it.contains(huge) }) }
     }
 }
