@@ -1,4 +1,5 @@
 require "open3"
+require "timeout"
 
 class TelegramHelper
   TOPIC_MAP = {
@@ -24,7 +25,9 @@ class TelegramHelper
     ]
     args += ["-F", "message_thread_id=#{topic}"] if topic
 
-    stdout, stderr, status = Open3.capture3(*args)
+    stdout, stderr, status = Timeout.timeout(35) do
+      Open3.capture3(*args)
+    end
     http_code = stdout.lines.last&.strip
     return { status: :sent, http_code: http_code } if status.success? && http_code == "200"
 

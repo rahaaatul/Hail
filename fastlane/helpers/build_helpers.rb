@@ -26,4 +26,11 @@ class BuildHelpers
       raise "Release signing material is missing: set KEYSTORE env or provide signing.properties"
     end
   end
+
+  def self.extract_version_name(gradle_file_path = "app/build.gradle.kts")
+    content = File.read(gradle_file_path)
+    match = content.match(/versionName\s*=\s*["']([^"']+)["']/)
+    raise "versionName not found in #{gradle_file_path}" unless match
+    match[1]
+  end
 end

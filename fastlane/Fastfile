@@ -4,10 +4,7 @@ require_relative "helpers/build_helpers"
 
 platform :android do
   def version_name
-    content = File.read("app/build.gradle.kts")
-    match = content.match(/versionName\s*=\s*["']([^"']+)["']/)
-    raise "versionName not found in app/build.gradle.kts" unless match
-    match[1]
+    BuildHelpers.extract_version_name
   end
 
   desc "Validate store metadata"
