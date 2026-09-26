@@ -16,12 +16,20 @@ on:
           - release
           - pre-release
 
-permissions:
-  contents: write
+# Deny by default: no GITHUB_TOKEN scopes are granted at the workflow level.
+# Each job opts in to exactly the scopes it needs (see below), so adding a new
+# job cannot silently inherit write access.
+permissions: {}
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # This job is triggered by pull_request and executes PR-supplied Gradle
+    # build scripts (app/build.gradle.kts, settings.gradle.kts, included
+    # builds), i.e. arbitrary code from external contributors. It only ever
+    # reads the repository and uploads artifacts, so grant read-only access.
+    permissions:
+      contents: read
     outputs:
       version_name: ${{ steps.version.outputs.version_name }}
       tag: ${{ steps.version.outputs.tag }}
@@ -31,6 +39,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          # Do not leave the token in .git/config (http.<url>.extraheader) for
+          # the Gradle build steps that follow, which run PR-supplied code.
+          persist-credentials: false
 
       - name: Setup toolchain
         run: bash .github/scripts/setup.sh
@@ -155,9 +167,19 @@ jobs:
     if: ${{ needs.build.outputs.build_type != 'debug' }}
     needs: [build]
     runs-on: ubuntu-latest
+    # The only job that writes to the repository: softprops/action-gh-release
+    # creates the GitHub Release and uploads its assets via the REST API, which
+    # requires contents: write. Nothing else in this workflow mutates the repo.
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          # The release action authenticates with the ambient GITHUB_TOKEN
+          # (its `token` input), not with git push credentials, so the token
+          # does not need to be persisted into .git/config.
+          persist-credentials: false
 
       - name: Download artifact
         uses: actions/download-artifact@v8
