@@ -62,13 +62,29 @@ version_name="$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.grad
 
 # Get changelog: prefer PR title from GitHub API (if PR_NUMBER and GH_TOKEN),
 # fall back to local commit subject.
+#
+# jq is preinstalled on ubuntu-latest, but guard for it: the API returns JSON,
+# and without a real parser we would be back to scraping it by hand — which is
+# what truncated titles containing a double quote. Skipping the call outright
+# keeps the degradation explicit instead of shipping a silently mangled
+# changelog, and the commit-subject fallback below still escapes correctly.
+#
+# Note: `set -o pipefail` is on but `set -e` is not, so a failing curl or jq
+# leaves pr_title empty and control simply continues to the fallback.
 subject=""
 if [[ -n "${PR_NUMBER:-}" && -n "${GH_TOKEN:-}" ]]; then
-  pr_title="$(curl -sS -H "Authorization: token ${GH_TOKEN}" \
-    "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null \
-    | sed -n 's/.*"title"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
-  if [[ -n "${pr_title}" ]]; then
-    subject="${pr_title}"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "tg_body.sh: jq not found, skipping PR title lookup" >&2
+  else
+    # --fail/--connect-timeout/--max-time keep an erroring or hung API
+    # endpoint from stalling the build until the job-level timeout.
+    pr_title="$(curl -sS --fail --connect-timeout 5 --max-time 15 \
+      -H "Authorization: token ${GH_TOKEN}" \
+      "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null \
+      | jq -r '.title // empty')"
+    if [[ -n "${pr_title}" ]]; then
+      subject="${pr_title}"
+    fi
   fi
 fi
 
