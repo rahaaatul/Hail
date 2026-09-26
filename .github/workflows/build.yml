@@ -54,23 +54,18 @@ jobs:
       - name: Validate signing secrets
         if: ${{ steps.build_type.outputs.build_type != 'debug' }}
         shell: bash
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
+          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
         run: |
-          if [ -z "${{ secrets.KEYSTORE }}" ]; then
-            echo "::error::Missing secret KEYSTORE"
-            exit 1
-          fi
-          if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
-            echo "::error::Missing secret KEYSTORE_PASSWORD"
-            exit 1
-          fi
-          if [ -z "${{ secrets.KEYSTORE_ALIAS }}" ]; then
-            echo "::error::Missing secret KEYSTORE_ALIAS"
-            exit 1
-          fi
-          if [ -z "${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" ]; then
-            echo "::error::Missing secret KEYSTORE_ALIAS_PASSWORD"
-            exit 1
-          fi
+          for var in KEYSTORE KEYSTORE_PASSWORD KEYSTORE_ALIAS KEYSTORE_ALIAS_PASSWORD; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::Missing secret ${var}"
+              exit 1
+            fi
+          done
           echo "==> Signing secrets present"
 
       - name: Build debug APK
@@ -118,9 +113,10 @@ jobs:
         if: ${{ steps.build_type.outputs.build_type == 'debug' }}
         env:
           RUNNER_DEBUG: 1
+          APK_PATH: ${{ steps.build_debug.outputs.apk_path }}
         run: |
           set -x
-          bash .github/scripts/zip.sh "${{ steps.build_debug.outputs.apk_path }}"
+          bash .github/scripts/zip.sh "$APK_PATH"
           zip_path=$(find app/build/outputs/apk -maxdepth 2 -type f \( -name '*.7z' -o -name '*.zip' \) | head -1)
           if [[ -z "$zip_path" ]]; then
             echo "::error::No compressed APK found after zip"
@@ -134,14 +130,15 @@ jobs:
         continue-on-error: true
         env:
           PR_NUMBER: ${{ github.event.number }}
+          ZIP_PATH: ${{ steps.zip.outputs.zip_path }}
+          APK_PATH: ${{ steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ -n "${{ steps.zip.outputs.zip_path }}" ]]; then
-            bash .github/scripts/upload.sh ${{ steps.zip.outputs.zip_path }}
-          else
-            bash .github/scripts/upload.sh ${{ steps.build_debug.outputs.apk_path || steps.build_release.outputs.apk_path }}
+          target="${ZIP_PATH:-$APK_PATH}"
+          if [[ -n "$target" ]]; then
+            bash .github/scripts/upload.sh "$target"
           fi
 
       - name: Upload artifact
@@ -166,6 +163,8 @@ jobs:
 
       - name: Read changelog
         id: changelog
+        env:
+          VERSION: ${{ needs.build.outputs.version_name }}
         run: |
           if [ ! -f CHANGELOG.md ]; then
             echo "body<<EOF" >> $GITHUB_OUTPUT
@@ -173,7 +172,6 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
             exit 0
           fi
-          VERSION="${{ needs.build.outputs.version_name }}"
           {
             echo "body<<EOF"
             sed -n "/^## \[${VERSION}\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' | sed '/^$/d'
@@ -183,13 +181,16 @@ jobs:
       - name: Flatten release APK
         id: flatten
         shell: bash
+        env:
+          VERSION_NAME: ${{ needs.build.outputs.version_name }}
+          BUILD_TYPE: ${{ needs.build.outputs.build_type }}
         run: |
           apk_path=$(find artifacts -type f -name '*.apk' | head -1)
           if [[ -z "$apk_path" ]]; then
             echo "::error::No APK found in downloaded artifacts"
             exit 1
           fi
-          flat="Hail-v${{ needs.build.outputs.version_name }}-${{ needs.build.outputs.build_type }}.apk"
+          flat="Hail-v${VERSION_NAME}-${BUILD_TYPE}.apk"
           cp "$apk_path" "$flat"
           echo "apk_path=$flat" >> $GITHUB_OUTPUT
           echo "==> Flattened: $apk_path -> $flat"
