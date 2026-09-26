@@ -13,6 +13,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.math.BigDecimal
 import java.math.BigInteger
 import java.nio.charset.Charset
 import java.util.zip.ZipEntry
@@ -39,6 +40,13 @@ object HBackup {
     private const val FILE_WHITELIST = "whitelist.json"
     private const val FILE_ACTIONS = "actions.json"
     private const val FILE_SETTINGS = "settings.json"
+
+    private val INT_AS_LONG_RANGE = Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()
+
+    // +/-2^63 as a Double, which is where the Long range stops being representable: -2^63 is
+    // exactly Long.MIN_VALUE and belongs in, +2^63 is one past Long.MAX_VALUE and does not.
+    private const val LONG_MAX_AS_DOUBLE = 9.223372036854776E18
+    private const val LONG_MIN_AS_DOUBLE = -9.223372036854776E18
 
     suspend fun backup(
         context: Context,
@@ -216,6 +224,11 @@ object HBackup {
         // bare number parses back as an Integer. The type already recorded in
         // SharedPreferences is authoritative, and using it also restores a backup taken by an
         // older build, whose untagged whole numbers still hit the type the key really has.
+        // A clean restore has nothing recorded for any key, though - a fresh install, or app
+        // data cleared - so the reader cannot lean on that on exactly the restore where the
+        // user most needs it. With nothing recorded the shape of the JSON value has to decide,
+        // and the shape writeSettingsJson gives a Float is one no other type produces. See the
+        // is String arm for the rule and what it costs.
         val recordedValues = sp.all
         sp.edit {
             val keys = jsonObject.keys()
@@ -225,13 +238,45 @@ object HBackup {
                 val recorded = recordedValues[key]
                 val number = if (recorded is Number) value.toNumberOrNull() else null
                 when {
-                    number != null -> when (recorded) {
-                        is Float -> putFloat(key, number.toFloat())
-                        is Int -> putInt(key, number.toInt())
-                        else -> putLong(key, number.toLong())
+                    // One range check for all three numeric targets, rather than letting
+                    // toInt()/toLong() decide: those saturate at the type's limits and
+                    // truncate toward zero, so a value no preference can hold would be stored
+                    // as a different but plausible looking one, with nothing logged. A
+                    // skipped key leaves the stored value alone, which is the only outcome
+                    // that cannot invent a preference the user never chose.
+                    number != null -> {
+                        val asLong = number.toExactLongOrNull()
+                        val asFloat = number.toFloat()
+                        when {
+                            recorded is Float && asFloat.isFinite() -> putFloat(key, asFloat)
+                            recorded is Float -> warnNotStorable(key, value, "Float")
+                            recorded is Int && asLong != null && asLong in INT_AS_LONG_RANGE ->
+                                putInt(key, asLong.toInt())
+                            recorded is Int -> warnNotStorable(key, value, "Int")
+                            asLong != null -> putLong(key, asLong)
+                            else -> warnNotStorable(key, value, "Long")
+                        }
                     }
 
-                    value is String -> putString(key, value)
+                    // Nothing recorded, so the value has to be recognized from its spelling.
+                    // writeSettingsJson writes a Float as Float.toString(), and that spelling
+                    // is a fixed point - parsing it and printing it again gives the same text -
+                    // while no other writer output has that property: a String keeps its own
+                    // content, and a bare "15" or "1e20" is a number JSONObject should have
+                    // parsed, not a Float this build wrote. A genuine String preference is
+                    // recorded as a String by the very act of being one, so it is answered
+                    // here as a String and never reaches the Float. What is left is a
+                    // hand-edited or foreign file whose String is spelled like a float; it
+                    // loses its String type and gains the Float it was already reading as.
+                    value is String -> {
+                        val decimal = value.toFloatOrNull()?.takeIf { it.toString() == value }
+                        if (recorded == null && decimal != null && decimal.isFinite()) {
+                            putFloat(key, decimal)
+                        } else {
+                            putString(key, value)
+                        }
+                    }
+
                     value is Boolean -> putBoolean(key, value)
                     value is JSONArray -> {
                         val stringSet = mutableSetOf<String>()
@@ -247,11 +292,19 @@ object HBackup {
                     value is Long -> putLong(key, value)
                     // org.json returns a BigDecimal for decimal notation and a BigInteger for
                     // an integer wider than 64 bits. Only a Float preference ever wrote
-                    // decimal notation, so an integral value is the BigInteger case.
-                    value is Number -> if (value is BigInteger) {
-                        putLong(key, value.toLong())
-                    } else {
-                        putFloat(key, value.toFloat())
+                    // decimal notation, so a non-integral value is a Float. A BigInteger is
+                    // the range case: org.json only produces one for a value a Long cannot
+                    // hold, so it normally lands on the warning, and the putLong is here for
+                    // the value that does fit rather than being dropped unremarked.
+                    value is Number -> {
+                        val asLong = value.toExactLongOrNull()
+                        val asFloat = value.toFloat()
+                        when {
+                            value is BigInteger && asLong != null -> putLong(key, asLong)
+                            value is BigInteger -> warnNotStorable(key, value, "Long")
+                            asFloat.isFinite() -> putFloat(key, asFloat)
+                            else -> warnNotStorable(key, value, "Float")
+                        }
                     }
 
                     else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
@@ -264,5 +317,43 @@ object HBackup {
         is Number -> this
         is String -> toDoubleOrNull()
         else -> null
+    }
+
+    /**
+     * This number as an exact [Long], or null when it is not one: a fraction, a NaN, an
+     * infinity, or a magnitude a Long cannot hold. [Number.toLong] is unusable for the job
+     * because it saturates at [Long.MIN_VALUE]/[Long.MAX_VALUE] and truncates toward zero, so
+     * an unrepresentable value comes back looking like a legitimate one.
+     */
+    private fun Number.toExactLongOrNull(): Long? = when (this) {
+        // Both throw ArithmeticException rather than truncating or saturating.
+        is BigInteger -> try {
+            longValueExact()
+        } catch (_: ArithmeticException) {
+            null
+        }
+
+        is BigDecimal -> try {
+            longValueExact()
+        } catch (_: ArithmeticException) {
+            null
+        }
+
+        else -> {
+            // Long.MAX_VALUE is not representable as a Double - it rounds up to 2^63 - so the
+            // upper bound has to be exclusive, while the lower bound is inclusive because
+            // -2^63 is exactly Long.MIN_VALUE. That leaves every Double in between a value a
+            // Long can hold; the round trip then rejects the remaining fractions.
+            val asDouble = toDouble()
+            when {
+                !asDouble.isFinite() -> null
+                asDouble < LONG_MIN_AS_DOUBLE || asDouble >= LONG_MAX_AS_DOUBLE -> null
+                else -> asDouble.toLong().takeIf { it.toDouble() == asDouble }
+            }
+        }
+    }
+
+    private fun warnNotStorable(key: String, value: Any?, target: String) {
+        HLog.w("HBackup", "Value '$value' for key '$key' cannot be stored as $target, skipping")
     }
 }
