@@ -13,7 +13,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
-import java.math.BigDecimal
+import java.math.BigInteger
 import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -140,7 +140,10 @@ object HBackup {
                 is String -> jsonObject.put(key, value)
                 is Int -> jsonObject.put(key, value)
                 is Long -> jsonObject.put(key, value)
-                is Float -> jsonObject.put(key, value)
+                // JSONObject.numberToString shaves trailing zeros and then a trailing decimal
+                // point, so 14.0f is written as 14 and comes back as an Integer. The decimal
+                // string keeps the "." that marks the value as a Float.
+                is Float -> jsonObject.put(key, value.toString())
                 is Boolean -> jsonObject.put(key, value)
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
                 else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}, skipping")
@@ -208,31 +211,58 @@ object HBackup {
         val bufferedStream = BufferedInputStream(zipInputStream, 8192)
         val jsonObject = JSONObject(readJsonString(bufferedStream))
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
+        // A numeric preference cannot be recognized from the JSON alone: JSONObject has no
+        // Float, and it shaves the "." off a whole number, so a Float of 15.0f written as a
+        // bare number parses back as an Integer. The type already recorded in
+        // SharedPreferences is authoritative, and using it also restores a backup taken by an
+        // older build, whose untagged whole numbers still hit the type the key really has.
+        val recordedValues = sp.all
         sp.edit {
             val keys = jsonObject.keys()
             while (keys.hasNext()) {
                 val key = keys.next()
                 val value = jsonObject.get(key)
-                when (value) {
-                    is String -> putString(key, value)
-                    is Int -> putInt(key, value)
-                    is Long -> putLong(key, value)
-                    // JSONObject never hands back a Float: a Float preference is written as
-                    // a JSON number like 14.0, which Android's parser returns as a Double
-                    // and org.json as a BigDecimal.
-                    is Double -> putFloat(key, value.toFloat())
-                    is BigDecimal -> putFloat(key, value.toFloat())
-                    is Boolean -> putBoolean(key, value)
-                    is JSONArray -> {
+                val recorded = recordedValues[key]
+                val number = if (recorded is Number) value.toNumberOrNull() else null
+                when {
+                    number != null -> when (recorded) {
+                        is Float -> putFloat(key, number.toFloat())
+                        is Int -> putInt(key, number.toInt())
+                        else -> putLong(key, number.toLong())
+                    }
+
+                    value is String -> putString(key, value)
+                    value is Boolean -> putBoolean(key, value)
+                    value is JSONArray -> {
                         val stringSet = mutableSetOf<String>()
                         for (i in 0 until value.length()) {
                             stringSet.add(value.getString(i))
                         }
                         putStringSet(key, stringSet)
                     }
+                    // JSONObject hands back no Float, but keep these arms in step with
+                    // writeSettingsJson so the two stay mirrored and a type is never dropped.
+                    value is Float -> putFloat(key, value)
+                    value is Int -> putInt(key, value)
+                    value is Long -> putLong(key, value)
+                    // org.json returns a BigDecimal for decimal notation and a BigInteger for
+                    // an integer wider than 64 bits. Only a Float preference ever wrote
+                    // decimal notation, so an integral value is the BigInteger case.
+                    value is Number -> if (value is BigInteger) {
+                        putLong(key, value.toLong())
+                    } else {
+                        putFloat(key, value.toFloat())
+                    }
+
                     else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
                 }
             }
         }
+    }
+
+    private fun Any?.toNumberOrNull(): Number? = when (this) {
+        is Number -> this
+        is String -> toDoubleOrNull()
+        else -> null
     }
 }
