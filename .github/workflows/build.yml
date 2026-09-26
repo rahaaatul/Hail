@@ -16,12 +16,47 @@ on:
           - release
           - pre-release
 
-permissions:
-  contents: write
+# Deny by default: no GITHUB_TOKEN scopes are granted at the workflow level.
+# Each job opts in to exactly the scopes it needs (see below), so adding a new
+# job cannot silently inherit write access.
+permissions: {}
+
+# One run per ref at a time. A release run must never be cancelled halfway:
+# cancel-in-progress: true can kill the run while softprops/action-gh-release
+# is uploading, leaving a published release with a truncated or replaced asset.
+# That is the only thing cancel-in-progress: false buys us, and it is why the
+# setting is false. It does NOT mean queued runs wait their turn.
+#
+# A concurrency group holds at most one in-progress run and at most one
+# PENDING run. Dispatching three release runs in quick succession therefore
+# gives: run 1 in progress, run 2 pending, run 3 dispatched -- and the arrival
+# of run 3 CANCELS run 2 outright, before its build job ever reaches
+# create-release. So a middle run can be dropped whole, no release is ever
+# guaranteed to be published, and the outcome is last-dispatch-wins rather than
+# FIFO: never assume runs are released in the order they were dispatched, and
+# never assume that dispatching a build means that version gets released.
+#
+# Grouping by ref is still enough to serialise release builds, because every
+# release run is dispatched on the same ref, and create-release only runs for
+# refs/heads/main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # This job is triggered by pull_request and executes PR-supplied Gradle
+    # build scripts (app/build.gradle.kts, settings.gradle.kts, included
+    # builds), i.e. arbitrary code from external contributors. It therefore
+    # gets no writable scope. It needs two read-only scopes: contents: read to
+    # check out the repo, and pull-requests: read because tg_body.sh fetches
+    # GET /repos/{repo}/pulls/{number} for the PR title used as the Telegram
+    # caption. Without the latter the lookup 403s and the caption silently
+    # falls back to the local commit subject.
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       version_name: ${{ steps.version.outputs.version_name }}
       tag: ${{ steps.version.outputs.tag }}
@@ -31,6 +66,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          # Do not leave the token in .git/config (http.<url>.extraheader) for
+          # the Gradle build steps that follow, which run PR-supplied code.
+          persist-credentials: false
 
       - name: Setup toolchain
         run: bash .github/scripts/setup.sh
@@ -152,12 +191,29 @@ jobs:
           retention-days: 7
 
   create-release:
-    if: ${{ needs.build.outputs.build_type != 'debug' }}
+    # workflow_dispatch can target any branch, and tag_name comes solely from
+    # versionName in app/build.gradle.kts, so a run dispatched from some other
+    # branch (or from a tag) would create or re-point the release tag and
+    # replace an already-published signed APK. Publish from main only.
+    if: >-
+      github.ref == 'refs/heads/main'
+      && needs.build.outputs.build_type != 'debug'
     needs: [build]
     runs-on: ubuntu-latest
+    # The only job that writes to the repository: softprops/action-gh-release
+    # creates the GitHub Release and uploads its assets via the REST API, which
+    # requires contents: write. Nothing else in this workflow mutates the repo.
+    # It never reads pull-request data, so it gets no pull-requests scope.
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+        with:
+          # The release action authenticates with the ambient GITHUB_TOKEN
+          # (its `token` input), not with git push credentials, so the token
+          # does not need to be persisted into .git/config.
+          persist-credentials: false
 
       - name: Download artifact
         uses: actions/download-artifact@v8
@@ -194,6 +250,475 @@ jobs:
           echo "apk_path=$flat" >> $GITHUB_OUTPUT
           echo "==> Flattened: $apk_path -> $flat"
 
+      - name: Pre-flight release check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+          : "${RUNNER_TEMP:?RUNNER_TEMP is unset; GitHub Actions always sets it}"
+          : "${GITHUB_SHA:?GITHUB_SHA is unset; the provenance report below needs it}"
+          : "${GITHUB_REF_NAME:?GITHUB_REF_NAME is unset; the provenance report below needs it}"
+
+          # Scratch space for the API call below.
+          #
+          # RUNNER_TEMP is the runner's own per-job directory: GitHub guarantees
+          # it exists, it sits outside the checked-out source tree, and it is
+          # wiped between jobs. A hardcoded /tmp would be shared by concurrent
+          # jobs on a self-hosted runner, so two runs of the same tag could
+          # interleave writes on one response file; and writing scratch files
+          # into the checkout risks a later upload or git status picking them
+          # up. Hence RUNNER_TEMP rather than /tmp.
+          #
+          # LIST is the releases list exactly as gh wrote it. BODY is the same
+          # list re-emitted by the shape check below, so it is what the reads
+          # after that check parse. RELEASE is the one release object for $TAG,
+          # taken back out of the list: no second API call is made for it, so
+          # the two can never disagree. DETAIL carries a sub-command's own
+          # error text.
+          LIST="${RUNNER_TEMP}/preflight-releases.list"
+          BODY="${RUNNER_TEMP}/preflight-releases.body"
+          RELEASE="${RUNNER_TEMP}/preflight-release.json"
+          ERR="${RUNNER_TEMP}/preflight-releases.err"
+          DETAIL="${RUNNER_TEMP}/preflight-releases.detail"
+
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is not on PATH, so the releases list cannot be read. Refusing to continue: a pre-flight that cannot read the releases is indistinguishable from one that found none."
+            exit 1
+          fi
+
+          # Every jq read of the RELEASE object below goes through this helper.
+          # (The previous version of this line said "every jq read", which the
+          # code has never done: the two shape checks, the search and the
+          # extraction are bare jq calls, each testing its own status with
+          # `if !` and printing its own diagnostic.) Under `set -euo pipefail`
+          # a bare `VAR="$(jq ...)"` aborts the step with jq's own exit status
+          # and no ::error:: line at all, which leaves a bare red step and no
+          # statement of whether release ${TAG} exists -- precisely the
+          # ambiguity the rest of this step exists to remove. Failing closed is
+          # the right default, but it has to say so.
+          #
+          # The diagnostic goes to STDERR deliberately. These reads run inside
+          # a command substitution, i.e. a subshell, so an ::error:: line
+          # written to stdout would be captured into the variable instead of
+          # reaching the log, and `set -e` would then abort the step silently
+          # -- the exact failure this helper exists to prevent. GitHub Actions
+          # parses workflow commands from stderr as well, which is why the
+          # captured gh error output lower down uses the same idiom.
+          jq_read() {
+            local filter="$1" file="$2" out status
+            if out="$(jq -r "${filter}" "${file}" 2>&1)"; then
+              status=0
+            else
+              status=$?
+            fi
+            if [ "${status}" -ne 0 ]; then
+              echo "::error::jq exited ${status} on ${file##*/}, so the API's answer for ${TAG} could not be read and its state is UNKNOWN." >&2
+              echo "::error::jq filter was: ${filter}" >&2
+              # Newlines are flattened in this echo, and that is the whole
+              # reason the previous version was wrong. A workflow command is
+              # ONE line: the runner takes the first line of a multi-line
+              # ::error:: as the annotation and demotes the rest to ordinary
+              # log text. jq reports a parse error as a message and then the
+              # offending input on the next line -- and that input is whatever
+              # the API actually sent, so the half of the diagnostic that
+              # explains the failure is exactly the half that used to be lost.
+              echo "::error::jq said: $(printf '%s' "${out}" | tr '\n' ' ')" >&2
+              echo "::error::First 200 bytes as received: $(head -c 200 "${file}" | tr '\n' ' ')" >&2
+              exit 1
+            fi
+            # Flattened for the same reason, and so that the guarantee holds
+            # for every caller instead of being re-argued per interpolation:
+            # all four uses below are scalars that go straight into an
+            # ::error:: or ::warning:: line. A caller that genuinely needs a
+            # multi-line value has to opt out of it here, rather than lose half
+            # of it somewhere downstream.
+            printf '%s' "${out}" | tr '\n' ' '
+          }
+
+          # RECOVERY PROCEDURE (deliberate operational step, see issue #89).
+          # The Create GitHub Release step below runs WITHOUT overwrite_files,
+          # so if a release for $TAG already carries an asset, the upload fails
+          # with an opaque "422 Validation Failed / already_exists" and the run
+          # cannot be retried. That protection is intended, but it also strands
+          # the release left behind when a run dies mid-upload (runner
+          # eviction, network, or the pending-run cancellation that the
+          # concurrency group above can perform).
+          #
+          # A release that carries an asset is also the state a SUCCESSFUL
+          # release leaves, so the most common trigger here is an ordinary
+          # re-dispatch that forgot to bump versionName, not a partial
+          # release. Branch 1 below therefore leads with the asset state and
+          # offers a recovery that does not destroy a published release,
+          # rather than the reverse.
+          #
+          # This step does not overwrite anything. It only converts the
+          # unreachable-in-advance 422 into a failure that names the choice.
+
+          # HOW "ABSENT" IS ESTABLISHED -- BY ASKING, NOT BY INFERING
+          #
+          # `gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100"` is a
+          # paginated LIST. On success it answers 200 with a JSON array of the
+          # releases of this repository that ${GH_TOKEN} can see -- as
+          # paginated, and subject to the one pagination residual recorded at
+          # the end of this block, which is NOT closed here. If that call
+          # succeeds and ${TAG} is not in the list, then ${TAG} has no release
+          # this token can see: a positive answer to the question being asked,
+          # not a guess derived from a failure.
+          #
+          # Three earlier versions of this step inferred absence, and each
+          # one failed in the direction that disables a guard exactly when it
+          # is needed:
+          #
+          #   * 2>/dev/null inside the if-condition, branching on gh's exit
+          #     status. `gh api` exits non-zero for EVERY non-2xx, so a 401
+          #     (expired token), 403 (under-scoped token or rate limit), 5xx
+          #     or a DNS failure all read as "no release exists". The step
+          #     printed "No existing assets", asserting something it had
+          #     never checked, and the run walked into the upload that fails
+          #     with an opaque 422 already_exists.
+          #
+          #   * Capturing stderr and grepping it for the substring
+          #     "HTTP 404". That is server-controlled prose, not a status. gh
+          #     builds its own stderr line as
+          #         gh: <message> (HTTP <status>)
+          #     and <message> is the response body's "message" field, so a
+          #     403 whose body is {"message":"HTTP 404"} yields
+          #         gh: HTTP 404 (HTTP 403)
+          #     which that grep read as "no such release". Observed against
+          #     gh 2.101.0; the commit message records the reproduction.
+          #
+          #   * Reading the 404 from the HTTP status line -- which no response
+          #     body can influence -- and requiring the body to parse as a
+          #     JSON object. That fixed the prose problem, but a 404 is not
+          #     evidence of absence on its own. GitHub answers 404 for a
+          #     repository the token cannot see just as readily as for a
+          #     missing tag, and a JSON body is not a body from
+          #     api.github.com: a proxy's or a WAF's JSON error page, or a
+          #     cached negative answer, satisfies the same test. So an
+          #     under-scoped token, a wrong GITHUB_REPOSITORY, or a stale
+          #     edge cache took the "absent" branch and the run continued to
+          #     fail downstream with an opaque 404/403 and none of the
+          #     guidance this step exists to print. Absence was still being
+          #     inferred, just through a narrower window.
+          #
+          # The list removes the inference. A 403 or a masked 404 cannot
+          # produce a 200 list, so a token that cannot see this repository now
+          # stops on the status code instead of passing as "absent" -- which
+          # is the specific hole the previous version left open.
+          #
+          # --include is deliberately NOT requested any more. Two reasons,
+          # both verified against gh 2.101.0:
+          #   * `--include --paginate` prints the response header block once
+          #     PER PAGE (nine status lines for this repository's nine
+          #     releases at per_page=1), so the single
+          #     `sed '1,/^\r\{0,1\}$/d'` split that separates headers from
+          #     body is correct only while the repo fits one page. Keeping
+          #     it would mean either an unpaginated call that silently
+          #     truncates at 100 releases -- the same "absence inferred from
+          #     a partial answer" bug -- or hand-rolled multi-header
+          #     stripping.
+          #   * The status line is no longer load-bearing. gh's exit status
+          #     already separates 2xx from everything else, and the shape
+          #     checks below establish that the body really is a list rather
+          #     than an error document wearing a 200. That is a stronger
+          #     statement than "line 1 said 404 and the body was an object",
+          #     and it needs no prose parsing to make it. The status-line
+          #     pattern that this deletes also required a non-empty reason
+          #     phrase, so a legal `HTTP/1.1 404` with nothing after the
+          #     space -- RFC 7230 6.2 makes the reason phrase optional --
+          #     matched nothing and hard-failed every release. Reproduced
+          #     against the real gh binary; the status line is simply not
+          #     read any more, so the question cannot arise. On the failure
+          #     path gh's own stderr still reports the status
+          #     (`gh: <message> (HTTP <status>)`) and that is printed.
+          #
+          # WHAT THIS DESIGN STILL CANNOT PROVE, stated plainly, because the
+          # previous commit's comment claimed more than the code verified:
+          #   * A 200 whose body is a well-formed JSON ARRAY that omits ${TAG}
+          #     cannot be told apart from a 200 that legitimately omits it.
+          #     The shape check rejects a 200 carrying an object (the shape
+          #     every GitHub error body takes) and rejects a 200 carrying
+          #     HTML, but a proxy that can complete TLS to api.github.com and
+          #     serve `[]` would pass. That is the residual risk of this
+          #     design and it is not closed here.
+          #   * The list is a snapshot. A release created between this call
+          #     and the upload below is not seen. The concurrency group
+          #     serialises runs of the same ref, so the window is one run's
+          #     own duration -- the same race the by-tag lookup had.
+          #   * If `gh` ever changes how it frames --paginate output, this
+          #     fails closed with a diagnostic naming the change: more than
+          #     one JSON document where exactly one is expected is rejected
+          #     below before anything is read out of the list.
+          #   * A page that FAILS is already covered. gh exits non-zero rather
+          #     than emitting a short list -- verified against gh 2.101.0, and
+          #     the call below acts on that exit status -- so a list that went
+          #     missing part way through is never searched.
+          #   * A page that is never REQUESTED is covered by nothing, and
+          #     cannot be by anything in this step: see RELEASES PER REPO.
+          #
+          # RELEASES PER REPO is bounded in practice here -- this repository has
+          # nine, and per_page=100 keeps that to ONE request -- but no check in
+          # this step enforces that bound, and the document count is not one.
+          # `jq -s 'length'` is 1 for any single JSON array however short, and
+          # --paginate merges every page it followed into ONE array, so a
+          # traversal that stopped after page 1 produces the same document
+          # count, the same shape check, the same `any(...)` verdict and the
+          # same exit 0 at the "no release exists" line as a complete
+          # single-page list. The two are indistinguishable from inside this
+          # step, and this comment says so instead of claiming otherwise.
+          #
+          # Settling it needs a fact this step does not have: the page count
+          # from a `Link: rel="last"` header, which costs a second API call and
+          # header prose -- the exact parsing the previous commit deleted here
+          # -- and is still wrong when the collection shifts mid-traversal.
+          # So it is left open, with the blast radius stated in its place: the
+          # release step runs WITHOUT overwrite_files, so a release that
+          # exists and carries an asset is refused by the upload with the
+          # 422 already_exists rather than being overwritten. Nothing is
+          # destroyed and nothing wrong is published; the symptom is the
+          # opaque 422 this step exists to replace with a named diagnosis.
+          # Reaching it needs ten times this repository's release count AND
+          # pagination breaking at the same time.
+          #
+          # On failure gh has already written whatever partial body it got to
+          # ${LIST}; it is discarded unread below, because a body that arrived
+          # alongside a failure is not an answer to the question.
+          if ! gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" > "${LIST}" 2> "${ERR}"; then
+            echo "::error::Could not read the releases list for ${GITHUB_REPOSITORY}, so whether release ${TAG} exists is UNKNOWN and this pre-flight cannot vouch for it." >&2
+            echo "::error::Reading that as 'absent' is what disables this guard, so the step fails closed instead. A 401 (expired token), 403 (under-scoped token or rate limit), 5xx, DNS failure, or a 404 for a repository this token cannot see all land here." >&2
+            echo "::error::gh said:" >&2
+            sed 's/^/::error::/' "${ERR}" >&2
+            exit 1
+          fi
+
+          # Shape check, part 1: exactly one JSON document. gh merges the pages
+          # of an array-returning REST endpoint into a SINGLE array, so the
+          # file normally holds one document however many requests it took. If
+          # that framing ever changes, the file holds SEVERAL documents, and
+          # then each filter below is applied to EVERY document in turn with
+          # only the last verdict kept: jq does not stop at the first one, and
+          # `jq -e` reports the last output rather than the first. So without
+          # this count a framing change would grade the final page and ignore
+          # every page before it.
+          #
+          # The count is a FRAMING guard and nothing more. It reports how many
+          # JSON documents arrived, not how many pages gh fetched, and it
+          # cannot tell a short list from a complete one: see RELEASES PER REPO.
+          if ! jq -s 'length' "${LIST}" > "${DETAIL}" 2> "${ERR}"; then
+            echo "::error::jq could not read the releases list as JSON -- the response is malformed, or jq itself failed -- so whether release ${TAG} exists is UNKNOWN." >&2
+            echo "::error::First 200 bytes as received: $(head -c 200 "${LIST}" | tr '\n' ' ')" >&2
+            sed 's/^/::error::/' "${ERR}" >&2
+            exit 1
+          fi
+          DOCUMENTS="$(tr -d '[:space:]' < "${DETAIL}")"
+          if [ "${DOCUMENTS}" != "1" ]; then
+            echo "::error::gh wrote ${DOCUMENTS} JSON documents for the releases list where exactly 1 was expected, so the framing of --paginate output has changed and the list cannot be trusted to be complete." >&2
+            echo "::error::Reading it anyway would grade only the last document and could report a release that sits in an earlier one as absent, so the step fails closed." >&2
+            exit 1
+          fi
+
+          # Shape check, part 2: that one document must be a list of release
+          # objects -- not an object, not a string, not an asset payload.
+          # This is what rejects a 200 carrying an error document: every
+          # GitHub error body is an OBJECT ({"message":...,"status":"..."}),
+          # and a proxy's HTML error page is not JSON and was already
+          # rejected above.
+          if ! jq -e '
+                if type != "array" then error("expected a JSON array of releases, got \(type)") else . end
+                | if any(.[]; type != "object") then error("expected every element of the releases list to be an object") else . end
+              ' "${LIST}" > "${BODY}" 2> "${DETAIL}"; then
+            echo "::error::The releases list for ${GITHUB_REPOSITORY} is not the list of release objects this step requires, so whether release ${TAG} exists is UNKNOWN." >&2
+            echo "::error::jq said: $(tr '\n' ' ' < "${DETAIL}")" >&2
+            echo "::error::First 200 bytes as received: $(head -c 200 "${LIST}" | tr '\n' ' ')" >&2
+            exit 1
+          fi
+
+          # The question, asked of a document already known to be a JSON array
+          # of release objects -- a COMPLETE list is not claimed here, see
+          # RELEASES PER REPO: is ${TAG} in it?
+          #
+          # `jq -r` writes `true` or `false` and nothing else, so the answer is
+          # read from the VALUE and never from the exit status. Status 1 is
+          # not a private signal from jq: bash reports 1 for a `2>` redirect it
+          # could not open, and in that case jq never ran at all. To a
+          # `case "$?"` the two are the same number, so the previous version
+          # answered "no release exists" -- and let the run walk into the
+          # 422 already_exists -- for a release that was sitting right there.
+          #
+          # The three outcomes are told apart by construction instead. A
+          # filter that is merely false PRINTS false and exits 0, so it is a
+          # value and not a status; a jq that fails prints nothing and exits
+          # non-zero, which fails the `||`; and a value that is neither is
+          # rejected by the case. The `*)` arm is defence in depth -- `any`
+          # over an array of objects cannot produce anything else -- not a
+          # path this code expects to take.
+          VERDICT="$(jq -r --arg t "${TAG}" 'any(.[]; .tag_name == $t)' "${BODY}" 2> "${DETAIL}")" || {
+            echo "::error::The search of the releases list for ${TAG} did not reach a verdict, so whether release ${TAG} exists is UNKNOWN and this pre-flight cannot vouch for it." >&2
+            echo "::error::jq said: $(tr '\n' ' ' < "${DETAIL}")" >&2
+            exit 1
+          }
+          case "${VERDICT}" in
+            true)
+              FOUND="yes"
+              ;;
+            false)
+              FOUND="no"
+              ;;
+            *)
+              echo "::error::The search of the releases list produced '${VERDICT}' where only 'true' or 'false' was possible, so whether release ${TAG} exists is UNKNOWN and this pre-flight cannot vouch for it." >&2
+              exit 1
+              ;;
+          esac
+
+          if [ "${FOUND}" = "no" ]; then
+            echo "==> ${TAG}: the API answered 200 with this repository's release list as this token sees it, and ${TAG} is not in it, so there is no release for this tag to complete and create-release will create one"
+            exit 0
+          fi
+
+          # Present. The release object is taken back out of the list already
+          # fetched: no second API call, and no second answer that could
+          # disagree with the first.
+          if ! jq -e --arg t "${TAG}" 'map(select(.tag_name == $t))[0]' "${BODY}" > "${RELEASE}" 2> "${DETAIL}"; then
+            echo "::error::${TAG} is in the releases list but its object could not be extracted, so its state is UNKNOWN." >&2
+            sed 's/^/::error::/' "${DETAIL}" >&2
+            exit 1
+          fi
+
+          # Four facts, all read out of that one object, and no second call.
+          #
+          # draft gates nothing here -- a draft and a published release with no
+          # assets need the same recovery -- but it IS read, because it is the
+          # one field that separates the two causes of the zero-asset state
+          # below, and asserting a cause the step cannot establish is what
+          # made the message there wrong. Read as a constant it is scoped:
+          # softprops/action-gh-release is invoked with no `draft:` input, so
+          # every release IT creates is published, and draft is false for all
+          # nine releases in this repository today (checked). A release this
+          # workflow did not create is not covered by that, which is exactly
+          # why the value is read back rather than assumed.
+          #
+          # published_at is read for the same reporting reason, and
+          # target_commitish because the provenance check below decides on it.
+          ASSETS="$(jq_read '[(.assets // [])[].name] | join(" ")' "${RELEASE}")"
+          PUBLISHED_AT="$(jq_read '.published_at // "null"' "${RELEASE}")"
+          DRAFT="$(jq_read '.draft // false' "${RELEASE}")"
+          TARGET="$(jq_read '.target_commitish // ""' "${RELEASE}")"
+
+          # PROVENANCE -- a second signal, never the headline.
+          #
+          # target_commitish is whatever the creating request passed, and the
+          # REST API defaults it to the release's branch, so in this repo it
+          # holds a branch name ("main", and "master" on the older releases),
+          # never a commit id. Comparing it to GITHUB_SHA directly would
+          # therefore report a mismatch on every run, including correct ones,
+          # and prove nothing. So each shape is compared against the value it
+          # can actually be compared to:
+          #   * 40 hex        -> a commit id:   comparable with GITHUB_SHA
+          #   * anything else -> a branch name: comparable with
+          #                                    GITHUB_REF_NAME, and no further
+          #
+          # A commit id that is not this run's commit is hard evidence and
+          # stops the run. A branch name that is not this run's ref is NOT
+          # evidence of anything: four of this repository's nine releases
+          # record "master" while every run reaches this step on "main", so a
+          # hard stop there is a guaranteed false positive whose only remedy
+          # is to delete a release and its tag. It is reported as a warning
+          # and the run continues. The previous version made it a hard stop
+          # and so reintroduced, one branch earlier, the destructive advice
+          # the rewrite was meant to remove.
+          #
+          # Returns 0 when the run may proceed, 1 when it may not. Always call
+          # it in a condition, never bare: under `set -e` a bare non-zero
+          # return aborts the step before the caller can explain itself.
+          provenance() {
+            if printf '%s' "${TARGET}" | grep -Eq '^[0-9a-f]{40}$'; then
+              if [ "${TARGET}" != "${GITHUB_SHA}" ]; then
+                echo "::error::PROVENANCE: target_commitish ${TARGET} is a commit id, and it is not the ${GITHUB_SHA} this run built."
+                return 1
+              fi
+              echo "==> PROVENANCE: target_commitish ${TARGET} is the commit this run built"
+              return 0
+            fi
+            if [ "${TARGET}" != "${GITHUB_REF_NAME}" ]; then
+              echo "::warning::PROVENANCE: target_commitish is the branch '${TARGET}' -- not this run's ref ('${GITHUB_REF_NAME}') and not a commit id -- so it cannot be reconciled with ${GITHUB_SHA}."
+              echo "::warning::PROVENANCE: releases published before this repository moved off 'master' record 'master' here, so this is reported rather than treated as a blocker. If ${TAG} was meant to be built from '${GITHUB_REF_NAME}', check the tag at ${RELEASE_URL} before trusting the asset."
+              return 0
+            fi
+            echo "==> PROVENANCE: target_commitish is the branch '${TARGET}'; it matches this run's ref but is not a commit id, so it cannot be compared with ${GITHUB_SHA}."
+            return 0
+          }
+
+          # Branch 1 -- PRIMARY DIAGNOSIS: the tag already carries an asset,
+          # so the upload below cannot succeed. This is the state a
+          # SUCCESSFUL release leaves, so the ordinary trigger is a
+          # re-dispatch that forgot to bump versionName -- though a release
+          # made outside this workflow that already carries an asset looks
+          # the same, which is why the advice below is written to be safe in
+          # both cases. It is also the case the provenance check used to
+          # pre-empt, which is why the asset state leads here and provenance
+          # is reported underneath it.
+          if [ -n "${ASSETS}" ]; then
+            echo "::error::Release ${TAG} already exists and already carries asset(s): ${ASSETS}"
+            echo "::error::The Create GitHub Release step does not overwrite assets, so re-dispatching fails with \"422 Validation Failed / already_exists\" instead of replacing them."
+            echo "::error::That is the state a SUCCESSFUL release leaves, so the usual trigger is re-dispatching without bumping versionName: treat this release as legitimate unless you know otherwise. It was published at ${PUBLISHED_AT}."
+            echo "::error::Pick the recovery that matches what this release actually is:"
+            echo "::error::  1. Preferred: bump versionName in app/build.gradle.kts, commit, and re-dispatch. Every run publishes its own tag, so nothing already published is touched."
+            echo "::error::  2. Only if this release is genuinely wrong: open ${RELEASE_URL}, \"Trash release\", and then check the repository's Tags list for ${TAG} -- deleting the release does not reliably delete the tag it points at, and a tag that survives is reused by the next dispatch. Then re-dispatch."
+            echo "::error::Second signal, reported for completeness and not as the reason to stop:"
+            provenance || true
+            exit 1
+          fi
+
+          # Branch 2 -- the release exists but carries no asset. That is read
+          # from the zero asset count and from nothing else.
+          #
+          # Zero assets has more than one cause, and the previous version of
+          # this comment named only one of them:
+          #   * an earlier run of THIS workflow created the release and died
+          #     between creating it and finishing the upload. Possible, and it
+          #     leaves a signature rather than a mess: the upload is a single
+          #     PUT, so a death part way through leaves ZERO assets and no
+          #     partial one to clean up. The run simply has to go on.
+          #   * the release was created outside this workflow, by hand in the
+          #     UI or by another tool. An ordinary state, not an anomaly, and
+          #     the code cannot tell it from a mid-upload death.
+          # draft separates them where it can: this workflow's release step is
+          # invoked with no `draft:` input, so it never creates a draft, and a
+          # zero-asset DRAFT is therefore not this workflow's. A zero-asset
+          # release that is NOT a draft is consistent with both causes -- a
+          # hand-made published release looks exactly like a mid-upload death --
+          # so the message says both rather than the one it prefers. That
+          # wrong assertion is what made the reassuring line below actively
+          # misleading in the one state where it could not hold.
+          #
+          # The earlier version branched on draft/published_at to separate
+          # "never published" from "published" and stopped the run. That
+          # distinction is not available here: every release this workflow
+          # creates is published, so the branch could only ever fire on a
+          # release from outside this workflow, and those need the same
+          # recovery as this one. So draft is reported rather than branched on,
+          # and the run continues either way.
+          #
+          # Provenance gates here rather than in Branch 1, because this is
+          # the only path on which the run goes on to write to the release.
+          if ! provenance; then
+            echo "::error::Refusing to upload onto it: this run built ${GITHUB_SHA} and that release records target_commitish ${TARGET}."
+            echo "::error::Either the tag is wrong -- open ${RELEASE_URL} and check what ${TAG} actually points at -- or this run should not be publishing it. Do not assume which."
+            echo "::error::It carries no assets, so if it is genuinely wrong, trashing it loses nothing that was published: open ${RELEASE_URL}, \"Trash release\", then check the repository's Tags list for ${TAG} and delete the tag too, then re-dispatch."
+            echo "::error::If the release is fine and only this run is wrong, bump versionName in app/build.gradle.kts and re-dispatch."
+            exit 1
+          fi
+          echo "==> ${TAG}: release exists and carries no asset (published_at=${PUBLISHED_AT}, draft=${DRAFT})"
+          if [ "${DRAFT}" = "true" ]; then
+            echo "==> ${TAG}: it is a DRAFT, and the Create GitHub Release step is invoked with no draft: input, so it did not create it -- it was made by hand or by another tool for this tag"
+          else
+            echo "==> ${TAG}: it is not a draft, which fits both an earlier run of this workflow that died between creating the release and finishing the upload and a release created outside this workflow; this step cannot tell those two apart and does not pretend to"
+          fi
+          echo "==> ${TAG}: proceeding uploads the APK from this run onto that existing release; check the uploaded asset on ${RELEASE_URL} afterwards"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -201,5 +726,14 @@ jobs:
           name: v${{ needs.build.outputs.version_name }}
           body: ${{ steps.changelog.outputs.body }}
           prerelease: ${{ needs.build.outputs.build_type == 'pre-release' }}
-          overwrite_files: true
+          # Never overwrite an asset on an existing release: republishing a
+          # tag must not silently replace a signed APK users already have.
+          # softprops/action-gh-release defaults overwrite_files to false, so
+          # that protection survives; the Pre-flight release check above turns
+          # the resulting 422 already_exists into an actionable message.
+          #
+          # fail_on_unmatched_files is deliberately absent: it guards the
+          # glob-mismatch path, but files: below is the literal path emitted by
+          # the Flatten release APK step, not a glob, and that step already
+          # fails the job when find returns nothing. The input cannot fire.
           files: ${{ steps.flatten.outputs.apk_path }}
