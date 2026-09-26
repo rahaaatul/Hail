@@ -18,6 +18,21 @@
 
 set -euo pipefail
 
+# --- Fail fast on a non-Linux runner ----------------------------------------
+# Everything below is Linux-only: apt-get + sudo install the packages, the JDK
+# and cmdline-tools downloads are hardcoded linux builds, and zip.sh needs GNU
+# `stat -c%s`. Failing here beats the bare `7z: command not found` a macOS
+# runner used to produce after silently skipping the apt-get block.
+if [[ "$(uname -s)" != "Linux" ]]; then
+  os="$(uname -s)"
+  echo "::error::setup.sh: unsupported OS '${os}' - this toolchain is Linux-only"
+  echo "setup.sh: '${os}' is not supported, Linux is required because:"
+  echo "  * packages (p7zip 7z, unzip, zip) come from apt-get + sudo"
+  echo "  * the JDK and cmdline-tools downloads are linux builds"
+  echo "  * zip.sh needs GNU stat -c%s, which BSD stat rejects"
+  exit 1
+fi
+
 readonly JAVA_VERSION="26"
 readonly SDK_PLATFORM="android-37.0"
 readonly SDK_DIR="${ANDROID_HOME:-${HOME}/.android/sdk}"
