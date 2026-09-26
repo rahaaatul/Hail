@@ -272,11 +272,12 @@ jobs:
           # into the checkout risks a later upload or git status picking them
           # up. Hence RUNNER_TEMP rather than /tmp.
           #
-          # LIST is the releases list exactly as gh wrote it. BODY is that
-          # list after the shape checks below, and is what the jq reads parse.
-          # RELEASE is the one release object for $TAG, taken back out of the
-          # list: no second API call is made for it, so the two can never
-          # disagree. DETAIL carries a sub-command's own error text.
+          # LIST is the releases list exactly as gh wrote it. BODY is the same
+          # list re-emitted by the shape check below, so it is what the reads
+          # after that check parse. RELEASE is the one release object for $TAG,
+          # taken back out of the list: no second API call is made for it, so
+          # the two can never disagree. DETAIL carries a sub-command's own
+          # error text.
           LIST="${RUNNER_TEMP}/preflight-releases.list"
           BODY="${RUNNER_TEMP}/preflight-releases.body"
           RELEASE="${RUNNER_TEMP}/preflight-release.json"
@@ -288,12 +289,16 @@ jobs:
             exit 1
           fi
 
-          # Every jq read of a response below goes through this helper. Under
-          # `set -euo pipefail` a bare `VAR="$(jq ...)"` aborts the step with
-          # jq's own exit status and no ::error:: line at all, which leaves a
-          # bare red step and no statement of whether release ${TAG} exists --
-          # precisely the ambiguity the rest of this step exists to remove.
-          # Failing closed is the right default, but it has to say so.
+          # Every jq read of the RELEASE object below goes through this helper.
+          # (The previous version of this line said "every jq read", which the
+          # code has never done: the two shape checks, the search and the
+          # extraction are bare jq calls, each testing its own status with
+          # `if !` and printing its own diagnostic.) Under `set -euo pipefail`
+          # a bare `VAR="$(jq ...)"` aborts the step with jq's own exit status
+          # and no ::error:: line at all, which leaves a bare red step and no
+          # statement of whether release ${TAG} exists -- precisely the
+          # ambiguity the rest of this step exists to remove. Failing closed is
+          # the right default, but it has to say so.
           #
           # The diagnostic goes to STDERR deliberately. These reads run inside
           # a command substitution, i.e. a subshell, so an ::error:: line
@@ -312,11 +317,25 @@ jobs:
             if [ "${status}" -ne 0 ]; then
               echo "::error::jq exited ${status} on ${file##*/}, so the API's answer for ${TAG} could not be read and its state is UNKNOWN." >&2
               echo "::error::jq filter was: ${filter}" >&2
-              echo "::error::jq said: ${out}" >&2
+              # Newlines are flattened in this echo, and that is the whole
+              # reason the previous version was wrong. A workflow command is
+              # ONE line: the runner takes the first line of a multi-line
+              # ::error:: as the annotation and demotes the rest to ordinary
+              # log text. jq reports a parse error as a message and then the
+              # offending input on the next line -- and that input is whatever
+              # the API actually sent, so the half of the diagnostic that
+              # explains the failure is exactly the half that used to be lost.
+              echo "::error::jq said: $(printf '%s' "${out}" | tr '\n' ' ')" >&2
               echo "::error::First 200 bytes as received: $(head -c 200 "${file}" | tr '\n' ' ')" >&2
               exit 1
             fi
-            printf '%s' "${out}"
+            # Flattened for the same reason, and so that the guarantee holds
+            # for every caller instead of being re-argued per interpolation:
+            # all four uses below are scalars that go straight into an
+            # ::error:: or ::warning:: line. A caller that genuinely needs a
+            # multi-line value has to opt out of it here, rather than lose half
+            # of it somewhere downstream.
+            printf '%s' "${out}" | tr '\n' ' '
           }
 
           # RECOVERY PROCEDURE (deliberate operational step, see issue #89).
@@ -341,10 +360,13 @@ jobs:
           # HOW "ABSENT" IS ESTABLISHED -- BY ASKING, NOT BY INFERING
           #
           # `gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100"` is a
-          # paginated LIST. On success it answers 200 with the releases this
-          # repository has. If that call succeeds and ${TAG} is not in the
-          # list, then ${TAG} has no release: a positive answer to the
-          # question being asked, not a guess derived from a failure.
+          # paginated LIST. On success it answers 200 with a JSON array of the
+          # releases of this repository that ${GH_TOKEN} can see -- as
+          # paginated, and subject to the one pagination residual recorded at
+          # the end of this block, which is NOT closed here. If that call
+          # succeeds and ${TAG} is not in the list, then ${TAG} has no release
+          # this token can see: a positive answer to the question being asked,
+          # not a guess derived from a failure.
           #
           # Three earlier versions of this step inferred absence, and each
           # one failed in the direction that disables a guard exactly when it
@@ -427,17 +449,39 @@ jobs:
           #     serialises runs of the same ref, so the window is one run's
           #     own duration -- the same race the by-tag lookup had.
           #   * If `gh` ever changes how it frames --paginate output, this
-          #     fails closed with a diagnostic naming the change. It cannot
-          #     silently read a short list, because the document count is
-          #     checked before anything is searched. Verified against
-          #     gh 2.101.0 that a failure fetching a LATER page makes gh
-          #     exit non-zero, so an incomplete list never reaches the
-          #     search.
+          #     fails closed with a diagnostic naming the change: more than
+          #     one JSON document where exactly one is expected is rejected
+          #     below before anything is read out of the list.
+          #   * A page that FAILS is already covered. gh exits non-zero rather
+          #     than emitting a short list -- verified against gh 2.101.0, and
+          #     the call below acts on that exit status -- so a list that went
+          #     missing part way through is never searched.
+          #   * A page that is never REQUESTED is covered by nothing, and
+          #     cannot be by anything in this step: see RELEASES PER REPO.
           #
-          # RELEASES PER REPO is bounded in practice here: this repository
-          # has nine, and per_page=100 keeps that to one request. The
-          # document-count check is what keeps that assumption honest if it
-          # ever stops being true.
+          # RELEASES PER REPO is bounded in practice here -- this repository has
+          # nine, and per_page=100 keeps that to ONE request -- but no check in
+          # this step enforces that bound, and the document count is not one.
+          # `jq -s 'length'` is 1 for any single JSON array however short, and
+          # --paginate merges every page it followed into ONE array, so a
+          # traversal that stopped after page 1 produces the same document
+          # count, the same shape check, the same `any(...)` verdict and the
+          # same exit 0 at the "no release exists" line as a complete
+          # single-page list. The two are indistinguishable from inside this
+          # step, and this comment says so instead of claiming otherwise.
+          #
+          # Settling it needs a fact this step does not have: the page count
+          # from a `Link: rel="last"` header, which costs a second API call and
+          # header prose -- the exact parsing the previous commit deleted here
+          # -- and is still wrong when the collection shifts mid-traversal.
+          # So it is left open, with the blast radius stated in its place: the
+          # release step runs WITHOUT overwrite_files, so a release that
+          # exists and carries an asset is refused by the upload with the
+          # 422 already_exists rather than being overwritten. Nothing is
+          # destroyed and nothing wrong is published; the symptom is the
+          # opaque 422 this step exists to replace with a named diagnosis.
+          # Reaching it needs ten times this repository's release count AND
+          # pagination breaking at the same time.
           #
           # On failure gh has already written whatever partial body it got to
           # ${LIST}; it is discarded unread below, because a body that arrived
@@ -450,13 +494,19 @@ jobs:
             exit 1
           fi
 
-          # Shape check, part 1: exactly one JSON document. gh merges the
-          # pages of an array-returning REST endpoint into a single array; if
-          # that ever stops being true the file holds SEVERAL documents and
-          # jq evaluates a filter against the first one alone. A short first
-          # page is precisely how a release that lives on page 2 would be
-          # reported as absent, so the count is checked before anything is
-          # read out of the list.
+          # Shape check, part 1: exactly one JSON document. gh merges the pages
+          # of an array-returning REST endpoint into a SINGLE array, so the
+          # file normally holds one document however many requests it took. If
+          # that framing ever changes, the file holds SEVERAL documents, and
+          # then each filter below is applied to EVERY document in turn with
+          # only the last verdict kept: jq does not stop at the first one, and
+          # `jq -e` reports the last output rather than the first. So without
+          # this count a framing change would grade the final page and ignore
+          # every page before it.
+          #
+          # The count is a FRAMING guard and nothing more. It reports how many
+          # JSON documents arrived, not how many pages gh fetched, and it
+          # cannot tell a short list from a complete one: see RELEASES PER REPO.
           if ! jq -s 'length' "${LIST}" > "${DETAIL}" 2> "${ERR}"; then
             echo "::error::jq could not read the releases list as JSON -- the response is malformed, or jq itself failed -- so whether release ${TAG} exists is UNKNOWN." >&2
             echo "::error::First 200 bytes as received: $(head -c 200 "${LIST}" | tr '\n' ' ')" >&2
@@ -466,7 +516,7 @@ jobs:
           DOCUMENTS="$(tr -d '[:space:]' < "${DETAIL}")"
           if [ "${DOCUMENTS}" != "1" ]; then
             echo "::error::gh wrote ${DOCUMENTS} JSON documents for the releases list where exactly 1 was expected, so the framing of --paginate output has changed and the list cannot be trusted to be complete." >&2
-            echo "::error::Reading it anyway could report a release that exists on a later page as absent, so the step fails closed." >&2
+            echo "::error::Reading it anyway would grade only the last document and could report a release that sits in an earlier one as absent, so the step fails closed." >&2
             exit 1
           fi
 
@@ -486,25 +536,45 @@ jobs:
             exit 1
           fi
 
-          # The question, asked of a document already known to be the full
-          # list: is ${TAG} in it? jq -e exits 0 for true, 1 for false, and
-          # something else again for "could not tell". Only 0 and 1 are
-          # believed; anything else fails closed.
-          if jq -e --arg t "${TAG}" 'any(.[]; .tag_name == $t)' "${BODY}" > /dev/null 2> "${DETAIL}"; then
-            FOUND="yes"
-          else
-            case "$?" in
-              1) FOUND="no" ;;
-              *)
-                echo "::error::Whether ${TAG} is in the releases list could not be determined, so this pre-flight cannot vouch for it." >&2
-                sed 's/^/::error::/' "${DETAIL}" >&2
-                exit 1
-                ;;
-            esac
-          fi
+          # The question, asked of a document already known to be a JSON array
+          # of release objects -- a COMPLETE list is not claimed here, see
+          # RELEASES PER REPO: is ${TAG} in it?
+          #
+          # `jq -r` writes `true` or `false` and nothing else, so the answer is
+          # read from the VALUE and never from the exit status. Status 1 is
+          # not a private signal from jq: bash reports 1 for a `2>` redirect it
+          # could not open, and in that case jq never ran at all. To a
+          # `case "$?"` the two are the same number, so the previous version
+          # answered "no release exists" -- and let the run walk into the
+          # 422 already_exists -- for a release that was sitting right there.
+          #
+          # The three outcomes are told apart by construction instead. A
+          # filter that is merely false PRINTS false and exits 0, so it is a
+          # value and not a status; a jq that fails prints nothing and exits
+          # non-zero, which fails the `||`; and a value that is neither is
+          # rejected by the case. The `*)` arm is defence in depth -- `any`
+          # over an array of objects cannot produce anything else -- not a
+          # path this code expects to take.
+          VERDICT="$(jq -r --arg t "${TAG}" 'any(.[]; .tag_name == $t)' "${BODY}" 2> "${DETAIL}")" || {
+            echo "::error::The search of the releases list for ${TAG} did not reach a verdict, so whether release ${TAG} exists is UNKNOWN and this pre-flight cannot vouch for it." >&2
+            echo "::error::jq said: $(tr '\n' ' ' < "${DETAIL}")" >&2
+            exit 1
+          }
+          case "${VERDICT}" in
+            true)
+              FOUND="yes"
+              ;;
+            false)
+              FOUND="no"
+              ;;
+            *)
+              echo "::error::The search of the releases list produced '${VERDICT}' where only 'true' or 'false' was possible, so whether release ${TAG} exists is UNKNOWN and this pre-flight cannot vouch for it." >&2
+              exit 1
+              ;;
+          esac
 
           if [ "${FOUND}" = "no" ]; then
-            echo "==> ${TAG}: the API answered successfully with this repository's full release list, and ${TAG} is not in it, so no release exists for this tag and create-release will create one"
+            echo "==> ${TAG}: the API answered 200 with this repository's release list as this token sees it, and ${TAG} is not in it, so there is no release for this tag to complete and create-release will create one"
             exit 0
           fi
 
@@ -517,16 +587,24 @@ jobs:
             exit 1
           fi
 
-          # Three facts, all read out of that one object.
+          # Four facts, all read out of that one object, and no second call.
           #
-          # draft is not read at all. softprops/action-gh-release is invoked
-          # with no `draft:` input, so every release it creates is published
-          # and draft is always false -- a constant, so reading it would only
-          # suggest a distinction that cannot be made. published_at is read
-          # because it is a timestamp and therefore varies, and it is printed
-          # as context; nothing is decided on it.
+          # draft gates nothing here -- a draft and a published release with no
+          # assets need the same recovery -- but it IS read, because it is the
+          # one field that separates the two causes of the zero-asset state
+          # below, and asserting a cause the step cannot establish is what
+          # made the message there wrong. Read as a constant it is scoped:
+          # softprops/action-gh-release is invoked with no `draft:` input, so
+          # every release IT creates is published, and draft is false for all
+          # nine releases in this repository today (checked). A release this
+          # workflow did not create is not covered by that, which is exactly
+          # why the value is read back rather than assumed.
+          #
+          # published_at is read for the same reporting reason, and
+          # target_commitish because the provenance check below decides on it.
           ASSETS="$(jq_read '[(.assets // [])[].name] | join(" ")' "${RELEASE}")"
           PUBLISHED_AT="$(jq_read '.published_at // "null"' "${RELEASE}")"
+          DRAFT="$(jq_read '.draft // false' "${RELEASE}")"
           TARGET="$(jq_read '.target_commitish // ""' "${RELEASE}")"
 
           # PROVENANCE -- a second signal, never the headline.
@@ -576,9 +654,12 @@ jobs:
           # Branch 1 -- PRIMARY DIAGNOSIS: the tag already carries an asset,
           # so the upload below cannot succeed. This is the state a
           # SUCCESSFUL release leaves, so the ordinary trigger is a
-          # re-dispatch that forgot to bump versionName. It is also the case
-          # the provenance check used to pre-empt, which is why the asset
-          # state leads here and provenance is reported underneath it.
+          # re-dispatch that forgot to bump versionName -- though a release
+          # made outside this workflow that already carries an asset looks
+          # the same, which is why the advice below is written to be safe in
+          # both cases. It is also the case the provenance check used to
+          # pre-empt, which is why the asset state leads here and provenance
+          # is reported underneath it.
           if [ -n "${ASSETS}" ]; then
             echo "::error::Release ${TAG} already exists and already carries asset(s): ${ASSETS}"
             echo "::error::The Create GitHub Release step does not overwrite assets, so re-dispatching fails with \"422 Validation Failed / already_exists\" instead of replacing them."
@@ -594,25 +675,32 @@ jobs:
           # Branch 2 -- the release exists but carries no asset. That is read
           # from the zero asset count and from nothing else.
           #
-          # It is NOT read from draft/published_at, as an earlier version of
-          # this step's comment claimed. Those are constants for any release
-          # this workflow creates: softprops/action-gh-release is invoked
-          # with no `draft:` input, so draft is always false, and the API
-          # sets published_at for any published release, so it is never
-          # null. Checked against all nine releases in this repository: none
-          # is a draft, none has a null published_at, and only "main" and
-          # "master" appear in target_commitish. The earlier version branched
-          # on those fields to separate "never published" from "published",
-          # which is a distinction the code cannot make, so the branch was
-          # unreachable and the mid-upload case it was written for -- the one
-          # state where the reassuring message is wrong -- got the reassuring
-          # message.
+          # Zero assets has more than one cause, and the previous version of
+          # this comment named only one of them:
+          #   * an earlier run of THIS workflow created the release and died
+          #     between creating it and finishing the upload. Possible, and it
+          #     leaves a signature rather than a mess: the upload is a single
+          #     PUT, so a death part way through leaves ZERO assets and no
+          #     partial one to clean up. The run simply has to go on.
+          #   * the release was created outside this workflow, by hand in the
+          #     UI or by another tool. An ordinary state, not an anomaly, and
+          #     the code cannot tell it from a mid-upload death.
+          # draft separates them where it can: this workflow's release step is
+          # invoked with no `draft:` input, so it never creates a draft, and a
+          # zero-asset DRAFT is therefore not this workflow's. A zero-asset
+          # release that is NOT a draft is consistent with both causes -- a
+          # hand-made published release looks exactly like a mid-upload death --
+          # so the message says both rather than the one it prefers. That
+          # wrong assertion is what made the reassuring line below actively
+          # misleading in the one state where it could not hold.
           #
-          # The asset count carries the discrimination because the upload is a
-          # single PUT: a run that dies between creating the release and
-          # finishing the upload leaves ZERO assets rather than a partial one.
-          # So a release with assets is a completed release, and a release
-          # with none is the recoverable one.
+          # The earlier version branched on draft/published_at to separate
+          # "never published" from "published" and stopped the run. That
+          # distinction is not available here: every release this workflow
+          # creates is published, so the branch could only ever fire on a
+          # release from outside this workflow, and those need the same
+          # recovery as this one. So draft is reported rather than branched on,
+          # and the run continues either way.
           #
           # Provenance gates here rather than in Branch 1, because this is
           # the only path on which the run goes on to write to the release.
@@ -623,8 +711,13 @@ jobs:
             echo "::error::If the release is fine and only this run is wrong, bump versionName in app/build.gradle.kts and re-dispatch."
             exit 1
           fi
-          echo "==> ${TAG}: release exists with no asset (published_at=${PUBLISHED_AT}) -- an earlier run most likely died between creating the release and finishing the upload"
-          echo "==> ${TAG}: proceeding completes that existing release with the APK from this run; check the uploaded asset on ${RELEASE_URL} afterwards"
+          echo "==> ${TAG}: release exists and carries no asset (published_at=${PUBLISHED_AT}, draft=${DRAFT})"
+          if [ "${DRAFT}" = "true" ]; then
+            echo "==> ${TAG}: it is a DRAFT, and the Create GitHub Release step is invoked with no draft: input, so it did not create it -- it was made by hand or by another tool for this tag"
+          else
+            echo "==> ${TAG}: it is not a draft, which fits both an earlier run of this workflow that died between creating the release and finishing the upload and a release created outside this workflow; this step cannot tell those two apart and does not pretend to"
+          fi
+          echo "==> ${TAG}: proceeding uploads the APK from this run onto that existing release; check the uploaded asset on ${RELEASE_URL} afterwards"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
