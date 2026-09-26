@@ -23,15 +23,22 @@
 # Requires (must be on PATH):
 #   git     — refs, hashes and the commit subject
 #   sed     — versionName extraction from app/build.gradle.kts, and the
-#             HTML entity substitutions in escape_html below
+#             HTML entity substitutions in escape_html below. Guarded at the
+#             top of the script: without it every esc_* below is empty, so
+#             there is nothing safe left to emit and the script exits instead.
 #   head    — keeps the first match when the file declares several
 #   dirname — locates the repository root from $0
-#   curl    — HARD dependency for the PR title lookup, taken whenever
-#             PR_NUMBER and GH_TOKEN are both set. This is the call hardened
-#             below (--fail, --connect-timeout, --max-time, --retry), so a
-#             runner without it cannot build a real caption at all: the lookup
-#             is skipped, curl's own diagnostics reach stderr and the caption
-#             falls back to the local commit subject.
+#   cat     — writes the caption heredoc to stdout
+#   curl    — used for the PR title lookup, and the call hardened below
+#             (--fail, --connect-timeout, --max-time, --retry). Taken whenever
+#             PR_NUMBER and GH_TOKEN are both set *and* jq is present: the jq
+#             guard runs first, so without jq this call is never made at all.
+#             Its absence is degrading, not fatal — there is no `command -v
+#             curl` guard, so a runner without it gets "command not found" on
+#             stderr, pr_title stays empty, and the caption falls back to the
+#             local commit subject. That is the same degradation jq's guard
+#             produces deliberately, so the caption stays correct and just
+#             less informative; the stderr line is what makes it visible.
 #
 # Optional:
 #   jq      — parses the PR title API response. Preinstalled on
@@ -50,6 +57,28 @@
 set -uo pipefail
 
 cd "$(dirname "$0")/../.."
+
+# --- Guard the escaper's only external dependency -----------------------------
+# sed is the one binary escape_html needs, and it is also what extracts
+# versionName below. There is no `command -v` check for it anywhere in this
+# script, which makes the missing-tool failure silent in the worst way: the
+# pipeline reports "command not found" on stderr, escape_html returns the empty
+# string, and all five esc_* variables become empty. The caption is then
+# emitted with no Branch, no Version, no Changelog and a Learn-more link with
+# no URL — exit 0, no ::error::, nothing in the output to show that escaping
+# did nothing. That is the #113-class symptom this script exists to remove,
+# reached through a different door.
+#
+# So fail closed and loud instead. Exiting non-zero here means upload.sh's
+# `|| true` leaves TG_BODY empty rather than substituting a caption the escaper
+# never touched, and the stderr line below stays visible because upload.sh
+# deliberately does not suppress this script's stderr. The property that
+# matters: a missing sed can never yield an unescaped caption, because it
+# yields no caption at all.
+if ! command -v sed >/dev/null 2>&1; then
+  echo "tg_body.sh: sed not found - cannot HTML-escape the caption; refusing to emit it" >&2
+  exit 1
+fi
 
 readonly REPO="${REPO:-rahaaatul/Hail}"
 

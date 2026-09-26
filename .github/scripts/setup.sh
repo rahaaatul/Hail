@@ -18,8 +18,12 @@
 #
 # Requires: Linux — hard requirement, the script exits 1 on any other OS.
 # Also required, and checked separately because they are capabilities rather
-# than an OS: apt-get and sudo. Everything else this script uses it installs.
-# The guard below reports which requirement was not met.
+# than an OS: apt-get and sudo, to install the system packages below.
+# Beyond those this script uses curl, tar, yes, dirname, uname and mkdir, and
+# installs only p7zip-full, unzip and zip. The rest are expected to be present
+# on the runner; they are checked, not installed. Both guards below report
+# which requirement was not met, rather than letting a missing binary surface
+# later as an opaque download or extract failure.
 
 set -euo pipefail
 
@@ -61,6 +65,23 @@ if [[ -n "${missing}" ]]; then
   exit 1
 fi
 
+# --- Fail fast on a command this script uses but does not install -------------
+# The apt block below installs p7zip-full, unzip and zip, and nothing else.
+# curl is not among them, and that has to be said rather than assumed: without
+# it both downloads above fail, and the only clue a runner gives is
+# `::error::JDK download failed`, which names neither the cause nor the tool.
+# Checking costs one `command -v` per tool and turns an opaque download failure
+# into a named missing prerequisite, before the first byte is fetched.
+missing_used=""
+for tool in curl tar yes dirname uname mkdir; do
+  command -v "${tool}" >/dev/null 2>&1 || missing_used="${missing_used:+${missing_used} }${tool}"
+done
+if [[ -n "${missing_used}" ]]; then
+  echo "::error::setup.sh: missing required command(s): ${missing_used}"
+  echo "setup.sh: the apt block below installs p7zip-full, unzip and zip only; install the rest first."
+  exit 1
+fi
+
 # --- Regression tests --------------------------------------------------------
 # The caption escaper is the only thing between an attacker-supplied PR title
 # and markup injection into the public channel, and its substitutions have
@@ -70,7 +91,21 @@ fi
 echo "==> Running tg_body_test.sh"
 if ! test_output="$(bash "${SCRIPT_DIR}/tg_body_test.sh" 2>&1)"; then
   printf '%s\n' "${test_output}"
-  echo "::error::setup.sh: tg_body_test.sh failed - the Telegram caption escaper regressed"
+  # The suite is not only about the escaper. It also asserts the upload.sh
+  # wiring, that the tools its extractions are built from are on PATH, and that
+  # tg_body.sh and upload.sh parse — none of which is the escaper regressing.
+  # "the escaper regressed" was the wrong headline for all of those, and this
+  # annotation is the only thing a reader has when the step fails, so it named a
+  # diagnosis the output above may well contradict. Report the suite and the
+  # first assertion that actually failed instead: every exit path in
+  # tg_body_test.sh prints at least one `  FAIL ` line, so this distinguishes
+  # an escaper regression from a wiring change or a broken harness.
+  first_fail="$(grep -m1 '^  FAIL ' <<<"${test_output}" || true)"
+  first_fail="${first_fail#  FAIL }"
+  if [[ -z "${first_fail}" ]]; then
+    first_fail='no FAIL line in the output above'
+  fi
+  echo "::error::setup.sh: tg_body_test.sh failed - ${first_fail}"
   exit 1
 fi
 printf '%s\n' "${test_output}"

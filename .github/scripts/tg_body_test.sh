@@ -20,14 +20,13 @@
 # written with ${var//pat/rep}, which bash 5.2 changed the meaning of (see
 # patsub_replacement in tg_body.sh), so this suite was green on every developer's
 # bash 5.1 and red on the runner. Nothing recorded the interpreter, so the
-# version that validated the escaper was invisible. Hence the version line and
-# the 5.2 floor in section 0: a run on anything older is a failed run, not a
-# pass.
+# version that validated the escaper was invisible. Hence the version line
+# below: it is recorded, not enforced, for the reason given in section 0.
 #
 # The function is extracted from the committed script rather than copied here,
 # so this exercises what actually runs. Plain bash on purpose: no bats (not
 # preinstalled), no network, no dependency beyond coreutils (bash, grep, sed,
-# sort, comm, tr, basename).
+# sort, comm, tr, basename, dirname).
 #
 # Four layers, because a round-trip alone is not enough:
 #   0. the tools the name-set checks are built from are present at all
@@ -76,11 +75,14 @@ fail() {
 
 # assert_escape <description> <input> <expected>
 #
-# [ ... = ... ] rather than [[ ... == ... ]]: `=` is a plain string equality,
-# while the right operand of `==` is a glob pattern unless it is quoted. The
-# quoting here makes the two equivalent today, but nothing but the quotes is
-# holding that line, and the glob fixtures below are the ones that would
-# notice if they were dropped.
+# [ ... = ... ] rather than [[ ... == ... ]], for clarity. `=` is an exact
+# string comparison by definition, while the right operand of `==` is a glob
+# pattern unless it is quoted. Both operands here are quoted, so the two forms
+# are equivalent as written: this is a readability preference, not a fix for a
+# glob-matching bug that was present here. The reason to write it this way is
+# the one the glob fixtures below exist to catch — a future edit that drops the
+# quotes turns an exact comparison into a pattern, and only the `&*` fixture
+# would notice.
 assert_escape() {
   local desc="$1" input="$2" expected="$3" actual
   actual="$(escape_html "${input}")"
@@ -124,8 +126,9 @@ assert_nonempty() {
 # assert_set_equal <description> <expected-names> <actual-names>
 #
 # Both operands are newline-separated, already sorted by `names_on`, and
-# compared as whole strings with [ = ] (not [[ == ]]) so no glob metacharacter
-# in a variable name can turn a mismatch into a match. Comparing the sets
+# compared as whole strings with the exact-match operator `=` (not `==`, whose
+# right operand is a glob unless quoted) so no glob metacharacter in a variable
+# name can turn a mismatch into a match. Comparing the sets
 # outright is what catches a silently deleted or added assignment: "the
 # difference is empty" also holds when the entire escape block is gone.
 assert_set_equal() {
@@ -145,8 +148,17 @@ assert_set_equal() {
 # downstream. Check them up front so a degraded environment is a loud failure
 # here rather than a silent pass in an assertion that reports coverage.
 # This also runs before the banner below, which uses basename.
+#
+# The list has to cover every external used *before* the first assertion, not
+# just the ones the assertions are built from: dirname resolves SCRIPT_DIR, and
+# therefore SCRIPT, one line into the file. No loop can protect it, so with
+# dirname absent the suite either dies with a confusing "nothing extracted" or
+# — worse — validates a tg_body.sh that happens to sit in the caller's working
+# directory and reports full coverage for the wrong file. Audited against the
+# file: dirname, bash, grep, sed, sort, comm, tr, basename, and nothing else;
+# printf, [[, command, test and cd are builtins.
 echo "==> tools"
-for tool in bash grep sed sort comm tr basename; do
+for tool in bash grep sed sort comm tr basename dirname; do
   if command -v "${tool}" >/dev/null 2>&1; then
     pass "tool on PATH: ${tool}"
   else
@@ -160,23 +172,26 @@ fi
 
 echo
 echo "tg_body_test.sh: checking $(basename "${SCRIPT}")"
-echo "tg_body_test.sh: bash ${BASH_VERSION}"
 echo
 
 # --- 0. Interpreter ---------------------------------------------------------
-# The escaper is validated against bash >= 5.2, the release that introduced
-# patsub_replacement. Older interpreters lack the option, so a green run there
-# does not prove anything about the runner and must not be mistaken for one.
-# The version is printed above so the run log always records which interpreter
-# actually validated these assertions.
+# Recorded, not enforced.
+#
+# This used to hard-fail below bash 5.2 to catch patsub_replacement, and that
+# floor bought no coverage at all: escape_html is sed-based (see tg_body.sh), so
+# nothing it does and nothing these assertions check depends on the shell
+# option. It only cost a hard failure on bash 5.1 — Ubuntu 22.04 (5.1.16),
+# Debian 11 (5.1.4), RHEL/Rocky 9 (5.1.8), any self-hosted or container
+# runner, and macOS /bin/bash 3.2, which the usage note above points you at.
+# A fully working escaper reported as a build failure with zero assertions run.
+#
+# So the version is printed, not asserted. The line is what the silent-5.1
+# problem actually needed: it records which interpreter validated the run, so
+# a green result is attributable to something. It is deliberately not a pass(),
+# because an assertion that cannot fail is the exact shape this file exists to
+# remove — and this one cannot fail on any version, which is the point.
 echo "==> interpreter"
-if (( BASH_VERSINFO[0] < 5 || (BASH_VERSINFO[0] == 5 && BASH_VERSINFO[1] < 2) )); then
-  fail "bash >= 5.2 (patsub_replacement era)" \
-    'bash 5.2 or newer' "bash ${BASH_VERSION}"
-  summary
-  exit 1
-fi
-pass "bash >= 5.2 (patsub_replacement era)"
+echo "tg_body_test.sh: bash ${BASH_VERSION} (recorded, not enforced - escape_html is sed-based)"
 
 # --- 1. Syntax ---------------------------------------------------------------
 # Would have caught the parse error that made every caption empty (#113).
@@ -285,25 +300,46 @@ else
   # that the interpolation list is non-empty first, so the check that follows
   # cannot pass for want of input.
   #
-  # Single quotes are deliberate: ${...} here is the literal text the extracted
-  # heredoc contains, not a parameter expansion of this script.
+  # Single quotes are deliberate: the ${...} below is the literal text the
+  # extracted heredoc contains, not a parameter expansion of this script.
   # shellcheck disable=SC2016
-  all_interp="$(grep -o '\${[A-Za-z_][A-Za-z0-9_]*}' <<<"${emitted}")"; all_interp_rc=$?
+  all_interp="$(grep -oE '\$[{]?[A-Za-z_][A-Za-z0-9_]*' <<<"${emitted}" | sed -E 's/^\$[{]?//' | sort -u)"; all_interp_rc=$?
+  # shellcheck disable=SC2016
   if [[ "${all_interp_rc}" -eq 1 ]]; then
     fail "caption heredoc interpolates at least one value" \
-      "one or more \${var} inside the cat <<EOF block" \
-      "no \${...} found; the caption would be static text"
+      'one or more $var / ${var} / ${var:-default} inside the cat <<EOF block' \
+      'no \$... interpolation found; the caption would be static text'
   else
     assert_nonempty "caption heredoc interpolates at least one value" \
-      "${all_interp}" "${all_interp_rc}" "no \${...} found"
+      "${all_interp}" "${all_interp_rc}" "no \$... interpolation found"
   fi
 
+  # Every interpolation form has to be recognised here, not just ${name}. The
+  # heredoc above uses an *unquoted* delimiter, so $name, ${name:-default},
+  # ${name//x/y} and ${name:?err} all expand exactly like ${name} — but a
+  # '\${[A-Za-z_]*}' pattern matched only the braced bare form, which made
+  # every shape below invisible to all four assertions derived from this list.
+  # That was a live bypass of the fail-closed guarantee: adding
+  # `<blockquote>$branch</blockquote>` or
+  # `<blockquote>${version_name:-unknown}</blockquote>` left the extracted
+  # names unchanged, left the pinned sets matching, and shipped an unescaped
+  # value into parse_mode=HTML. Git ref names legally contain < > " and &, so
+  # `branch` is attacker-influenceable exactly like the PR title.
+  #
+  # The pattern matches the name and the opening of any modifier
+  # (${name:-x}, ${name//x/y}, ${name:?err}, ${name#[0-9]}) because it stops at
+  # the first character that is not a name character; `sed` then strips the
+  # leading $ or ${ so what remains is the bare variable name. One normalised
+  # list feeds every assertion below, which is also what keeps the two filters
+  # consistent: an *escaped* unbraced $esc_branch is recognised as
+  # esc_branch, not as some second shape that escaped the esc_ filter.
+  #
   # Here grep -v exiting 1 is the *success* case (nothing left after removing
-  # the esc_ lines), so the status is read the other way round: >1 is a broken
+  # the esc_ names), so the status is read the other way round: >1 is a broken
   # extraction and still a failure, and only an empty result with status 0 or 1
   # is a pass.
   # shellcheck disable=SC2016
-  raw_interp="$(printf '%s\n' "${all_interp}" | grep -v '\${esc_')"; raw_interp_rc=$?
+  raw_interp="$(printf '%s\n' "${all_interp}" | grep -v '^esc_')"; raw_interp_rc=$?
   if [[ "${raw_interp_rc}" -gt 1 ]]; then
     fail "heredoc interpolates only esc_*-prefixed values" \
       "no non-esc_ interpolation" "extraction failed: grep exited ${raw_interp_rc}"
@@ -326,13 +362,19 @@ else
   # only thing that has to notice that.
   names_on() { sed -n 's/^\(esc_[A-Za-z0-9_]*\).*/\1/p' | sort -u; }
 
-  # shellcheck disable=SC2016
-  esc_in_heredoc="$(grep -o '\${esc_[A-Za-z0-9_]*}' <<<"${emitted}" | sed 's/^\${//; s/}$//' | sort -u)"; heredoc_rc=$?
+  # esc_in_heredoc is the esc_ half of the same normalised all_interp list, not
+  # a second extraction. Re-grepping the heredoc for '${esc_...}' here would
+  # reintroduce exactly the gap that was just closed: a $esc_branch or
+  # ${esc_branch:-x} would be in all_interp but not in this list, so the
+  # pinned set would not move and the two halves of the comparison would
+  # describe different sets. One list, two filters — grep -v for the raw half
+  # above, grep for the escaped half here.
+  esc_in_heredoc="$(printf '%s\n' "${all_interp}" | grep '^esc_')"; heredoc_rc=$?
   esc_assigns="$(grep '^esc_[A-Za-z0-9_]*=' "${SCRIPT}")"; assigns_rc=$?
 
   assert_nonempty "caption heredoc interpolates at least one esc_* variable" \
     "${esc_in_heredoc}" "${heredoc_rc}" \
-    "no \${esc_...} in the caption; the escaper is not wired into the caption"
+    "no \$esc_... in the caption; the escaper is not wired into the caption"
   assert_nonempty "tg_body.sh assigns at least one esc_* variable" \
     "${esc_assigns}" "${assigns_rc}" \
     'no esc_*= assignment found; the escape block was renamed, moved or deleted'
@@ -341,7 +383,32 @@ else
   # esc_escaped means nothing at all is assigned from escape_html, i.e. the
   # escaper is unwired — and under the previous `|| true` form that was
   # reported as ok for both difference assertions below.
-  esc_escaped_lines="$(printf '%s\n' "${esc_assigns}" | grep 'escape_html')"; escaped_rc=$?
+  #
+  # Two things have to be true of the line before "it calls escape_html" means
+  # anything, and neither held when this was a bare `grep 'escape_html'` over
+  # the whole assignment line:
+  #
+  #   * the match has to be on the right-hand side. Anchoring the pattern to
+  #     `^esc_[A-Za-z0-9_]*=` does that, and cannot match a name that merely
+  #     contains the word: for `esc_escape_html=...` the name pattern consumes
+  #     the `=` too, so a further `escape_html` has to appear in the value.
+  #     The line keeps its left-hand side, which is what names_on below needs.
+  #   * a trailing comment must not count. `#` preceded by whitespace opens a
+  #     comment, so `esc_subject="${subject}"  # TODO: route through escape_html`
+  #     strips to a raw copy and is correctly reported. This is the esc_ side of
+  #     the defect section 5 already closed for commented-out invocations with
+  #     strip_comments, and it was the exact sabotage the pinned set was added
+  #     to catch: the name is picked up by names_on, not_escaped comes out
+  #     empty, every downstream check agrees, and the raw PR title ships.
+  #
+  # Requiring whitespace before the `#` keeps a `#` that is part of a value
+  # intact — `${subject#prefix}` and "$a#b" both survive — and it cannot mask
+  # a real call either, because stripping a comment never removes an
+  # escape_html invocation from the value.
+  strip_trailing_comment() { sed -E 's/[[:space:]]+#.*$//'; }
+  esc_escaped_lines="$(printf '%s\n' "${esc_assigns}" \
+    | strip_trailing_comment \
+    | grep -E '^esc_[A-Za-z0-9_]*=.*escape_html')"; escaped_rc=$?
   if [[ "${escaped_rc}" -gt 1 ]]; then
     fail "at least one esc_* is assigned from escape_html" \
       'an esc_*= line calling escape_html' \
@@ -418,18 +485,19 @@ fi
 # degrades, which is the failure mode the #113-era guards were added for.
 #
 # This check already failed closed on "no invocation found", so it was not part
-# of the vacuous-assertion bug. It is hardened here anyway for the two ways it
-# could still report ok while the thing it looks for is gone:
+# of the vacuous-assertion bug. It is hardened here for the ways it could still
+# report ok while the thing it looks for is gone:
 #   * a *comment* line matching the pattern can stand in for a real invocation
 #     that has been removed, and
 #   * a 2>/dev/null hidden on the continuation line of a wrapped invocation is
 #     invisible to a single-line pattern.
 # Comments are therefore filtered out before the existence decision (not after,
-# or the -A1 context line would keep the result non-empty on its own), the next
-# line is inspected too, and grep's exit status distinguishes "no match" from
-# "grep failed". sed does the filtering rather than `grep -v ... || true`
-# precisely because it exits 0 on a non-match: the emptiness that matters is
-# asserted on the next line, not swallowed by an exit status.
+# or the continuation line would keep the result non-empty on its own), the
+# continuation line is pulled in *only when the invocation actually wraps* onto
+# it, and every grep's exit status distinguishes "no match" from "grep failed".
+# sed does the filtering rather than `grep -v ... || true` precisely because it
+# exits 0 on a non-match: the emptiness that matters is asserted on the next
+# line, not swallowed by an exit status.
 echo
 echo "==> upload.sh wiring"
 readonly UPLOAD="${SCRIPT_DIR}/upload.sh"
@@ -456,10 +524,37 @@ else
   else
     pass "upload.sh still invokes tg_body.sh"
 
-    # -A1 so a redirection on the continuation line of a wrapped invocation is
-    # still seen; the "--" separator is dropped, comments already were.
-    invoke_ctx="$(grep -nA1 -E '\$\(.*tg_body\.sh' "${UPLOAD}" | strip_comments | sed -E '/^--$/d')"
-    if grep -qE '2>[[:space:]]*/dev/null|2>&1' <<<"${invoke_ctx}"; then
+    # The continuation line is inspected, but only when the invocation actually
+    # wraps onto it — an unconditional `grep -A1` appended whatever sat below
+    # the invocation, so the first unrelated `curl ... 2>&1` diagnostic or
+    # reformat would fail this assertion and, through setup.sh, hard-fail the
+    # whole build with a caption-escaper message. Catching the wrapped case is
+    # worth having; the unconditional neighbour was not.
+    #
+    # The lookup's exit status is checked too, unlike before. It used to be
+    # dropped on the floor: a failed lookup left invoke_ctx empty, the grep -qE
+    # below matched nothing, and the assertion reported ok — the cannot-fail
+    # shape this file exists to remove, and the one place section 5 still had
+    # it. `pipefail` is on, so the status is the rightmost non-zero of the
+    # stages and 2 when sed itself failed on an unreadable file.
+    invoke_ctx="${invoke_lines}"; ctx_rc=0
+    backslash="\\"
+    if [[ "${invoke_lines}" == *"${backslash}" ]]; then
+      cont="$(grep -A1 -E '\$\(.*tg_body\.sh' "${UPLOAD}" \
+        | strip_comments | sed -E '/^--$/d; s/^[0-9]+[:-]//')"; ctx_rc=$?
+      # cont already contains the invocation line, so it replaces invoke_ctx
+      # rather than being appended to it; the grep -n prefixes are stripped so
+      # the failure message reads as the source does.
+      if [[ "${ctx_rc}" -le 1 ]]; then
+        invoke_ctx="${cont}"
+      fi
+    fi
+
+    if [[ "${ctx_rc}" -gt 1 ]]; then
+      fail "upload.sh leaves tg_body.sh's stderr attached" \
+        'no 2>/dev/null and no 2>&1 on the invocation' \
+        "extraction failed: grep exited ${ctx_rc}"
+    elif grep -qE '2>[[:space:]]*/dev/null|2>&1' <<<"${invoke_ctx}"; then
       fail "upload.sh leaves tg_body.sh's stderr attached" \
         'no 2>/dev/null and no 2>&1 on the invocation' "$(tr '\n' ' ' <<<"${invoke_ctx}")"
     else
