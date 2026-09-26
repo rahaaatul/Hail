@@ -20,6 +20,15 @@
 #   <b>Learn more</b>
 #   <blockquote><a href="<commit-url>"><short-hash></a></blockquote>
 #
+# Requires (must be on PATH):
+#   git  — refs, hashes and the commit subject
+#   sed  — versionName extraction
+#   jq   — HARD dependency for the PR title lookup, taken whenever PR_NUMBER
+#          and GH_TOKEN are both set. Preinstalled on ubuntu-latest; without it
+#          the API call is skipped, a diagnostic is written to stderr and the
+#          caption falls back to the local commit subject. Not silently
+#          degraded: see the guard below.
+#
 # Environment:
 #   REPO       — "owner/repo" for the commit URL (default: rahaaatul/Hail)
 #   PR_NUMBER  — pull request number; when set, the Branch label becomes
@@ -69,18 +78,29 @@ version_name="$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.grad
 # keeps the degradation explicit instead of shipping a silently mangled
 # changelog, and the commit-subject fallback below still escapes correctly.
 #
+# The diagnostic goes to stderr, not a ::warning:: annotation: GitHub Actions
+# reads workflow commands from a step's *stdout*, and this script's stdout is
+# the caption, so annotating there would corrupt the message. upload.sh
+# deliberately does not suppress this script's stderr, so the line below is
+# visible in the workflow log.
+#
 # Note: `set -o pipefail` is on but `set -e` is not, so a failing curl or jq
-# leaves pr_title empty and control simply continues to the fallback.
+# leaves pr_title empty and control simply continues to the fallback. curl's
+# stderr is likewise left attached: with `-sS` a --fail exit 22, a --max-time
+# exit 28, a DNS or TLS error is otherwise indistinguishable from success.
 subject=""
 if [[ -n "${PR_NUMBER:-}" && -n "${GH_TOKEN:-}" ]]; then
   if ! command -v jq >/dev/null 2>&1; then
     echo "tg_body.sh: jq not found, skipping PR title lookup" >&2
   else
     # --fail/--connect-timeout/--max-time keep an erroring or hung API
-    # endpoint from stalling the build until the job-level timeout.
+    # endpoint from stalling the build until the job-level timeout, and
+    # --retry rides out a transient 5xx/connection reset so the fallback is
+    # not taken for a blip.
     pr_title="$(curl -sS --fail --connect-timeout 5 --max-time 15 \
+      --retry 2 --retry-delay 1 \
       -H "Authorization: token ${GH_TOKEN}" \
-      "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null \
+      "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" \
       | jq -r '.title // empty')"
     if [[ -n "${pr_title}" ]]; then
       subject="${pr_title}"
@@ -101,24 +121,33 @@ subject="${subject#*: }"
 # body below has to be escaped — not just the changelog subject. PR titles and
 # branch names are attacker-influenced, and an unescaped < > & or " would let
 # them inject markup and links into the channel.
-branch="$(escape_html "${branch}")"
-version_name="$(escape_html "${version_name}")"
-subject="$(escape_html "${subject}")"
-commit_url="$(escape_html "${commit_url}")"
-short_hash="$(escape_html "${short_hash}")"
+#
+# Escape into esc_*-prefixed copies and leave the raw values intact.
+# escape_html is not idempotent (& -> &amp; -> &amp;amp;), so overwriting the
+# original in place makes the escaping step order-dependent and invisible at
+# the call site: a second escape anywhere later corrupts the caption with no
+# error. With separate esc_* variables a double escape is a visible mistake.
+esc_branch="$(escape_html "${branch}")"
+esc_version_name="$(escape_html "${version_name}")"
+esc_subject="$(escape_html "${subject}")"
+esc_commit_url="$(escape_html "${commit_url}")"
+esc_short_hash="$(escape_html "${short_hash}")"
 
 # --- Emit -------------------------------------------------------------------
 
+# Only esc_*-prefixed variables are safe to interpolate below — they are the
+# escaped ones. Reaching for a raw variable here would inject unescaped markup
+# from an attacker-influenced PR title into the release channel.
 cat <<EOF
 <b>Branch</b>
-<blockquote>${branch}</blockquote>
+<blockquote>${esc_branch}</blockquote>
 
 <b>Version</b>
-<blockquote>${version_name}</blockquote>
+<blockquote>${esc_version_name}</blockquote>
 
 <b>Changelog</b>
-<blockquote>${subject}</blockquote>
+<blockquote>${esc_subject}</blockquote>
 
 <b>Learn more</b>
-<blockquote><a href="${commit_url}">${short_hash}</a></blockquote>
+<blockquote><a href="${esc_commit_url}">${esc_short_hash}</a></blockquote>
 EOF

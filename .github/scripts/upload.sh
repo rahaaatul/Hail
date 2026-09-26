@@ -70,7 +70,7 @@ echo "==> Uploading ${zip_path} to ${label} (chat=${TG_GROUP:-unset} topic=${top
 if [[ -z "${TG_BODY:-}" ]]; then
   script_dir="$(cd "$(dirname "$0")" && pwd)"
   # shellcheck source=/dev/null
-  TG_BODY="$(bash "${script_dir}/tg_body.sh" 2>/dev/null || true)"
+  TG_BODY="$(bash "${script_dir}/tg_body.sh" || true)"
 fi
 
 # --- Dry run ----------------------------------------------------------------
