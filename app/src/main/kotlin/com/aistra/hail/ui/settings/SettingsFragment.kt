@@ -95,9 +95,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
         lifecycleScope.launch {
             val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
             runCatching {
-                HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch)
+                HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch).getOrThrow()
                 try {
-                    ctx.contentResolver.openOutputStream(uri)?.use { output ->
+                    val outputStream = ctx.contentResolver.openOutputStream(uri)
+                        ?: throw IllegalStateException("Cannot open the selected file")
+                    outputStream.use { output ->
                         file.inputStream().use { input ->
                             HFiles.copy(input, output)
                         }

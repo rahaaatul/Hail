@@ -1,6 +1,7 @@
 package com.aistra.hail.utils
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.HailData
 import com.aistra.hail.app.AppInfo
@@ -29,9 +30,11 @@ import java.util.zip.ZipOutputStream
 
 class HBackupTest {
 
+    private lateinit var mockApp: HailApp
+
     @Before
     fun setUp() {
-        val mockApp = mockk<HailApp>(relaxed = true)
+        mockApp = mockk<HailApp>(relaxed = true)
         val tmpDir = File(System.getProperty("java.io.tmpdir"), "hail-test-${System.currentTimeMillis()}")
         tmpDir.mkdirs()
         every { mockApp.filesDir } returns tmpDir
@@ -171,5 +174,108 @@ class HBackupTest {
         val result = HBackup.backup(HailApp.app, outputFile, options)
 
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `backup writes a file name without a parent directory`() = runTest {
+        // A bare file name has no parent, so there is no directory to create. The file is
+        // resolved against the working directory of the test run, hence the cleanup below.
+        val outputFile = File("backup-test-${System.currentTimeMillis()}.zip")
+        val options = HBackup.BackupOptions(apps = false, whitelist = false, actions = false, settings = false)
+
+        val result = HBackup.backup(HailApp.app, outputFile, options)
+
+        assertTrue(result.isSuccess)
+        assertTrue(outputFile.exists())
+        outputFile.delete()
+    }
+
+    @Test
+    fun `backup creates a missing parent directory`() = runTest {
+        val parent = File(System.getProperty("java.io.tmpdir"), "hail-test-dir-${System.currentTimeMillis()}")
+        val outputFile = File(parent, "backup-test.zip")
+        val options = HBackup.BackupOptions(apps = false, whitelist = false, actions = false, settings = false)
+
+        val result = HBackup.backup(HailApp.app, outputFile, options)
+
+        assertTrue(result.isSuccess)
+        assertTrue(parent.isDirectory)
+        assertTrue(outputFile.exists())
+    }
+
+    @Test
+    fun `backup fails when the parent path is a file`() = runTest {
+        val parent = File(System.getProperty("java.io.tmpdir"), "hail-test-file-${System.currentTimeMillis()}")
+        parent.writeText("not a directory")
+        val outputFile = File(parent, "backup-test.zip")
+        val options = HBackup.BackupOptions(apps = false, whitelist = false, actions = false, settings = false)
+
+        val result = HBackup.backup(HailApp.app, outputFile, options)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+    }
+
+    @Test
+    fun `backup fails when the parent directory cannot be created`() = runTest {
+        // A file in the middle of the path makes mkdirs() fail
+        val blocker = File(System.getProperty("java.io.tmpdir"), "hail-test-blocker-${System.currentTimeMillis()}")
+        blocker.writeText("not a directory")
+        val outputFile = File(File(blocker, "hail-test-dir"), "backup-test.zip")
+        val options = HBackup.BackupOptions(apps = false, whitelist = false, actions = false, settings = false)
+
+        val result = HBackup.backup(HailApp.app, outputFile, options)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+    }
+
+    @Test
+    fun `backup and restore round trip float preferences`() = runTest {
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        val sharedPreferences = mockk<SharedPreferences>(relaxed = true)
+        // Whole numbers would be indistinguishable from Int preferences once serialized,
+        // so use fractional values to exercise the Float to JSON number mapping
+        every { sharedPreferences.all } returns mutableMapOf(
+            HailData.HOME_FONT_SIZE to 14.5f,
+            HailData.AUTO_FREEZE_DELAY to 7.5f
+        )
+        every { sharedPreferences.edit() } returns editor
+        every { mockApp.packageName } returns "com.aistra.hail"
+        every { mockApp.getSharedPreferences(any(), any()) } returns sharedPreferences
+
+        val outputFile = File(System.getProperty("java.io.tmpdir"), "backup-test-${System.currentTimeMillis()}.zip")
+        val backupOptions = HBackup.BackupOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val backupResult = HBackup.backup(HailApp.app, outputFile, backupOptions)
+
+        assertTrue(backupResult.isSuccess)
+
+        // Verify ZIP contains settings.json with the font sizes as JSON numbers
+        val zipInputStream = ZipInputStream(FileInputStream(outputFile))
+        var entry = zipInputStream.nextEntry
+        var foundSettingsJson = false
+        while (entry != null) {
+            if (entry.name == "settings.json") {
+                foundSettingsJson = true
+                val jsonString = String(zipInputStream.readAllBytes(), StandardCharsets.UTF_8)
+                val jsonObject = JSONObject(jsonString)
+                assertEquals(14.5, jsonObject.getDouble(HailData.HOME_FONT_SIZE), 0.0)
+                assertEquals(7.5, jsonObject.getDouble(HailData.AUTO_FREEZE_DELAY), 0.0)
+            }
+            zipInputStream.closeEntry()
+            entry = zipInputStream.nextEntry
+        }
+        zipInputStream.close()
+        assertTrue(foundSettingsJson)
+
+        val restoreOptions = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val restoreResult = HBackup.restore(HailApp.app, outputFile, restoreOptions)
+
+        assertTrue(restoreResult.isSuccess)
+        // JSONObject never yields a Float, the values must still land as Float preferences
+        verify { editor.putFloat(HailData.HOME_FONT_SIZE, 14.5f) }
+        verify { editor.putFloat(HailData.AUTO_FREEZE_DELAY, 7.5f) }
     }
 }
