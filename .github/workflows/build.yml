@@ -24,9 +24,21 @@ permissions: {}
 # One run per ref at a time. A release run must never be cancelled halfway:
 # cancel-in-progress: true can kill the run while softprops/action-gh-release
 # is uploading, leaving a published release with a truncated or replaced asset.
-# Queued runs wait their turn instead. Grouping by ref is enough to serialise
-# releases, because every release run is dispatched on the same ref, and
-# create-release only runs for refs/heads/main.
+# That is the only thing cancel-in-progress: false buys us, and it is why the
+# setting is false. It does NOT mean queued runs wait their turn.
+#
+# A concurrency group holds at most one in-progress run and at most one
+# PENDING run. Dispatching three release runs in quick succession therefore
+# gives: run 1 in progress, run 2 pending, run 3 dispatched -- and the arrival
+# of run 3 CANCELS run 2 outright, before its build job ever reaches
+# create-release. So a middle run can be dropped whole, no release is ever
+# guaranteed to be published, and the outcome is last-dispatch-wins rather than
+# FIFO: never assume runs are released in the order they were dispatched, and
+# never assume that dispatching a build means that version gets released.
+#
+# Grouping by ref is still enough to serialise release builds, because every
+# release run is dispatched on the same ref, and create-release only runs for
+# refs/heads/main.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
@@ -238,6 +250,38 @@ jobs:
           echo "apk_path=$flat" >> $GITHUB_OUTPUT
           echo "==> Flattened: $apk_path -> $flat"
 
+      - name: Pre-flight release check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          set -euo pipefail
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+
+          # RECOVERY PROCEDURE (deliberate operational step, see issue #89).
+          # The Create GitHub Release step below runs WITHOUT overwrite_files,
+          # so if a release for $TAG already carries an asset, the upload fails
+          # with an opaque "422 Validation Failed / already_exists" and the run
+          # cannot be retried. That is the intended protection, but it also
+          # strands the partial release left behind when a run dies mid-upload
+          # (runner eviction, network, or the pending-run cancellation that the
+          # concurrency group above can perform). To recover, pick one:
+          #
+          #   1. Preferred: bump versionName in app/build.gradle.kts so $TAG is
+          #      new, commit, and re-dispatch. Each run publishes its own tag.
+          #   2. Re-publish the SAME version: delete the partial release at
+          #      $RELEASE_URL (Releases -> the release -> Trash release; this
+          #      also drops the git tag it points at), then re-dispatch.
+          #
+          # This step does not overwrite anything. It only converts the
+          # unreachable-in-advance 422 into a failure that names the choice.
+          if assets=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" --jq '.assets[].name' 2>/dev/null) && [ -n "$assets" ]; then
+            echo "::error::Release tag ${TAG} already exists with asset(s): $(printf '%s' "$assets" | tr '\n' ' '). Bump versionName in app/build.gradle.kts, or delete the partial release at ${RELEASE_URL} and re-dispatch."
+            exit 1
+          fi
+          echo "==> No existing assets for ${TAG}"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
@@ -247,7 +291,12 @@ jobs:
           prerelease: ${{ needs.build.outputs.build_type == 'pre-release' }}
           # Never overwrite an asset on an existing release: republishing a
           # tag must not silently replace a signed APK users already have.
-          # Fail instead if the build produced no matching file, so a broken
-          # release is obvious rather than an empty release page.
-          fail_on_unmatched_files: true
+          # softprops/action-gh-release defaults overwrite_files to false, so
+          # that protection survives; the Pre-flight release check above turns
+          # the resulting 422 already_exists into an actionable message.
+          #
+          # fail_on_unmatched_files is deliberately absent: it guards the
+          # glob-mismatch path, but files: below is the literal path emitted by
+          # the Flatten release APK step, not a glob, and that step already
+          # fails the job when find returns nothing. The input cannot fire.
           files: ${{ steps.flatten.outputs.apk_path }}
