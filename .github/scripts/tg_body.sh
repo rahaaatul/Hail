@@ -33,12 +33,14 @@ cd "$(dirname "$0")/../.."
 readonly REPO="${REPO:-rahaaatul/Hail}"
 
 # --- HTML escaping helper ---------------------------------------------------
+# & must be replaced first: the later substitutions introduce ampersands of
+# their own, and escaping those again would corrupt the output.
 escape_html() {
   local str="$1"
-  str="${str//&/&}"
-  str="${str//</<}"
-  str="${str//>/>}"
-  str="${str//\"/"}"
+  str="${str//&/&amp;}"
+  str="${str//</&lt;}"
+  str="${str//>/&gt;}"
+  str="${str//\"/&quot;}"
   printf '%s' "$str"
 }
 
@@ -78,8 +80,16 @@ fi
 # Strip conventional-commit prefix: fix:, feat(scope):, chore(deps):, etc.
 subject="${subject#*: }"
 
-# Escape HTML for safe embedding in Telegram parse_mode=HTML
+# --- Escape -----------------------------------------------------------------
+# Telegram parses this caption as HTML, so every value interpolated into the
+# body below has to be escaped — not just the changelog subject. PR titles and
+# branch names are attacker-influenced, and an unescaped < > & or " would let
+# them inject markup and links into the channel.
+branch="$(escape_html "${branch}")"
+version_name="$(escape_html "${version_name}")"
 subject="$(escape_html "${subject}")"
+commit_url="$(escape_html "${commit_url}")"
+short_hash="$(escape_html "${short_hash}")"
 
 # --- Emit -------------------------------------------------------------------
 
