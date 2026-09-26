@@ -1,0 +1,135 @@
+default_platform(:android)
+
+require_relative "helpers/build_helpers"
+
+platform :android do
+  def version_name
+    content = File.read("app/build.gradle.kts")
+    match = content.match(/versionName\s*=\s*["']([^"']+)["']/)
+    raise "versionName not found in app/build.gradle.kts" unless match
+    match[1]
+  end
+
+  desc "Validate store metadata"
+  lane :metadata_check do
+    require_relative "../fastlane/helpers/metadata_validator"
+    MetadataValidator.new.validate!
+  end
+
+  desc "Build debug APK"
+  lane :build_debug do
+    gradle(task: "assembleDebug", project_dir: ".")
+    apk_path = Dir.glob("app/build/outputs/apk/debug/*.apk").first
+    raise "No debug APK found" unless apk_path
+    commit = `git rev-parse --short HEAD`.strip rescue "unknown"
+    dest = "app/build/outputs/apk/debug/Hail-#{commit}-debug.apk"
+    require "fileutils"
+    FileUtils.cp(apk_path, dest)
+    FileUtils.rm_f(apk_path)
+    lane_context[:apk_path] = dest
+    lane_context[:version_name] = version_name
+  end
+
+  desc "Build PR APK"
+  lane :build_pr do |options|
+    pr_number = BuildHelpers.validate_pr_number(options[:pr_number])
+    gradle(task: "assemblePr", project_dir: ".")
+    apk_path = Dir.glob("app/build/outputs/apk/pr/*.apk").first
+    raise "No PR APK found" unless apk_path
+    dest = "app/build/outputs/apk/pr/Hail-#{pr_number}-pr.apk"
+    require "fileutils"
+    FileUtils.cp(apk_path, dest)
+    FileUtils.rm_f(apk_path)
+    lane_context[:apk_path] = dest
+  end
+
+  desc "Build signed release APK"
+  lane :build_release do |options|
+    release_type = options[:release_type] || "release"
+    tmpdir = Dir.mktmpdir
+    signing_props = BuildHelpers.setup_signing(tmpdir)
+    unless signing_props == "signing.properties"
+      require "fileutils"; FileUtils.cp(signing_props, "signing.properties")
+    end
+    begin
+      gradle(task: "assembleRelease", project_dir: ".")
+      apk_path = Dir.glob("app/build/outputs/apk/release/*.apk").first
+      raise "No release APK found" unless apk_path
+      vname = version_name
+      dest = "app/build/outputs/apk/release/Hail-v#{vname}-#{release_type}.apk"
+      require "fileutils"
+      FileUtils.cp(apk_path, dest)
+      FileUtils.rm_f(apk_path)
+      lane_context[:apk_path] = dest
+      lane_context[:version_name] = vname
+    ensure
+      rm_f "signing.properties" if signing_props != "signing.properties"
+      rm_rf tmpdir
+    end
+  end
+
+  desc "Create or update GitHub Release"
+  lane :github_release do |options|
+    require_relative "../fastlane/helpers/github_release_helper"
+    description = if options[:description_file]
+                    File.read(options[:description_file])
+                  else
+                    options[:description] || ""
+                  end
+    GithubReleaseHelper.publish(
+      tag: options[:tag],
+      repository: options[:repository],
+      api_token: options[:api_token],
+      name: options[:name],
+      description: description,
+      asset_path: options[:asset_path],
+      prerelease: options[:prerelease].to_s == "true"
+    )
+  end
+
+  desc "Send Telegram notification"
+  lane :telegram_notify do |options|
+    require_relative "../fastlane/helpers/telegram_helper"
+    if options[:caption_file]
+      file = options[:caption_file]
+      raise "caption_file not found: #{file}" unless File.file?(file)
+      caption = File.read(file)
+    else
+      caption = options[:caption] || ""
+    end
+    TelegramHelper.notify(
+      artifact: options[:artifact],
+      build_type: options[:build_type],
+      pr_number: options[:pr_number],
+      caption: caption,
+      token: ENV["TG_TOKEN"],
+      group: ENV["TG_GROUP"]
+    )
+  end
+
+  desc "Full release orchestration"
+  lane :release do |options|
+    build_type = options[:build_type] || "release"
+    raise "build_type is required" unless build_type
+    vname = version_name
+    changelog = File.read("CHANGELOG.md")
+    raise "CHANGELOG.md missing version #{vname}" unless changelog.include?("## [#{vname}]")
+    metadata_check
+    build_release(release_type: build_type)
+    github_release(
+      repository: options[:repository],
+      api_token: options[:api_token],
+      tag: options[:tag],
+      name: vname,
+      description_file: options[:description_file],
+      asset_path: lane_context[:apk_path],
+      prerelease: build_type == "pre-release"
+    )
+    telegram_notify(
+      artifact: lane_context[:apk_path],
+      build_type: build_type,
+      pr_number: options[:pr_number],
+      caption_file: options[:caption_file]
+    ) if options[:notify] != false
+  end
+end
