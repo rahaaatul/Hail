@@ -20,6 +20,34 @@
 #   <b>Learn more</b>
 #   <blockquote><a href="<commit-url>"><short-hash></a></blockquote>
 #
+# Requires (must be on PATH):
+#   git     — refs, hashes and the commit subject
+#   sed     — versionName extraction from app/build.gradle.kts, and the
+#             HTML entity substitutions in escape_html below. Guarded at the
+#             top of the script: without it every esc_* below is empty, so
+#             there is nothing safe left to emit and the script exits instead.
+#   head    — keeps the first match when the file declares several
+#   dirname — locates the repository root from $0
+#   cat     — writes the caption heredoc to stdout
+#   curl    — used for the PR title lookup, and the call hardened below
+#             (--fail, --connect-timeout, --max-time, --retry). Taken whenever
+#             PR_NUMBER and GH_TOKEN are both set *and* jq is present: the jq
+#             guard runs first, so without jq this call is never made at all.
+#             Its absence is degrading, not fatal — there is no `command -v
+#             curl` guard, so a runner without it gets "command not found" on
+#             stderr, pr_title stays empty, and the caption falls back to the
+#             local commit subject. That is the same degradation jq's guard
+#             produces deliberately, so the caption stays correct and just
+#             less informative; the stderr line is what makes it visible.
+#
+# Optional:
+#   jq      — parses the PR title API response. Preinstalled on
+#             ubuntu-latest. Without it the API call is skipped, a diagnostic
+#             is written to stderr and the caption falls back to the local
+#             commit subject. An enhancement, not a requirement: the caption
+#             is still correct, just less informative. Not silently degraded:
+#             see the guard below.
+#
 # Environment:
 #   REPO       — "owner/repo" for the commit URL (default: rahaaatul/Hail)
 #   PR_NUMBER  — pull request number; when set, the Branch label becomes
@@ -30,16 +58,75 @@ set -uo pipefail
 
 cd "$(dirname "$0")/../.."
 
+# --- Guard the escaper's only external dependency -----------------------------
+# sed is the one binary escape_html needs, and it is also what extracts
+# versionName below. There is no `command -v` check for it anywhere in this
+# script, which makes the missing-tool failure silent in the worst way: the
+# pipeline reports "command not found" on stderr, escape_html returns the empty
+# string, and all five esc_* variables become empty. The caption is then
+# emitted with no Branch, no Version, no Changelog and a Learn-more link with
+# no URL — exit 0, no ::error::, nothing in the output to show that escaping
+# did nothing. That is the #113-class symptom this script exists to remove,
+# reached through a different door.
+#
+# So fail closed and loud instead. Exiting non-zero here means upload.sh's
+# `|| true` leaves TG_BODY empty rather than substituting a caption the escaper
+# never touched, and the stderr line below stays visible because upload.sh
+# deliberately does not suppress this script's stderr. The property that
+# matters: a missing sed can never yield an unescaped caption, because it
+# yields no caption at all.
+if ! command -v sed >/dev/null 2>&1; then
+  echo "tg_body.sh: sed not found - cannot HTML-escape the caption; refusing to emit it" >&2
+  exit 1
+fi
+
 readonly REPO="${REPO:-rahaaatul/Hail}"
 
 # --- HTML escaping helper ---------------------------------------------------
+# Implemented with sed, not with ${var//pat/rep}. This is a correctness
+# requirement, not a style preference.
+#
+# bash 5.2 added the patsub_replacement shopt, ON BY DEFAULT: a bare & in the
+# replacement of a pattern substitution expands to the text the pattern matched
+# (the sed s/// idiom, applied by the shell). So under bash >= 5.2
+#
+#   str="${str//</&lt;}"     ->  "<lt;"
+#   str="${str//>/&gt;}"     ->  ">gt;"
+#   str="${str//\"/&quot;}"  ->  "\"quot;"
+#
+# leaving < > and " raw in a parse_mode=HTML caption: the markup injection this
+# function exists to prevent. The & -> &amp; line happened to be right, but only
+# by coincidence — the matched text there is & itself.
+#
+# This is also why the bug was invisible locally: bash 5.1 has no such option,
+# so every developer run was green while ubuntu-latest (bash >= 5.2) was not.
+#
+# sed sidesteps the shell option entirely, which is why it is used here. In a
+# sed replacement \& is a literal & and is mandatory, so dropping the backslash
+# yields visibly wrong output on EVERY bash. The bash forms have the opposite
+# asymmetry: a bare & is the idiomatic-looking thing to write, and it is
+# silently correct on 5.1, so a later edit that only "tidies" a replacement can
+# reintroduce this bug without any local signal. Measured on bash 5.1.16 and
+# 5.2.0, substituting a lone "<":
+#
+#   "${s//</&lt;}"     5.1: &lt;    5.2: <lt;     <- the bug
+#   ${s//</\&lt;}       5.1: &lt;    5.2: &lt;    <- works, but only unquoted
+#   "${s//</\&lt;}"    5.1: &lt;    5.2: &lt;    <- works, but a bare & looks right
+#   "${s//</\\&lt;}"   5.1: \&lt;   5.2: \<lt;   <- literal backslash, wrong on both
+#   "${s//</'\&lt;'}"  5.1: \&lt;   5.2: \&lt;   <- literal backslash, wrong on both
+#
+# The two right-hand bash rows are correct today; they are listed because they
+# are the shapes a future reader is most likely to try, and neither keeps
+# working by a rule that survives editing the way sed's \& does.
+#
+# & is replaced first: the later substitutions introduce ampersands of their
+# own, and escaping those again would corrupt the output.
+#
+# sed works line by line and terminates its output with a newline, so this is
+# for single-line values. Every call site below captures it with $(...), which
+# strips that newline.
 escape_html() {
-  local str="$1"
-  str="${str//&/&}"
-  str="${str//</<}"
-  str="${str//>/>}"
-  str="${str//\"/"}"
-  printf '%s' "$str"
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'
 }
 
 # --- Derive values ----------------------------------------------------------
@@ -60,13 +147,40 @@ version_name="$(sed -n 's/.*versionName\s*=\s*"\([^"]*\)".*/\1/p' app/build.grad
 
 # Get changelog: prefer PR title from GitHub API (if PR_NUMBER and GH_TOKEN),
 # fall back to local commit subject.
+#
+# jq is preinstalled on ubuntu-latest, but guard for it: the API returns JSON,
+# and without a real parser we would be back to scraping it by hand — which is
+# what truncated titles containing a double quote. Skipping the call outright
+# keeps the degradation explicit instead of shipping a silently mangled
+# changelog, and the commit-subject fallback below still escapes correctly.
+#
+# The diagnostic goes to stderr, not a ::warning:: annotation: GitHub Actions
+# reads workflow commands from a step's *stdout*, and this script's stdout is
+# the caption, so annotating there would corrupt the message. upload.sh
+# deliberately does not suppress this script's stderr, so the line below is
+# visible in the workflow log.
+#
+# Note: `set -o pipefail` is on but `set -e` is not, so a failing curl or jq
+# leaves pr_title empty and control simply continues to the fallback. curl's
+# stderr is likewise left attached: with `-sS` a --fail exit 22, a --max-time
+# exit 28, a DNS or TLS error is otherwise indistinguishable from success.
 subject=""
 if [[ -n "${PR_NUMBER:-}" && -n "${GH_TOKEN:-}" ]]; then
-  pr_title="$(curl -sS -H "Authorization: token ${GH_TOKEN}" \
-    "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" 2>/dev/null \
-    | sed -n 's/.*"title"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
-  if [[ -n "${pr_title}" ]]; then
-    subject="${pr_title}"
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "tg_body.sh: jq not found, skipping PR title lookup" >&2
+  else
+    # --fail/--connect-timeout/--max-time keep an erroring or hung API
+    # endpoint from stalling the build until the job-level timeout, and
+    # --retry rides out a transient 5xx/connection reset so the fallback is
+    # not taken for a blip.
+    pr_title="$(curl -sS --fail --connect-timeout 5 --max-time 15 \
+      --retry 2 --retry-delay 1 \
+      -H "Authorization: token ${GH_TOKEN}" \
+      "https://api.github.com/repos/${REPO}/pulls/${PR_NUMBER}" \
+      | jq -r '.title // empty')"
+    if [[ -n "${pr_title}" ]]; then
+      subject="${pr_title}"
+    fi
   fi
 fi
 
@@ -78,21 +192,38 @@ fi
 # Strip conventional-commit prefix: fix:, feat(scope):, chore(deps):, etc.
 subject="${subject#*: }"
 
-# Escape HTML for safe embedding in Telegram parse_mode=HTML
-subject="$(escape_html "${subject}")"
+# --- Escape -----------------------------------------------------------------
+# Telegram parses this caption as HTML, so every value interpolated into the
+# body below has to be escaped — not just the changelog subject. PR titles and
+# branch names are attacker-influenced, and an unescaped < > & or " would let
+# them inject markup and links into the channel.
+#
+# Escape into esc_*-prefixed copies and leave the raw values intact.
+# escape_html is not idempotent (& -> &amp; -> &amp;amp;), so overwriting the
+# original in place makes the escaping step order-dependent and invisible at
+# the call site: a second escape anywhere later corrupts the caption with no
+# error. With separate esc_* variables a double escape is a visible mistake.
+esc_branch="$(escape_html "${branch}")"
+esc_version_name="$(escape_html "${version_name}")"
+esc_subject="$(escape_html "${subject}")"
+esc_commit_url="$(escape_html "${commit_url}")"
+esc_short_hash="$(escape_html "${short_hash}")"
 
 # --- Emit -------------------------------------------------------------------
 
+# Only esc_*-prefixed variables are safe to interpolate below — they are the
+# escaped ones. Reaching for a raw variable here would inject unescaped markup
+# from an attacker-influenced PR title into the release channel.
 cat <<EOF
 <b>Branch</b>
-<blockquote>${branch}</blockquote>
+<blockquote>${esc_branch}</blockquote>
 
 <b>Version</b>
-<blockquote>${version_name}</blockquote>
+<blockquote>${esc_version_name}</blockquote>
 
 <b>Changelog</b>
-<blockquote>${subject}</blockquote>
+<blockquote>${esc_subject}</blockquote>
 
 <b>Learn more</b>
-<blockquote><a href="${commit_url}">${short_hash}</a></blockquote>
+<blockquote><a href="${esc_commit_url}">${esc_short_hash}</a></blockquote>
 EOF

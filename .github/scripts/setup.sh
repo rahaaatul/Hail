@@ -15,8 +15,100 @@
 #
 # Usage: bash setup.sh
 # Exits 0 on success, 1 on failure.
+#
+# Requires: Linux — hard requirement, the script exits 1 on any other OS.
+# Also required, and checked separately because they are capabilities rather
+# than an OS: apt-get and sudo, to install the system packages below.
+# Beyond those this script uses curl, tar, yes, dirname, uname and mkdir, and
+# installs only p7zip-full, unzip and zip. The rest are expected to be present
+# on the runner; they are checked, not installed. Both guards below report
+# which requirement was not met, rather than letting a missing binary surface
+# later as an opaque download or extract failure.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+readonly SCRIPT_DIR
+
+# --- Fail fast on a non-Linux runner ----------------------------------------
+# Everything below is Linux-only, so bail out before downloading anything. The
+# reasons are printed to the user here and deliberately not restated in a
+# comment: two copies of the same three facts drift apart, and this one is the
+# copy a macOS maintainer actually reads when the script refuses to run.
+# uname is captured once and tolerates being absent, so a minimal container
+# PATH gets the diagnostic instead of a bare exit 127.
+os="$(uname -s 2>/dev/null || echo unknown)"
+if [[ "${os}" != "Linux" ]]; then
+  if [[ "${os}" == "unknown" ]]; then
+    echo "::error::setup.sh: cannot determine the OS (uname unavailable) - this toolchain is Linux-only"
+  else
+    echo "::error::setup.sh: unsupported OS '${os}' - this toolchain is Linux-only"
+  fi
+  echo "setup.sh: Linux is required because:"
+  echo "  * packages (p7zip 7z, unzip, zip) come from apt-get + sudo"
+  echo "  * the JDK and cmdline-tools downloads are linux builds"
+  echo "  * zip.sh needs GNU stat -c%s, which BSD stat rejects"
+  exit 1
+fi
+
+# --- Fail fast on a missing package-manager capability ------------------------
+# A Linux job is not automatically a Debian one. Without this, an image that
+# has neither tool walks through the full JDK and cmdline-tools downloads and
+# only fails when the install step cannot run. Distinct from the OS check
+# above, and reported as such.
+missing=""
+command -v apt-get >/dev/null 2>&1 || missing="apt-get"
+command -v sudo >/dev/null 2>&1 || missing="${missing:+$missing }sudo"
+if [[ -n "${missing}" ]]; then
+  echo "::error::setup.sh: unsupported environment - missing required command(s): ${missing}"
+  echo "setup.sh: the OS is supported, but installing p7zip 7z, unzip and zip needs apt-get + sudo."
+  exit 1
+fi
+
+# --- Fail fast on a command this script uses but does not install -------------
+# The apt block below installs p7zip-full, unzip and zip, and nothing else.
+# curl is not among them, and that has to be said rather than assumed: without
+# it both downloads above fail, and the only clue a runner gives is
+# `::error::JDK download failed`, which names neither the cause nor the tool.
+# Checking costs one `command -v` per tool and turns an opaque download failure
+# into a named missing prerequisite, before the first byte is fetched.
+missing_used=""
+for tool in curl tar yes dirname uname mkdir; do
+  command -v "${tool}" >/dev/null 2>&1 || missing_used="${missing_used:+${missing_used} }${tool}"
+done
+if [[ -n "${missing_used}" ]]; then
+  echo "::error::setup.sh: missing required command(s): ${missing_used}"
+  echo "setup.sh: the apt block below installs p7zip-full, unzip and zip only; install the rest first."
+  exit 1
+fi
+
+# --- Regression tests --------------------------------------------------------
+# The caption escaper is the only thing between an attacker-supplied PR title
+# and markup injection into the public channel, and its substitutions have
+# been silent no-ops before. Run its tests here, ahead of the downloads: they
+# need nothing but coreutils, and a caption regression should fail in seconds
+# rather than after a few hundred MB of JDK.
+echo "==> Running tg_body_test.sh"
+if ! test_output="$(bash "${SCRIPT_DIR}/tg_body_test.sh" 2>&1)"; then
+  printf '%s\n' "${test_output}"
+  # The suite is not only about the escaper. It also asserts the upload.sh
+  # wiring, that the tools its extractions are built from are on PATH, and that
+  # tg_body.sh and upload.sh parse — none of which is the escaper regressing.
+  # "the escaper regressed" was the wrong headline for all of those, and this
+  # annotation is the only thing a reader has when the step fails, so it named a
+  # diagnosis the output above may well contradict. Report the suite and the
+  # first assertion that actually failed instead: every exit path in
+  # tg_body_test.sh prints at least one `  FAIL ` line, so this distinguishes
+  # an escaper regression from a wiring change or a broken harness.
+  first_fail="$(grep -m1 '^  FAIL ' <<<"${test_output}" || true)"
+  first_fail="${first_fail#  FAIL }"
+  if [[ -z "${first_fail}" ]]; then
+    first_fail='no FAIL line in the output above'
+  fi
+  echo "::error::setup.sh: tg_body_test.sh failed - ${first_fail}"
+  exit 1
+fi
+printf '%s\n' "${test_output}"
 
 readonly JAVA_VERSION="26"
 readonly SDK_PLATFORM="android-37.0"
@@ -34,13 +126,13 @@ echo "==> Installing toolchain (apt, JDK, cmdline-tools in parallel)"
 
 # --- Parallel installs ------------------------------------------------------
 
-# 1. System packages (7z for compression)
+# 1. System packages (7z for compression). Unconditional: the capability guard
+# above already proved apt-get and sudo exist, so a conditional here would only
+# be a second place to forget the check.
 apt_pid=""
-if command -v apt-get >/dev/null 2>&1; then
-  ( sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full unzip zip ) \
-    >/tmp/setup_apt.log 2>&1 &
-  apt_pid=$!
-fi
+( sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full unzip zip ) \
+  >/tmp/setup_apt.log 2>&1 &
+apt_pid=$!
 
 # 2. JDK 26 — always install: the runner image pre-sets JAVA_HOME to a
 #    different JDK (e.g. 17), so gating on it would silently skip the install.
