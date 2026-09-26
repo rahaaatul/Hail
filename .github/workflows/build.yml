@@ -271,6 +271,10 @@ jobs:
           # interleave writes on one response file; and writing scratch files
           # into the checkout risks a later upload or git status picking them
           # up. Hence RUNNER_TEMP rather than /tmp.
+          # RAW is what `gh api --include` writes: status line, response
+          # headers, blank line, body. RESP is the body on its own, because
+          # that is what the jq reads further down parse.
+          RAW="${RUNNER_TEMP}/preflight-release.raw"
           RESP="${RUNNER_TEMP}/preflight-release.json"
           ERR="${RUNNER_TEMP}/preflight-release.err"
 
@@ -298,13 +302,12 @@ jobs:
           # This step does not overwrite anything. It only converts the
           # unreachable-in-advance 422 into a failure that names the choice.
 
-          # WHY STDERR IS CAPTURED AND INSPECTED RATHER THAN DISCARDED
+          # HOW "ABSENT" IS ESTABLISHED -- AND WHY IT IS NOT A TEXT MATCH
           #
-          # `gh api` exits non-zero and writes "gh: <message> (HTTP <status>)"
-          # to stderr for EVERY non-2xx, so the exit status alone cannot
-          # distinguish "no such release" (404) from "could not find out" (401
-          # expired token, 403 under-scoped token or rate limit, 5xx, DNS
-          # failure on the runner).
+          # `gh api` exits non-zero for EVERY non-2xx, so the exit status
+          # alone cannot distinguish "no such release" (404) from "could not
+          # find out" (401 expired token, 403 under-scoped token or rate
+          # limit, 5xx, DNS failure on the runner).
           #
           # The previous version of this step put `2>/dev/null` inside the
           # if-condition and branched on the exit status. Every one of those
@@ -314,23 +317,65 @@ jobs:
           # already_exists. The guard switched itself off exactly when it was
           # needed.
           #
+          # The version after that captured stderr and grepped it for the
+          # substring "HTTP 404". That is server-controlled prose, not a
+          # status. gh builds its own stderr line as
+          #     gh: <message> (HTTP <status>)
+          # and <message> is the response body's "message" field, so a 403
+          # whose body is {"message":"HTTP 404"} yields
+          #     gh: HTTP 404 (HTTP 403)
+          # which that grep read as "no such release". Observed against
+          # gh 2.101.0; the commit message records the reproduction.
+          #
+          # The status is therefore read from the HTTP response STATUS LINE,
+          # which this call now requests with --include. net/http writes that
+          # line from the status it received on the wire, and no response body
+          # can influence it, so a server can no longer talk this check into
+          # passing. Two conditions must both hold:
+          #   * line 1 is "HTTP/<version> 404 <reason>"
+          #   * the body after the header block parses as a JSON object
+          # The second is what makes it a *genuine* 404 rather than a 404 from
+          # a proxy or CDN in front of api.github.com: that arrives as an HTML
+          # error page, which means "could not find out" and fails closed too.
+          #
+          # DOCUMENTED TRADE-OFF: if `gh api` ever changes the --include
+          # framing, or stops printing the status line for a non-2xx, then a
+          # legitimate "no release yet" run fails closed and no release can be
+          # published until this is updated. That is the right way round for
+          # this guard -- a blocked release is visible and recoverable, while
+          # an accepted 403 silently disables the guard and lets a run
+          # overwrite a published release -- but it should not be something the
+          # next person discovers on a release day.
+          #
           # Only a genuine 404 is evidence of absence. Every other outcome
-          # stops the run, with the API's own message attached.
-          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > "${RESP}" 2> "${ERR}"; then
-            :
-          elif grep -qi 'HTTP 404' "${ERR}"; then
-            echo "==> ${TAG}: the API reports no release with this tag (HTTP 404), so create-release will create it"
-            exit 0
+          # stops the run, with the status line and the API's own message
+          # attached.
+          if gh api --include "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > "${RAW}" 2> "${ERR}"; then
+            # 2xx. --include prefixes the body with the status line, the
+            # response headers and a blank line, so drop everything up to and
+            # including that blank line. The separator is a bare CR rather
+            # than an empty line, hence the \r in the range.
+            sed '1,/^\r\{0,1\}$/d' "${RAW}" > "${RESP}"
           else
+            # Non-2xx. The status comes from line 1 of the response and only
+            # from line 1, so a later line of server text cannot stand in for
+            # it however it is worded.
+            HTTP_STATUS="$(sed -n '1s|^HTTP/[0-9][0-9.]* \([0-9][0-9][0-9]\) .\{1,\}$|\1|p' "${RAW}")"
+            if [ "${HTTP_STATUS}" = "404" ] && sed '1,/^\r\{0,1\}$/d' "${RAW}" | jq -e 'type == "object"' >/dev/null 2>&1; then
+              echo "==> ${TAG}: the API reports no release with this tag (HTTP 404), so create-release will create it"
+              exit 0
+            fi
             echo "::error::Could not determine whether release ${TAG} already exists, so this pre-flight cannot vouch for it."
-            echo "::error::Only HTTP 404 proves absence. Any other failure (401/403 token scope or rate limit, 5xx, DNS) leaves the state of ${TAG} UNKNOWN, and reading that as 'absent' disables this guard and lets the run reach the upload that fails with an opaque 422 already_exists."
+            echo "::error::Only a genuine HTTP 404 from api.github.com proves absence. Any other failure (401/403 token scope or rate limit, 5xx, DNS, or a 404 from a proxy rather than from the API) leaves the state of ${TAG} UNKNOWN, and reading that as 'absent' disables this guard and lets the run reach the upload that fails with an opaque 422 already_exists."
+            echo "::error::Response status line: $(head -n 1 "${RAW}")"
             sed 's/^/::error::/' "${ERR}" >&2
             exit 1
           fi
 
-          # One response, four facts. The release object is fetched once and
-          # every field either branch below needs is read out of that single
-          # file, rather than paying for a second API call per field.
+          # One response, four facts. The release object is fetched once --
+          # header block stripped, so RESP holds just its body -- and every
+          # field either branch below needs is read out of that single file,
+          # rather than paying for a second API call per field.
           ASSETS="$(jq -r '(.assets // [])[].name' "${RESP}" | tr '\n' ' ')"
           ASSETS="${ASSETS% }"
           DRAFT="$(jq -r '.draft // false' "${RESP}")"
