@@ -98,7 +98,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch).getOrThrow()
                 try {
                     val outputStream = ctx.contentResolver.openOutputStream(uri)
-                        ?: throw IllegalStateException("Cannot open the selected file")
+                        ?: throw IllegalStateException(getString(R.string.cannot_open_selected_file))
                     outputStream.use { output ->
                         file.inputStream().use { input ->
                             HFiles.copy(input, output)
@@ -106,14 +106,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     }
                 } catch (e: java.io.FileNotFoundException) {
                     file.delete()
-                    HUI.showToast(R.string.operation_failed, "File not found", true)
+                    HUI.showToast(R.string.operation_failed, getString(R.string.file_not_found), true)
                     return@launch
                 }
             }.onSuccess {
                 HUI.showToast(R.string.msg_exported, file.name)
             }.onFailure {
                 file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: getString(R.string.error_unknown), true)
             }
         }
     }
@@ -136,14 +136,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     }
                 } catch (e: java.io.FileNotFoundException) {
                     file.delete()
-                    HUI.showToast(R.string.operation_failed, "File not found", true)
+                    HUI.showToast(R.string.operation_failed, getString(R.string.file_not_found), true)
                     return@launch
                 }
             }.onSuccess {
                 showRestoreDialog(file)
             }.onFailure {
                 file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: getString(R.string.error_unknown), true)
             }
         }
     }
@@ -832,7 +832,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         }
                         HUI.showToast(R.string.msg_imported)
                     }.onFailure {
-                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: getString(R.string.error_unknown), true)
                     }
                 }
             }
