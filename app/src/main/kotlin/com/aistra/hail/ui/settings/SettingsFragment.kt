@@ -94,24 +94,33 @@ class SettingsFragment : MainFragment(), MenuProvider {
         }
         lifecycleScope.launch {
             val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
+            // Every string below is resolved from the application context, never from getString:
+            // by the time any of this runs the fragment can be detached - a back press, a
+            // rotation, a document provider that takes its time - and Fragment.getString throws
+            // "not attached to a context" from outside every try in the chain, so the failure
+            // path would raise it instead of the error it is reporting, and turn a failed export
+            // into a crash. runCatching catches CancellationException too, so cancelling
+            // lifecycleScope lands here rather than skipping it.
             runCatching {
-                HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch)
+                HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch).getOrThrow()
                 try {
-                    ctx.contentResolver.openOutputStream(uri)?.use { output ->
+                    val outputStream = ctx.contentResolver.openOutputStream(uri)
+                        ?: throw IllegalStateException(app.getString(R.string.cannot_open_selected_file))
+                    outputStream.use { output ->
                         file.inputStream().use { input ->
                             HFiles.copy(input, output)
                         }
                     }
                 } catch (e: java.io.FileNotFoundException) {
                     file.delete()
-                    HUI.showToast(R.string.operation_failed, "File not found", true)
+                    HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
                     return@launch
                 }
             }.onSuccess {
                 HUI.showToast(R.string.msg_exported, file.name)
             }.onFailure {
                 file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
             }
         }
     }
@@ -134,14 +143,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     }
                 } catch (e: java.io.FileNotFoundException) {
                     file.delete()
-                    HUI.showToast(R.string.operation_failed, "File not found", true)
+                    HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
                     return@launch
                 }
             }.onSuccess {
                 showRestoreDialog(file)
             }.onFailure {
                 file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
             }
         }
     }
@@ -830,7 +839,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         }
                         HUI.showToast(R.string.msg_imported)
                     }.onFailure {
-                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: "Unknown", true)
+                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
                     }
                 }
             }

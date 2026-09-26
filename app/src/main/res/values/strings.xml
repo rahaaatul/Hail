@@ -191,5 +191,8 @@
     <string name="msg_no_items_to_select">No items to select</string>
     <string name="title_backup">Backup</string>
     <string name="pick_file_not_folder">Please select a file, not a folder</string>
+    <string name="cannot_open_selected_file">Cannot open the selected file</string>
+    <string name="file_not_found">File not found</string>
+    <string name="error_unknown">Unknown</string>
 </resources>
 
