@@ -5,16 +5,16 @@
 # Usage: bash release.sh
 # Output: absolute path to the built APK (one line)
 #
-# Environment:
-#   KEYSTORE                — base64-encoded keystore.jks (decoded to ./keystore.jks)
+# Environment (all required; the build fails closed if any is missing):
+#   KEYSTORE                — base64-encoded keystore.jks (decoded into a temp dir)
 #   KEYSTORE_PASSWORD       — keystore password
 #   KEYSTORE_ALIAS          — key alias
 #   KEYSTORE_ALIAS_PASSWORD — key password
 #   RELEASE_TYPE            — "release" or "pre-release" (affects filename only)
 #
-# Signing properties are written to ./signing.properties and the keystore
-# to ./keystore.jks. Both are gitignored. The build is non-reproducible:
-# re-running overwrites these files.
+# The keystore and signing.properties are created in a temporary directory and
+# cleaned up on exit; a copy of signing.properties is placed at the repository
+# root (mode 600) so Gradle can pick it up, and removed again on exit.
 
 set -euo pipefail
 
@@ -22,17 +22,30 @@ cd "$(dirname "$0")/../.."
 
 RELEASE_TYPE="${RELEASE_TYPE:-release}"
 
-# --- Signing setup ----------------------------------------------------------
+# --- Signing setup (ephemeral, cleaned up on exit) ----------------------------
 
-if [[ -n "${KEYSTORE:-}" ]]; then
-  echo "${KEYSTORE}" | base64 --decode > keystore.jks
-  printf 'storeFile=../keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
-    "${KEYSTORE_PASSWORD}" "${KEYSTORE_ALIAS}" "${KEYSTORE_ALIAS_PASSWORD}" \
-    > signing.properties
-elif [[ ! -f signing.properties ]]; then
-  echo "::error::No signing material: set KEYSTORE env or provide signing.properties"
+# Fail closed: every signing variable is required.
+missing=()
+for var in KEYSTORE KEYSTORE_PASSWORD KEYSTORE_ALIAS KEYSTORE_ALIAS_PASSWORD; do
+  [[ -n "${!var:-}" ]] || missing+=("$var")
+done
+if (( ${#missing[@]} > 0 )); then
+  echo "::error::Missing signing environment variable(s): ${missing[*]}"
   exit 1
 fi
+
+tmpdir="$(mktemp -d)"
+keystore="$tmpdir/keystore.jks"
+signing_props="$tmpdir/signing.properties"
+trap 'rm -f "./signing.properties" "$keystore" "$signing_props"; rm -rf "$tmpdir"' EXIT
+
+echo "${KEYSTORE}" | base64 --decode > "$keystore"
+printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+  "$keystore" "${KEYSTORE_PASSWORD}" "${KEYSTORE_ALIAS}" "${KEYSTORE_ALIAS_PASSWORD}" \
+  > "$signing_props"
+# Gradle reads signing.properties from the project root; keep it at 0600.
+cp "$signing_props" ./signing.properties
+chmod 600 ./signing.properties
 
 # --- Build ------------------------------------------------------------------
 
@@ -53,3 +66,4 @@ cp "${apk_path}" "${dest}"
 rm -f "${apk_path}"
 
 echo "${dest}"
+

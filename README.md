@@ -25,7 +25,8 @@ to revert the action.
 
 ### Hide
 
-Hidden apps will not be shown in the launcher and in the installed apps list. Unhide them to revert the action.
+Hidden apps will not be shown in the launcher and in the installed apps list. Unhide them to revert the
+action.
 
 > While in this state, which is almost like an uninstalled state, the package will be unavailable, however, the
 > application data and the actual package file will not be removed from the device.
@@ -223,6 +224,88 @@ or use following `schema`:
 - `hail://lock`
 
 - `hail://lock_freeze`
+
+## Release
+
+Releases are orchestrated through [Fastlane](https://fastlane.tools) lanes. Gradle remains the build
+and signing source of truth; GitHub Actions remains the trigger, permission, artifact, and release
+host. Fastlane does not duplicate Telegram or signing logic — it delegates to the existing
+`.github/scripts/*.sh` helpers.
+
+### Lanes
+
+| Lane | Description |
+|------|-------------|
+| `metadata_check` | Validates store metadata (`fastlane/metadata/android/{en-US,zh-CN}/*`). Fails on missing title, description, icon, or screenshots. |
+| `build_debug` | Builds an unsigned debug APK via `./gradlew assembleDebug`. |
+| `build_pr` | Builds an unsigned PR APK via `./gradlew assemblePr`. Requires `--pr_number N`. |
+| `build_release` | Builds a signed release APK via `./gradlew assembleRelease`. Optional `--release_type release|pre-release`. |
+| `github_release` | Creates or updates a GitHub Release. Fails closed if the tag already exists with mismatched provenance (asset name/size). |
+| `telegram_notify` | Sends the built artifact to Telegram. Dry-runs when `TG_TOKEN` is unset; failures abort the build. |
+| `release` | Full orchestration: `metadata_check` → `build_release` → `github_release` → `telegram_notify`. |
+
+### Run locally
+
+Install Ruby 3.3.6 and the Fastlane dependencies, then run a lane:
+
+```shell
+# Install dependencies (once)
+cd fastlane && bundle install
+
+# Validate store metadata
+bundle exec fastlane metadata_check
+
+# Build a debug APK
+bundle exec fastlane build_debug
+
+# Build a PR APK for PR #42
+bundle exec fastlane build_pr pr_number:42
+
+# Build a signed release APK (requires the KEYSTORE* environment variables)
+bundle exec fastlane build_release release_type:release
+
+# Full release + GitHub Release + Telegram notification
+bundle exec fastlane release build_type:release tag:v1.11.5 repository:rahaaatul/Hail api_token:$GH_TOKEN notify:true
+```
+
+Lane options are passed as `key:value` pairs (e.g. `fastlane build_pr pr_number:42`).
+
+### CI integration
+
+Builds are triggered by the `Build` workflow (`.github/workflows/build.yml`), which runs on
+`pull_request` and `workflow_dispatch` (choice: `debug`, `release`, `pre-release`).
+
+- Release builds require the `KEYSTORE`, `KEYSTORE_PASSWORD`, `KEYSTORE_ALIAS`, and
+  `KEYSTORE_ALIAS_PASSWORD` environment variables. The `build_release` lane creates them
+  fail-closed (any missing variable aborts the build) and keeps the keystore in a `mktemp`
+  directory; it writes a mode-`0600` `signing.properties` at the repository root — where
+  `app/build.gradle.kts` looks for it — and deletes it again once the build finishes. The
+  keystore never touches persistent storage, and `signing.properties` is gitignored.
+- Release builds are **fail-closed** in Gradle as well: `assembleRelease`/`bundleRelease`
+  without a readable `signing.properties` aborts with a `GradleException` instead of silently
+  producing an unsigned APK. There is no debug fallback key.
+- The `release` lane additionally aborts when `CHANGELOG.md` has no `## [versionName]` entry.
+- Telegram notifications use `TG_TOKEN` and `TG_GROUP`. Failures abort the build.
+  When `TG_TOKEN` is unset, the upload step dry-runs.
+- Debug builds are compressed with 7z (`-mx=9`, >15MB) or zip (`-9`, ≤15MB) before upload.
+
+### Environment variables
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `TG_TOKEN` | for Telegram | Bot token for `telegram_notify` / `.github/scripts/upload.sh`. |
+| `TG_GROUP` | for Telegram | Telegram chat id. |
+| `KEYSTORE` | for release builds | Base64-encoded `keystore.jks`. |
+| `KEYSTORE_PASSWORD` | for release builds | Keystore password. |
+| `KEYSTORE_ALIAS` | for release builds | Key alias. |
+| `KEYSTORE_ALIAS_PASSWORD` | for release builds | Key password. |
+| `PR_NUMBER` | for `build_pr` | Pull request number; drives the `pr` build type suffix and APK filename. |
+| `GH_TOKEN` | for `release` | GitHub token for `github_release` and PR title lookup. |
+| `RELEASE_TYPE` | for `build_release` | `release` or `pre-release` (affects filename only). |
+| `REPO` | optional | `owner/repo` for commit URLs (default `rahaaatul/Hail`). |
+
+Local release builds work the same way: export the four signing variables (or load them from a
+gitignored `secrets.env`) and run the lane. The lane refuses to build a release without them.
 
 ## Help Translate
 

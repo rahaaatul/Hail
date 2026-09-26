@@ -6,6 +6,17 @@ plugins {
 
 android {
     val signingProps = file("../signing.properties")
+    // Release builds are fail-closed: without signing.properties there is no
+    // signing config, and publishing an unsigned release APK is never intended.
+    gradle.taskGraph.whenReady { graph ->
+        val buildsRelease = graph.allTasks.any { it.name == "assembleRelease" || it.name == "bundleRelease" }
+        if (buildsRelease && !signingProps.exists()) {
+            throw GradleException(
+                "signing.properties not found at ${signingProps.absolutePath}; release builds " +
+                    "require storeFile, storePassword, keyAlias and keyPassword",
+            )
+        }
+    }
     val commitHash = providers.exec {
         workingDir = rootDir
         commandLine = "git rev-parse --short HEAD".split(" ")
@@ -30,6 +41,18 @@ android {
         }
     }
 
+    signingConfigs {
+        if (signingProps.exists()) {
+            create("release") {
+                val props = `java.util`.Properties().apply { load(signingProps.reader()) }
+                storeFile = file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -42,15 +65,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = if (signingProps.exists()) {
-                val props = `java.util`.Properties().apply { load(signingProps.reader()) }
-                signingConfigs.create("release") {
-                    storeFile = file(props.getProperty("storeFile"))
-                    storePassword = props.getProperty("storePassword")
-                    keyAlias = props.getProperty("keyAlias")
-                    keyPassword = props.getProperty("keyPassword")
-                }
-            } else signingConfigs.getByName("debug")
+            // Signed whenever signing.properties exists; the task graph guard
+            // above fails the build when it is missing.
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )

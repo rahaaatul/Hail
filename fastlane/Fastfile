@@ -1,0 +1,148 @@
+default_platform(:android)
+
+require "fileutils"
+require "tmpdir"
+require_relative "helpers/build_helpers"
+
+platform :android do
+  # Repository root, resolved from this Fastfile's location so lanes behave the
+  # same whether fastlane is started from the repository root or from fastlane/.
+  def repo_root
+    File.expand_path("..", __dir__)
+  end
+
+  def version_name
+    content = File.read(File.join(repo_root, "app/build.gradle.kts"))
+    match = content.match(/versionName\s*=\s*["']([^"']+)["']/)
+    raise "versionName not found in app/build.gradle.kts" unless match
+    match[1]
+  end
+
+  desc "Validate store metadata"
+  lane :metadata_check do
+    require_relative "../fastlane/helpers/metadata_validator"
+    MetadataValidator.new.validate!
+  end
+
+  desc "Build debug APK"
+  lane :build_debug do
+    gradle(task: "assembleDebug", project_dir: repo_root)
+    out_dir = File.join(repo_root, "app/build/outputs/apk/debug")
+    # Gradle emits app-<buildType>.apk; matching that name avoids picking up
+    # Hail-*.apk artifacts left behind by an earlier run.
+    apk_path = Dir.glob(File.join(out_dir, "app-*.apk")).sort.first
+    raise "No debug APK found in #{out_dir}" unless apk_path
+    commit = `git rev-parse --short HEAD`.strip rescue "unknown"
+    dest = File.join(out_dir, "Hail-#{commit}-debug.apk")
+    FileUtils.cp(apk_path, dest)
+    FileUtils.rm_f(apk_path)
+    lane_context[:apk_path] = dest
+    lane_context[:version_name] = version_name
+  end
+
+  desc "Build PR APK"
+  lane :build_pr do |options|
+    pr_number = BuildHelpers.validate_pr_number(options[:pr_number])
+    gradle(task: "assemblePr", project_dir: repo_root)
+    out_dir = File.join(repo_root, "app/build/outputs/apk/pr")
+    # Gradle emits app-<buildType>.apk; matching that name avoids picking up
+    # Hail-*.apk artifacts left behind by an earlier run.
+    apk_path = Dir.glob(File.join(out_dir, "app-*.apk")).sort.first
+    raise "No PR APK found in #{out_dir}" unless apk_path
+    dest = File.join(out_dir, "Hail-#{pr_number}-pr.apk")
+    FileUtils.cp(apk_path, dest)
+    FileUtils.rm_f(apk_path)
+    lane_context[:apk_path] = dest
+  end
+
+  desc "Build signed release APK"
+  lane :build_release do |options|
+    release_type = options[:release_type] || "release"
+    # Signing material only ever lives in a temporary directory; Gradle gets a
+    # throwaway signing.properties at the repository root that is removed again.
+    tmpdir = Dir.mktmpdir("hail-signing-")
+    signing_props = BuildHelpers.setup_signing(tmpdir, repo_root)
+    begin
+      gradle(task: "assembleRelease", project_dir: repo_root)
+      out_dir = File.join(repo_root, "app/build/outputs/apk/release")
+      # Gradle emits app-<buildType>.apk; matching that name avoids picking up
+      # Hail-*.apk artifacts left behind by an earlier run.
+      apk_path = Dir.glob(File.join(out_dir, "app-*.apk")).sort.first
+      raise "No release APK found in #{out_dir}" unless apk_path
+      vname = version_name
+      dest = File.join(out_dir, "Hail-v#{vname}-#{release_type}.apk")
+      FileUtils.cp(apk_path, dest)
+      FileUtils.rm_f(apk_path)
+      lane_context[:apk_path] = dest
+      lane_context[:version_name] = vname
+    ensure
+      FileUtils.rm_f(signing_props)
+      FileUtils.rm_rf(tmpdir)
+    end
+  end
+
+  desc "Create or update GitHub Release"
+  lane :github_release do |options|
+    require_relative "../fastlane/helpers/github_release_helper"
+    description = if options[:description_file]
+                    File.read(options[:description_file])
+                  else
+                    options[:description] || ""
+                  end
+    GithubReleaseHelper.publish(
+      tag: options[:tag],
+      repository: options[:repository],
+      api_token: options[:api_token],
+      name: options[:name],
+      description: description,
+      asset_path: options[:asset_path],
+      prerelease: options[:prerelease].to_s == "true"
+    )
+  end
+
+  desc "Send Telegram notification"
+  lane :telegram_notify do |options|
+    require_relative "../fastlane/helpers/telegram_helper"
+    if options[:caption_file]
+      file = options[:caption_file]
+      raise "caption_file not found: #{file}" unless File.file?(file)
+      caption = File.read(file)
+    else
+      caption = options[:caption] || ""
+    end
+    TelegramHelper.notify(
+      artifact: options[:artifact],
+      build_type: options[:build_type],
+      pr_number: options[:pr_number],
+      caption: caption,
+      token: ENV["TG_TOKEN"],
+      group: ENV["TG_GROUP"]
+    )
+  end
+
+  desc "Full release orchestration"
+  lane :release do |options|
+    build_type = options[:build_type] || "release"
+    raise "build_type is required" unless build_type
+    vname = version_name
+    changelog = File.read(File.join(repo_root, "CHANGELOG.md"))
+    raise "CHANGELOG.md missing version #{vname}" unless changelog.include?("## [#{vname}]")
+    metadata_check
+    build_release(release_type: build_type)
+    github_release(
+      repository: options[:repository],
+      api_token: options[:api_token],
+      tag: options[:tag],
+      name: vname,
+      description_file: options[:description_file],
+      asset_path: lane_context[:apk_path],
+      prerelease: build_type == "pre-release"
+    )
+    telegram_notify(
+      artifact: lane_context[:apk_path],
+      build_type: build_type,
+      pr_number: options[:pr_number],
+      caption_file: options[:caption_file]
+    ) if options[:notify] != false
+  end
+end
