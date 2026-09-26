@@ -13,6 +13,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.math.BigDecimal
 import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -47,9 +48,11 @@ object HBackup {
         runCatching {
             // File.mkdirs() returns false when the directory already exists, so only
             // treat a path that is neither an existing directory nor creatable as a failure.
+            // The trailing isDirectory re-check covers another process creating the parent
+            // between the check above and mkdirs().
             val parent = outputFile.parentFile
-            if (parent != null && !parent.isDirectory && !parent.mkdirs()) {
-                return@withContext Result.failure(IllegalStateException("Failed to create directory: $parent"))
+            if (parent != null && !parent.isDirectory && !parent.mkdirs() && !parent.isDirectory) {
+                throw IllegalStateException("Failed to create directory: $parent")
             }
             val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
             try {
@@ -214,7 +217,11 @@ object HBackup {
                     is String -> putString(key, value)
                     is Int -> putInt(key, value)
                     is Long -> putLong(key, value)
-                    is Float -> putFloat(key, value)
+                    // JSONObject never hands back a Float: a Float preference is written as
+                    // a JSON number like 14.0, which Android's parser returns as a Double
+                    // and org.json as a BigDecimal.
+                    is Double -> putFloat(key, value.toFloat())
+                    is BigDecimal -> putFloat(key, value.toFloat())
                     is Boolean -> putBoolean(key, value)
                     is JSONArray -> {
                         val stringSet = mutableSetOf<String>()
