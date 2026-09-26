@@ -258,29 +258,139 @@ jobs:
         run: |
           set -euo pipefail
           RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+          : "${RUNNER_TEMP:?RUNNER_TEMP is unset; GitHub Actions always sets it}"
+          : "${GITHUB_SHA:?GITHUB_SHA is unset; the provenance check below needs it}"
+          : "${GITHUB_REF_NAME:?GITHUB_REF_NAME is unset; the provenance check below needs it}"
+
+          # Scratch space for the single API call below.
+          #
+          # RUNNER_TEMP is the runner's own per-job directory: GitHub guarantees
+          # it exists, it sits outside the checked-out source tree, and it is
+          # wiped between jobs. A hardcoded /tmp would be shared by concurrent
+          # jobs on a self-hosted runner, so two runs of the same tag could
+          # interleave writes on one response file; and writing scratch files
+          # into the checkout risks a later upload or git status picking them
+          # up. Hence RUNNER_TEMP rather than /tmp.
+          RESP="${RUNNER_TEMP}/preflight-release.json"
+          ERR="${RUNNER_TEMP}/preflight-release.err"
+
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "::error::jq is not on PATH, so the existing release cannot be read. Refusing to continue: a pre-flight that cannot read the release is indistinguishable from one that found none."
+            exit 1
+          fi
 
           # RECOVERY PROCEDURE (deliberate operational step, see issue #89).
           # The Create GitHub Release step below runs WITHOUT overwrite_files,
           # so if a release for $TAG already carries an asset, the upload fails
           # with an opaque "422 Validation Failed / already_exists" and the run
-          # cannot be retried. That is the intended protection, but it also
-          # strands the partial release left behind when a run dies mid-upload
-          # (runner eviction, network, or the pending-run cancellation that the
-          # concurrency group above can perform). To recover, pick one:
+          # cannot be retried. That protection is intended, but it also strands
+          # the release left behind when a run dies mid-upload (runner
+          # eviction, network, or the pending-run cancellation that the
+          # concurrency group above can perform).
           #
-          #   1. Preferred: bump versionName in app/build.gradle.kts so $TAG is
-          #      new, commit, and re-dispatch. Each run publishes its own tag.
-          #   2. Re-publish the SAME version: delete the partial release at
-          #      $RELEASE_URL (Releases -> the release -> Trash release; this
-          #      also drops the git tag it points at), then re-dispatch.
+          # A release that carries an asset is also the state a SUCCESSFUL
+          # release leaves, so the most common trigger here is an ordinary
+          # re-dispatch that forgot to bump versionName, not a partial
+          # release. The message below therefore reports the release's own
+          # draft/published_at state and lets the operator decide, rather than
+          # telling them to trash something that may be a legitimate release.
           #
           # This step does not overwrite anything. It only converts the
           # unreachable-in-advance 422 into a failure that names the choice.
-          if assets=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" --jq '.assets[].name' 2>/dev/null) && [ -n "$assets" ]; then
-            echo "::error::Release tag ${TAG} already exists with asset(s): $(printf '%s' "$assets" | tr '\n' ' '). Bump versionName in app/build.gradle.kts, or delete the partial release at ${RELEASE_URL} and re-dispatch."
+
+          # WHY STDERR IS CAPTURED AND INSPECTED RATHER THAN DISCARDED
+          #
+          # `gh api` exits non-zero and writes "gh: <message> (HTTP <status>)"
+          # to stderr for EVERY non-2xx, so the exit status alone cannot
+          # distinguish "no such release" (404) from "could not find out" (401
+          # expired token, 403 under-scoped token or rate limit, 5xx, DNS
+          # failure on the runner).
+          #
+          # The previous version of this step put `2>/dev/null` inside the
+          # if-condition and branched on the exit status. Every one of those
+          # failures therefore read as "no release exists": the step printed
+          # "No existing assets", asserting something it had never checked,
+          # and the run continued to the upload that fails with an opaque 422
+          # already_exists. The guard switched itself off exactly when it was
+          # needed.
+          #
+          # Only a genuine 404 is evidence of absence. Every other outcome
+          # stops the run, with the API's own message attached.
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > "${RESP}" 2> "${ERR}"; then
+            :
+          elif grep -qi 'HTTP 404' "${ERR}"; then
+            echo "==> ${TAG}: the API reports no release with this tag (HTTP 404), so create-release will create it"
+            exit 0
+          else
+            echo "::error::Could not determine whether release ${TAG} already exists, so this pre-flight cannot vouch for it."
+            echo "::error::Only HTTP 404 proves absence. Any other failure (401/403 token scope or rate limit, 5xx, DNS) leaves the state of ${TAG} UNKNOWN, and reading that as 'absent' disables this guard and lets the run reach the upload that fails with an opaque 422 already_exists."
+            sed 's/^/::error::/' "${ERR}" >&2
             exit 1
           fi
-          echo "==> No existing assets for ${TAG}"
+
+          # One response, four facts. The release object is fetched once and
+          # every field either branch below needs is read out of that single
+          # file, rather than paying for a second API call per field.
+          ASSETS="$(jq -r '(.assets // [])[].name' "${RESP}" | tr '\n' ' ')"
+          ASSETS="${ASSETS% }"
+          DRAFT="$(jq -r '.draft // false' "${RESP}")"
+          PUBLISHED_AT="$(jq -r '.published_at // "null"' "${RESP}")"
+          TARGET="$(jq -r '.target_commitish // ""' "${RESP}")"
+
+          # PROVENANCE: does this release point at the commit this run built?
+          #
+          # target_commitish is whatever the creating request passed, and the
+          # REST API defaults it to the release's branch, so in this repo it
+          # holds a branch name ("main", and "master" on the older releases),
+          # never a commit id. Comparing it to GITHUB_SHA directly would
+          # therefore report a mismatch on every run, including correct ones,
+          # and prove nothing. So compare each shape against the value it can
+          # actually be compared to:
+          #   * 40 hex        -> a commit id:    compare with GITHUB_SHA
+          #   * anything else -> a branch name:  compare with GITHUB_REF_NAME
+          if printf '%s' "${TARGET}" | grep -Eq '^[0-9a-f]{40}$'; then
+            if [ "${TARGET}" != "${GITHUB_SHA}" ]; then
+              echo "::error::Release ${TAG} records target_commitish ${TARGET}, but this run built ${GITHUB_SHA}."
+              echo "::error::Attaching a freshly built APK to a tag that points at a different commit publishes an asset that does not match its tag. Bump versionName in app/build.gradle.kts, or delete the release at ${RELEASE_URL} and its git tag, then re-dispatch."
+              exit 1
+            fi
+            echo "==> ${TAG}: target_commitish ${TARGET} is the commit this run built"
+          elif [ "${TARGET}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Release ${TAG} records target_commitish '${TARGET}', which is neither a commit id nor this run's ref ('${GITHUB_REF_NAME}'), so its provenance cannot be reconciled with the ${GITHUB_SHA} this run built."
+            echo "::error::Bump versionName in app/build.gradle.kts, or delete the release at ${RELEASE_URL} and its git tag, then re-dispatch."
+            exit 1
+          else
+            echo "==> ${TAG}: target_commitish is the branch '${TARGET}', not a commit id, so it cannot be compared with ${GITHUB_SHA}; it does match this run's ref."
+          fi
+
+          # Branch 1: the tag already carries an asset, so the upload below
+          # cannot succeed. This is the state a SUCCESSFUL release leaves, so
+          # the ordinary trigger is a re-dispatch that forgot to bump
+          # versionName. The previous message called it a "partial release"
+          # and told the operator to delete it, which for that common case
+          # means trashing a legitimate, published release.
+          if [ -n "${ASSETS}" ]; then
+            echo "::error::Release ${TAG} already exists and already carries asset(s): ${ASSETS}"
+            echo "::error::The Create GitHub Release step does not overwrite assets, so re-dispatching fails with \"422 Validation Failed / already_exists\" instead of replacing them."
+            if [ "${DRAFT}" = "true" ] || [ "${PUBLISHED_AT}" = "null" ]; then
+              echo "::error::This release was never published (draft=${DRAFT}, published_at=${PUBLISHED_AT})."
+            else
+              echo "::error::This release is published (draft=${DRAFT}, published_at=${PUBLISHED_AT}), so treat it as legitimate unless you know otherwise: the usual trigger is re-dispatching without bumping versionName."
+            fi
+            echo "::error::Pick the recovery that matches what this release actually is:"
+            echo "::error::  1. Preferred: bump versionName in app/build.gradle.kts, commit, and re-dispatch. Every run publishes its own tag, so nothing already published is touched."
+            echo "::error::  2. Only if this release is genuinely wrong: open ${RELEASE_URL}, \"Trash release\", and then check the repository's Tags list for ${TAG} -- deleting the release does not reliably delete the tag it points at, and a tag that survives is reused by the next dispatch. Then re-dispatch."
+            exit 1
+          fi
+
+          # Branch 2: the release exists but carries no asset. That is
+          # identified from the release's own draft/published_at state above,
+          # not inferred from the zero asset count. softprops/action-gh-release
+          # creates releases published rather than as drafts, so draft=false
+          # here is the expected shape and means the earlier run died between
+          # creating the release and finishing the upload.
+          echo "==> ${TAG}: release exists with no asset (draft=${DRAFT}, published_at=${PUBLISHED_AT}) -- an earlier run most likely died mid-upload"
+          echo "==> ${TAG}: proceeding completes that existing release with the APK from this run; check the uploaded asset on ${RELEASE_URL} afterwards"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
