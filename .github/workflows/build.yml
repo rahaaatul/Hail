@@ -139,6 +139,8 @@ jobs:
           target="${ZIP_PATH:-$APK_PATH}"
           if [[ -n "$target" ]]; then
             bash .github/scripts/upload.sh "$target"
+          else
+            echo "::warning::No zip path given, skipping"
           fi
 
       - name: Upload artifact
