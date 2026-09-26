@@ -21,15 +21,30 @@ on:
 # job cannot silently inherit write access.
 permissions: {}
 
+# One run per ref at a time. A release run must never be cancelled halfway:
+# cancel-in-progress: true can kill the run while softprops/action-gh-release
+# is uploading, leaving a published release with a truncated or replaced asset.
+# Queued runs wait their turn instead. Grouping by ref is enough to serialise
+# releases, because every release run is dispatched on the same ref, and
+# create-release only runs for refs/heads/main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     # This job is triggered by pull_request and executes PR-supplied Gradle
     # build scripts (app/build.gradle.kts, settings.gradle.kts, included
-    # builds), i.e. arbitrary code from external contributors. It only ever
-    # reads the repository and uploads artifacts, so grant read-only access.
+    # builds), i.e. arbitrary code from external contributors. It therefore
+    # gets no writable scope. It needs two read-only scopes: contents: read to
+    # check out the repo, and pull-requests: read because tg_body.sh fetches
+    # GET /repos/{repo}/pulls/{number} for the PR title used as the Telegram
+    # caption. Without the latter the lookup 403s and the caption silently
+    # falls back to the local commit subject.
     permissions:
       contents: read
+      pull-requests: read
     outputs:
       version_name: ${{ steps.version.outputs.version_name }}
       tag: ${{ steps.version.outputs.tag }}
@@ -164,12 +179,19 @@ jobs:
           retention-days: 7
 
   create-release:
-    if: ${{ needs.build.outputs.build_type != 'debug' }}
+    # workflow_dispatch can target any branch, and tag_name comes solely from
+    # versionName in app/build.gradle.kts, so a run dispatched from some other
+    # branch (or from a tag) would create or re-point the release tag and
+    # replace an already-published signed APK. Publish from main only.
+    if: >-
+      github.ref == 'refs/heads/main'
+      && needs.build.outputs.build_type != 'debug'
     needs: [build]
     runs-on: ubuntu-latest
     # The only job that writes to the repository: softprops/action-gh-release
     # creates the GitHub Release and uploads its assets via the REST API, which
     # requires contents: write. Nothing else in this workflow mutates the repo.
+    # It never reads pull-request data, so it gets no pull-requests scope.
     permissions:
       contents: write
     steps:
@@ -223,5 +245,9 @@ jobs:
           name: v${{ needs.build.outputs.version_name }}
           body: ${{ steps.changelog.outputs.body }}
           prerelease: ${{ needs.build.outputs.build_type == 'pre-release' }}
-          overwrite_files: true
+          # Never overwrite an asset on an existing release: republishing a
+          # tag must not silently replace a signed APK users already have.
+          # Fail instead if the build produced no matching file, so a broken
+          # release is obvious rather than an empty release page.
+          fail_on_unmatched_files: true
           files: ${{ steps.flatten.outputs.apk_path }}
