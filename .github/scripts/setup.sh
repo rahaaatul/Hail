@@ -15,23 +15,65 @@
 #
 # Usage: bash setup.sh
 # Exits 0 on success, 1 on failure.
+#
+# Requires: Linux — hard requirement, the script exits 1 on any other OS.
+# Also required, and checked separately because they are capabilities rather
+# than an OS: apt-get and sudo. Everything else this script uses it installs.
+# The guard below reports which requirement was not met.
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+readonly SCRIPT_DIR
+
 # --- Fail fast on a non-Linux runner ----------------------------------------
-# Everything below is Linux-only: apt-get + sudo install the packages, the JDK
-# and cmdline-tools downloads are hardcoded linux builds, and zip.sh needs GNU
-# `stat -c%s`. Failing here beats the bare `7z: command not found` a macOS
-# runner used to produce after silently skipping the apt-get block.
-if [[ "$(uname -s)" != "Linux" ]]; then
-  os="$(uname -s)"
-  echo "::error::setup.sh: unsupported OS '${os}' - this toolchain is Linux-only"
-  echo "setup.sh: '${os}' is not supported, Linux is required because:"
+# Everything below is Linux-only, so bail out before downloading anything. The
+# reasons are printed to the user here and deliberately not restated in a
+# comment: two copies of the same three facts drift apart, and this one is the
+# copy a macOS maintainer actually reads when the script refuses to run.
+# uname is captured once and tolerates being absent, so a minimal container
+# PATH gets the diagnostic instead of a bare exit 127.
+os="$(uname -s 2>/dev/null || echo unknown)"
+if [[ "${os}" != "Linux" ]]; then
+  if [[ "${os}" == "unknown" ]]; then
+    echo "::error::setup.sh: cannot determine the OS (uname unavailable) - this toolchain is Linux-only"
+  else
+    echo "::error::setup.sh: unsupported OS '${os}' - this toolchain is Linux-only"
+  fi
+  echo "setup.sh: Linux is required because:"
   echo "  * packages (p7zip 7z, unzip, zip) come from apt-get + sudo"
   echo "  * the JDK and cmdline-tools downloads are linux builds"
   echo "  * zip.sh needs GNU stat -c%s, which BSD stat rejects"
   exit 1
 fi
+
+# --- Fail fast on a missing package-manager capability ------------------------
+# A Linux job is not automatically a Debian one. Without this, an image that
+# has neither tool walks through the full JDK and cmdline-tools downloads and
+# only fails when the install step cannot run. Distinct from the OS check
+# above, and reported as such.
+missing=""
+command -v apt-get >/dev/null 2>&1 || missing="apt-get"
+command -v sudo >/dev/null 2>&1 || missing="${missing:+$missing }sudo"
+if [[ -n "${missing}" ]]; then
+  echo "::error::setup.sh: unsupported environment - missing required command(s): ${missing}"
+  echo "setup.sh: the OS is supported, but installing p7zip 7z, unzip and zip needs apt-get + sudo."
+  exit 1
+fi
+
+# --- Regression tests --------------------------------------------------------
+# The caption escaper is the only thing between an attacker-supplied PR title
+# and markup injection into the public channel, and its substitutions have
+# been silent no-ops before. Run its tests here, ahead of the downloads: they
+# need nothing but coreutils, and a caption regression should fail in seconds
+# rather than after a few hundred MB of JDK.
+echo "==> Running tg_body_test.sh"
+if ! test_output="$(bash "${SCRIPT_DIR}/tg_body_test.sh" 2>&1)"; then
+  printf '%s\n' "${test_output}"
+  echo "::error::setup.sh: tg_body_test.sh failed - the Telegram caption escaper regressed"
+  exit 1
+fi
+printf '%s\n' "${test_output}"
 
 readonly JAVA_VERSION="26"
 readonly SDK_PLATFORM="android-37.0"
@@ -49,13 +91,13 @@ echo "==> Installing toolchain (apt, JDK, cmdline-tools in parallel)"
 
 # --- Parallel installs ------------------------------------------------------
 
-# 1. System packages (7z for compression)
+# 1. System packages (7z for compression). Unconditional: the capability guard
+# above already proved apt-get and sudo exist, so a conditional here would only
+# be a second place to forget the check.
 apt_pid=""
-if command -v apt-get >/dev/null 2>&1; then
-  ( sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full unzip zip ) \
-    >/tmp/setup_apt.log 2>&1 &
-  apt_pid=$!
-fi
+( sudo apt-get update -qq && sudo apt-get install -y -qq p7zip-full unzip zip ) \
+  >/tmp/setup_apt.log 2>&1 &
+apt_pid=$!
 
 # 2. JDK 26 — always install: the runner image pre-sets JAVA_HOME to a
 #    different JDK (e.g. 17), so gating on it would silently skip the install.

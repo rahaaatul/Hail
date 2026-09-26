@@ -21,13 +21,24 @@
 #   <blockquote><a href="<commit-url>"><short-hash></a></blockquote>
 #
 # Requires (must be on PATH):
-#   git  — refs, hashes and the commit subject
-#   sed  — versionName extraction
-#   jq   — HARD dependency for the PR title lookup, taken whenever PR_NUMBER
-#          and GH_TOKEN are both set. Preinstalled on ubuntu-latest; without it
-#          the API call is skipped, a diagnostic is written to stderr and the
-#          caption falls back to the local commit subject. Not silently
-#          degraded: see the guard below.
+#   git     — refs, hashes and the commit subject
+#   sed     — versionName extraction from app/build.gradle.kts
+#   head    — keeps the first match when the file declares several
+#   dirname — locates the repository root from $0
+#   curl    — HARD dependency for the PR title lookup, taken whenever
+#             PR_NUMBER and GH_TOKEN are both set. This is the call hardened
+#             below (--fail, --connect-timeout, --max-time, --retry), so a
+#             runner without it cannot build a real caption at all: the lookup
+#             is skipped, curl's own diagnostics reach stderr and the caption
+#             falls back to the local commit subject.
+#
+# Optional:
+#   jq      — parses the PR title API response. Preinstalled on
+#             ubuntu-latest. Without it the API call is skipped, a diagnostic
+#             is written to stderr and the caption falls back to the local
+#             commit subject. An enhancement, not a requirement: the caption
+#             is still correct, just less informative. Not silently degraded:
+#             see the guard below.
 #
 # Environment:
 #   REPO       — "owner/repo" for the commit URL (default: rahaaatul/Hail)

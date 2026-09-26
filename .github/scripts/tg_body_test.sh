@@ -2,7 +2,11 @@
 #
 # tg_body_test.sh — regression tests for the Telegram caption escaper.
 #
-# Usage: bash .github/scripts/tg_body_test.sh
+# Runs automatically from .github/scripts/setup.sh, which is the first thing
+# the build job and both local wrappers (tg_debug.sh, tg_release.sh) execute.
+# A failure there aborts the build, so nothing depends on anyone remembering
+# to run this by hand. It can still be run directly for a tighter loop:
+#   bash .github/scripts/tg_body_test.sh
 # Exit:  0 = every assertion passed, 1 = at least one failure
 #
 # Why this exists: escape_html is the only thing standing between an
@@ -14,7 +18,17 @@
 #
 # The function is extracted from the committed script rather than copied here,
 # so this exercises what actually runs. Plain bash on purpose: no bats (not
-# preinstalled), no network, no dependency beyond coreutils.
+# preinstalled), no network, no dependency beyond coreutils (grep, sed, sort,
+# comm, head).
+#
+# Three layers, because a round-trip alone is not enough:
+#   1. escape_html produces the right bytes for a given input
+#   2. the caption heredoc interpolates only esc_* variables
+#   3. every esc_* it interpolates is actually assigned from escape_html, and
+#      upload.sh still leaves tg_body.sh's stderr attached
+# (2) without (3) passes for esc_subject="${subject}": a raw copy still has an
+# esc_ prefix, so the prefix check is green while the caption ships unescaped
+# markup.
 #
 # Note: escape_html is deliberately NOT idempotent (& -> &amp; -> &amp;amp;).
 # Callers must escape once, into the esc_*-prefixed copies the script keeps.
@@ -41,10 +55,16 @@ fail() {
 }
 
 # assert_escape <description> <input> <expected>
+#
+# [ ... = ... ] rather than [[ ... == ... ]]: `=` is a plain string equality,
+# while the right operand of `==` is a glob pattern unless it is quoted. The
+# quoting here makes the two equivalent today, but nothing but the quotes is
+# holding that line, and the glob fixtures below are the ones that would
+# notice if they were dropped.
 assert_escape() {
   local desc="$1" input="$2" expected="$3" actual
   actual="$(escape_html "${input}")"
-  if [[ "${actual}" == "${expected}" ]]; then
+  if [ "${actual}" = "${expected}" ]; then
     pass "${desc}"
   else
     fail "${desc}" "${expected}" "${actual}"
@@ -119,6 +139,24 @@ assert_escape "realistic PR title" \
 assert_escape "markup injection attempt" \
   '<a href="https://evil.example">click me</a>' \
   '&lt;a href=&quot;https://evil.example&quot;&gt;click me&lt;/a&gt;'
+# Glob metacharacters are not HTML metacharacters: they must survive verbatim
+# and the comparison must stay exact. A broken escaper leaves * ? and [ alone,
+# so these pass either way here — they exist to pin the comparison, not the
+# substitution.
+assert_escape "glob metacharacters pass through verbatim" \
+  'fix(ui): match *args and ? in [a-z] globs' \
+  'fix(ui): match *args and ? in [a-z] globs'
+assert_escape "glob metacharacters pass through alongside escaped ones" \
+  'fix(ui): match *args and ? in [a-z] globs & log the <b> tag' \
+  'fix(ui): match *args and ? in [a-z] globs &amp; log the &lt;b&gt; tag'
+# The "*" is deliberately glued to the "&". That adjacency is what makes a glob
+# comparison swallow a real regression: applying the & substitution twice turns
+# the expected "&amp;" into "&amp;amp;", and as a pattern "*&amp;* unexpanded"
+# matches "*&amp;amp;* unexpanded" in full, so [[ x == y ]] would report ok for a
+# broken escaper. [ x = y ] does not.
+assert_escape "ampersand followed by a glob star, compared exactly" \
+  'fix: keep &* unexpanded in captions' \
+  'fix: keep &amp;* unexpanded in captions'
 assert_escape "empty input stays empty" '' ''
 
 # --- 4. Caption interpolation ------------------------------------------------
@@ -141,6 +179,59 @@ else
     fail "heredoc interpolates only esc_*-prefixed values" \
       "no non-esc_ interpolation" "$(tr '\n' ' ' <<<"${raw_interp}")"
   fi
+
+  # The prefix check above is satisfied by any esc_* name, escaped or not:
+  # reverting one line to esc_subject="${subject}" keeps it green while the
+  # caption ships the raw title. Diff the name sets instead — every name the
+  # heredoc interpolates has to be assigned from escape_html.
+  #
+  # names_on <lines> -> sorted unique leading esc_* names.
+  names_on() { grep -o '^esc_[A-Za-z0-9_]*' | sort -u; }
+  # Single quotes are deliberate: ${...} here is the literal text the extracted
+  # heredoc contains, not a parameter expansion of this script.
+  # shellcheck disable=SC2016
+  esc_in_heredoc="$(grep -o '\${esc_[A-Za-z0-9_]*}' <<<"${emitted}" | sed 's/^\${//; s/}$//' | sort -u)"
+  esc_assigns="$(grep '^esc_[A-Za-z0-9_]*=' "${SCRIPT}" || true)"
+  esc_assigned="$(names_on <<<"${esc_assigns}")"
+  esc_escaped="$(names_on <<<"$(grep 'escape_html' <<<"${esc_assigns}")")"
+
+  # comm needs newline-terminated, sorted input; sed drops the blank line an
+  # empty variable would otherwise contribute.
+  in_list() { printf '%s\n' "${1}" | sed '/^$/d'; }
+  not_escaped="$(comm -23 <(in_list "${esc_assigned}") <(in_list "${esc_escaped}"))"
+  unassigned="$(comm -23 <(in_list "${esc_in_heredoc}") <(in_list "${esc_escaped}"))"
+
+  if [[ -n "${not_escaped}" ]]; then
+    fail "every esc_* assignment calls escape_html" \
+      "each esc_* assigned from escape_html" "raw copies: $(tr '\n' ' ' <<<"${not_escaped}")"
+  else
+    pass "every esc_* assignment calls escape_html"
+  fi
+
+  if [[ -z "${unassigned}" ]]; then
+    pass "every esc_* interpolated in the heredoc is assigned from escape_html"
+  else
+    fail "every esc_* interpolated in the heredoc is assigned from escape_html" \
+      "esc_* = escape_html for $(tr '\n' ' ' <<<"${esc_in_heredoc}")" \
+      "not escaped: $(tr '\n' ' ' <<<"${unassigned}")"
+  fi
+fi
+
+# --- 5. upload.sh wiring -----------------------------------------------------
+# tg_body.sh reports its own diagnostics on stderr (no jq, API failure). A
+# 2>/dev/null on its invocation throws those away and the caption silently
+# degrades, which is the failure mode the #113-era guards were added for.
+echo
+echo "==> upload.sh wiring"
+upload_invoke="$(grep -nE '\$\(.*tg_body\.sh' "${SCRIPT_DIR}/upload.sh" || true)"
+if [[ -z "${upload_invoke}" ]]; then
+  fail "upload.sh still invokes tg_body.sh" \
+    "a \$(... tg_body.sh ...) invocation" 'no invocation found'
+elif grep -qE '2>[[:space:]]*/dev/null|2>&1' <<<"${upload_invoke}"; then
+  fail "upload.sh leaves tg_body.sh's stderr attached" \
+    'no 2>/dev/null and no 2>&1 on the invocation' "${upload_invoke}"
+else
+  pass "upload.sh leaves tg_body.sh's stderr attached"
 fi
 
 summary
