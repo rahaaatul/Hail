@@ -16,6 +16,14 @@
 # step stayed green. `bash -n` plus the round-trips below make both shapes fail
 # loudly instead of shipping.
 #
+# It also has to fail for a reason no assertion here can see. The escaper was
+# written with ${var//pat/rep}, which bash 5.2 changed the meaning of (see
+# patsub_replacement in tg_body.sh), so this suite was green on every developer's
+# bash 5.1 and red on the runner. Nothing recorded the interpreter, so the
+# version that validated the escaper was invisible. Hence the version line and
+# the 5.2 floor in section 0: a run on anything older is a failed run, not a
+# pass.
+#
 # The function is extracted from the committed script rather than copied here,
 # so this exercises what actually runs. Plain bash on purpose: no bats (not
 # preinstalled), no network, no dependency beyond coreutils (grep, sed, sort,
@@ -81,7 +89,23 @@ summary() {
 }
 
 echo "tg_body_test.sh: checking $(basename "${SCRIPT}")"
+echo "tg_body_test.sh: bash ${BASH_VERSION}"
 echo
+
+# --- 0. Interpreter ---------------------------------------------------------
+# The escaper is validated against bash >= 5.2, the release that introduced
+# patsub_replacement. Older interpreters lack the option, so a green run there
+# does not prove anything about the runner and must not be mistaken for one.
+# The version is printed above so the run log always records which interpreter
+# actually validated these assertions.
+echo "==> interpreter"
+if (( BASH_VERSINFO[0] < 5 || (BASH_VERSINFO[0] == 5 && BASH_VERSINFO[1] < 2) )); then
+  fail "bash >= 5.2 (patsub_replacement era)" \
+    'bash 5.2 or newer' "bash ${BASH_VERSION}"
+  summary
+  exit 1
+fi
+pass "bash >= 5.2 (patsub_replacement era)"
 
 # --- 1. Syntax ---------------------------------------------------------------
 # Would have caught the parse error that made every caption empty (#113).

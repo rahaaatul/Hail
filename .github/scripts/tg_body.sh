@@ -22,7 +22,8 @@
 #
 # Requires (must be on PATH):
 #   git     — refs, hashes and the commit subject
-#   sed     — versionName extraction from app/build.gradle.kts
+#   sed     — versionName extraction from app/build.gradle.kts, and the
+#             HTML entity substitutions in escape_html below
 #   head    — keeps the first match when the file declares several
 #   dirname — locates the repository root from $0
 #   curl    — HARD dependency for the PR title lookup, taken whenever
@@ -53,15 +54,50 @@ cd "$(dirname "$0")/../.."
 readonly REPO="${REPO:-rahaaatul/Hail}"
 
 # --- HTML escaping helper ---------------------------------------------------
-# & must be replaced first: the later substitutions introduce ampersands of
-# their own, and escaping those again would corrupt the output.
+# Implemented with sed, not with ${var//pat/rep}. This is a correctness
+# requirement, not a style preference.
+#
+# bash 5.2 added the patsub_replacement shopt, ON BY DEFAULT: a bare & in the
+# replacement of a pattern substitution expands to the text the pattern matched
+# (the sed s/// idiom, applied by the shell). So under bash >= 5.2
+#
+#   str="${str//</&lt;}"     ->  "<lt;"
+#   str="${str//>/&gt;}"     ->  ">gt;"
+#   str="${str//\"/&quot;}"  ->  "\"quot;"
+#
+# leaving < > and " raw in a parse_mode=HTML caption: the markup injection this
+# function exists to prevent. The & -> &amp; line happened to be right, but only
+# by coincidence — the matched text there is & itself.
+#
+# This is also why the bug was invisible locally: bash 5.1 has no such option,
+# so every developer run was green while ubuntu-latest (bash >= 5.2) was not.
+#
+# sed sidesteps the shell option entirely, which is why it is used here. In a
+# sed replacement \& is a literal & and is mandatory, so dropping the backslash
+# yields visibly wrong output on EVERY bash. The bash forms have the opposite
+# asymmetry: a bare & is the idiomatic-looking thing to write, and it is
+# silently correct on 5.1, so a later edit that only "tidies" a replacement can
+# reintroduce this bug without any local signal. Measured on bash 5.1.16 and
+# 5.2.0, substituting a lone "<":
+#
+#   "${s//</&lt;}"     5.1: &lt;    5.2: <lt;     <- the bug
+#   ${s//</\&lt;}       5.1: &lt;    5.2: &lt;    <- works, but only unquoted
+#   "${s//</\&lt;}"    5.1: &lt;    5.2: &lt;    <- works, but a bare & looks right
+#   "${s//</\\&lt;}"   5.1: \&lt;   5.2: \<lt;   <- literal backslash, wrong on both
+#   "${s//</'\&lt;'}"  5.1: \&lt;   5.2: \&lt;   <- literal backslash, wrong on both
+#
+# The two right-hand bash rows are correct today; they are listed because they
+# are the shapes a future reader is most likely to try, and neither keeps
+# working by a rule that survives editing the way sed's \& does.
+#
+# & is replaced first: the later substitutions introduce ampersands of their
+# own, and escaping those again would corrupt the output.
+#
+# sed works line by line and terminates its output with a newline, so this is
+# for single-line values. Every call site below captures it with $(...), which
+# strips that newline.
 escape_html() {
-  local str="$1"
-  str="${str//&/&amp;}"
-  str="${str//</&lt;}"
-  str="${str//>/&gt;}"
-  str="${str//\"/&quot;}"
-  printf '%s' "$str"
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'
 }
 
 # --- Derive values ----------------------------------------------------------
