@@ -95,23 +95,9 @@ jobs:
           fi
           echo "==> Signing secrets present"
 
-      - name: Prepare signing configuration
-        if: ${{ steps.build_type.outputs.build_type != 'debug' }}
-        env:
-          KEYSTORE: ${{ secrets.KEYSTORE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
-          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
-        run: |
-          echo "$KEYSTORE" | base64 --decode > "$GITHUB_WORKSPACE/release.keystore"
-          cat > signing.properties <<EOF
-          storeFile=$GITHUB_WORKSPACE/release.keystore
-          storePassword=$KEYSTORE_PASSWORD
-          keyAlias=$KEYSTORE_ALIAS
-          keyPassword=$KEYSTORE_ALIAS_PASSWORD
-          EOF
-          echo "==> signing.properties created"
-
+      # signing.properties is provisioned ephemerally by the build_release lane
+      # (mktemp + repository-root copy, removed afterwards); the keystore and
+      # passwords are never written to the workspace by the workflow itself.
       - name: Build debug APK
         if: ${{ steps.build_type.outputs.build_type == 'debug' }}
         id: build_debug

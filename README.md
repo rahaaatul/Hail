@@ -261,7 +261,7 @@ bundle exec fastlane build_debug
 # Build a PR APK for PR #42
 bundle exec fastlane build_pr pr_number:42
 
-# Build a signed release APK (local signing via signing.properties)
+# Build a signed release APK (requires the KEYSTORE* environment variables)
 bundle exec fastlane build_release release_type:release
 
 # Full release + GitHub Release + Telegram notification
@@ -276,10 +276,15 @@ Builds are triggered by the `Build` workflow (`.github/workflows/build.yml`), wh
 `pull_request` and `workflow_dispatch` (choice: `debug`, `release`, `pre-release`).
 
 - Release builds require the `KEYSTORE`, `KEYSTORE_PASSWORD`, `KEYSTORE_ALIAS`, and
-  `KEYSTORE_ALIAS_PASSWORD` secrets. The keystore is decoded to a temporary `keystore.jks` and a
-  `signing.properties` file is written; both are gitignored and cleaned up after the build.
-- Release builds are **fail-closed**: missing signing material or a version/changelog mismatch
-  (`CHANGELOG.md` missing `## [versionName]`) aborts the build. There is no debug fallback key.
+  `KEYSTORE_ALIAS_PASSWORD` environment variables. The `build_release` lane creates them
+  fail-closed (any missing variable aborts the build) and keeps the keystore in a `mktemp`
+  directory; it writes a mode-`0600` `signing.properties` at the repository root — where
+  `app/build.gradle.kts` looks for it — and deletes it again once the build finishes. The
+  keystore never touches persistent storage, and `signing.properties` is gitignored.
+- Release builds are **fail-closed** in Gradle as well: `assembleRelease`/`bundleRelease`
+  without a readable `signing.properties` aborts with a `GradleException` instead of silently
+  producing an unsigned APK. There is no debug fallback key.
+- The `release` lane additionally aborts when `CHANGELOG.md` has no `## [versionName]` entry.
 - Telegram notifications use `TG_TOKEN` and `TG_GROUP`. Failures abort the build.
   When `TG_TOKEN` is unset, the upload step dry-runs.
 - Debug builds are compressed with 7z (`-mx=9`, >15MB) or zip (`-9`, ≤15MB) before upload.
@@ -299,8 +304,8 @@ Builds are triggered by the `Build` workflow (`.github/workflows/build.yml`), wh
 | `RELEASE_TYPE` | for `build_release` | `release` or `pre-release` (affects filename only). |
 | `REPO` | optional | `owner/repo` for commit URLs (default `rahaaatul/Hail`). |
 
-Local signing can also be provided by a `signing.properties` file at the repository root (gitignored),
-with `storeFile`, `storePassword`, `keyAlias`, and `keyPassword` entries.
+Local release builds work the same way: export the four signing variables (or load them from a
+gitignored `secrets.env`) and run the lane. The lane refuses to build a release without them.
 
 ## Help Translate
 

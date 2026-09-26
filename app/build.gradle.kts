@@ -6,6 +6,17 @@ plugins {
 
 android {
     val signingProps = file("../signing.properties")
+    // Release builds are fail-closed: without signing.properties there is no
+    // signing config, and publishing an unsigned release APK is never intended.
+    gradle.taskGraph.whenReady { graph ->
+        val buildsRelease = graph.allTasks.any { it.name == "assembleRelease" || it.name == "bundleRelease" }
+        if (buildsRelease && !signingProps.exists()) {
+            throw GradleException(
+                "signing.properties not found at ${signingProps.absolutePath}; release builds " +
+                    "require storeFile, storePassword, keyAlias and keyPassword",
+            )
+        }
+    }
     val commitHash = providers.exec {
         workingDir = rootDir
         commandLine = "git rev-parse --short HEAD".split(" ")
@@ -54,12 +65,9 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = if (signingProps.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                logger.lifecycle("signing.properties not found; release APK will be unsigned")
-                null
-            }
+            // Signed whenever signing.properties exists; the task graph guard
+            // above fails the build when it is missing.
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )

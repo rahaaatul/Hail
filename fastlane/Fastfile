@@ -1,10 +1,18 @@
 default_platform(:android)
 
+require "fileutils"
+require "tmpdir"
 require_relative "helpers/build_helpers"
 
 platform :android do
+  # Repository root, resolved from this Fastfile's location so lanes behave the
+  # same whether fastlane is started from the repository root or from fastlane/.
+  def repo_root
+    File.expand_path("..", __dir__)
+  end
+
   def version_name
-    BuildHelpers.extract_version_name
+    BuildHelpers.extract_version_name(File.join(repo_root, "app/build.gradle.kts"))
   end
 
   desc "Validate store metadata"
@@ -15,12 +23,14 @@ platform :android do
 
   desc "Build debug APK"
   lane :build_debug do
-    gradle(task: "assembleDebug", project_dir: ".")
-    apk_path = Dir.glob("app/build/outputs/apk/debug/*.apk").first
-    raise "No debug APK found" unless apk_path
+    gradle(task: "assembleDebug", project_dir: repo_root)
+    out_dir = File.join(repo_root, "app/build/outputs/apk/debug")
+    # Gradle emits app-<buildType>.apk; matching that name avoids picking up
+    # Hail-*.apk artifacts left behind by an earlier run.
+    apk_path = Dir.glob(File.join(out_dir, "app-*.apk")).sort.first
+    raise "No debug APK found in #{out_dir}" unless apk_path
     commit = `git rev-parse --short HEAD`.strip rescue "unknown"
-    dest = "app/build/outputs/apk/debug/Hail-#{commit}-debug.apk"
-    require "fileutils"
+    dest = File.join(out_dir, "Hail-#{commit}-debug.apk")
     FileUtils.cp(apk_path, dest)
     FileUtils.rm_f(apk_path)
     lane_context[:apk_path] = dest
@@ -30,11 +40,13 @@ platform :android do
   desc "Build PR APK"
   lane :build_pr do |options|
     pr_number = BuildHelpers.validate_pr_number(options[:pr_number])
-    gradle(task: "assemblePr", project_dir: ".")
-    apk_path = Dir.glob("app/build/outputs/apk/pr/*.apk").first
-    raise "No PR APK found" unless apk_path
-    dest = "app/build/outputs/apk/pr/Hail-#{pr_number}-pr.apk"
-    require "fileutils"
+    gradle(task: "assemblePr", project_dir: repo_root)
+    out_dir = File.join(repo_root, "app/build/outputs/apk/pr")
+    # Gradle emits app-<buildType>.apk; matching that name avoids picking up
+    # Hail-*.apk artifacts left behind by an earlier run.
+    apk_path = Dir.glob(File.join(out_dir, "app-*.apk")).sort.first
+    raise "No PR APK found in #{out_dir}" unless apk_path
+    dest = File.join(out_dir, "Hail-#{pr_number}-pr.apk")
     FileUtils.cp(apk_path, dest)
     FileUtils.rm_f(apk_path)
     lane_context[:apk_path] = dest
@@ -43,25 +55,26 @@ platform :android do
   desc "Build signed release APK"
   lane :build_release do |options|
     release_type = options[:release_type] || "release"
-    tmpdir = Dir.mktmpdir
-    signing_props = BuildHelpers.setup_signing(tmpdir)
-    unless signing_props == "signing.properties"
-      require "fileutils"; FileUtils.cp(signing_props, "signing.properties")
-    end
+    # Signing material only ever lives in a temporary directory; Gradle gets a
+    # throwaway signing.properties at the repository root that is removed again.
+    tmpdir = Dir.mktmpdir("hail-signing-")
+    signing_props = BuildHelpers.setup_signing(tmpdir, repo_root)
     begin
-      gradle(task: "assembleRelease", project_dir: ".")
-      apk_path = Dir.glob("app/build/outputs/apk/release/*.apk").first
-      raise "No release APK found" unless apk_path
+      gradle(task: "assembleRelease", project_dir: repo_root)
+      out_dir = File.join(repo_root, "app/build/outputs/apk/release")
+      # Gradle emits app-<buildType>.apk; matching that name avoids picking up
+      # Hail-*.apk artifacts left behind by an earlier run.
+      apk_path = Dir.glob(File.join(out_dir, "app-*.apk")).sort.first
+      raise "No release APK found in #{out_dir}" unless apk_path
       vname = version_name
-      dest = "app/build/outputs/apk/release/Hail-v#{vname}-#{release_type}.apk"
-      require "fileutils"
+      dest = File.join(out_dir, "Hail-v#{vname}-#{release_type}.apk")
       FileUtils.cp(apk_path, dest)
       FileUtils.rm_f(apk_path)
       lane_context[:apk_path] = dest
       lane_context[:version_name] = vname
     ensure
-      rm_f "signing.properties" if signing_props != "signing.properties"
-      rm_rf tmpdir
+      FileUtils.rm_f(signing_props)
+      FileUtils.rm_rf(tmpdir)
     end
   end
 
@@ -109,7 +122,7 @@ platform :android do
     build_type = options[:build_type] || "release"
     raise "build_type is required" unless build_type
     vname = version_name
-    changelog = File.read("CHANGELOG.md")
+    changelog = File.read(File.join(repo_root, "CHANGELOG.md"))
     raise "CHANGELOG.md missing version #{vname}" unless changelog.include?("## [#{vname}]")
     metadata_check
     build_release(release_type: build_type)
