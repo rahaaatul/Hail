@@ -19,16 +19,13 @@
 # Requires: Linux — hard requirement, the script exits 1 on any other OS.
 # Also required, and checked separately because they are capabilities rather
 # than an OS: apt-get and sudo, to install the system packages below.
-# Beyond those this script uses curl, tar, yes, dirname, uname and mkdir, and
+# Beyond those this script uses curl, tar, yes, cat, mv, uname and mkdir, and
 # installs only p7zip-full, unzip and zip. The rest are expected to be present
 # on the runner; they are checked, not installed. Both guards below report
 # which requirement was not met, rather than letting a missing binary surface
 # later as an opaque download or extract failure.
 
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-readonly SCRIPT_DIR
 
 # --- Fail fast on a non-Linux runner ----------------------------------------
 # Everything below is Linux-only, so bail out before downloading anything. The
@@ -73,7 +70,7 @@ fi
 # Checking costs one `command -v` per tool and turns an opaque download failure
 # into a named missing prerequisite, before the first byte is fetched.
 missing_used=""
-for tool in curl tar yes dirname uname mkdir; do
+for tool in curl tar yes cat mv uname mkdir; do
   command -v "${tool}" >/dev/null 2>&1 || missing_used="${missing_used:+${missing_used} }${tool}"
 done
 if [[ -n "${missing_used}" ]]; then
