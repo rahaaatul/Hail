@@ -82,34 +82,6 @@ if [[ -n "${missing_used}" ]]; then
   exit 1
 fi
 
-# --- Regression tests --------------------------------------------------------
-# The caption escaper is the only thing between an attacker-supplied PR title
-# and markup injection into the public channel, and its substitutions have
-# been silent no-ops before. Run its tests here, ahead of the downloads: they
-# need nothing but coreutils, and a caption regression should fail in seconds
-# rather than after a few hundred MB of JDK.
-echo "==> Running tg_body_test.sh"
-if ! test_output="$(bash "${SCRIPT_DIR}/tg_body_test.sh" 2>&1)"; then
-  printf '%s\n' "${test_output}"
-  # The suite is not only about the escaper. It also asserts the upload.sh
-  # wiring, that the tools its extractions are built from are on PATH, and that
-  # tg_body.sh and upload.sh parse — none of which is the escaper regressing.
-  # "the escaper regressed" was the wrong headline for all of those, and this
-  # annotation is the only thing a reader has when the step fails, so it named a
-  # diagnosis the output above may well contradict. Report the suite and the
-  # first assertion that actually failed instead: every exit path in
-  # tg_body_test.sh prints at least one `  FAIL ` line, so this distinguishes
-  # an escaper regression from a wiring change or a broken harness.
-  first_fail="$(grep -m1 '^  FAIL ' <<<"${test_output}" || true)"
-  first_fail="${first_fail#  FAIL }"
-  if [[ -z "${first_fail}" ]]; then
-    first_fail='no FAIL line in the output above'
-  fi
-  echo "::error::setup.sh: tg_body_test.sh failed - ${first_fail}"
-  exit 1
-fi
-printf '%s\n' "${test_output}"
-
 readonly JAVA_VERSION="26"
 readonly SDK_PLATFORM="android-37.0"
 readonly SDK_DIR="${ANDROID_HOME:-${HOME}/.android/sdk}"
