@@ -43,6 +43,10 @@ These were decided deliberately. Do not relitigate them during implementation; i
 
 6. **A 50 MB Telegram upload failure degrades, it does not fail.** The APK is already on the GitHub draft, so an oversized upload costs the notification, not the release.
 
+7. **Release captions show Highlights only, or a link — never the whole section.** `### Highlights` exists in 4 of the 11 releases in the current `CHANGELOG.md`, and is absent from the two most recent, so a Highlights-only caption is empty more often than not. Rendering the full section is not an alternative: Telegram's caption limit is 1024 characters after entity parsing, and the `1.11.5` entry alone is roughly 1,700 characters of bullet text. So: Highlights when present, otherwise a blockquoted link to the release page, which carries the generated notes. A `CAPTION_LIMIT` guard degrades to the link if a future Highlights section outgrows the ceiling.
+
+8. **The `## [x.y.z] - date` heading locates a release and is never rendered.** It is markdown link syntax with no matching definition, so the brackets are syntax rather than content, and the version is already in the tag and the APK filename.
+
 ---
 
 ## File Structure
@@ -518,9 +522,10 @@ APK="$(single_match '*.apk')"
 note "Built ${APK}"
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   printf 'APK_PATH=%s\n' "$APK" >> "$GITHUB_OUTPUT"
+  # Single-line subject, so GITHUB_OUTPUT needs no heredoc form here.
+  printf 'COMMIT_SUBJECT=%s\n' "$(git log -1 --pretty=%s)" >> "$GITHUB_OUTPUT"
 fi
 SCRIPT
-chmod +x .github/scripts/build.sh
 ```
 
 The `"${EXTRA[@]+"${EXTRA[@]}"}"` form is required: under `set -u`, expanding an empty array unguarded aborts the script, and the `debug` path has no overrides.
@@ -576,7 +581,7 @@ git commit -m "ci: add build script with per-build-type version overrides"
 
 **Interfaces:**
 - Consumes: `.github/telegram.json` (read via a path relative to the script's own location, so it works from any working directory)
-- Produces: `notify.py` — environment `APK_PATH` (required), `TG_TOKEN`, `TG_CHAT_ID`, `TG_CHANNEL`, `BUILD_TITLE` (all required), `PR_NUMBER`, `GITHUB_REF_NAME`, `GITHUB_SHA`, `CI_STATUS` (optional). Exits 0 on success and on oversize; exits 1 on missing configuration.
+- Produces: `notify.py` — environment `APK_PATH`, `TG_TOKEN`, `TG_GROUP`, `TG_CHANNEL` (all required), plus per channel: `PR_NUMBER` + `PR_TITLE` for `pr`, `GITHUB_SHA` + `COMMIT_SUBJECT` for `debug`, `RELEASE_TAG` for `prerelease` and `release`. Reads `CHANGELOG.md` from the repository root. Exits 0 on success and on oversize; exits 1 on missing configuration.
 
 - [ ] **Step 1: Create the routing config**
 
@@ -598,11 +603,12 @@ JSON
 ```bash
 cat > .github/scripts/notify.py <<'PY'
 #!/usr/bin/env python3
-"""Send a built APK to a Telegram topic.
+"""Telegram captions for CI builds.
 
-Every dynamic value goes through html.escape. Secrets arrive via the
-environment, so nothing is ever interpolated into a shell string. Channel
-routing lives in .github/telegram.json so it changes in a reviewable diff.
+Every dynamic value passes through html.escape at the point of interpolation.
+Release and pre-release captions read the Highlights subsection of the tagged
+version out of CHANGELOG.md. Channel routing lives in .github/telegram.json so
+it changes in a reviewable diff.
 """
 
 import html
@@ -610,13 +616,25 @@ import json
 import mimetypes
 import os
 import pathlib
+import re
 import sys
 import urllib.request
 import uuid
 
 API = "https://api.telegram.org"
 API_TIMEOUT = 60
-SIZE_LIMIT = 50 * 1024 * 1024  # Telegram bot API sendDocument ceiling
+SIZE_LIMIT = 50 * 1024 * 1024   # Telegram bot API sendDocument ceiling
+CAPTION_LIMIT = 1024            # Telegram bot API caption ceiling
+REPO = "rahaaatul/Hail"
+
+# .github/scripts/notify.py -> three levels up is the repository root.
+ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+CHANGELOG = ROOT / "CHANGELOG.md"
+TOPICS = ROOT / ".github" / "telegram.json"
+
+HEADING = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
+BULLET = re.compile(r"^\s*[*+-]\s+(.*)$")
+TAGS = re.compile(r"<[^>]+>")
 
 
 def required(name: str) -> str:
@@ -626,11 +644,13 @@ def required(name: str) -> str:
     return value
 
 
+def visible(text: str) -> int:
+    """Telegram counts a caption after entity parsing, so markup is free."""
+    return len(TAGS.sub("", text))
+
+
 def topic_for(channel: str) -> int:
-    config = json.loads(
-        (pathlib.Path(__file__).resolve().parent.parent / "telegram.json").read_text()
-    )
-    topics = config.get("topics", {})
+    topics = json.loads(TOPICS.read_text(encoding="utf-8")).get("topics", {})
     if channel not in topics:
         sys.exit(f"::error::Unknown channel '{channel}'. Configured: {sorted(topics)}")
     return int(topics[channel])
@@ -671,23 +691,82 @@ def send_document(token: str, chat_id: str, topic: int, path: str, caption: str)
         json.load(response)
 
 
-def caption() -> str:
-    lines = [f"<b>{html.escape(required('BUILD_TITLE'))}</b>"]
-    for label, key in (("PR", "PR_NUMBER"), ("Branch", "GITHUB_REF_NAME")):
-        value = os.environ.get(key, "")
-        if value:
-            lines.append(f"<b>{label}</b>  {html.escape(value)}")
-    sha = os.environ.get("GITHUB_SHA", "")
-    if sha:
-        lines.append(f"<b>Commit</b>  {html.escape(sha[:7])}")
-    status = os.environ.get("CI_STATUS", "")
-    if status:
-        lines += ["", f"<i>{html.escape(status)}</i>"]
-    return "\n".join(lines)
+def pr_caption(number: str, title: str) -> str:
+    return (
+        f"<p><strong>PR #{html.escape(number)}</strong></p>\n"
+        f"<blockquote>\n<p>{html.escape(title)}</p>\n</blockquote>"
+    )
+
+
+def debug_caption(sha: str, subject: str) -> str:
+    return (
+        f'<p><strong><a href="https://github.com/{REPO}/commit/{html.escape(sha)}">'
+        f"Build {html.escape(sha[:7])}</a></strong></p>\n"
+        f"<blockquote>\n<p>{html.escape(subject)}</p>\n</blockquote>"
+    )
+
+
+def changelog_link(tag: str) -> str:
+    url = f"https://github.com/{REPO}/releases/tag/{html.escape(tag)}"
+    return f'<blockquote>\n<a href="{url}">See full changelog</a>\n</blockquote>'
+
+
+def release_section(version: str) -> list[str] | None:
+    """Lines belonging to one release, excluding its `## [x.y.z] - date` marker.
+
+    The marker only locates the section; it is never rendered.
+    """
+    if not CHANGELOG.is_file():
+        return None
+    lines = CHANGELOG.read_text(encoding="utf-8").splitlines()
+    head = re.compile(rf"^##\s+\[?{re.escape(version)}\]?(\s|$)")
+    start = next((i for i, line in enumerate(lines) if head.match(line)), None)
+    if start is None:
+        return None
+    end = next(
+        (j for j in range(start + 1, len(lines)) if lines[j].startswith("## ")),
+        len(lines),
+    )
+    return lines[start + 1:end]
+
+
+def highlights(section: list[str]) -> list[str]:
+    """Bullet text under `### Highlights`, and nothing else."""
+    out: list[str] = []
+    inside = False
+    for raw in section:
+        line = raw.rstrip()
+        heading = HEADING.match(line)
+        if heading:
+            inside = heading.group(1).strip().lower() == "highlights"
+            continue
+        if inside:
+            bullet = BULLET.match(line)
+            if bullet:
+                out.append(bullet.group(1))
+    return out
+
+
+def release_caption(tag: str) -> str:
+    head = "<b>📚 Changelogs</b>\n\n"
+    version = tag[1:] if tag.startswith("v") else tag
+    section = release_section(version)
+    items = highlights(section) if section else []
+
+    if items:
+        bullets = "\n".join(f"‣ {html.escape(text)}" for text in items)
+        caption = f"{head}<b>Highlights</b>\n<blockquote>\n{bullets}\n</blockquote>"
+        # Highlights sections are short today. If a future one outgrows the
+        # caption limit, degrade to the link rather than fail the upload.
+        if visible(caption) <= CAPTION_LIMIT:
+            return caption
+
+    return head + changelog_link(tag)
 
 
 def main() -> None:
     path = required("APK_PATH")
+    channel = required("TG_CHANNEL")
     size = pathlib.Path(path).stat().st_size
 
     if size > SIZE_LIMIT:
@@ -702,12 +781,23 @@ def main() -> None:
         )
         return
 
+    if channel == "pr":
+        caption = pr_caption(
+            os.environ.get("PR_NUMBER", "?"), os.environ.get("PR_TITLE", "")
+        )
+    elif channel == "debug":
+        caption = debug_caption(
+            os.environ.get("GITHUB_SHA", ""), os.environ.get("COMMIT_SUBJECT", "")
+        )
+    else:
+        caption = release_caption(os.environ.get("RELEASE_TAG", ""))
+
     send_document(
         required("TG_TOKEN"),
-        required("TG_CHAT_ID"),
-        topic_for(required("TG_CHANNEL")),
+        required("TG_GROUP"),
+        topic_for(channel),
         path,
-        caption(),
+        caption,
     )
     print("::notice::APK sent to Telegram")
 
@@ -727,35 +817,75 @@ env -u TG_TOKEN python3 .github/scripts/notify.py; echo "exit=$?"
 
 Expected: `compiles OK`, then `::error::Missing required environment variable: TG_TOKEN` and `exit=1`.
 
-- [ ] **Step 4: Verify escaping actually happens**
+- [ ] **Step 4: Verify every caption shape, against the real CHANGELOG.md**
 
-This is the security property. The whole reason this is Python rather than shell is that `html.escape` is not hand-written:
+This is the security and correctness property. `html.escape` is not hand-written, and the parser is exercised against the actual file, so the assertions below double as a fixture.
 
 ```bash
 python3 - <<'PY'
-import importlib.util, os
-os.environ["APK_PATH"] = "x"
-os.environ["TG_TOKEN"] = "t"
-os.environ["TG_CHAT_ID"] = "c"
-os.environ["TG_CHANNEL"] = "pr"
-os.environ["BUILD_TITLE"] = '<b>x</b> & "y"'
-os.environ["PR_NUMBER"] = "7"
+import importlib.util
 spec = importlib.util.spec_from_file_location("n", ".github/scripts/notify.py")
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-out = m.caption()
-print(repr(out))
+
+# PR caption, with a title carrying markup
+out = m.pr_caption("79", '<b>x</b> & "y"')
+assert "<strong>PR #79</strong>" in out, out
 assert "<b>x</b>" not in out, "raw markup survived"
-assert "&amp;" in out and "&lt;b&gt;" in out and "&quot;" in out, "entities missing"
-print("PASS: dynamic values are escaped")
+assert "&lt;b&gt;" in out and "&amp;" in out and "&quot;" in out, out
+print("PASS: pr caption escapes the title")
+
+# Debug caption links the full sha, displays seven, escapes the subject
+sha = "20887bfdbe5dbcfcfe14275552f3e899dd0f1d5b"
+out = m.debug_caption(sha, 'fix <ci> & "x"')
+assert f'href="https://github.com/rahaaatul/Hail/commit/{sha}"' in out, out
+assert "Build 20887bf<" in out, out
+assert "&lt;ci&gt;" in out, out
+print("PASS: debug caption links the commit and escapes the subject")
+
+# A version that HAS a Highlights section
+out = m.release_caption("v1.11.3")
+assert out.startswith("<b>📚 Changelogs</b>"), out
+assert "<b>Highlights</b>" in out, f"Highlights not used for 1.11.3: {out}"
+assert "‣ New Actions tab" in out, out
+assert "1.11.3" not in out, "the ## marker leaked into the caption"
+assert "Fixed" not in out, "a non-Highlights subsection leaked in"
+print("PASS: Highlights parsed for 1.11.3")
+
+# 1.11.4 has no Highlights section, so it falls back to the link
+out = m.release_caption("v1.11.4")
+assert out.startswith("<b>📚 Changelogs</b>"), out
+assert "<b>Highlights</b>" not in out, "1.11.4 has no Highlights section"
+assert 'href="https://github.com/rahaaatul/Hail/releases/tag/v1.11.4"' in out, out
+print("PASS: link fallback for 1.11.4")
+
+# An unknown version must still produce a usable caption
+out = m.release_caption("v9.9.9")
+assert "See full changelog" in out, out
+print("PASS: unknown version falls back to the link")
+
+# Every shape must fit Telegram's ceiling
+for cap in (m.pr_caption("1", "x"), m.debug_caption("a" * 40, "x"),
+            m.release_caption("v1.11.0"), m.release_caption("v1.11.4")):
+    assert m.visible(cap) <= m.CAPTION_LIMIT, (m.visible(cap), cap)
+print("PASS: all captions within the 1024-character limit")
 PY
 ```
 
-Expected: a `PASS: dynamic values are escaped` line. If `raw markup survived` appears, escaping is broken — stop and report.
+Expected: six `PASS:` lines. Any `AssertionError` prints the offending caption — stop and report rather than adjusting the assertion to match the output.
+
+- [ ] **Step 4a: Confirm the parser matches reality**
+
+```bash
+grep -c '^### Highlights' CHANGELOG.md
+grep -n '^## \[1.11.3\]\|^### Highlights' CHANGELOG.md | head -4
+```
+
+Expected: `4` Highlights sections in the file, and `1.11.3` immediately followed by its Highlights heading. If the count differs, Step 4's fixture assumptions are wrong — re-read `CHANGELOG.md` and update the version numbers used there.
 
 - [ ] **Step 5: Verify an unknown channel fails**
 
 ```bash
-APK_PATH=/etc/hostname TG_TOKEN=t TG_CHAT_ID=c TG_CHANNEL=nonsense BUILD_TITLE=t \
+APK_PATH=/etc/hostname TG_TOKEN=t TG_GROUP=g TG_CHANNEL=nonsense \
   python3 .github/scripts/notify.py; echo "exit=$?"
 ```
 
@@ -768,8 +898,8 @@ python3 - <<'PY'
 import os, pathlib, subprocess, tempfile
 big = pathlib.Path(tempfile.gettempdir()) / "big.apk"
 big.write_bytes(b"\0" * (51 * 1024 * 1024))
-env = dict(os.environ, APK_PATH=str(big), TG_TOKEN="t", TG_CHAT_ID="c",
-           TG_CHANNEL="pr", BUILD_TITLE="t")
+env = dict(os.environ, APK_PATH=str(big), TG_TOKEN="t", TG_GROUP="g",
+           TG_CHANNEL="pr", PR_NUMBER="1", PR_TITLE="t")
 r = subprocess.run(["python3", ".github/scripts/notify.py"], env=env,
                    capture_output=True, text=True)
 print("exit", r.returncode)
@@ -870,10 +1000,11 @@ jobs:
         continue-on-error: true
         env:
           APK_PATH: ${{ github.workspace }}/Hail-${{ github.event.pull_request.number }}.apk
-          BUILD_TITLE: "PR #${{ github.event.pull_request.number }} — ${{ github.event.pull_request.title }}"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
           TG_CHANNEL: pr
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
         run: python3 .github/scripts/notify.py
 YAML
 ```
@@ -1035,11 +1166,11 @@ jobs:
         continue-on-error: true
         env:
           APK_PATH: ${{ github.workspace }}/HailBug.apk
-          BUILD_TITLE: "Debug build — ${{ inputs.ref }}"
-          CI_STATUS: "Not release-signed. Installs as com.aistra.hail.debug."
+          GITHUB_SHA: ${{ github.sha }}
+          COMMIT_SUBJECT: ${{ steps.build.outputs.COMMIT_SUBJECT }}
           TG_CHANNEL: debug
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
         run: python3 .github/scripts/notify.py
 YAML
 ```
@@ -1426,11 +1557,10 @@ jobs:
         continue-on-error: true
         env:
           APK_PATH: ${{ github.workspace }}/Hail-${{ needs.build.outputs.version }}.apk
-          BUILD_TITLE: "${{ needs.build.outputs.channel == 'prerelease' && 'Pre-release' || 'Release' }} ${{ needs.build.outputs.version }}"
-          CI_STATUS: "Draft on GitHub. Publish when you are happy with it."
+          RELEASE_TAG: ${{ github.ref_name }}
           TG_CHANNEL: ${{ needs.build.outputs.channel }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
         run: python3 .github/scripts/notify.py
 YAML
 ```
@@ -1601,7 +1731,7 @@ Repository **secrets** (Settings → Secrets and variables → Actions → Secre
 | Name | Used by | Notes |
 |---|---|---|
 | `TG_TOKEN` | all three | Telegram bot token |
-| `TG_CHAT_ID` | all three | numeric chat id |
+| `TG_GROUP` | all three | numeric chat group id |
 | `KEYSTORE` | `release.yml` | base64 of the release keystore |
 | `KEYSTORE_PASSWORD` | `release.yml` | |
 | `KEYSTORE_ALIAS` | `release.yml` | |
