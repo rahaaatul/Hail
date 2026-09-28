@@ -37,7 +37,7 @@ These were decided deliberately. Do not relitigate them during implementation; i
 
 3. **No `environment:` gate on the publish job.** The gate belongs on the artifact being public. The draft already is that gate, and a second approval click buys nothing. Mihon ships this way.
 
-4. **The expected signer is a tracked file, not a repository variable.** Changing which signer is acceptable should require a code review; a variable changes invisibly.
+4. **The keystore is decoded to a file; the credentials never are.** Gradle's `signingConfig` takes `storeFile` as a `File`, so a keystore that exists only in a secret must be materialised on disk. The passwords need not be: Gradle exposes `ORG_GRADLE_PROJECT_*` environment variables as project properties, so `storePassword`, `keyAlias` and `keyPassword` go from the secret straight to Gradle with no properties file written to the working tree.
 
 5. **`versionCode` is derived from the tag, not maintained.** The first release moves from 43 to ~11200. That discontinuity is one-time and deliberate. Do not reintroduce a counter.
 
@@ -55,14 +55,12 @@ These were decided deliberately. Do not relitigate them during implementation; i
 |---|---|
 | `.github/.java-version` | Single source of truth for the JDK major version |
 | `.github/telegram.json` | Chat routing: channel name to Telegram topic id |
-| `.github/signer.sha256` | Expected release certificate fingerprint |
 | `.github/debug.keystore` | Committed PKCS12 test key (already pushed) |
 | `.github/scripts/lib.sh` | Sourced helpers: `step`, `note`, `warn`, `die`, `require_env`, `repo_root`, `build_tools_dir`, `single_match` |
 | `.github/scripts/test.sh` | Runs the JVM unit tests |
 | `.github/scripts/build.sh` | Assembles `pr`, `debug`, or `release` with the right `-P` overrides |
 | `.github/scripts/version.sh` | Derives `versionName` and `versionCode` from a tag, refuses to go backwards |
-| `.github/scripts/signing.sh` | Materialises the release `signing.properties` from secrets into `RUNNER_TEMP` |
-| `.github/scripts/verify-signer.sh` | Proves the APK carries the expected certificate |
+| `.github/scripts/signing.sh` | Decodes the release keystore into `RUNNER_TEMP` and removes it on exit |
 | `.github/scripts/upload.py` | Uploads the APK to a Telegram topic, with a caption |
 | `.github/workflows/pr.yml` | Trigger: `pull_request`. Tests, builds, delivers. Read-only, no signing secrets. |
 | `.github/workflows/debug.yml` | Trigger: `workflow_dispatch` on any ref. Tests, builds, delivers. Read-only. |
@@ -138,8 +136,6 @@ Result: the file begins
 
 ```kotlin
 android {
-    val signingProps = file("../signing.properties")
-
     namespace = "com.aistra.hail"
     compileSdk = 37
 ```
@@ -161,14 +157,19 @@ Insert immediately above `buildTypes {`:
 
 ```kotlin
     signingConfigs {
-        // Release key: only ever materialised by release.yml, from secrets.
+        // Release key: staged by release.yml, which decodes it from secrets into
+        // RUNNER_TEMP because Gradle's signingConfig takes a File. The
+        // credentials never touch the filesystem — they arrive as
+        // ORG_GRADLE_PROJECT_* environment variables, which Gradle exposes as
+        // project properties. With neither present the config stays empty and
+        // the build type is left unsigned rather than debug-signed.
         create("release") {
-            if (signingProps.exists()) {
-                val props = `java.util`.Properties().apply { load(signingProps.reader()) }
-                storeFile = file(props.getProperty("storeFile"))
-                storePassword = props.getProperty("storePassword")
-                keyAlias = props.getProperty("keyAlias")
-                keyPassword = props.getProperty("keyPassword")
+            val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
+            if (keystore != null && keystore.exists()) {
+                storeFile = keystore
+                storePassword = project.findProperty("releaseStorePassword") as String?
+                keyAlias = project.findProperty("releaseKeyAlias") as String?
+                keyPassword = project.findProperty("releaseKeyPassword") as String?
             }
         }
 
@@ -213,7 +214,7 @@ Replace the whole `buildTypes { }` block with:
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            if (signingProps.exists()) {
+            if (System.getenv("RELEASE_KEYSTORE_PATH") != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
             proguardFiles(
@@ -934,7 +935,7 @@ because the APK is already on the GitHub draft."
 
 **Interfaces:**
 - Consumes: `.github/scripts/test.sh`, `.github/scripts/build.sh`, `.github/scripts/upload.py`, `.github/.java-version`, `.github/telegram.json`
-- Produces: a `PR Check / Test, build, deliver` check on every pull request. Artifact `pr-apk-<n>` is not produced; the APK goes to Telegram. Read-only token, no signing secrets.
+- Produces: a `PR Check / Test, build, deliver` check on every pull request. Two outputs: artifact `apk-pr<n>`, and the APK uploaded to Telegram. Read-only token, no signing secrets.
 
 - [ ] **Step 1: Create the workflow**
 
@@ -997,7 +998,14 @@ jobs:
           APK_PATH: ${{ steps.build.outputs.APK_PATH }}
         run: mv "$APK_PATH" "Hail-${{ github.event.pull_request.number }}.apk"
 
-      - name: Notify
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-pr${{ github.event.pull_request.number }}
+          path: Hail-${{ github.event.pull_request.number }}.apk
+          if-no-files-found: error
+
+      - name: Upload to Telegram
         if: success()
         continue-on-error: true
         env:
@@ -1093,7 +1101,7 @@ Expected: it installs directly, with no "signed with a different key" prompt. If
 
 **Interfaces:**
 - Consumes: the same three scripts as Task 6
-- Produces: a manual workflow with a `ref` input. Artifact behaviour matches `pr.yml`; APK is named `HailBug.apk` and lands in the `debug` topic.
+- Produces: a manual workflow with a `ref` input. Artifact `apk-debug`, plus the APK uploaded to the `debug` Telegram topic.
 
 - [ ] **Step 1: Create the workflow**
 
@@ -1163,7 +1171,14 @@ jobs:
           APK_PATH: ${{ steps.build.outputs.APK_PATH }}
         run: mv "$APK_PATH" HailBug.apk
 
-      - name: Notify
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-debug
+          path: HailBug.apk
+          if-no-files-found: error
+
+      - name: Upload to Telegram
         if: success()
         continue-on-error: true
         env:
@@ -1222,13 +1237,11 @@ Expected from a local equivalent build: `name='com.aistra.hail.debug'`, `version
 **Files:**
 - Create: `.github/scripts/version.sh`
 - Create: `.github/scripts/signing.sh`
-- Create: `.github/scripts/verify-signer.sh`
-- Create: `.github/signer.sha256` (one line: the release certificate's SHA-256)
 - Create: `.github/workflows/release.yml`
 
 **Interfaces:**
 - Consumes: `lib.sh`, `build.sh`, `upload.py`, `.github/.java-version`
-- Produces: `version.sh` writes `RELEASE_VERSION_NAME` and `RELEASE_VERSION_CODE` to `$GITHUB_OUTPUT`. `signing.sh` writes `signing.properties` at the repo root and removes it on exit. `verify-signer.sh` reads `APK_PATH` and exits non-zero on a signer mismatch.
+- Produces: `version.sh` writes `RELEASE_VERSION_NAME` and `RELEASE_VERSION_CODE` to `$GITHUB_OUTPUT`. `signing.sh` decodes `KEYSTORE` to `$RUNNER_TEMP/release.jks`, exports `RELEASE_KEYSTORE_PATH` through `$GITHUB_ENV`, and deletes the file on exit. `build.gradle.kts` reads that path from the environment and the three credentials from the `ORG_GRADLE_PROJECT_release*` project properties.
 
 - [ ] **Step 1: Create `version.sh`**
 
@@ -1339,107 +1352,54 @@ git tag -d v1.12.3 2>/dev/null || true
 ```bash
 cat > .github/scripts/signing.sh <<'SCRIPT'
 #!/usr/bin/env bash
-# Materialise signing.properties from secrets. The keystore lands in RUNNER_TEMP,
-# outside the checkout; the properties file is removed on exit.
+# Stage the release keystore from secrets.
+#
+# Gradle's signingConfig takes storeFile as a File, so a keystore that lives
+# only in a secret has to be decoded somewhere on disk. It lands in RUNNER_TEMP,
+# outside the checkout, and is removed on exit. The credentials are not written
+# anywhere: the workflow passes them as ORG_GRADLE_PROJECT_* environment
+# variables, which Gradle surfaces as project properties.
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-repo_root
 
-require_env KEYSTORE KEYSTORE_PASSWORD KEYSTORE_ALIAS KEYSTORE_ALIAS_PASSWORD
+require_env KEYSTORE
 
 KEYSTORE_PATH="${RUNNER_TEMP}/release.jks"
-PROPS="$(repo_root)/signing.properties"
 
-cleanup() { rm -f "$PROPS"; }
+cleanup() { rm -f "$KEYSTORE_PATH"; }
 trap cleanup EXIT
 
 printf '%s' "$KEYSTORE" | base64 -d > "$KEYSTORE_PATH"
 chmod 600 "$KEYSTORE_PATH"
 
-{
-  echo "storeFile=${KEYSTORE_PATH}"
-  echo "storePassword=${KEYSTORE_PASSWORD}"
-  echo "keyAlias=${KEYSTORE_ALIAS}"
-  echo "keyPassword=${KEYSTORE_ALIAS_PASSWORD}"
-} > "$PROPS"
+# build.gradle.kts reads this. GITHUB_ENV persists it to the later Build step.
+echo "RELEASE_KEYSTORE_PATH=${KEYSTORE_PATH}" >> "$GITHUB_ENV"
 
-note "Release signing material staged"
+note "Release keystore staged at ${KEYSTORE_PATH}"
 SCRIPT
 chmod +x .github/scripts/signing.sh
 ```
 
-- [ ] **Step 6: Test `signing.sh` requires all four secrets**
+- [ ] **Step 6: Test `signing.sh` decodes a keystore and cleans up**
 
 ```bash
-env -u KEYSTORE_KEY bash -c 'KEYSTORE=x KEYSTORE_PASSWORD=y KEYSTORE_ALIAS=z bash .github/scripts/signing.sh'; echo "exit=$?"
+RUNNER_TEMP=/tmp GITHUB_ENV=/tmp/genv KEYSTORE="$(base64 -w0 /dev/null)" \
+  bash .github/scripts/signing.sh; echo "exit=$?"
+cat /tmp/genv
+ls -la /tmp/release.jks 2>&1 | tail -1
 ```
 
-Expected: `::error::Missing required environment variable: KEYSTORE_ALIAS_PASSWORD` and `exit=1`.
+Expected: a `::notice::Release keystore staged` line, `exit=0`, `/tmp/genv` containing `RELEASE_KEYSTORE_PATH=/tmp/release.jks`, and **the keystore already gone** — the `EXIT` trap removes it before the script returns, which is the behaviour that matters.
 
-- [ ] **Step 7: Create `verify-signer.sh`**
+Then confirm the required-secret guard:
 
 ```bash
-cat > .github/scripts/verify-signer.sh <<'SCRIPT'
-#!/usr/bin/env bash
-# Prove the APK was signed by the expected certificate. Nothing else in the
-# pipeline can answer this.
-
-source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
-
-require_env APK_PATH
-
-BT="$(build_tools_dir)"
-"$BT/apksigner" verify --print-certs "$APK_PATH"
-
-ACTUAL="$("$BT/apksigner" verify --print-certs "$APK_PATH" \
-  | awk -F': ' '/SHA-256 digest/ { print $2; exit }')"
-[ -n "$ACTUAL" ] || die "apksigner reported no SHA-256 digest for ${APK_PATH}"
-
-EXPECTED="$(tr -d '[:space:]' < "$(repo_root)/.github/signer.sha256" | tr '[:lower:]' '[:upper:]')"
-[ -n "$EXPECTED" ] || die ".github/signer.sha256 is empty"
-
-if [ "$ACTUAL" != "$EXPECTED" ]; then
-  die "Signer mismatch.
-  expected: $EXPECTED
-  actual:   $ACTUAL"
-fi
-
-note "Signer verified: $ACTUAL"
-SCRIPT
-chmod +x .github/scripts/verify-signer.sh
+env -u KEYSTORE bash .github/scripts/signing.sh; echo "exit=$?"
 ```
 
-- [ ] **Step 8: Populate the expected signer fingerprint**
+Expected: `::error::Missing required environment variable: KEYSTORE` and `exit=1`.
 
-From an APK you have already released:
-
-```bash
-$ANDROID_HOME/build-tools/*/apksigner verify --print-certs <path-to-released.apk> \
-  | grep 'SHA-256 digest'
-```
-
-Take that value:
-
-```bash
-printf '<the 64 hex characters>\n' > .github/signer.sha256
-cat .github/signer.sha256
-```
-
-If you have no released APK to hand, **stop here and report.** Do not fabricate a value, and do not run the release workflow until this is real — `verify-signer.sh` fails closed, so a placeholder would block every release.
-
-- [ ] **Step 9: Test `verify-signer.sh` rejects a mismatch**
-
-```bash
-cp .github/signer.sha256 /tmp/signer.bak
-printf '%064d\n' 0 > .github/signer.sha256
-APK_PATH=$(find app/build/outputs/apk/pr -name '*.apk' | head -1) \
-  bash .github/scripts/verify-signer.sh; echo "exit=$?"
-cp /tmp/signer.bak .github/signer.sha256
-```
-
-Expected: a `Signer mismatch` error and `exit=1`. The PR APK is signed with the test key, so it cannot match the release fingerprint — which is exactly the check we want.
-
-- [ ] **Step 10: Create the workflow**
+- [ ] **Step 7: Create the workflow**
 
 ```bash
 cat > .github/workflows/release.yml <<'YAML'
@@ -1503,12 +1463,13 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: .github/scripts/version.sh
 
-      - name: Stage release signing material
+      # The keystore must exist as a file for Gradle, so it is staged into
+      # RUNNER_TEMP. The three credentials never reach the filesystem: Gradle
+      # reads ORG_GRADLE_PROJECT_* environment variables as project properties,
+      # so they are scoped to the Build step only rather than the whole job.
+      - name: Stage release keystore
         env:
           KEYSTORE: ${{ secrets.KEYSTORE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEYSTORE_ALIAS: ${{ secrets.KEYSTORE_ALIAS }}
-          KEYSTORE_ALIAS_PASSWORD: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
         run: .github/scripts/signing.sh
 
       - name: Build
@@ -1516,12 +1477,10 @@ jobs:
         env:
           RELEASE_VERSION_NAME: ${{ steps.version.outputs.RELEASE_VERSION_NAME }}
           RELEASE_VERSION_CODE: ${{ steps.version.outputs.RELEASE_VERSION_CODE }}
+          ORG_GRADLE_PROJECT_releaseStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_releaseKeyAlias: ${{ secrets.KEYSTORE_ALIAS }}
+          ORG_GRADLE_PROJECT_releaseKeyPassword: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
         run: .github/scripts/build.sh release
-
-      - name: Verify signer
-        env:
-          APK_PATH: ${{ steps.build.outputs.APK_PATH }}
-        run: .github/scripts/verify-signer.sh
 
       - name: Rename
         env:
@@ -1594,7 +1553,6 @@ print('OK: no expressions in any run block')
 
 ```bash
 git add .github/scripts/version.sh .github/scripts/signing.sh \
-        .github/scripts/verify-signer.sh .github/signer.sha256 \
         .github/workflows/release.yml
 git commit -m "ci: add tag-driven release workflow
 
@@ -1604,8 +1562,10 @@ tag and guarded against going backwards, because pre-release and release
 share an applicationId and a signing key, and Android refuses an install
 whose versionCode is not higher.
 
-Every release is created as a draft and published by hand. verify-signer.sh
-proves the APK carries the expected certificate before any release exists."
+Only the keystore is decoded to disk, into RUNNER_TEMP, because Gradle's
+signingConfig takes a File. The credentials are passed as
+ORG_GRADLE_PROJECT_* variables so no secret is ever written to the working
+tree. Every release is created as a draft and published by hand."
 ```
 
 - [ ] **Step 13: Run a throwaway release**
@@ -1624,12 +1584,11 @@ Watch the `Release` run. Confirm **all** of the following:
 |---|---|
 | Classify output | `channel=prerelease` (the tag is not on `main`) |
 | `version.sh` | `1.12.99 -> versionCode 11299` |
-| `verify-signer.sh` | `::notice::Signer verified: <fingerprint>` |
 | Draft release | exists, has the APK attached, is **not** public |
-| Telegram | APK in the `prerelease` topic, caption says "Draft on GitHub" |
+| Telegram | APK in the `prerelease` topic, caption shows Highlights or the changelog link |
 | Installing it | replaces your current Hail — the same-key upgrade path |
 
-- [ ] **Step 14: Prove the two guards actually fire**
+- [ ] **Step 14: Prove the versionCode guard actually fires**
 
 A guard that has never failed is not known to work.
 
@@ -1639,20 +1598,11 @@ git tag v1.12.98 && git push origin v1.12.98
 
 Expected: the run **fails** in `version.sh` with `derives versionCode 11298, not greater than the previous tag v1.12.99`. No draft is created.
 
-```bash
-cp .github/signer.sha256 /tmp/signer.bak
-printf '%064d\n' 0 > .github/signer.sha256
-git commit -am "test: corrupt signer" && git push
-git tag v1.13.1 && git push origin v1.13.1
-```
-
-Expected: the run **fails** at `verify-signer.sh` with `Signer mismatch`, and no draft is created.
+Clean up:
 
 ```bash
-git reset --hard HEAD~1
-cp /tmp/signer.bak .github/signer.sha256
-git tag -d v1.12.98 v1.13.1
-git push --delete origin v1.12.98 v1.13.1
+git tag -d v1.12.98
+git push --delete origin v1.12.98
 ```
 
 - [ ] **Step 15: Delete the throwaway draft**
@@ -1698,7 +1648,7 @@ git rm .github/scripts/setup.sh .github/scripts/pr.sh .github/scripts/debug.sh \
 git status --short
 ```
 
-`lib.sh`, `test.sh`, `build.sh`, `version.sh`, `signing.sh`, `verify-signer.sh`, and `upload.py` must remain.
+`lib.sh`, `test.sh`, `build.sh`, `version.sh`, `signing.sh`, and `upload.py` must remain.
 
 - [ ] **Step 4: Verify nothing references the removed files**
 
@@ -1758,7 +1708,8 @@ No repository **environment** is needed; the draft is the gate.
 | Signing key | test (committed) | test (committed) | release (secret) | release (secret) |
 | File name | `Hail-<n>.apk` | `HailBug.apk` | `Hail-<v>.apk` | `Hail-<v>.apk` |
 | GitHub | none | none | draft release | draft release |
-| Telegram topic | `pr` | `debug` | `prerelease` | `release` |
+| Telegram | `pr` | `debug` | `prerelease` | `release` |
+| Actions artifact | `apk-pr<n>` | `apk-debug` | `apk-<v>` | `apk-<v>` |
 
 ---
 
