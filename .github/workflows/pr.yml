@@ -1,0 +1,76 @@
+name: PR
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Test, build, deliver
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .github/.java-version
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0'
+          accept-android-sdk-licenses: yes
+
+      - name: Unit tests
+        run: .github/scripts/test.sh
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-pr${{ github.event.pull_request.number }}
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+
+      - name: Build
+        id: build
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: .github/scripts/build.sh pr
+
+      - name: Rename
+        env:
+          APK_PATH: ${{ steps.build.outputs.APK_PATH }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: mv "$APK_PATH" "Hail-${PR_NUMBER}.apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-pr${{ github.event.pull_request.number }}
+          path: Hail-${{ github.event.pull_request.number }}.apk
+          if-no-files-found: error
+
+      - name: Upload to Telegram
+        if: success()
+        continue-on-error: true
+        env:
+          APK_PATH: ${{ github.workspace }}/Hail-${{ github.event.pull_request.number }}.apk
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          TG_CHANNEL: pr
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
+        run: python3 .github/scripts/upload.py
