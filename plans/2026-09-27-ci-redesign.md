@@ -63,7 +63,7 @@ These were decided deliberately. Do not relitigate them during implementation; i
 | `.github/scripts/version.sh` | Derives `versionName` and `versionCode` from a tag, refuses to go backwards |
 | `.github/scripts/signing.sh` | Materialises the release `signing.properties` from secrets into `RUNNER_TEMP` |
 | `.github/scripts/verify-signer.sh` | Proves the APK carries the expected certificate |
-| `.github/scripts/notify.py` | Builds the Telegram caption and uploads the APK |
+| `.github/scripts/upload.py` | Uploads the APK to a Telegram topic, with a caption |
 | `.github/workflows/pr.yml` | Trigger: `pull_request`. Tests, builds, delivers. Read-only, no signing secrets. |
 | `.github/workflows/debug.yml` | Trigger: `workflow_dispatch` on any ref. Tests, builds, delivers. Read-only. |
 | `.github/workflows/release.yml` | Trigger: `push` tag `v*`. Signs, verifies, publishes a draft. |
@@ -573,15 +573,15 @@ git commit -m "ci: add build script with per-build-type version overrides"
 
 ---
 
-## Task 5: Telegram notifier
+## Task 5: Telegram upload
 
 **Files:**
-- Create: `.github/scripts/notify.py`
+- Create: `.github/scripts/upload.py`
 - Create: `.github/telegram.json`
 
 **Interfaces:**
 - Consumes: `.github/telegram.json` (read via a path relative to the script's own location, so it works from any working directory)
-- Produces: `notify.py` — environment `APK_PATH`, `TG_TOKEN`, `TG_GROUP`, `TG_CHANNEL` (all required), plus per channel: `PR_NUMBER` + `PR_TITLE` for `pr`, `GITHUB_SHA` + `COMMIT_SUBJECT` for `debug`, `RELEASE_TAG` for `prerelease` and `release`. Reads `CHANGELOG.md` from the repository root. Exits 0 on success and on oversize; exits 1 on missing configuration.
+- Produces: `upload.py` — environment `APK_PATH`, `TG_TOKEN`, `TG_GROUP`, `TG_CHANNEL` (all required), plus per channel: `PR_NUMBER` + `PR_TITLE` for `pr`, `GITHUB_SHA` + `COMMIT_SUBJECT` for `debug`, `RELEASE_TAG` for `prerelease` and `release`. Reads `CHANGELOG.md` from the repository root. Exits 0 on success and on oversize; exits 1 on missing configuration.
 
 - [ ] **Step 1: Create the routing config**
 
@@ -598,17 +598,18 @@ cat > .github/telegram.json <<'JSON'
 JSON
 ```
 
-- [ ] **Step 2: Create the notifier**
+- [ ] **Step 2: Create the upload script**
 
 ```bash
-cat > .github/scripts/notify.py <<'PY'
+cat > .github/scripts/upload.py <<'PY'
 #!/usr/bin/env python3
-"""Telegram captions for CI builds.
+"""Upload a built APK to Telegram.
 
-Every dynamic value passes through html.escape at the point of interpolation.
-Release and pre-release captions read the Highlights subsection of the tagged
-version out of CHANGELOG.md. Channel routing lives in .github/telegram.json so
-it changes in a reviewable diff.
+The upload is the job; the caption is metadata on it. Every dynamic value in
+the caption passes through html.escape at the point of interpolation. Release
+and pre-release captions read the Highlights subsection of the tagged version
+out of CHANGELOG.md. Channel routing lives in .github/telegram.json so it
+changes in a reviewable diff.
 """
 
 import html
@@ -627,7 +628,7 @@ SIZE_LIMIT = 50 * 1024 * 1024   # Telegram bot API sendDocument ceiling
 CAPTION_LIMIT = 1024            # Telegram bot API caption ceiling
 REPO = "rahaaatul/Hail"
 
-# .github/scripts/notify.py -> three levels up is the repository root.
+# .github/scripts/upload.py -> three levels up is the repository root.
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 CHANGELOG = ROOT / "CHANGELOG.md"
 TOPICS = ROOT / ".github" / "telegram.json"
@@ -805,14 +806,14 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 PY
-chmod +x .github/scripts/notify.py
+chmod +x .github/scripts/upload.py
 ```
 
 - [ ] **Step 3: Verify it compiles and that missing config fails loudly**
 
 ```bash
-python3 -m py_compile .github/scripts/notify.py && echo "compiles OK"
-env -u TG_TOKEN python3 .github/scripts/notify.py; echo "exit=$?"
+python3 -m py_compile .github/scripts/upload.py && echo "compiles OK"
+env -u TG_TOKEN python3 .github/scripts/upload.py; echo "exit=$?"
 ```
 
 Expected: `compiles OK`, then `::error::Missing required environment variable: TG_TOKEN` and `exit=1`.
@@ -824,7 +825,7 @@ This is the security and correctness property. `html.escape` is not hand-written
 ```bash
 python3 - <<'PY'
 import importlib.util
-spec = importlib.util.spec_from_file_location("n", ".github/scripts/notify.py")
+spec = importlib.util.spec_from_file_location("n", ".github/scripts/upload.py")
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
 # PR caption, with a title carrying markup
@@ -886,7 +887,7 @@ Expected: `4` Highlights sections in the file, and `1.11.3` immediately followed
 
 ```bash
 APK_PATH=/etc/hostname TG_TOKEN=t TG_GROUP=g TG_CHANNEL=nonsense \
-  python3 .github/scripts/notify.py; echo "exit=$?"
+  python3 .github/scripts/upload.py; echo "exit=$?"
 ```
 
 Expected: `::error::Unknown channel 'nonsense'. Configured: ['debug', 'pr', 'prerelease', 'release']` and `exit=1`.
@@ -900,7 +901,7 @@ big = pathlib.Path(tempfile.gettempdir()) / "big.apk"
 big.write_bytes(b"\0" * (51 * 1024 * 1024))
 env = dict(os.environ, APK_PATH=str(big), TG_TOKEN="t", TG_GROUP="g",
            TG_CHANNEL="pr", PR_NUMBER="1", PR_TITLE="t")
-r = subprocess.run(["python3", ".github/scripts/notify.py"], env=env,
+r = subprocess.run(["python3", ".github/scripts/upload.py"], env=env,
                    capture_output=True, text=True)
 print("exit", r.returncode)
 print(r.stdout.strip()[:120])
@@ -913,14 +914,15 @@ Expected: `exit 0` and a `::warning::APK is 52.0 MB` line. If it exits non-zero,
 - [ ] **Step 7: Commit**
 
 ```bash
-git add .github/scripts/notify.py .github/telegram.json
-git commit -m "ci: add Telegram notifier with escaped captions and topic routing
+git add .github/scripts/upload.py .github/telegram.json
+git commit -m "ci: upload the APK to Telegram with an escaped caption
 
 html.escape is applied at the point of interpolation rather than by
 hand-written substitutions, which is what caused the no-op escaper and the
-bash 5.2 patsub_replacement bug. Channel routing lives in a tracked json
-file so changing it is a reviewable diff. An upload over Telegram's 50 MB
-ceiling warns and exits 0, because the APK is already on the GitHub draft."
+bash 5.2 patsub_replacement bug. Release captions read Highlights out of
+CHANGELOG.md. Channel routing lives in a tracked json file so changing it is
+a reviewable diff. An upload over Telegram's 50 MB ceiling warns and exits 0,
+because the APK is already on the GitHub draft."
 ```
 
 ---
@@ -931,7 +933,7 @@ ceiling warns and exits 0, because the APK is already on the GitHub draft."
 - Create: `.github/workflows/pr.yml`
 
 **Interfaces:**
-- Consumes: `.github/scripts/test.sh`, `.github/scripts/build.sh`, `.github/scripts/notify.py`, `.github/.java-version`, `.github/telegram.json`
+- Consumes: `.github/scripts/test.sh`, `.github/scripts/build.sh`, `.github/scripts/upload.py`, `.github/.java-version`, `.github/telegram.json`
 - Produces: a `PR Check / Test, build, deliver` check on every pull request. Artifact `pr-apk-<n>` is not produced; the APK goes to Telegram. Read-only token, no signing secrets.
 
 - [ ] **Step 1: Create the workflow**
@@ -1005,7 +1007,7 @@ jobs:
           TG_CHANNEL: pr
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
-        run: python3 .github/scripts/notify.py
+        run: python3 .github/scripts/upload.py
 YAML
 ```
 
@@ -1171,7 +1173,7 @@ jobs:
           TG_CHANNEL: debug
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
-        run: python3 .github/scripts/notify.py
+        run: python3 .github/scripts/upload.py
 YAML
 ```
 
@@ -1225,7 +1227,7 @@ Expected from a local equivalent build: `name='com.aistra.hail.debug'`, `version
 - Create: `.github/workflows/release.yml`
 
 **Interfaces:**
-- Consumes: `lib.sh`, `build.sh`, `notify.py`, `.github/.java-version`
+- Consumes: `lib.sh`, `build.sh`, `upload.py`, `.github/.java-version`
 - Produces: `version.sh` writes `RELEASE_VERSION_NAME` and `RELEASE_VERSION_CODE` to `$GITHUB_OUTPUT`. `signing.sh` writes `signing.properties` at the repo root and removes it on exit. `verify-signer.sh` reads `APK_PATH` and exits non-zero on a signer mismatch.
 
 - [ ] **Step 1: Create `version.sh`**
@@ -1561,7 +1563,7 @@ jobs:
           TG_CHANNEL: ${{ needs.build.outputs.channel }}
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
-        run: python3 .github/scripts/notify.py
+        run: python3 .github/scripts/upload.py
 YAML
 ```
 
@@ -1696,7 +1698,7 @@ git rm .github/scripts/setup.sh .github/scripts/pr.sh .github/scripts/debug.sh \
 git status --short
 ```
 
-`lib.sh`, `test.sh`, `build.sh`, `version.sh`, `signing.sh`, `verify-signer.sh`, and `notify.py` must remain.
+`lib.sh`, `test.sh`, `build.sh`, `version.sh`, `signing.sh`, `verify-signer.sh`, and `upload.py` must remain.
 
 - [ ] **Step 4: Verify nothing references the removed files**
 
