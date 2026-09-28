@@ -38,7 +38,7 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0'
-          accept-android-sdk-licenses: yes
+          accept-android-sdk-licenses: true
 
       # A tag reachable from main is a release; anything else is a pre-release.
       # No naming convention to remember.

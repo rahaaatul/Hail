@@ -43,7 +43,7 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0'
-          accept-android-sdk-licenses: yes
+          accept-android-sdk-licenses: true
 
       - name: Unit tests
         run: .github/scripts/test.sh
