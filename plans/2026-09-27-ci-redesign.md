@@ -17,12 +17,13 @@
 - **JDK is 26.** Pinned once in `.github/.java-version`, consumed by every workflow via `java-version-file`. Never hardcode a JDK version in a workflow.
 - **compileSdk 37, targetSdk 37, minSdk 24, AGP 9.4.0, Kotlin 2.4.20, Gradle 9.7.1.** Do not change any of these.
 - **Preserve `testOptions { unitTests.all { it.jvmArgs("-Dnet.bytebuddy.experimental=true") } }`.** It is what makes MockK work on JDK 26. Removing it breaks every test.
-- **The release signing key is read only by `release.yml`.** `pr.yml` and `debug.yml` must never reference `KEYSTORE`, `KEYSTORE_PASSWORD`, `KEYSTORE_ALIAS`, or `KEYSTORE_ALIAS_PASSWORD`.
-- **The test keystore is committed** at `.github/debug.keystore` (PKCS12, alias `HailBug`, store and key password `HailBug`). It may only sign `com.aistra.hail.pr.<n>` and `com.aistra.hail.debug`.
+- **The release signing key is read only by `release.yml`.** `pr.yml` and `debug.yml` must never reference `KEYSTORE`, `KEYSTORE_PASSWORD`, `KEYSTORE_ALIAS`, or `KEYSTORE_ALIAS_PASSWORD`.- **The test keystore is committed** at `.github/debug.keystore` (PKCS12, alias `HailBug`, store and key password `HailBug`). It may only sign `com.aistra.hail.pr.<n>` and `com.aistra.hail.debug`.
 - **Version line:** pre-releases increment the patch on `dev` (`v1.12.1`, `v1.12.2`, `v1.12.3`); releases are always patch-zero on `main` (`v1.13.0`, `v1.14.0`).
 - **YAML files contain no inline shell beyond a single `run:` line invoking a script**, and no `${{ }}` inside a `run:` body. All values reach scripts via `env:`.
 - **Telegram topics live in `.github/telegram.json`,** never in workflow expressions.
 - **Every `fetch_depth: 0` checkout** must come before any `git tag` / `git merge-base` use.
+- **Action versions, verified against their repositories:** `actions/checkout@v7`, `actions/setup-java@v5`, `gradle/actions/setup-gradle@v6`, `actions/upload-artifact@v7`, `android-actions/setup-android@v4`, `softprops/action-gh-release@v3`. Use `setup-java@v5` rather than `@v6`: the v6 tag exists but its README still states it is "not yet recommended for production workflows" and that `v5` is the latest stable release. Use `setup-gradle` rather than `setup-java`'s own `cache: gradle` — the setup-java README defers to it for "advanced Gradle caching features".
+- **Telegram Bot API limits, verified:** `sendDocument` accepts files up to 50 MB and a caption of 0–1024 characters *after entities parsing*; `parse_mode` accepts only `HTML` or `MarkdownV2`; `message_thread_id` works on forum supergroups with topic mode enabled, which is what the existing topics already use.
 - **Nothing in this plan is executed during implementation.** Tasks 1 and 2 are verified by a human running commands; Tasks 3+ are verified by CI.
 
 ---
@@ -962,13 +963,13 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up JDK
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version-file: .github/.java-version
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -1137,13 +1138,13 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version-file: .github/.java-version
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -1431,13 +1432,13 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version-file: .github/.java-version
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
