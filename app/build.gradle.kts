@@ -65,8 +65,11 @@ android {
             // Each PR installs as its own app: com.aistra.hail.pr.<n>.
             // versionName and versionCode are fully overridden by the workflow,
             // so there is deliberately no versionNameSuffix here.
+            // ".pr<n>" with no dot: aapt2 rejects a package segment that starts
+            // with a digit, so "com.aistra.hail.pr.79" cannot link. Every
+            // segment must begin with a letter.
             applicationIdSuffix =
-                providers.gradleProperty("prNumber").orNull?.let { ".pr.$it" } ?: ".pr"
+                providers.gradleProperty("prNumber").orNull?.let { ".pr$it" } ?: ".pr"
             signingConfig = signingConfigs.getByName("test")
         }
         release {
