@@ -5,16 +5,6 @@ plugins {
 }
 
 android {
-    val signingProps = file("../signing.properties")
-    val commitHash = providers.exec {
-        workingDir = rootDir
-        commandLine = "git rev-parse --short HEAD".split(" ")
-    }.standardOutput.asText.get().trim()
-    val commitSubject = providers.exec {
-        workingDir = rootDir
-        commandLine = "git log -1 --pretty=%s".split(" ")
-    }.standardOutput.asText.get().trim()
-
     namespace = "com.aistra.hail"
     compileSdk = 37
 
@@ -22,35 +12,69 @@ android {
         applicationId = "com.aistra.hail"
         minSdk = 24
         targetSdk = 37
-        versionCode = 43
-        versionName = "1.11.4"
+        versionCode = (providers.gradleProperty("versionCode").orNull ?: "43").toInt()
+        versionName = providers.gradleProperty("versionName").orNull ?: "1.11.4"
         ndk {
             val abi = project.findProperty("abi") as String?
             if (abi != null) abiFilters += abi
         }
     }
 
+    signingConfigs {
+        // Release key: staged by release.yml, which decodes it from secrets into
+        // RUNNER_TEMP because Gradle's signingConfig takes a File. The
+        // credentials never touch the filesystem — they arrive as
+        // ORG_GRADLE_PROJECT_* environment variables, which Gradle exposes as
+        // project properties. With neither present the config stays empty and
+        // the build type is left unsigned rather than debug-signed.
+        create("release") {
+            val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
+            if (keystore != null && keystore.exists()) {
+                storeFile = keystore
+                storePassword = project.findProperty("releaseStorePassword") as String?
+                keyAlias = project.findProperty("releaseKeyAlias") as String?
+                keyPassword = project.findProperty("releaseKeyPassword") as String?
+            }
+        }
+
+        // Test key: committed, and can only sign com.aistra.hail.pr.<n> and
+        // com.aistra.hail.debug, so it grants nothing. Living in the repo is
+        // what makes every PR and debug build carry the same signature, so a
+        // rebuild installs over its own previous build instead of demanding an
+        // uninstall first. PKCS12 protects the key with the store password,
+        // so keyPassword must match storePassword.
+        create("test") {
+            val keystore = rootProject.file(".github/debug.keystore")
+            if (keystore.exists()) {
+                storeFile = keystore
+                storeType = "PKCS12"
+                storePassword = "HailBug"
+                keyAlias = "HailBug"
+                keyPassword = "HailBug"
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            versionNameSuffix = "-g$commitHash"
+            versionNameSuffix = "-Debug"
+            signingConfig = signingConfigs.getByName("test")
         }
         create("pr") {
-            applicationIdSuffix = ".pr"
-            versionNameSuffix = System.getenv("PR_NUMBER")?.let { "-$it" } ?: ""
+            // Each PR installs as its own app: com.aistra.hail.pr.<n>.
+            // versionName and versionCode are fully overridden by the workflow,
+            // so there is deliberately no versionNameSuffix here.
+            applicationIdSuffix =
+                providers.gradleProperty("prNumber").orNull?.let { ".pr.$it" } ?: ".pr"
+            signingConfig = signingConfigs.getByName("test")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = if (signingProps.exists()) {
-                val props = `java.util`.Properties().apply { load(signingProps.reader()) }
-                signingConfigs.create("release") {
-                    storeFile = file(props.getProperty("storeFile"))
-                    storePassword = props.getProperty("storePassword")
-                    keyAlias = props.getProperty("keyAlias")
-                    keyPassword = props.getProperty("keyPassword")
-                }
-            } else signingConfigs.getByName("debug")
+            if (System.getenv("RELEASE_KEYSTORE_PATH") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
