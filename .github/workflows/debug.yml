@@ -1,0 +1,82 @@
+name: Debug
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to build
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Test, build, deliver
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .github/.java-version
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0'
+          accept-android-sdk-licenses: yes
+
+      - name: Unit tests
+        run: .github/scripts/test.sh
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-debug
+          path: app/build/reports/tests/testDebugUnitTest
+          if-no-files-found: ignore
+
+      - name: Build
+        id: build
+        run: .github/scripts/build.sh debug
+
+      - name: Rename
+        env:
+          APK_PATH: ${{ steps.build.outputs.APK_PATH }}
+        run: mv "$APK_PATH" HailBug.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-debug
+          path: HailBug.apk
+          if-no-files-found: error
+
+      - name: Upload to Telegram
+        if: success()
+        continue-on-error: true
+        env:
+          APK_PATH: ${{ github.workspace }}/HailBug.apk
+          GITHUB_SHA: ${{ github.sha }}
+          COMMIT_SUBJECT: ${{ steps.build.outputs.COMMIT_SUBJECT }}
+          TG_CHANNEL: debug
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
+        run: python3 .github/scripts/upload.py
