@@ -38,6 +38,7 @@ APK="$(single_match '*.apk')"
 note "Built ${APK}"
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   printf 'APK_PATH=%s\n' "$APK" >> "$GITHUB_OUTPUT"
-  # Single-line subject, so GITHUB_OUTPUT needs no heredoc form here.
+  # Single-line values, so GITHUB_OUTPUT needs no heredoc form here.
   printf 'COMMIT_SUBJECT=%s\n' "$(git log -1 --pretty=%s)" >> "$GITHUB_OUTPUT"
+  printf 'COMMIT_SHA=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 fi
