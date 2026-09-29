@@ -309,7 +309,7 @@ object HBackup {
                             // key is for - leaving the stored value alone cannot invent a
                             // preference the user never chose.
                             range != null && asFloat !in range ->
-                                warnNotStorable(key, value, "Float in ${range.first}..${range.lastInclusive}")
+                                warnNotStorable(key, value, "Float in ${range.start}..${range.endInclusive}")
                             else -> putFloat(key, asFloat)
                         }
                     }
