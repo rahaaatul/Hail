@@ -95,6 +95,17 @@ jobs:
     needs: [build]
     runs-on: ubuntu-latest
     steps:
+      # The build ran on a different runner, so this job starts on an empty
+      # workspace: there is no APK and no script here. The artifact carries the
+      # APK across, and checkout restores the scripts the Telegram step runs.
+      - uses: actions/checkout@v7
+
+      - name: Download APK
+        uses: actions/download-artifact@v7
+        with:
+          name: apk-${{ needs.build.outputs.version }}
+          path: .
+
       - name: Create draft release
         uses: softprops/action-gh-release@v3
         with:
