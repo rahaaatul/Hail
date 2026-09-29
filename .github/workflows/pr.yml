@@ -79,4 +79,9 @@ jobs:
           TG_CHANNEL: pr
           TG_TOKEN: ${{ secrets.TG_TOKEN }}
           TG_GROUP: ${{ secrets.TG_GROUP }}
+          # A fork run receives no secrets, so TG_TOKEN is empty there by
+          # design. This is the only signal upload.py has to tell that apart
+          # from a same-repository run where the secret is simply missing, and
+          # only the workflow can supply it.
+          TG_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: python3 .github/scripts/upload.py

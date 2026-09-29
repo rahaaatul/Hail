@@ -188,17 +188,26 @@ def main() -> None:
 
     token = os.environ.get("TG_TOKEN", "")
     if not token:
-        # A `pull_request` run from a fork is given no repository secrets, so an
-        # unset token is a normal external contribution, not a fault. The
-        # upload.sh this replaces treated it as a dry run and exited 0; do the
-        # same, so the log reads as a notice rather than an error about a secret
-        # the workflow was never allowed to see.
-        print(
-            "::warning::TG_TOKEN is unset; skipping the Telegram upload. Pull "
-            "requests from forks do not receive repository secrets. The APK is "
-            "still available from this run's artifact."
+        # An unset token means two different things and only the workflow can
+        # tell them apart, so it passes the distinction in as TG_FORK. A `pull_
+        # request` run from a fork is given no repository secrets, so that is
+        # expected and must not read as a fault. On a same-repository run an
+        # unset token is a genuine misconfiguration - the secret was renamed or
+        # removed - and the APK would be built but never announced, which is
+        # exactly the silent failure the error message exists to catch.
+        if os.environ.get("TG_FORK", "").lower() == "true":
+            print(
+                "::warning::TG_TOKEN is unset; skipping the Telegram upload "
+                "because this pull request comes from a fork, and forks do not "
+                "receive repository secrets. The APK is still available from "
+                "this run's artifact."
+            )
+            return
+        sys.exit(
+            "::error::TG_TOKEN is unset and this run is not from a fork, so the "
+            "secret is genuinely missing or renamed. The APK was built but "
+            "never announced."
         )
-        return
 
     if channel == "pr":
         caption = pr_caption(
