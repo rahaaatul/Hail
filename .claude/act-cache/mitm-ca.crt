@@ -1,0 +1,62 @@
+-----BEGIN CERTIFICATE-----
+MIIBsjCCAVegAwIBAgIQNYgimGAqtnuqgH1u2SEFqDAKBggqhkjOPQQDAjA3MTUw
+MwYDVQQDEyxDbG91ZGZsYXJlIFRMUyBwcm94eS1ldmVyeXRoaW5nIEludGVyY2Vw
+dCBDQTAeFw0yNjA5MjkwNTEyNDJaFw0yNjEwMjkwNjEyNDJaMDcxNTAzBgNVBAMT
+LENsb3VkZmxhcmUgVExTIHByb3h5LWV2ZXJ5dGhpbmcgSW50ZXJjZXB0IENBMFkw
+EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfsaVgQHVK9/K59fTXnsHOz8hcSSJ/EWo
+fOaUyzGDgAj8kXX04mnoJ2kEaR3GWlruQ2KVXsMvVOU5W6gYvojwvqNFMEMwDgYD
+VR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQIMAYBAf8CAQAwHQYDVR0OBBYEFBAKojrz
+Wy602Eh0nq8hvvbctSqMMAoGCCqGSM49BAMCA0kAMEYCIQDlZf5ZuqN1moadExNG
+7a1s30QjZtibqI5RrZSIRw0Y1AIhALVu1u7UA7zTfR0WtirV2/wPc+2fNKeZPmcp
+Eby5dxwL
+-----END CERTIFICATE-----
+---
+Server certificate
+subject=CN = api.adoptium.net
+issuer=CN = Cloudflare TLS proxy-everything Intercept CA
+---
+No client certificate CA names sent
+Peer signing digest: SHA256
+Peer signature type: ECDSA
+Server Temp Key: X25519, 253 bits
+---
+SSL handshake has read 1244 bytes and written 386 bytes
+Verification error: self-signed certificate in certificate chain
+---
+New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
+Server public key is 256 bit
+Secure Renegotiation IS NOT supported
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 19 (self-signed certificate in certificate chain)
+---
+---
+Post-Handshake New Session Ticket arrived:
+SSL-Session:
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_128_GCM_SHA256
+    Session-ID: 65805AAF23DA771D0C657B9809DAADECD531E2E4F1AF7BCA6CE9F1C80E9A979B
+    Session-ID-ctx: 
+    Resumption PSK: C232CD66DF6FBC1E62C7C4E4A0C49183D2D1EB51E372A52988E787900D8524BB
+    PSK identity: None
+    PSK identity hint: None
+    SRP username: None
+    TLS session ticket lifetime hint: 604800 (seconds)
+    TLS session ticket:
+    0000 - a6 3f dd af 4e b7 68 ec-d8 6c 57 9c 31 a3 75 dc   .?..N.h..lW.1.u.
+    0010 - bf 03 a4 cd d7 5c f7 3d-3b 00 2c 54 7a c3 a0 04   .....\.=;.,Tz...
+    0020 - 64 0d fe fc 46 66 fd f3-b9 1b 97 79 f4 d0 19 f7   d...Ff.....y....
+    0030 - fa c0 87 27 97 56 5b ea-b3 73 3a 6b 35 96 28 0e   ...'.V[..s:k5.(.
+    0040 - 76 af 56 11 ea 59 f8 01-1a b1 7e 7d f9 c1 91 7a   v.V..Y....~}...z
+    0050 - d2 0f 15 7a f2 0f c0 83-d9 34 7f 5e 80 ab 1a 97   ...z.....4.^....
+    0060 - 87 28 0f 16 92 44 a6 c4-2d                        .(...D..-
+
+    Start Time: 1790663206
+    Timeout   : 7200 (sec)
+    Verify return code: 19 (self-signed certificate in certificate chain)
+    Extended master secret: no
+    Max Early Data: 0
+---
+read R BLOCK
