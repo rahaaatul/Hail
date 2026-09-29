@@ -75,7 +75,13 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            if (System.getenv("RELEASE_KEYSTORE_PATH") != null) {
+            // Mirrors the keystore.exists() test inside the "release" signing
+            // config above. The two must agree: assigning a config whose
+            // storeFile was never set produces an opaque AGP failure
+            // ("missing required property 'storeFile'") instead of a plainly
+            // unsigned build.
+            val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
+            if (keystore != null && keystore.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
             proguardFiles(
