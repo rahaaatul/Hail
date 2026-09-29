@@ -75,6 +75,8 @@ Three CRITICALs. Until these are fixed, no release can complete.
 
 **Background — [118-1] CRITICAL.** The current script registers `trap cleanup EXIT`, which fires when *the script* exits, i.e. at the end of the `Stage release keystore` step. The `Build` step runs later on the same runner and inherits only `RELEASE_KEYSTORE_PATH` through `$GITHUB_ENV`, so by then the file is gone. `build.gradle.kts` then leaves the `release` signing config empty while `buildTypes.release` still assigns it because the env var is non-null, and AGP fails with `SigningConfig "release" is missing required property 'storeFile'`, or the run produces an unsigned "release". The runner destroys the workspace anyway, so the trap buys nothing.
 
+Ruling: the test captures the expected non-zero exit with `out="$(...)" && rc=0 || rc=$?` rather than `out="$(...)"; rc=$?`. The test `source`s `lib.sh`, whose line 4 is `set -euo pipefail`, so under `errexit` the plain assignment kills the test on the very non-zero exit it is asserting, `rc` is never assigned, and `PASS: all assertions` is never printed. The `||` form is used verbatim in A1, B1, B2 and D1 so the idiom is identical everywhere. Cost if wrong: none — `cmd && rc=0 || rc=$?` yields the command's own status whether it succeeds or fails, and it does not weaken any assertion. The same ruling supplies defect 5 in B1 and D1, so the three harnesses stay in step.
+
 - [ ] **Step 1: Write the failing test**
 
 The test is a shell script, since the production code is shell. Create `.github/scripts/test/signing_test.sh`:
@@ -84,7 +86,7 @@ The test is a shell script, since the production code is shell. Create `.github/
 # Test that signing.sh stages the keystore and leaves it readable for the
 # Build step that runs later on the same runner.
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 source .github/scripts/lib.sh
 
 FAILURES=0
@@ -126,8 +128,11 @@ if [ -f "$keystore_path" ]; then
     || fail "decoded size is 2618" "got $(stat -c%s "$keystore_path")"
 fi
 
-# The guard the release path depends on.
-out="$(env -u KEYSTORE bash .github/scripts/signing.sh 2>&1)"; rc=$?
+# The guard the release path depends on. lib.sh sets `set -e`, and this case
+# EXPECTS a non-zero exit, so the capture must be the left side of `||`:
+# errexit does not apply there, and rc is still the command's own status.
+out="" && rc=0
+out="$(env -u KEYSTORE bash .github/scripts/signing.sh 2>&1)" && rc=0 || rc=$?
 [ "$rc" -eq 1 ] \
   && pass "exits 1 when KEYSTORE is unset" \
   || fail "exits 1 when KEYSTORE is unset" "got exit $rc"
@@ -320,13 +325,14 @@ In `.github/workflows/release.yml`, replace the `publish` job with:
 
 - [ ] **Step 4: Write minimal implementation — add `parse_mode`**
 
-In `.github/scripts/upload.py`, inside `send_document`, immediately after the `caption` field, add:
+In `.github/scripts/upload.py`, inside `send_document`, insert these three lines **immediately after** the `caption` field line — as new lines, with a blank line after them so the following `payload += (` stays separate:
 
 ```python
         # The captions are HTML (<b>, <blockquote>, <p>, <strong>, <a href>).
         # Telegram defaults to no parse mode, so without this every caption
         # renders as literal tags. The script this replaced sent it.
         payload += field("parse_mode", "HTML")
+
 ```
 
 - [ ] **Step 5: Run test to verify it passes**
@@ -389,6 +395,8 @@ upload.py never sent parse_mode, so every caption rendered as literal
 
 **Background — [118-4] WARNING.** `signingConfigs.create("release")` bails out when `keystore.exists()` is false, but `buildTypes.release` still assigns that same empty config as soon as `RELEASE_KEYSTORE_PATH` is non-null. The two conditions disagree whenever the file is missing, which is exactly what happened under the old `signing.sh`. AGP then fails deep inside signing instead of producing the clear "no keystore staged" outcome.
 
+Ruling: the test asserts against the `val` line *and* the `if` condition, not the `if` condition alone. The fix reads the env var into a local and tests the file, so `RELEASE_KEYSTORE_PATH` necessarily appears on the `val` line, outside any `if (...)` capture — asserting it inside the condition asserts text the implementation cannot contain. Cost if wrong: if a future edit drops the `val` and inlines `System.getenv(...)` into the condition, the `val` check fails and points at the real regression rather than passing silently. A third assertion now also pins the *negative*: the old bare env-var test must be gone, so the test cannot pass against the pre-fix file.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `.github/scripts/test/build_gradle_test.py`:
@@ -416,15 +424,24 @@ check(release is not None, "release build type is present")
 block = release.group(0) if release else ""
 
 if "signingConfigs.getByName(\"release\")" in block:
-    guard = re.search(r"if \((.*?)\) \{", block)
+    # The decision is the `val` that reads the env var PLUS the `if` that tests
+    # the file. Capturing only `if (...)` misses the env-var name, which
+    # necessarily lives on the preceding line, and the guard is then asserted
+    # to be something it never claimed to be.
+    val = re.search(r'(val\s+\w+\s*=\s*System\.getenv\("RELEASE_KEYSTORE_PATH"\).*?)\n', block, re.S)
+    guard = re.search(r"if \((.*?)\) \{", block, re.S)
     cond = guard.group(1).strip() if guard else ""
+    reading = val.group(1) if val else ""
     # The env var alone is not enough: the file has to be there.
     check("exists()" in cond,
           "release assigns the signing config only when the keystore file exists",
           f"condition is `{cond}` - tests the env var, not the file")
-    check("RELEASE_KEYSTORE_PATH" in cond,
+    check("RELEASE_KEYSTORE_PATH" in reading,
           "the guard still names the env var",
-          f"condition is `{cond}")
+          f"no line reading RELEASE_KEYSTORE_PATH in the release block; condition is `{cond}`")
+    check("System.getenv(\"RELEASE_KEYSTORE_PATH\") != null" not in cond,
+          "the env var alone no longer gates signing",
+          f"condition is `{cond}` - it must also require the file to exist")
 else:
     check(True, "release assigns the signing config only when the keystore file exists (no assignment)")
 
@@ -561,11 +578,15 @@ The Telegram ceiling is 50 MB. `upload.py` detects and warns; nothing mitigates.
 
 **Interfaces:**
 - Consumes: `lib.sh` (`require_env`, `require_command`, `note`, `step`, `die`); one argument, the absolute path to an `.apk`
-- Produces: prints the absolute path of the created archive to stdout, one line. Writes nothing to `$GITHUB_OUTPUT` — the caller reads stdout.
+- Produces: prints the absolute path of the created archive to stdout **as the last line**. Progress lines precede it, so the caller must read the last line (`| tail -1`). Writes nothing to `$GITHUB_OUTPUT` — the caller reads stdout.
 
 **Design, carried forward from the deleted `origin/main:.github/scripts/zip.sh`:** `7z a -t7z -mx=9` above 15 MB, `zip -j -9` at or below. Its own benchmark: 73 MB debug APK → **13 MB in 12 s**, versus 20 MB from `zip -9`. Both variants remove the target first, and both use flat-storage flags (`-w` for 7z, `-j` for zip) so the archive holds the APK directly rather than a path.
 
 **What changes from the old script:** it assumed compression always sufficed and never re-checked. This one verifies, and fails loudly if the result is still over the limit, so the problem surfaces at build time rather than as a silently skipped notification.
+
+Ruling: the contract is **"the path is the last stdout line"**, not "one line". `step` and `note` both print to stdout and `step` emits a leading blank line, so a real run is four lines: `""`, `==> Compressing …`, `::notice::Archive is …`, then the path. A one-line assertion is unsatisfiable without re-plumbing the helpers onto stderr, which would move `step`/`note` output out of every other script that sources `lib.sh` — far more change than this plan should make for a test bug. `build.sh` already reads the stream with `| tail -1`, so asserting the last line asserts the contract that is actually consumed. Cost if wrong: a future change that appends something *after* the path line would still pass here while breaking `| tail -1` consumers — so the test pins the path to the final position, not merely to "being present".
+
+Ruling: `require_env 1` is **deleted**, not repaired. `${!name}` with `name=1` is bash's indirect expansion, and the only binding called `1` in scope is `zip.sh`'s own first positional parameter, so the "check" was always `[ -n "1" ]` — a no-op that also passes with no argument at all, where the script then dies on `$1: unbound variable`. An arity check is not an environment check, so it is replaced with a real one, and the no-argument case is covered in the test rather than left to a dead line. Cost if wrong: none; a direct `[ "$#" -ge 1 ]` cannot be fooled by a variable named `1`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -576,7 +597,7 @@ Create `.github/scripts/test/zip_test.sh`:
 # Test zip.sh: picks a tool by size, produces a flat archive, and fails
 # loudly rather than silently returning an oversized archive.
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 source .github/scripts/lib.sh
 
 FAILURES=0
@@ -610,14 +631,45 @@ if [ -f "$out" ]; then
     || fail "archived bytes" "content differs after round trip"
 fi
 
-# --- output goes to stdout only, exactly one path line ---
-lines="$(bash .github/scripts/zip.sh "$scratch/small/Hail-79.apk" | wc -l)"
-[ "$lines" -eq 1 ] \
-  && pass "prints exactly one line to stdout" \
-  || fail "prints exactly one line" "got $lines lines"
+# --- the contract build.sh depends on: the path is the LAST stdout line ---
+# Not "exactly one line". step and note both print to stdout and step emits a
+# leading blank line, so a small run is 4 lines: "", "==> ...", "::notice::...",
+# path. `build.sh` already reads it with `| tail -1`; assert that, not a count.
+stream="$(bash .github/scripts/zip.sh "$scratch/small/Hail-79.apk")"
+last="$(printf '%s\n' "$stream" | tail -1)"
+[ "$last" = "$out" ] \
+  && pass "the archive path is the last stdout line (what build.sh reads)" \
+  || fail "the archive path is the last stdout line" "last line was: $last"
+case "$stream" in
+  *"::error::"*) fail "no ::error:: on the success path" "got: $stream" ;;
+  *)             pass "no ::error:: on the success path" ;;
+esac
 
 # --- missing input fails loudly ---
-out="$(bash .github/scripts/zip.sh "$scratch/nope.apk" 2>&1)"; rc=$?
+# lib.sh sets `set -e`, and this case EXPECTS a non-zero exit, so the capture is
+# the left side of `||`: errexit does not apply there and rc is still the
+# command's own status.
+out="" && rc=0
+out="$(bash .github/scripts/zip.sh "$scratch/nope.apk" 2>&1)" && rc=0 || rc=$?
+[ "$rc" -ne 0 ] \
+  && pass "missing input exits non-zero" \
+  || fail "missing input exits non-zero" "got exit $rc"
+case "$out" in
+  *"::error::"*) pass "missing input emits a ::error:: annotation" ;;
+  *) fail "missing input emits ::error::" "got: $out" ;;
+esac
+
+# --- no argument at all fails with a usable message, not an unbound variable ---
+out="" && rc=0
+out="$(bash .github/scripts/zip.sh 2>&1)" && rc=0 || rc=$?
+[ "$rc" -ne 0 ] \
+  && pass "no argument exits non-zero" \
+  || fail "no argument exits non-zero" "got exit $rc"
+case "$out" in
+  *"unbound variable"*) fail "no argument reports usage" "got a raw shell error: $out" ;;
+  *"::error::"*)        pass "no argument reports usage via ::error::" ;;
+  *) fail "no argument reports usage" "got: $out" ;;
+esac
 [ "$rc" -ne 0 ] \
   && pass "missing input exits non-zero" \
   || fail "missing input exits non-zero" "got exit $rc"
@@ -678,8 +730,9 @@ cat > .github/scripts/zip.sh <<'SH'
 # zip -9 to ~20 MB. Both are below the limit, so the tool is chosen by size
 # purely to save time on small inputs.
 #
-# Prints the archive's absolute path to stdout, one line. Writes nothing to
-# $GITHUB_OUTPUT - the caller reads stdout.
+# Prints the archive's absolute path to stdout as the LAST line. Progress goes
+# to stdout too, so the caller must read the last line (`| tail -1`). Writes
+# nothing to $GITHUB_OUTPUT - the caller reads stdout.
 #
 # The old pipeline shipped archives to the debug and PR topics, so recipients
 # already know these need extracting.
@@ -691,7 +744,13 @@ readonly THRESHOLD_MB=15
 # Telegram's hard ceiling for a bot upload.
 readonly TELEGRAM_LIMIT_MB=50
 
-require_env 1
+# A real arity check. `require_env 1` was here before and was a no-op:
+# ${!name} with name=1 is bash's indirect expansion, and the only binding
+# called "1" in scope is this script's own first positional parameter, so the
+# test was always `[ -n "1" ]`. With no argument at all it did not catch
+# anything either, and set -u then killed the script with "$1: unbound
+# variable" instead of a usable message.
+[ "$#" -ge 1 ] || die "Usage: zip.sh <path-to-apk>"
 INPUT="$1"
 
 [ -f "$INPUT" ] || die "No such file to compress: ${INPUT}"
@@ -769,6 +828,10 @@ build instead of vanishing at upload time."
 
 **Release is excluded deliberately.** A minified release APK is a fraction of the size, and a compressed archive as a GitHub release asset would be worse for users.
 
+Ruling: the test opens with the same `command -v zip` skip guard B1 already uses. The debug/release cases run the real `build.sh`, which under B2's implementation runs the real `zip.sh`; with `zip` absent, `zip.sh` calls `require_command zip` and dies, `build.sh` inherits `set -e` and aborts before writing `GITHUB_OUTPUT`, and the test then reports a missing `APK_PATH` — a failure that says nothing about the code under test. The Phase C gate requires the whole set to run on any contributor's machine, so a hard dependency on an external binary has to be stated, not assumed. Cost if wrong: a contributor without `zip` sees `SKIP` instead of a result, which is a loss of local signal but never a false pass; CI installs `zip` per the Global Constraints, so the gate still runs for real there.
+
+Ruling: the argument-list assertions run **after** a fake APK exists, and match against a captured string rather than a pipeline. Previously they ran first, so `single_match '*.apk'` found nothing and `build.sh` exited 1 — and because `lib.sh` sets `-o pipefail`, `build.sh … | grep -q …` reported the *worse* of the two statuses, so the assertion failed while the `GRADLE_ARGS` line sat visible in the stream. Creating the APK first and grepping a variable separates "did Gradle get the right arguments" from "did the script exit cleanly". Cost if wrong: none — `assert_args` still matches the exact expected argument string, so a changed argument list fails just as loudly; it simply stops conflating that with a missing artifact.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `.github/scripts/test/build_sh_test.sh`:
@@ -778,12 +841,14 @@ Create `.github/scripts/test/build_sh_test.sh`:
 # Test that build.sh publishes the archive for pr/debug and the raw APK for
 # release, and that the argument list is exactly as specified.
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 source .github/scripts/lib.sh
 
 FAILURES=0
 pass() { printf '  ok   %s\n' "$1"; }
 fail() { printf '  FAIL %s\n     %s\n' "$1" "$2"; FAILURES=$((FAILURES+1)); }
+
+command -v zip >/dev/null 2>&1 || { echo "SKIP: zip not installed (build.sh calls zip.sh for pr/debug)"; exit 0; }
 
 # Replace ./gradlew with a print-only stub. build.sh calls it by explicit
 # relative path, so PATH is not consulted and the stub must sit in the tree.
@@ -800,20 +865,39 @@ fake_apk() {
   head -c 200000 /dev/urandom > "app/build/outputs/apk/$1/app-$1.apk"
 }
 
+# Assert on a captured stream, not on `build.sh | grep -q`.
+# lib.sh sets `set -o pipefail`, so a pipeline reports the WORST status in it:
+# even though grep matches, build.sh's own non-zero exit (single_match finds no
+# APK, because the argument assertions used to run before any APK existed)
+# failed the pipeline and the assertion reported a false mismatch. Capture the
+# output, then grep the variable, so the two concerns stay separate.
+assert_args() {
+  local name="$1" want="$2"; shift 2
+  local stream="" rc=0
+  stream="$("$@" 2>&1)" && rc=0 || rc=$?
+  case "$stream" in
+    *"$want"*) pass "$name argument list is exact" ;;
+    *) fail "$name argument list is exact" "mismatch (build.sh exit $rc): $(printf '%s' "$stream" | grep GRADLE_ARGS || printf '%s' "$stream")" ;;
+  esac
+}
+
 # --- argument lists, unchanged from the reviewed spec ---
-PR_NUMBER=79 bash .github/scripts/build.sh pr 2>&1 | grep -q \
+# An APK must exist before build.sh can get past single_match.
+fake_apk pr
+assert_args "pr" \
   "GRADLE_ARGS: --no-daemon --stacktrace :app:assemblePr -PversionName=PR79 -PversionCode=79 -PprNumber=79" \
-  && pass "pr argument list is exact" || fail "pr argument list is exact" "mismatch"
+  env PR_NUMBER=79 bash .github/scripts/build.sh pr
 
-bash .github/scripts/build.sh debug 2>&1 | grep -q \
+assert_args "debug" \
   "GRADLE_ARGS: --no-daemon --stacktrace :app:assembleDebug" \
-  && pass "debug argument list is exact" || fail "debug argument list is exact" "mismatch"
+  bash .github/scripts/build.sh debug
 
-RELEASE_VERSION_NAME=1.12.3 RELEASE_VERSION_CODE=11203 bash .github/scripts/build.sh release 2>&1 | grep -q \
+assert_args "release" \
   "GRADLE_ARGS: --no-daemon --stacktrace :app:assembleRelease -PversionName=1.12.3 -PversionCode=11203" \
-  && pass "release argument list is exact" || fail "release argument list is exact" "mismatch"
+  env RELEASE_VERSION_NAME=1.12.3 RELEASE_VERSION_CODE=11203 bash .github/scripts/build.sh release
 
 # --- the contract under test ---
+rm -rf app/build
 fake_apk debug
 mkdir -p .scratch-out
 GITHUB_OUTPUT=.scratch-out/gout bash .github/scripts/build.sh debug >/dev/null 2>&1
@@ -831,7 +915,7 @@ grep -q '^COMMIT_SHA=' .scratch-out/gout \
   && pass "COMMIT_SHA still written" || fail "COMMIT_SHA still written" "absent"
 
 # --- release stays raw ---
-rm -rf .scratch-out && mkdir -p .scratch-out
+rm -rf .scratch-out app/build && mkdir -p .scratch-out
 fake_apk release
 GITHUB_OUTPUT=.scratch-out/gout \
   RELEASE_VERSION_NAME=1.12.3 RELEASE_VERSION_CODE=11203 \
@@ -840,6 +924,10 @@ apk_path="$(sed -n 's/^APK_PATH=//p' .scratch-out/gout)"
 case "$apk_path" in
   *.apk) pass "release publishes the raw APK, uncompressed" ;;
   *)    fail "release publishes the raw APK" "APK_PATH=$apk_path" ;;
+esac
+case "$apk_path" in
+  *.zip|*.7z) fail "release is not compressed" "APK_PATH=$apk_path" ;;
+  *)          pass "release is not compressed" ;;
 esac
 
 printf '\n%s\n' "$([ "$FAILURES" -eq 0 ] && echo 'PASS: all assertions' || echo "FAIL: $FAILURES assertion(s)")"
@@ -903,17 +991,25 @@ release raw: it is minified, and a compressed release asset is worse for
 users."
 ```
 
-## Task B3: Align `pr.yml` with the archive contract
+## Task B3: Align `pr.yml` and `debug.yml` with the archive contract
 
 **Files:**
-- Modify: `.github/workflows/pr.yml` (the `Rename` and `Upload artifact` steps)
+- Modify: `.github/workflows/pr.yml` (the `Rename`, `Upload artifact` and `Upload to Telegram` steps)
+- Modify: `.github/workflows/debug.yml` (the same three steps — an undeclared consumer of the same contract)
 - Modify: `.github/scripts/upload.py` (the oversize warning text)
+- Test: `.github/scripts/test/pr_workflow_test.py`
 
 **Interfaces:**
-- Consumes: `build.sh`'s `APK_PATH`, now an archive for `pr`
-- Produces: a Telegram message whose filename ends `.zip` or `.7z`, and an Actions artifact matching it
+- Consumes: `build.sh`'s `APK_PATH`, now an archive for `pr` **and** `debug`
+- Produces: a Telegram message whose filename ends `.zip` or `.7z`, and an Actions artifact matching it — in both workflows
 
-**Two consequences of Task B2 that must be handled in the same change.** `Rename` is `mv "$APK_PATH" "Hail-<n>.apk"`, which would rename a `.7z` to `.apk` — a file that is not an APK. And the oversize warning still recommends `-Pabi=arm64-v8a`, which is now wrong advice: the file is already compressed.
+**Three consequences of Task B2 that must be handled in the same change.** In both workflows `Rename` is a hardcoded `mv "$APK_PATH" ….apk`, which renames a `.7z` to `.apk` — a file that is not an APK. Each workflow's `Upload to Telegram` step *also* hardcodes a `.apk` path, so fixing only `Rename` would leave Telegram pointed at a filename that no longer exists. And the oversize warning still recommends `-Pabi=arm64-v8a` as the remedy, which is now wrong advice: the file is already compressed.
+
+Ruling: B3 covers **`pr.yml` and `debug.yml` together**, because `debug.yml` is a real consumer of the `APK_PATH` contract B2 changes and nothing else in the plan touched it — B3 updating only `pr.yml` meant a debug archive was renamed to `HailBug.apk` and published under that name, with no task and no test covering it. Declaring a new consumer here is cheaper than a second task later, and it keeps the contract's blast radius inside the task that creates it. Cost if wrong: B3 is larger than it would otherwise be, and the test now fails if either workflow drifts — so a `debug.yml` change made for an unrelated reason can surface in B3 rather than in the task that caused it. The two workflows stay individually testable because the assertions loop over `(wf, base)` pairs.
+
+Ruling: the per-ABI assertion is narrowed to the **remedy sentence**, and the flag itself is removed from `upload.py` entirely. The intent is that per-ABI splitting stops being the *primary* remedy now that compression is the primary remedy; a bare `"Pabi=arm64-v8a" not in uploader` cannot express that, because the same literal legitimately appears in any text that merely mentions the flag. The old wording — `To fit it, build per ABI:` — is what asserts the old priority, so the replacement text drops that sentence and the test forbids the old phrasing. Cost if wrong: a future message may legitimately re-mention `-Pabi=arm64-v8a` as a *secondary* suggestion and this test will fail on it, which is a false alarm; that is the safer direction, because the alternative is a test that can be satisfied while the message still leads with the wrong remedy.
+
+Ruling: the `Rename` assertion targets the **`mv` and `name=` lines**, not the whole `run` body. The previous whole-body check forbade the substring `.apk` anywhere in the step, which an explanatory comment mentioning `.apk` defeats — the assertion was testing prose. The workflow no longer hardcodes an extension *anywhere* in the step, and the test now checks the lines that actually build the filename, per workflow, against each workflow's own established base name. Cost if wrong: a `.apk` reintroduced only inside a comment passes here, which is the correct outcome — a comment cannot mislabel an artifact.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -921,7 +1017,11 @@ Create `.github/scripts/test/pr_workflow_test.py`:
 
 ```python
 #!/usr/bin/env python3
-"""Assert pr.yml's rename and artifact steps match what build.sh now emits."""
+"""Assert pr.yml's rename and artifact steps match what build.sh now emits.
+
+debug.yml consumes the same APK_PATH contract as pr.yml, so it is covered by
+the same assertions here rather than left to a later task.
+"""
 import pathlib
 import sys
 import yaml
@@ -935,33 +1035,66 @@ def check(ok: bool, name: str, detail: str = "") -> None:
         failures.append(name)
 
 
-raw = pathlib.Path(".github/workflows/pr.yml").read_text(encoding="utf-8")
-d = yaml.safe_load(raw)
-by_name = {s.get("name", ""): s for s in d["jobs"]["check"]["steps"]}
+for wf, base in (("pr", "Hail-${PR_NUMBER}"), ("debug", "HailBug")):
+    raw = pathlib.Path(f".github/workflows/{wf}.yml").read_text(encoding="utf-8")
+    d = yaml.safe_load(raw)
+    steps = d["jobs"]["check"]["steps"]
+    by_name = {s.get("name", ""): s for s in steps}
 
-run = by_name.get("Rename", {}).get("run", "")
-check(".apk" not in run,
-      "Rename does not hardcode a .apk extension",
-      f"run is: {run!r}")
-check("Hail-" in run, "Rename still names the file Hail-<PR>", f"run is: {run!r}")
+    # The rename step must derive the extension, and must not name one. The
+    # assertion targets the mv line: a comment that merely MENTIONS .apk is not
+    # a hardcoded extension, and forbidding the substring in the whole body
+    # punishes an explanatory comment.
+    run = by_name.get("Rename", {}).get("run", "")
+    lines = [l.strip() for l in run.splitlines()]
+    mv_line = next((l for l in lines if l.startswith("mv ")), "")
+    name_line = next((l for l in lines if l.startswith("name=")), "")
+    check("${APK_PATH##*.}" in run,
+          f"{wf}.yml derives the archive extension from APK_PATH",
+          f"run is: {run!r}")
+    check(base in name_line,
+          f"{wf}.yml rename keeps its established base name",
+          f"expected {base!r} in the name line, got: {name_line!r}")
+    check(".apk" not in mv_line and ".apk" not in name_line,
+          f"{wf}.yml rename does not hardcode a .apk extension",
+          f"mv is {mv_line!r} and name is {name_line!r}")
+    # The derived name is published, so the steps below read it instead of
+    # re-deriving (or hardcoding) the extension a second time.
+    check("GITHUB_OUTPUT" in run and "steps.rename.outputs.artifact" in raw,
+          f"{wf}.yml publishes the renamed path for the steps below",
+          "the artifact and Telegram steps must not re-guess the extension")
 
-artifact = by_name.get("Upload artifact", {})
-check(artifact.get("with", {}).get("if-no-files-found") == "error",
-      "artifact upload fails when the file is missing")
+    artifact = by_name.get("Upload artifact", {})
+    check(artifact.get("with", {}).get("if-no-files-found") == "error",
+          f"{wf}.yml artifact upload fails when the file is missing")
 
-# Global constraints still hold.
-check(d["permissions"] == {"contents": "read"}, "pr.yml holds contents: read")
-for job, spec in d["jobs"].items():
-    for s in spec["steps"]:
-        check("${{" not in s.get("run", ""), f"no expression in run body: {s.get('name', job)}")
-check("KEYSTORE" not in raw, "pr.yml references no signing secret")
-check("platforms;android-37.0" in raw, "pr.yml requests the existing platform package")
-check("accept-android-sdk-licenses: true" in raw,
-      "pr.yml uses a bare boolean for the license input")
+    tg = by_name.get("Upload to Telegram", {})
+    check(tg.get("env", {}).get("APK_PATH") == "${{ steps.rename.outputs.artifact }}",
+          f"{wf}.yml Telegram step reads the renamed artifact",
+          f"APK_PATH is: {tg.get('env', {}).get('APK_PATH')!r}")
+    check(".apk" not in str(tg.get("env", {}).get("APK_PATH", "")),
+          f"{wf}.yml Telegram step does not hardcode a .apk path")
+
+    # Global constraints still hold, for both workflows.
+    check(d["permissions"] == {"contents": "read"}, f"{wf}.yml holds contents: read")
+    for job, spec in d["jobs"].items():
+        for s in spec["steps"]:
+            check("${{" not in s.get("run", ""), f"{wf}.yml: no expression in run body: {s.get('name', job)}")
+    check("KEYSTORE" not in raw, f"{wf}.yml references no signing secret")
+    check("accept-android-sdk-licenses: true" in raw,
+          f"{wf}.yml uses a bare boolean for the license input")
+
+check("platforms;android-37.0" in pathlib.Path(".github/workflows/pr.yml").read_text(encoding="utf-8"),
+      "pr.yml requests the existing platform package")
 
 uploader = pathlib.Path(".github/scripts/upload.py").read_text(encoding="utf-8")
-check("Pabi=arm64-v8a" not in uploader,
-      "upload.py no longer recommends per-ABI splitting",
+# Assert the remedy SENTENCE is gone, not the flag alone. build.sh now
+# compresses, so per-ABI splitting is no longer the primary remedy - but the
+# old text recommended it outright ("To fit it, build per ABI"). A bare
+# `"Pabi=arm64-v8a" not in uploader` test cannot tell the two apart and would
+# also fail any future text that merely MENTIONS the flag.
+check("build per ABI" not in uploader and "-Pabi" not in uploader,
+      "upload.py no longer recommends per-ABI splitting as the remedy",
       "APKs are compressed now; the remedy text is wrong")
 
 print(f"\n{'PASS: all assertions' if not failures else 'FAIL: ' + str(len(failures)) + ' assertion(s)'}")
@@ -971,31 +1104,84 @@ sys.exit(len(failures))
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `python3 .github/scripts/test/pr_workflow_test.py`
-Expected: **FAIL** on "Rename does not hardcode a .apk extension" and "upload.py no longer recommends per-ABI splitting".
+Expected: **FAIL** on the rename, Telegram-path and remedy assertions for **both** `pr.yml` and `debug.yml`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `.github/workflows/pr.yml`, replace the `Rename` and `Upload artifact` steps with:
+In `.github/workflows/pr.yml`, replace the `Rename`, `Upload artifact` and `Upload to Telegram` steps with:
 
 ```yaml
       - name: Rename
+        id: rename
         env:
           APK_PATH: ${{ steps.build.outputs.APK_PATH }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # build.sh compresses pr builds, so the extension may be .zip or .7z.
-          # Derive it from the path rather than forcing .apk, which would
-          # produce a file that is not an APK.
+          # build.sh compresses pr builds, so what it produced is an archive,
+          # not an APK. Take the extension from the path instead of naming one,
+          # and publish the result so the two steps below never have to guess.
           ext="${APK_PATH##*.}"
-          mv "$APK_PATH" "Hail-${PR_NUMBER}.${ext}"
+          name="Hail-${PR_NUMBER}.${ext}"
+          mv "$APK_PATH" "$name"
+          echo "artifact=${GITHUB_WORKSPACE}/${name}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: apk-pr${{ github.event.pull_request.number }}
-          path: Hail-*
+          path: ${{ steps.rename.outputs.artifact }}
           if-no-files-found: error
+
+      - name: Upload to Telegram
+        if: success()
+        continue-on-error: true
+        env:
+          APK_PATH: ${{ steps.rename.outputs.artifact }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          TG_CHANNEL: pr
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
+        run: python3 .github/scripts/upload.py
 ```
+
+In `.github/workflows/debug.yml`, replace the same three steps with:
+
+```yaml
+      - name: Rename
+        id: rename
+        env:
+          APK_PATH: ${{ steps.build.outputs.APK_PATH }}
+        run: |
+          # build.sh compresses debug builds, so what it produced is an
+          # archive, not an APK. Take the extension from the path instead of
+          # naming one, and publish the result so the steps below never guess.
+          ext="${APK_PATH##*.}"
+          name="HailBug.${ext}"
+          mv "$APK_PATH" "$name"
+          echo "artifact=${GITHUB_WORKSPACE}/${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-debug
+          path: ${{ steps.rename.outputs.artifact }}
+          if-no-files-found: error
+
+      - name: Upload to Telegram
+        if: success()
+        continue-on-error: true
+        env:
+          APK_PATH: ${{ steps.rename.outputs.artifact }}
+          GITHUB_SHA: ${{ steps.build.outputs.COMMIT_SHA }}
+          COMMIT_SUBJECT: ${{ steps.build.outputs.COMMIT_SUBJECT }}
+          TG_CHANNEL: debug
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
+        run: python3 .github/scripts/upload.py
+```
+
+Leave the `if: success()` on both Telegram steps exactly as it is — Task C3 changes those conditions, and this task only replaces the `APK_PATH` value inside the same `env:` block.
 
 In `.github/scripts/upload.py`, replace the oversize warning text with:
 
@@ -1003,9 +1189,9 @@ In `.github/scripts/upload.py`, replace the oversize warning text with:
         print(
             f"::warning::APK is {size / 1024 / 1024:.1f} MB, over Telegram's "
             f"50 MB sendDocument limit even after compression. Skipping the "
-            f"upload - the build is still available from the GitHub release. "
-            f"Re-run with a per-ABI build (-Pabi=arm64-v8a) if the size itself "
-            f"is the problem."
+            f"upload - the artifact is still available from the GitHub release. "
+            f"Compression is already the primary remedy and it did not get this "
+            f"under the limit, so the size itself is the problem."
         )
 ```
 
@@ -1031,13 +1217,16 @@ PY
 - [ ] **Step 5: Commit**
 
 ```bash
-git add .github/workflows/pr.yml .github/scripts/upload.py .github/scripts/test/pr_workflow_test.py
-git commit -m "fix(ci): derive the PR artifact extension and drop stale advice
+git add .github/workflows/pr.yml .github/workflows/debug.yml .github/scripts/upload.py .github/scripts/test/pr_workflow_test.py
+git commit -m "fix(ci): derive the artifact extension in pr and debug
 
-build.sh now compresses pr builds, so Rename's hardcoded .apk would have
-produced a file that is not an APK. Derive the extension from the path, and
-stop recommending per-ABI splitting from the oversize warning now that the
-artifact is already compressed."
+build.sh now compresses pr and debug builds, so what Rename received is an
+archive, not an APK. Both workflows hardcoded .apk in Rename, in the artifact
+path, and in the Telegram step's APK_PATH, so fixing only the mv would have
+left Telegram pointed at a filename that no longer existed. Derive the
+extension from the path once and publish it as a step output, and stop
+recommending per-ABI splitting from the oversize warning now that compression
+is the primary remedy."
 ```
 
 ## Phase B gate
@@ -1063,6 +1252,8 @@ All robustness. None changes the happy path, and all were shaped by Phase B.
 ## Task C1: Fail cleanly when the APK is missing
 
 **Background — [118-5] WARNING.** `Path(path).stat()` is unguarded. `release.yml` runs the upload step with `if: always()`, so any earlier build or rename failure lands here and the log shows a Python traceback instead of an actionable `::error::`. Every other failure mode in the script exits cleanly.
+
+Ruling: the "replace from" block below includes the intervening `channel = required("TG_CHANNEL")` line, because the two originally quoted lines are **not contiguous** in `upload.py` — that call sits between them. A literal find-and-replace on the shorter block fails, and an implementer splicing around it is one keystroke from deleting the line. Cost if wrong: none; the wider anchor is still unique in `main()`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1114,6 +1305,7 @@ In `.github/scripts/upload.py`, in `main()`, replace:
 
 ```python
     path = required("APK_PATH")
+    channel = required("TG_CHANNEL")
     size = pathlib.Path(path).stat().st_size
 ```
 
@@ -1121,6 +1313,7 @@ with:
 
 ```python
     path = required("APK_PATH")
+    channel = required("TG_CHANNEL")
     artifact = pathlib.Path(path)
     if not artifact.is_file():
         # release.yml runs this step with `if: always()`, so an earlier build
@@ -1156,6 +1349,10 @@ exits cleanly; make this one match."
 
 **Background — [118-6] WARNING.** `single_match '*.apk'` runs `find` from the repository root. It works today only because a clean CI checkout contains exactly one APK. The moment a second exists — an `-Pabi` split, a leftover from an earlier task in the same job, a test fixture — `-print -quit` takes whichever the traversal reaches first, and the wrong APK gets renamed, uploaded and published as the release.
 
+Ruling: the test `source`s `lib.sh` by **absolute path** and keeps its `cd /` probe. The probe is the point — it proves the helper is scoped rather than merely positioned — but `repo_root_path` resolves `dirname "${BASH_SOURCE[0]}"`, and with a relative source path that `cd` failed from `/`, the root came back empty, `find` errored and `die` fired. The test therefore failed before *and* after the fix, measuring its own `cd` instead of the helper. Making the source path absolute keeps the probe and makes it meaningful. Cost if wrong: the helper could still resolve its root from a relative path in some future caller; nothing here would catch that. The added explicit `rc` check is what covers it — a helper that dies from `/` now fails the test as a helper failure rather than as a silent empty result.
+
+Ruling: the `EXIT` trap removes `src/test/resources` **only if the test created it**. The unconditional `rm -rf app/build src/test/resources` is inert today because the repository has no such directory, but the test is a committed fixture that will outlive this plan, and the day real fixtures land under `src/test/resources` it would delete them. Cost if wrong: one extra `had_resources` flag in a test; no behaviour change while the directory is absent.
+
 - [ ] **Step 1: Write the failing test**
 
 ```bash
@@ -1164,21 +1361,45 @@ cat > .github/scripts/test/single_match_test.sh <<'SH'
 # Test that single_match scopes its search to the build output directory, so a
 # second APK elsewhere in the tree can never be selected.
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
-source .github/scripts/lib.sh
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
+# Source by ABSOLUTE path. lib.sh derives its root from ${BASH_SOURCE[0]}, and
+# the test deliberately runs the helper from `/`. A relative source path would
+# make that `cd` fail, the root empty, and `die` fire - the test would be
+# measuring its own `cd`, not the helper's scoping.
+REPO_ROOT="$(pwd)"
+source "$REPO_ROOT/.github/scripts/lib.sh"
 
 FAILURES=0
 pass() { printf '  ok   %s\n' "$1"; }
 fail() { printf '  FAIL %s\n     %s\n' "$1" "$2"; FAILURES=$((FAILURES+1)); }
 
-trap 'rm -rf app/build src/test/resources' EXIT
+# Clean up only what this test created. An unconditional `rm -rf
+# src/test/resources` would destroy real fixtures the moment any were added.
+had_resources=0
+[ -d src/test/resources ] && had_resources=1
+cleanup() {
+  rm -rf app/build
+  [ "$had_resources" -eq 1 ] || rm -rf src/test/resources
+  return 0
+}
+trap cleanup EXIT
+
 mkdir -p app/build/outputs/apk/debug app/build/outputs/apk/release src/test/resources
 touch app/build/outputs/apk/debug/app-debug.apk
 touch app/build/outputs/apk/release/app-release.apk
 touch src/test/resources/fixture.apk   # the decoy
 
-# The production helper must not be able to reach the decoy.
-got="$(cd / && single_match '*.apk')"
+# The production helper must not be able to reach the decoy. The helper itself
+# must not die here either, so a failing call is a test failure, not an exit.
+got="" && rc=0
+got="$(cd / && single_match '*.apk')" && rc=0 || rc=$?
+if [ "$rc" -ne 0 ]; then
+  fail "single_match resolves its root from an unrelated working directory" \
+       "helper exited $rc from /: ${got}"
+else
+  pass "single_match resolves its root from an unrelated working directory"
+fi
+
 case "$got" in
   */app/build/outputs/*) pass "single_match only returns a build output" ;;
   *) fail "single_match only returns a build output" "matched $got" ;;
@@ -1348,7 +1569,9 @@ Every test in `.github/scripts/test/` must pass, and the whole set must runnable
 
 ## Task D1: Cap `MAJOR` in `version.sh` and drop dead code
 
-**Background — [118-9] and [118-10].** `MINOR` and `PATCH` are capped below 100; `MAJOR` is not. `v215.0.0` already derives 2 150 000, and `MAJOR >= 214749` pushes `VERSION_CODE` past `Int.MAX_VALUE`, where `build.gradle.kts`'s `.toInt()` throws an opaque `NumberFormatException` at configuration time — long after the tag guard passed. Separately, `build_tools_dir` in `lib.sh` is defined and called by nothing.
+**Background — [118-9] and [118-10].** `MINOR` and `PATCH` are capped below 100; `MAJOR` is not. `v215.0.0` already derives 2 150 000, and `MAJOR >= 214749` pushes `VERSION_CODE` past `Int.MAX_VALUE`, where `build.gradle.kts`'s `.toInt()` throws an opaque `NumberFormatException` at configuration time — long after the tag guard passed. Separately, two functions in `lib.sh` are defined and called by nothing: `build_tools_dir` and `warn`.
+
+Ruling: `warn` is removed alongside `build_tools_dir`, not exempted. The test's loop requires *every* `lib.sh` function to have a call site, and `warn` has exactly one occurrence repository-wide — its own definition — so it is dead by the test's own standard, which is the standard the task exists to enforce. Leaving it would mean the test still fails after the fix, for a reason the plan never mentions. Cost if wrong: a future script that wants a `::warning::` line must redefine it; the helper is two characters to re-add, and no current caller wants it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1358,7 +1581,7 @@ cat > .github/scripts/test/version_bounds_test.sh <<'SH'
 # Test that version.sh refuses a tag whose versionCode would overflow, and
 # that lib.sh carries no unreachable functions.
 set -uo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+cd "$(dirname "${BASH_SOURCE[0]}")/../../.."
 source .github/scripts/lib.sh
 
 FAILURES=0
@@ -1370,7 +1593,11 @@ trap 'rm -rf "$scratch"' EXIT
 
 # A tag whose derived code exceeds Int.MAX_VALUE (2147483647) must be
 # rejected at the guard, not at .toInt() during Gradle configuration.
-out="$(GITHUB_OUTPUT="$scratch/o" TAG=v214749.0.0 bash .github/scripts/version.sh 2>&1)"; rc=$?
+# lib.sh sets `set -e`, and this case EXPECTS a non-zero exit, so the capture is
+# the left side of `||`: errexit does not apply there and rc is still the
+# command's own status.
+out="" && rc=0
+out="$(GITHUB_OUTPUT="$scratch/o" TAG=v214749.0.0 bash .github/scripts/version.sh 2>&1)" && rc=0 || rc=$?
 if [ "$rc" -ne 0 ]; then
   case "$out" in
     *"::error::"*) pass "an overflowing MAJOR is rejected at the guard" ;;
@@ -1388,10 +1615,11 @@ code="$(sed -n 's/^RELEASE_VERSION_CODE=//p' "$scratch/o2" 2>/dev/null)"
 [ "$code" = "11299" ] && pass "an ordinary tag still derives correctly (11299)" \
   || fail "ordinary tag derives" "got ${code:-nothing}"
 
-# Every exported helper must be reachable.
+# Every exported helper must be reachable: more than one occurrence across the
+# scripts means at least one call site beyond the definition itself.
 for fn in $(grep -oE '^[a-z_]+\(\)' .github/scripts/lib.sh | tr -d '()'); do
   n="$(grep -rhoE "\b$fn\b" .github/scripts/*.sh | wc -l)"
-  [ "$n" -gt 1 ] && pass "lib.sh: $fn is used" || fail "lib.sh: $fn is used" "no caller found"
+  [ "$n" -gt 1 ] && pass "lib.sh: $fn is used" || fail "lib.sh: $fn is used" "no caller found (n=$n)"
 done
 
 printf '\n%s\n' "$([ "$FAILURES" -eq 0 ] && echo 'PASS: all assertions' || echo "FAIL: $FAILURES assertion(s)")"
@@ -1402,7 +1630,7 @@ SH
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `bash .github/scripts/test/version_bounds_test.sh`
-Expected: **FAIL** on the overflow rejection and on `build_tools_dir is used`.
+Expected: **FAIL** on the overflow rejection and on `build_tools_dir is used` **and** `warn is used`. Both are dead: each has exactly one occurrence across `.github/scripts/*.sh`, its own definition.
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -1419,7 +1647,7 @@ if (( VERSION_CODE > INT_MAX )); then
 fi
 ```
 
-Remove `build_tools_dir` from `lib.sh` — it has no caller, and an unused `ls -d`/`sort -V` pipeline still has to pass shellcheck.
+Remove **both** dead functions from `lib.sh` — `build_tools_dir` and `warn`. Each has no caller, and an unused `ls -d`/`sort -V` pipeline still has to pass shellcheck.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1441,12 +1669,13 @@ bash -n .github/scripts/lib.sh .github/scripts/version.sh && echo "syntax OK"
 
 ```bash
 git add .github/scripts/version.sh .github/scripts/lib.sh .github/scripts/test/version_bounds_test.sh
-git commit -m "fix(ci): bound the derived versionCode and drop an unused helper
+git commit -m "fix(ci): bound the derived versionCode and drop unused helpers
 
 MAJOR was uncapped, so a tag past v214749.0.0 derived a versionCode over
 Int.MAX_VALUE and failed later as an opaque NumberFormatException inside
 Gradle configuration. Reject it at the guard, where the message can name
-the tag. Also remove build_tools_dir, which nothing calls."
+the tag. Also remove build_tools_dir and warn, neither of which anything
+calls."
 ```
 
 ## Phase D gate
@@ -1485,7 +1714,11 @@ for f in ("pr", "debug", "release"):
         for s in spec["steps"]:
             if "${{" in s.get("run", ""):
                 print(f"FAIL {f}/{job}: expression in run body of {s.get('name')}"); ok = False
-    if "KEYSTORE" in text:
+    # release.yml is the one workflow that is SUPPOSED to hold the signing
+    # secrets - staging the keystore is its job. The constraint reads "pr.yml
+    # and debug.yml reference no signing secret", so applying it to release.yml
+    # fails a tree that is correct by construction. Check the two that must.
+    if f != "release" and "KEYSTORE" in text:
         print(f"FAIL {f}: references a signing secret"); ok = False
     if "accept-android-sdk-licenses: true" not in text:
         print(f"FAIL {f}: license input is not a bare boolean"); ok = False
@@ -1515,4 +1748,6 @@ Then, in order:
 
 **Placeholder scan.** No TBD or TODO. Two known gaps, both reported rather than hidden: the `7z` large-input branch is untestable where `7z` is absent, and the Gradle script is verified by parser assertion rather than by a compile, since no Android SDK is available locally.
 
-**Type consistency.** `require_command` is introduced in B1 and used only there. `single_match` gains an explicit build-output search root in C2, so `build.sh`'s existing call keeps working. `APK_PATH` changes meaning in B2 — an archive for `pr`/`debug`, raw for `release` — and every consumer is updated in B2 and B3. `COMMIT_SUBJECT` and `COMMIT_SHA` are unchanged in name and format. Test filenames are unique across phases.
+**Type consistency.** `require_command` is introduced in B1 and used only there. `single_match` gains an explicit build-output search root in C2, so `build.sh`'s existing call keeps working. `APK_PATH` changes meaning in B2 — an archive for `pr`/`debug`, raw for `release` — and every consumer is updated in B2 and B3. That includes all three consumers in `pr.yml` and all three in `debug.yml`: `Rename`, `Upload artifact` and `Upload to Telegram`. `release.yml` keeps its hardcoded `.apk` in both places, which stays correct because B2 excludes `release` from compression. `COMMIT_SUBJECT` and `COMMIT_SHA` are unchanged in name and format. Test filenames are unique across phases.
+
+**Consumers of the `APK_PATH` contract, enumerated.** B2 changes the meaning of `APK_PATH`: an archive for `pr` and `debug`, a raw `.apk` for `release`. The consumers are `pr.yml` `Rename`, `pr.yml` `Upload to Telegram`, `debug.yml` `Rename`, `debug.yml` `Upload to Telegram`, and `release.yml` `Rename` + `Upload to Telegram`. B3 updates the first four and its test asserts on all four; `release.yml` is deliberately unchanged and the test asserts the exclusion holds. Both workflows derive the extension once in `Rename` and publish it as a step output, so neither the artifact path nor the Telegram step re-derives it.
