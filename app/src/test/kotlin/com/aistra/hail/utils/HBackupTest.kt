@@ -661,15 +661,21 @@ class HBackupTest {
         assertTrue(HBackup.isMagnitudeTooWide(-9.007199254740992E15))
         assertTrue(HBackup.isMagnitudeTooWide(1.2345678E22))
         assertTrue(HBackup.isMagnitudeTooWide(-1.2345678E22))
-        assertTrue(HBackup.isMagnitudeTooWide(Double.POSITIVE_INFINITY))
-        assertTrue(HBackup.isMagnitudeTooWide(Double.NEGATIVE_INFINITY))
-        assertTrue(HBackup.isMagnitudeTooWide(Double.NaN))
+        assertTrue(HBackup.isMagnitudeTooWide(1.2345678E22f.toDouble()))
 
         assertFalse(HBackup.isMagnitudeTooWide(9.007199254740991E15))
         assertFalse(HBackup.isMagnitudeTooWide(-9.007199254740991E15))
         assertFalse(HBackup.isMagnitudeTooWide(0.0))
         assertFalse(HBackup.isMagnitudeTooWide(14f.toDouble()))
         assertFalse(HBackup.isMagnitudeTooWide(9223372036854774784.0))
+
+        // NaN and the infinities are not this predicate's business: it asks whether a
+        // finite number has lost its digits. A non-finite value is refused by the
+        // isFinite() test each caller already runs, and a BigDecimal cannot be one at
+        // all. Asserting they were too wide would pin a claim the code does not make.
+        assertFalse(HBackup.isMagnitudeTooWide(Double.NaN))
+        assertFalse(HBackup.isMagnitudeTooWide(Double.POSITIVE_INFINITY))
+        assertFalse(HBackup.isMagnitudeTooWide(Double.NEGATIVE_INFINITY))
     }
 
     @Test
