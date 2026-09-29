@@ -13,3 +13,7 @@
 commits_since_v1.10.3.txt
 /.vscode/
 /.worktrees/
+
+*.jks
+*.keystore
+!.github/debug.keystore

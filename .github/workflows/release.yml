@@ -1,0 +1,137 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and sign
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      channel: ${{ steps.channel.outputs.channel }}
+      version: ${{ steps.version.outputs.RELEASE_VERSION_NAME }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # signing.sh, the only script with a test, runs exclusively in this
+      # workflow - so the suite has to run here too, or the test guards a path
+      # nothing exercises. Before the toolchain, since it costs about a second.
+      - name: Script tests
+        run: .github/scripts/test_scripts.sh
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version-file: .github/.java-version
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0'
+          accept-android-sdk-licenses: true
+
+      # A tag reachable from main is a release; anything else is a pre-release.
+      # No naming convention to remember.
+      - name: Classify
+        id: channel
+        run: |
+          git fetch origin main --no-tags
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "channel=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "channel=prerelease" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Derive version
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: .github/scripts/version.sh
+
+      # The keystore must exist as a file for Gradle, so it is staged into
+      # RUNNER_TEMP. The three credentials never reach the filesystem: Gradle
+      # reads ORG_GRADLE_PROJECT_* environment variables as project properties,
+      # so they are scoped to the Build step only rather than the whole job.
+      - name: Stage release keystore
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+        run: .github/scripts/signing.sh
+
+      - name: Build
+        id: build
+        env:
+          RELEASE_VERSION_NAME: ${{ steps.version.outputs.RELEASE_VERSION_NAME }}
+          RELEASE_VERSION_CODE: ${{ steps.version.outputs.RELEASE_VERSION_CODE }}
+          ORG_GRADLE_PROJECT_releaseStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_releaseKeyAlias: ${{ secrets.KEYSTORE_ALIAS }}
+          ORG_GRADLE_PROJECT_releaseKeyPassword: ${{ secrets.KEYSTORE_ALIAS_PASSWORD }}
+        run: .github/scripts/build.sh release
+
+      - name: Rename
+        env:
+          APK_PATH: ${{ steps.build.outputs.APK_PATH }}
+          VERSION: ${{ steps.version.outputs.RELEASE_VERSION_NAME }}
+        run: mv "$APK_PATH" "Hail-${VERSION}.apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk-${{ steps.version.outputs.RELEASE_VERSION_NAME }}
+          path: Hail-*.apk
+          if-no-files-found: error
+
+  publish:
+    name: Publish draft
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      # The build ran on a different runner, so this job starts on an empty
+      # workspace: there is no APK and no script here. The artifact carries the
+      # APK across, and checkout restores the scripts the Telegram step runs.
+      - uses: actions/checkout@v7
+
+      - name: Download APK
+        uses: actions/download-artifact@v7
+        with:
+          name: apk-${{ needs.build.outputs.version }}
+          path: .
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Hail ${{ needs.build.outputs.version }}
+          draft: true
+          prerelease: ${{ needs.build.outputs.channel == 'prerelease' }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          files: Hail-*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to Telegram
+        if: always()
+        continue-on-error: true
+        env:
+          APK_PATH: ${{ github.workspace }}/Hail-${{ needs.build.outputs.version }}.apk
+          RELEASE_TAG: ${{ github.ref_name }}
+          TG_CHANNEL: ${{ needs.build.outputs.channel }}
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_GROUP: ${{ secrets.TG_GROUP }}
+        run: python3 .github/scripts/upload.py
