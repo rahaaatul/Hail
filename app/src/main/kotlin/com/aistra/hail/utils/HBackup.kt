@@ -43,17 +43,28 @@ object HBackup {
 
     private val INT_AS_LONG_RANGE = Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()
 
-    // 2^53, where a Double stops naming every integer: a Double carries 53 bits of
-    // significand, so an integral value at least this large cannot be carried by one, and a
-    // Long preference reaching the reader by that route has already lost its low digits.
+    // 2^53, where a Double stops naming every integer. A Double carries 53 bits of
+    // significand, so from here upward it cannot name every integer in the range: 2^53 is
+    // itself held exactly, and 2^53+1 is the same Double. Every double between 2^53 and
+    // the top of the Long range is still a whole number, so this is not about
+    // unrepresentability. It is that a value at
+    // or past 2^53 may already have been rounded by the parser that produced it, and nothing
+    // left here can tell "the file wrote 2^53" from "the file wrote 2^53+1 and it rounded
+    // down". The cut therefore includes 2^53 itself, which putLong could hold: the round
+    // trip is the thing that cannot be undone, so it is the point where restoring is
+    // refused rather than guessed.
     private const val DOUBLE_EXACT_INTEGER_LIMIT = 9.007199254740992E15
 
-    // The preference keys the app declares to be a Float. Both are written by
-    // sliderPreference, so the type belongs to the key rather than to whatever value happens
-    // to be stored under it, and a key listed here is a Float whatever an earlier build
-    // managed to put there. HailData.getFloat names these same two keys and no others, so
-    // this set is the whole of the app's Float surface and cannot fall behind it silently.
-    private val FLOAT_PREFERENCE_KEYS = setOf(HailData.HOME_FONT_SIZE, HailData.AUTO_FREEZE_DELAY)
+    // The preference keys the app declares to be a Float, with the range each allows.
+    // Both are written by sliderPreference, so the type belongs to the key rather than to
+    // whatever value happens to be stored under it, and a key listed here is a Float
+    // whatever an earlier build managed to put there. The map lives in HailData because
+    // SettingsFragment reads each slider's range out of it, so a new Float slider cannot
+    // be declared without also declaring its bounds here, and the reader's idea of the
+    // Float surface cannot drift away from the one the settings screen offers.
+    private val FLOAT_PREFERENCE_RANGES = HailData.FLOAT_PREFERENCE_RANGES
+
+    private val FLOAT_PREFERENCE_KEYS = FLOAT_PREFERENCE_RANGES.keys
 
     suspend fun backup(
         context: Context,
@@ -276,10 +287,30 @@ object HBackup {
                     // reader created exactly that by claiming the tag with putString.
                     declaredFloat || (floatTag != null && recorded !is String) -> {
                         val asFloat = floatTag ?: value.toNumberOrNull()?.toFloat()
-                        if (asFloat != null && asFloat.isFinite()) {
-                            putFloat(key, asFloat)
-                        } else {
-                            warnNotStorable(key, value, "Float")
+                        val range = FLOAT_PREFERENCE_RANGES[key]
+                        when {
+                            asFloat == null || !asFloat.isFinite() ->
+                                warnNotStorable(key, value, "Float")
+                            // The same magnitude guard the undeclared arm uses. Being a
+                            // declared Float key decides the type, not the value: without
+                            // this, 1.2345678E22f is stored under a slider whose range is
+                            // 11f..16f, and the identical digits under an undeclared key
+                            // are refused. isFinite() alone does not catch it, because a
+                            // Float of that magnitude is perfectly finite - it just names
+                            // no number the user could have chosen.
+                            isMagnitudeTooWide(asFloat.toDouble()) ->
+                                warnNotStorable(key, value, "Float")
+                            // A value outside the range its own slider could have produced
+                            // is damage of the same kind as the wrong type, and this
+                            // branch is what made it reachable: before the reader was
+                            // fixed the same file left an Int under this key, which
+                            // getFloat reported as absent, so an out-of-range value was
+                            // inert. Restoring it as a Float is exactly the case a skipped
+                            // key is for - leaving the stored value alone cannot invent a
+                            // preference the user never chose.
+                            range != null && asFloat !in range ->
+                                warnNotStorable(key, value, "Float in ${range.first}..${range.lastInclusive}")
+                            else -> putFloat(key, asFloat)
                         }
                     }
 
@@ -413,6 +444,25 @@ object HBackup {
     }
 
     /**
+     * Whether a magnitude this large has already lost digits, whatever produced it.
+     *
+     * A Double carries 53 bits of significand, so from 2^53 upward it can no longer
+     * name every integer: 2^53+1 and 2^53 are the same Double. A value that has
+     * reached this function at that magnitude is therefore no longer the number the
+     * file wrote, and no preference can hold it.
+     *
+     * Internal rather than private so the unit tests can exercise it directly. The
+     * caller, [Number.isTooWideInteger], only ever reaches its fallback arm with a
+     * BigInteger or BigDecimal, because org.json never hands a Double back to it -
+     * so on the JVM test classpath the Double path this predicate exists for is
+     * unreachable, and testing the predicate is the only way to pin what a device
+     * does.
+     */
+    internal fun isMagnitudeTooWide(asDouble: Double): Boolean =
+        asDouble.isFinite() &&
+            (asDouble >= DOUBLE_EXACT_INTEGER_LIMIT || asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT)
+
+    /**
      * Whether this number is an integer too wide for any preference type, decided from its
      * magnitude rather than from its class. The class is not available as a discriminator
      * because the two org.json implementations this project can load disagree about it: a
@@ -421,20 +471,20 @@ object HBackup {
      * Double in every release up to the one that adopted the BigDecimal/BigInteger parser.
      * Branching on the class is what let the JVM tests pin a path a device cannot take while
      * the same file silently stored a Float of a meaningless magnitude on one. The outcome
-     * has to be the same either way, so it is keyed off the number instead: past 2^53 a
-     * Double can no longer name every integer, so the digits are already gone and no
-     * preference can hold what the file wrote.
+     * has to be the same either way, so all three arms are keyed off the magnitude.
+     *
+     * A BigInteger is always an integer, so it is too wide exactly when it exceeds what a
+     * Long holds, which [Number.toExactLongOrNull] already answers. A BigDecimal is a
+     * magnitude question too: a positive scale only says the literal was written with
+     * fractional digits, which says nothing about how big it is. Reading the scale as the
+     * test let 9007199254740993.5 through as a perfectly good Float, where the same file on
+     * AOSP - whose parser hands back a Double - was correctly refused, so the two
+     * implementations disagreed about the same file and the JVM answer was the silent one.
      */
     private fun Number.isTooWideInteger(): Boolean = when (this) {
         is BigInteger -> true
-        // A scale of zero or less is an integer literal; a positive scale is a fraction, which
-        // is never too wide and is the only shape a Float ever wrote as a bare number.
-        is BigDecimal -> scale() <= 0
-        else -> {
-            val asDouble = toDouble()
-            asDouble.isFinite() &&
-                (asDouble >= DOUBLE_EXACT_INTEGER_LIMIT || asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT)
-        }
+        is BigDecimal -> isMagnitudeTooWide(this.abs().toDouble())
+        else -> isMagnitudeTooWide(toDouble())
     }
 
     private fun warnNotStorable(key: String, value: Any?, target: String) {

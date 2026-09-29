@@ -124,6 +124,26 @@ object HailData {
     const val SKIP_FOREGROUND_APP = "skip_foreground_app"
     const val SKIP_NOTIFYING_APP = "skip_notifying_app"
     const val DYNAMIC_SHORTCUT_ACTION = "dynamic_shortcut_action"
+
+    /**
+     * Every preference the app stores as a Float, with the range its slider allows.
+     *
+     * This is the single declaration of that surface. SettingsFragment asks this map
+     * for each Float slider's range and HBackup asks it for both the set of Float
+     * keys and the bounds a restored value has to fall inside, so the two cannot
+     * disagree about a key. A new Float slider has to be added here first, because
+     * [floatRange] fails loudly for a key that is missing - which is what stops the
+     * reader quietly losing track of one.
+     */
+    val FLOAT_PREFERENCE_RANGES: Map<String, ClosedFloatingPointRange<Float>> = mapOf(
+        HOME_FONT_SIZE to 11f..16f,
+        AUTO_FREEZE_DELAY to 0f..30f,
+    )
+
+    /** The slider range for a Float preference declared in [FLOAT_PREFERENCE_RANGES]. */
+    fun floatRange(key: String): ClosedFloatingPointRange<Float> =
+        FLOAT_PREFERENCE_RANGES[key]
+            ?: error("'$key' is not a declared Float preference; add it to FLOAT_PREFERENCE_RANGES")
     val DYNAMIC_SHORTCUT_ACTIONS = listOf(
         ACTION_NONE,
         ACTION_FREEZE_ALL,
