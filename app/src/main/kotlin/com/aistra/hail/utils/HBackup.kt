@@ -54,6 +54,7 @@ object HBackup {
     // trip is the thing that cannot be undone, so it is the point where restoring is
     // refused rather than guessed.
     private const val DOUBLE_EXACT_INTEGER_LIMIT = 9.007199254740992E15
+    private val TOO_WIDE_MAGNITUDE = BigDecimal(DOUBLE_EXACT_INTEGER_LIMIT)
 
     // The preference keys the app declares to be a Float, with the range each allows.
     // Both are written by sliderPreference, so the type belongs to the key rather than to
@@ -291,14 +292,21 @@ object HBackup {
                         when {
                             asFloat == null || !asFloat.isFinite() ->
                                 warnNotStorable(key, value, "Float")
-                            // The same magnitude guard the undeclared arm uses. Being a
-                            // declared Float key decides the type, not the value: without
-                            // this, 1.2345678E22f is stored under a slider whose range is
-                            // 11f..16f, and the identical digits under an undeclared key
-                            // are refused. isFinite() alone does not catch it, because a
-                            // Float of that magnitude is perfectly finite - it just names
-                            // no number the user could have chosen.
-                            isMagnitudeTooWide(asFloat.toDouble()) ->
+                            // The magnitude guard, and only on the lossy route. A floatTag is
+                            // a fixed point of Float.toString: the text and the Float are the
+                            // same number by construction and no parser rounded anything
+                            // getting there, so there is nothing for this check to catch and
+                            // running it anyway would refuse a value the writer emitted
+                            // verbatim. A number or a string that is not a fixed point did
+                            // come through a parser, so there it decides between a Float that
+                            // still names its digits and one that does not. Being a declared
+                            // Float key fixes the type, not the value: without this,
+                            // 1.2345678E22f is stored under a slider whose range is
+                            // 11f..16f, and the identical digits under an undeclared key are
+                            // refused. isFinite() alone does not catch it, because a Float of
+                            // that magnitude is perfectly finite - it just names no number
+                            // the user could have chosen.
+                            floatTag == null && isMagnitudeTooWide(asFloat.toDouble()) ->
                                 warnNotStorable(key, value, "Float")
                             // A value outside the range its own slider could have produced
                             // is damage of the same kind as the wrong type, and this
@@ -451,6 +459,14 @@ object HBackup {
      * reached this function at that magnitude is therefore no longer the number the
      * file wrote, and no preference can hold it.
      *
+     * A non-finite magnitude is too wide as well, and answering otherwise was a
+     * disagreement between the two org.json implementations: AOSP parses the literal
+     * 1E1000 into a finite Double and refuses it, while org.json:json parses it into a
+     * BigDecimal, whose toDouble() is Infinity, and a guard that required a finite
+     * value waved that through. [Number.toExactLongOrNull] already refuses a
+     * non-finite Double, so this predicate agreeing with it is what keeps the same
+     * file on the same answer whichever implementation parsed it.
+     *
      * Internal rather than private so the unit tests can exercise it directly. The
      * caller, [Number.isTooWideInteger], only ever reaches its fallback arm with a
      * BigInteger or BigDecimal, because org.json never hands a Double back to it -
@@ -459,8 +475,9 @@ object HBackup {
      * does.
      */
     internal fun isMagnitudeTooWide(asDouble: Double): Boolean =
-        asDouble.isFinite() &&
-            (asDouble >= DOUBLE_EXACT_INTEGER_LIMIT || asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT)
+        !asDouble.isFinite() ||
+            asDouble >= DOUBLE_EXACT_INTEGER_LIMIT ||
+            asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT
 
     /**
      * Whether this number is an integer too wide for any preference type, decided from its
@@ -480,10 +497,15 @@ object HBackup {
      * test let 9007199254740993.5 through as a perfectly good Float, where the same file on
      * AOSP - whose parser hands back a Double - was correctly refused, so the two
      * implementations disagreed about the same file and the JVM answer was the silent one.
+     *
+     * The BigDecimal arm compares as a BigDecimal rather than going through toDouble(),
+     * which is not faithful out at that end of the range: every literal from 1E309 upward
+     * collapses onto Infinity, so a magnitude check built on it stops discriminating
+     * exactly where it is most needed.
      */
     private fun Number.isTooWideInteger(): Boolean = when (this) {
         is BigInteger -> true
-        is BigDecimal -> isMagnitudeTooWide(this.abs().toDouble())
+        is BigDecimal -> abs() >= TOO_WIDE_MAGNITUDE
         else -> isMagnitudeTooWide(toDouble())
     }
 

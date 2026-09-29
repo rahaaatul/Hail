@@ -661,20 +661,21 @@ class HBackupTest {
         assertTrue(HBackup.isMagnitudeTooWide(-9.007199254740992E15))
         assertTrue(HBackup.isMagnitudeTooWide(1.2345678E22))
         assertTrue(HBackup.isMagnitudeTooWide(-1.2345678E22))
-        assertTrue(HBackup.isMagnitudeTooWide(1.2345678E22f.toDouble()))
 
         // The whole reason the predicate measures Float and not Long. Long.MAX is an
         // exact Double and a perfectly good Long, so a restore that kept it as a long
-        // loses nothing - but a Float would hold 9223372036854775808 and quietly hand
-        // back a different number. Refusing is the only honest answer.
+        // loses nothing - but a Float would hold 9223372036854775808 and hand back a
+        // different number. Refusing is the only honest answer.
         assertTrue(HBackup.isMagnitudeTooWide(9223372036854774784.0))
         assertTrue(HBackup.isMagnitudeTooWide(-9223372036854774784.0))
 
         // 2^53 itself is exactly representable, and so is every power of two above it,
-        // yet the threshold refuses all of them. That is deliberate slack: those values
-        // never reach the float path anyway, because each one fits in a Long and the
-        // Long arm is tried first. A margin that costs nothing beats an off-by-one in
-        // the comparison that would matter.
+        // yet the threshold refuses all of them. That margin is deliberate and it is not
+        // free: on the declared-Float path there is no Long arm to fall back to, so
+        // 2^53.toFloat() is refused by this and not by any range check. It is the right
+        // trade anyway - a guard exists to be conservative, and the keys it can cost
+        // anything to are the ones whose slider range is empty, which is none. Pinned so
+        // a later reader does not "fix" the >= into a >.
         assertTrue(HBackup.isMagnitudeTooWide(9007199254740992.0))
 
         // Every value below 2^53 keeps its digits exactly, at either sign.
@@ -683,14 +684,55 @@ class HBackupTest {
         assertFalse(HBackup.isMagnitudeTooWide(0.0))
         assertFalse(HBackup.isMagnitudeTooWide(14f.toDouble()))
         assertFalse(HBackup.isMagnitudeTooWide(1024.5))
+    }
 
-        // NaN and the infinities are not this predicate's business: it asks whether a
-        // finite number has lost its digits. A non-finite value is refused by the
-        // isFinite() test each caller already runs, and a BigDecimal cannot be one at
-        // all. Asserting they were too wide would pin a claim the code does not make.
-        assertFalse(HBackup.isMagnitudeTooWide(Double.NaN))
-        assertFalse(HBackup.isMagnitudeTooWide(Double.POSITIVE_INFINITY))
-        assertFalse(HBackup.isMagnitudeTooWide(Double.NEGATIVE_INFINITY))
+    @Test
+    fun `restore accepts a writer-emitted float tag past the magnitude limit`() = runTest {
+        // "1.0E20" is a fixed point of Float.toString, so the text and the Float are the
+        // same number and no parser rounded anything on the way. The magnitude guard is
+        // for a value that arrived through a parser and lost digits; running it here too
+        // would refuse a number this build itself wrote, which is the opposite of damage.
+        // A declared key that has a slider range is still bounded by the check on the
+        // next branch - the guard is dropped, not the bound.
+        val editor = mockPreferences("a_float" to 15f)
+        val zipFile = zipWithSettings("""{"a_float":"1.0E20"}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify { editor.putFloat("a_float", 1.0E20f) }
+    }
+
+    @Test
+    fun `is magnitude too wide refuses a non-finite magnitude`() {        // A non-finite value is too wide by definition: neither a Long nor a Float holds
+        // one, and toExactLongOrNull already answers null for it. This is not a corner
+        // case either - org.json:json parses the literal 1E1000 into a BigDecimal whose
+        // toDouble() is Infinity, and answering false for that is what let this check
+        // pass a magnitude AOSP's finite Double refused, so the two implementations
+        // logged different targets for one file.
+        assertTrue(HBackup.isMagnitudeTooWide(Double.NaN))
+        assertTrue(HBackup.isMagnitudeTooWide(Double.POSITIVE_INFINITY))
+        assertTrue(HBackup.isMagnitudeTooWide(Double.NEGATIVE_INFINITY))
+    }
+
+    @Test
+    fun `restore refuses a decimal too wide for a double, not just a finite one`() = runTest {
+        // 1E1000 overflows Double to Infinity, so a magnitude check built on toDouble()
+        // stops discriminating exactly here. Compared as a BigDecimal it is still
+        // separable, and the answer has to be a refusal: AOSP parses the same literal
+        // into a finite Double and refuses it, so the two implementations logging
+        // different targets for one file was the whole defect.
+        val editor = mockPreferences("a_long" to 1L)
+        val zipFile = zipWithSettings("""{"a_long":1E1000}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify(exactly = 0) { editor.putLong(any(), any()) }
+        verify(exactly = 0) { editor.putFloat(any(), any()) }
+        verify { HLog.w(any(), match { it.contains("a_long") }) }
     }
 
     @Test
