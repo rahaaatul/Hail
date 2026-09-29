@@ -25,6 +25,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # signing.sh, the only script with a test, runs exclusively in this
+      # workflow - so the suite has to run here too, or the test guards a path
+      # nothing exercises. Before the toolchain, since it costs about a second.
+      - name: Script tests
+        run: .github/scripts/test_scripts.sh
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:

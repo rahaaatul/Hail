@@ -30,6 +30,11 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
 
+      # build.sh and upload.py run in this workflow, so the suite gating them
+      # runs here too rather than only on pull requests.
+      - name: Script tests
+        run: .github/scripts/test_scripts.sh
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
