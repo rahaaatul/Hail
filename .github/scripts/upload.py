@@ -146,6 +146,10 @@ def send_document(token: str, group: str, topic: int, path: str, caption: str) -
         payload = field("chat_id", group)
         payload += field("message_thread_id", str(topic))
         payload += field("caption", caption)
+        # Every caption above is HTML. Without this field Telegram applies no
+        # parse mode and posts the markup literally, so subscribers would read
+        # "<b>📚 Changelogs</b>" instead of formatted text.
+        payload += field("parse_mode", "HTML")
         payload += (
             f"--{boundary}\r\n"
             f'Content-Disposition: form-data; name="document"; filename="{safe_name}"\r\n'
@@ -164,6 +168,11 @@ def send_document(token: str, group: str, topic: int, path: str, caption: str) -
 def main() -> None:
     path = required("APK_PATH")
     channel = required("TG_CHANNEL")
+    # Checked before anything else touches the file. release.yml runs this step
+    # with `if: always()`, so a failed build or rename lands here, and an
+    # unguarded stat() would bury the real cause under a traceback.
+    if not os.path.isfile(path):
+        sys.exit(f"::error::APK not found: {path}")
     size = pathlib.Path(path).stat().st_size
 
     if size > SIZE_LIMIT:
@@ -174,6 +183,20 @@ def main() -> None:
             f"50 MB sendDocument limit. Skipping the upload - the APK is still "
             f"available from the GitHub release. To fit it, build per ABI: "
             f"./gradlew :app:assemblePr -Pabi=arm64-v8a"
+        )
+        return
+
+    token = os.environ.get("TG_TOKEN", "")
+    if not token:
+        # A `pull_request` run from a fork is given no repository secrets, so an
+        # unset token is a normal external contribution, not a fault. The
+        # upload.sh this replaces treated it as a dry run and exited 0; do the
+        # same, so the log reads as a notice rather than an error about a secret
+        # the workflow was never allowed to see.
+        print(
+            "::warning::TG_TOKEN is unset; skipping the Telegram upload. Pull "
+            "requests from forks do not receive repository secrets. The APK is "
+            "still available from this run's artifact."
         )
         return
 
