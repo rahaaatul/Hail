@@ -663,11 +663,26 @@ class HBackupTest {
         assertTrue(HBackup.isMagnitudeTooWide(-1.2345678E22))
         assertTrue(HBackup.isMagnitudeTooWide(1.2345678E22f.toDouble()))
 
+        // The whole reason the predicate measures Float and not Long. Long.MAX is an
+        // exact Double and a perfectly good Long, so a restore that kept it as a long
+        // loses nothing - but a Float would hold 9223372036854775808 and quietly hand
+        // back a different number. Refusing is the only honest answer.
+        assertTrue(HBackup.isMagnitudeTooWide(9223372036854774784.0))
+        assertTrue(HBackup.isMagnitudeTooWide(-9223372036854774784.0))
+
+        // 2^53 itself is exactly representable, and so is every power of two above it,
+        // yet the threshold refuses all of them. That is deliberate slack: those values
+        // never reach the float path anyway, because each one fits in a Long and the
+        // Long arm is tried first. A margin that costs nothing beats an off-by-one in
+        // the comparison that would matter.
+        assertTrue(HBackup.isMagnitudeTooWide(9007199254740992.0))
+
+        // Every value below 2^53 keeps its digits exactly, at either sign.
         assertFalse(HBackup.isMagnitudeTooWide(9.007199254740991E15))
         assertFalse(HBackup.isMagnitudeTooWide(-9.007199254740991E15))
         assertFalse(HBackup.isMagnitudeTooWide(0.0))
         assertFalse(HBackup.isMagnitudeTooWide(14f.toDouble()))
-        assertFalse(HBackup.isMagnitudeTooWide(9223372036854774784.0))
+        assertFalse(HBackup.isMagnitudeTooWide(1024.5))
 
         // NaN and the infinities are not this predicate's business: it asks whether a
         // finite number has lost its digits. A non-finite value is refused by the
