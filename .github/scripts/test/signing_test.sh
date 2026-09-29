@@ -16,18 +16,22 @@ scratch="$(mktemp -d)"
 trap 'rm -rf "$scratch"' EXIT
 export RUNNER_TEMP="$scratch" GITHUB_ENV="$scratch/env"
 
+# `|| stage_rc=$?` rather than a bare call: lib.sh sets -e, and errexit does not
+# apply to the left of a || list, so a failing signing.sh is reported as a FAIL
+# line instead of aborting the file with no output at all. Without it the test
+# goes silent in exactly the case it exists to diagnose.
+stage_rc=0
 RUNNER_TEMP="$scratch" GITHUB_ENV="$scratch/env" \
-  KEYSTORE="$KEYSTORE" bash .github/scripts/signing.sh >/dev/null 2>&1
-stage_rc=$?
+  KEYSTORE="$KEYSTORE" bash .github/scripts/signing.sh >/dev/null 2>&1 || stage_rc=$?
 
 [ "$stage_rc" -eq 0 ] \
   && pass "signing.sh exits 0" \
   || fail "signing.sh exits 0" "got exit $stage_rc"
 
-keystore_path="$(sed -n 's/^RELEASE_KEYSTORE_PATH=//p' "$scratch/env" 2>/dev/null)"
+keystore_path="$(sed -n 's/^RELEASE_KEYSTORE_PATH=//p' "$scratch/env" 2>/dev/null || true)"
 [ -n "$keystore_path" ] \
   && pass "exports RELEASE_KEYSTORE_PATH" \
-  || fail "exports RELEASE_KEYSTORE_PATH" "GITHUB_ENV has no entry: $(cat "$scratch/env" 2>/dev/null)"
+  || fail "exports RELEASE_KEYSTORE_PATH" "GITHUB_ENV has no entry: $(cat "$scratch/env" 2>/dev/null || true)"
 
 [ -f "$keystore_path" ] \
   && pass "keystore survives the script, readable by the Build step" \
