@@ -18,6 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Cheapest check in the workflow, so it runs before the toolchain is
+      # assembled: a broken script fails in seconds rather than after a JDK,
+      # Gradle and Android SDK download.
+      - name: Script tests
+        run: .github/scripts/test_scripts.sh
+
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
