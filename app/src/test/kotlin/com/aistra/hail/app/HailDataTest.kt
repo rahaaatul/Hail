@@ -1,11 +1,35 @@
 package com.aistra.hail.app
 
+import com.aistra.hail.HailApp
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import java.io.File
 
 class HailDataTest {
+
+    // HailData is an object, and its initializers name `app.filesDir` - so the first test to
+    // touch it decides whether the class initializes at all. With no app installed that read
+    // is an uninitialized lateinit, HailData's static initializer throws, and every later
+    // test in the same JVM gets NoClassDefFoundError from a class it never asked about. The
+    // cost of getting this wrong is not one red test, it is the whole suite going red for
+    // something that looks like an Android failure. Installed before any test runs.
+    @Rule
+    @JvmField
+    val temporaryFolder = TemporaryFolder()
+
+    @Before
+    fun setUp() {
+        val mockApp = mockk<HailApp>(relaxed = true)
+        every { mockApp.filesDir } returns temporaryFolder.newFolder("files")
+        HailApp.setAppForTest(mockApp)
+    }
+
     @Test
     fun `working mode default is correct`() {
         assertEquals("default", HailData.MODE_DEFAULT)
