@@ -512,11 +512,11 @@ object HBackup {
      * exact value stops discriminating exactly there.
      *
      * The second question is whether that Double still names the number the file wrote.
-     * Above 2^52 a Double has no significand left for a fraction, so a literal that far
-     * out with a fractional part is a number no Double can print: the device that parsed
-     * it has already stored the whole number it rounded to, and the digits the file held
-     * are gone here too. Below 2^52 there is room for the fraction - 1.5, 1048576.5 - and
-     * those have to survive. Comparing the file's decimal against the decimal that Double
+     * From 2^52 upward a Double names whole numbers only, so a literal that far out with a
+     * fractional part is a number no Double can print: the device that parsed it has
+     * already stored the whole number it rounded to, and the digits the file held are gone
+     * here too. Below 2^52 there is room for the fraction - 1.5, 1048576.5 - and those have
+     * to survive. Comparing the file's decimal against the decimal that Double.toString
      * prints answers both sides at once, and that is what keeps this arm the conservative
      * one everywhere rather than only in the band above the cut.
      */

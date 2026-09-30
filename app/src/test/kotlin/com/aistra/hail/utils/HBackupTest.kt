@@ -746,14 +746,18 @@ class HBackupTest {
     fun `restore skips a fraction whose double has already rounded it`() = runTest {
         // Two fractions whose Double conversion is a different number, so the digits the
         // file held are gone before the reader sees them. 9007199254740991.5 is the
-        // midpoint of two adjacent doubles and rounds up to 2^53, which the magnitude
-        // check refuses. 4503599627370494.5 is below the cut but still rounds, because a
-        // Double has no significand left for a fraction that far out; a device that
-        // parsed this file stores the whole number it landed on, so storing anything here
-        // would invent a value. Both are refused, and the second is the case a magnitude
-        // comparison on the exact BigDecimal alone waves through to putFloat(4.5035995E15f).
+        // midpoint between two adjacent doubles and rounds up to 2^53, which the magnitude
+        // check refuses. 4503599627370496.5 is below the cut but still rounds, because a
+        // Double only names whole numbers from 2^52 up and this one has a half left to
+        // place; a device that parsed this file stores the whole number it landed on, so
+        // storing anything here would invent a value. Both are refused, and the second is
+        // the case a magnitude comparison on the exact BigDecimal alone waves through to
+        // putFloat(4.5035996E15f). The fraction just below it, 4503599627370495.5, is one a
+        // Double does still name, which is what keeps this a question about the number
+        // rather than a cut at 2^52.
         val editor = mockPreferences()
-        val zipFile = zipWithSettings("""{"a_wide":9007199254740991.5,"a_fraction":4503599627370494.5}""")
+        val zipFile = zipWithSettings("""{"a_wide":9007199254740991.5,"a_fraction":4503599627370496.5}""")
+
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
         val result = HBackup.restore(HailApp.app, zipFile, options)
