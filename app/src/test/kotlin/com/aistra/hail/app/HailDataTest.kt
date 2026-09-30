@@ -1,43 +1,29 @@
 package com.aistra.hail.app
 
-import com.aistra.hail.HailApp
-import io.mockk.every
-import io.mockk.mockk
+import com.aistra.hail.installHailDataFilesDirForTests
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 
 class HailDataTest {
 
-    // HailData is an object, and its initializers name `app.filesDir` - so the first test to
-    // touch it decides whether the class initializes at all. With no app installed that read
-    // is an uninitialized lateinit, HailData's static initializer throws, and every later
-    // test in the same JVM gets NoClassDefFoundError from a class it never asked about. The
-    // cost of getting this wrong is not one red test, it is the whole suite going red for
-    // something that looks like an Android failure. Installed before any test runs.
-    @Before
-    fun setUp() {
-        val mockApp = mockk<HailApp>(relaxed = true)
-        every { mockApp.filesDir } returns filesDirThatOutlivesThisClass()
-        HailApp.setAppForTest(mockApp)
+    companion object {
+        /**
+         * Before any test, and not in `@Before`: `HailData` is an object whose initializers
+         * name `app.filesDir`, so the first class to touch it decides what the whole JVM
+         * sees - both whether it initializes at all and which directory it froze onto. See
+         * `installHailDataFilesDirForTests`, and the same call in `HBackupTest`, which is
+         * just as capable of being first.
+         */
+        @BeforeClass
+        @JvmStatic
+        fun installFilesDir() {
+            installHailDataFilesDirForTests()
+        }
     }
-
-    /**
-     * A directory that is never deleted, deliberately.
-     *
-     * `HailData.dir` is a plain `val` built from `app.filesDir` (HailData.kt:226), so the
-     * first test in the JVM to touch the object freezes it for every test after that one -
-     * and installing a different app in a later `setUp` cannot move it. A per-test temporary
-     * folder would therefore leave the object pointing into a directory that no longer
-     * exists, which costs nothing today (the suites that touch it stub what they call) and
-     * costs the next test that calls `saveApps()` for real: it writes into a path that is
-     * gone and reports it as an `HFiles` failure. One directory for the JVM, no cleanup.
-     */
-    private fun filesDirThatOutlivesThisClass(): File =
-        File(System.getProperty("java.io.tmpdir"), "hail-unit-test-files").apply { mkdirs() }
 
     @Test
     fun `working mode default is correct`() {
@@ -148,18 +134,17 @@ class HailDataTest {
         assertTrue("expected at least one slider to check", sliders.isNotEmpty())
         for (slider in sliders) {
             val location = slider.location
-            val arguments = namedArgumentsOf(slider.arguments)
-            val key = arguments["key"]?.substringAfterLast('.')
-            assertNotNull("$location must name the key it edits", key)
-            assertEquals(
-                "$location must take its bounds from the declaration, not a literal",
-                "HailData.floatRange(HailData.$key)",
-                arguments["valueRange"]
+            val key = slider.keyConstant()
+            assertNotNull("$location must name a HailData constant as the key it edits", key)
+            assertTrue(
+                "$location must take its bounds from the declaration, not a literal: it has " +
+                    "${slider.valueOf("valueRange")}",
+                slider.takes("valueRange", "HailData.floatRange(HailData.$key)")
             )
-            assertEquals(
-                "$location must take its default from the declaration, not a literal",
-                "HailData.floatDefault(HailData.$key)",
-                arguments["defaultValue"]
+            assertTrue(
+                "$location must take its default from the declaration, not a literal: it has " +
+                    "${slider.valueOf("defaultValue")}",
+                slider.takes("defaultValue", "HailData.floatDefault(HailData.$key)")
             )
         }
     }
@@ -207,46 +192,54 @@ class HailDataTest {
         return calls
     }
 
-    /** The first argument of a call's argument text, whether or not it was named. */
+    /**
+     * The first argument of a call, if it is a bare name.
+     *
+     * A bare name is the point. The keys being compared are `key` on both sides of the tie,
+     * and a first argument that is not a name - a call, a literal, a cast - is not what the
+     * accessor is supposed to be reading, so it fails here with the location rather than
+     * quietly comparing two expressions that happen to differ or match.
+     */
     private fun firstArgumentOf(arguments: String): String? =
-        splitArguments(arguments).firstOrNull()?.second
+        FIRST_ARGUMENT.find(code(arguments))?.groupValues?.get(1)
 
-    /** The `name = value` pairs of a call's argument text; positional arguments are dropped. */
-    private fun namedArgumentsOf(arguments: String): Map<String, String> =
-        splitArguments(arguments).mapNotNull { (name, value) -> if (name == null) null else name to value }
-            .toMap()
+    /**
+     * The constant a named argument names, if the argument is `name = HailData.CONSTANT`.
+     *
+     * Only the `key` argument is read this way, and only so that the other two assertions
+     * can require the *same* constant: a slider whose bounds come from one preference and
+     * whose default comes from another is the interesting failure, and it cannot be seen by
+     * comparing either value on its own.
+     */
+    private fun Call.keyConstant(): String? =
+        Regex("\\bkey\\s*=\\s*HailData\\.(\\w+)").find(code(arguments))?.groupValues?.get(1)
 
-    /** A call's argument text as `name = value` pairs, positional ones keyed by null. */
-    private fun splitArguments(arguments: String): List<Pair<String?, String>> {
-        val masked = code(arguments)
-        val parts = mutableListOf<String>()
-        var depth = 0
-        var start = 0
-        for (index in arguments.indices) {
-            when (masked[index]) {
-                '(', '[', '{' -> depth++
-                ')', ']', '}' -> depth--
-                // A trailing comma leaves an empty part behind, and the loop below drops it.
-                ',' -> if (depth == 0) {
-                    parts += arguments.substring(start, index)
-                    start = index + 1
-                }
-            }
-        }
-        parts += arguments.substring(start)
-        return parts.map { part ->
-            val body = part.trim()
-            val named = NAMED_ARGUMENT.matchEntire(body)
-            if (named != null) named.groupValues[1] to named.groupValues[2].trim() else null to body
-        }.filter { (name, value) -> name != null || value.isNotEmpty() }
-    }
+    /**
+     * Whether a named argument's value is exactly [value], which is what the check is about.
+     *
+     * Matched as a pattern rather than extracted and compared, so no argument splitting is
+     * involved and nothing has to know where a value ends: the name, the `=`, and the whole
+     * value have to be adjacent, and the value has to be the argument - `+ 1f` after it
+     * fails. A top-level generic argument is not a hazard here for the same reason; a
+     * counter that split arguments on commas did not know `<...>` from a comparison, and
+     * split `emptyMap<String, Int>()` in half.
+     */
+    private fun Call.takes(name: String, value: String): Boolean =
+        Regex("\\b${Regex.escape(name)}\\s*=\\s*${Regex.escape(value)}(?=\\s*(?:,|$))")
+            .containsMatchIn(code(arguments))
+
+    /** The text after `name = ` on its first line, for a message that has to be readable. */
+    private fun Call.valueOf(name: String): String =
+        Regex("\\b${Regex.escape(name)}\\s*=\\s*([^\\n]*)").find(arguments)
+            ?.groupValues?.get(1)?.trim()
+            ?.takeIf { it.isNotEmpty() } ?: "no $name"
 
     /**
      * [text] with every comment and string literal replaced by spaces, so that indexes still
      * line up and a bracket inside one of them cannot move a counter.
      *
      * Counting brackets in raw text is the kind of thing that works until someone writes a
-     * comment. A lone `)` - `"%d of %d)"`, or a `// (see #91)` - used to close the argument
+     * comment. A lone `)` - `"%d of %d)"`, or `// (see #91)` - used to close the argument
      * list early, and the failure then named the wrong argument on a call site that was
      * entirely correct. A lone `(` went the other way and swallowed the next call site's
      * arguments, which is worse: the assertion can be satisfied by a neighbouring slider.
@@ -286,8 +279,15 @@ class HailDataTest {
         return if (index < length) index + 1 else length
     }
 
-    /** [this] when it is a found index, otherwise [length] plus [tail] - a literal running to the end. */
-    private fun Int.orEndAt(length: Int, tail: Int = 0): Int = if (this < 0) length else this + tail
+    /**
+     * [this] when it is a found index, otherwise [length] - a comment or literal that runs to
+     * the end of the text. Clamped to [length] even when it was found: an unterminated `/*`
+     * or `"""` has no closing delimiter to add [tail] to, and the alternative to blanking
+     * the rest is an index past the end of the buffer being blanked, thrown from inside the
+     * helper with no hint of which file was being scanned.
+     */
+    private fun Int.orEndAt(length: Int, tail: Int = 0): Int =
+        (if (this < 0) length else this + tail).coerceAtMost(length)
 
     /** `const val NAME = "value"` pairs, which is how a preference key reaches the map. */
     private fun constantStringsIn(file: File): Map<String, String> =
@@ -331,6 +331,6 @@ class HailDataTest {
         const val TRIPLE_QUOTE = "\"\"\""
         const val END_COMMENT = "*/"
         val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
-        val NAMED_ARGUMENT = Regex("(\\w+)\\s*=(?!=)([\\s\\S]*)")
+        val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
     }
 }

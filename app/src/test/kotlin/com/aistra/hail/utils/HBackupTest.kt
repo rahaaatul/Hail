@@ -2,6 +2,7 @@ package com.aistra.hail.utils
 
 import android.content.SharedPreferences
 import com.aistra.hail.HailApp
+import com.aistra.hail.installHailDataFilesDirForTests
 import com.aistra.hail.app.HailData
 import com.aistra.hail.app.AppInfo
 import io.mockk.coEvery
@@ -18,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -63,6 +65,26 @@ class HBackupTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    companion object {
+
+        /**
+         * Before anything here, and not in `setUp`.
+         *
+         * `HailData.dir` is an ordinary `val` built from `app.filesDir` (HailData.kt:226), so
+         * whichever test class first touches the object freezes it for the whole JVM - and the
+         * mock app installed in `setUp` points at a `TemporaryFolder` subdirectory that this
+         * class's own `@Rule` deletes after every test. If this class happened to be first,
+         * the frozen directory would not exist for any test that followed. Freezing it onto a
+         * directory that outlives the JVM makes the order irrelevant; the per-test mock below
+         * still gives this class the isolation it needs for the files it actually writes.
+         */
+        @BeforeClass
+        @JvmStatic
+        fun freezeHailDataFilesDir() {
+            installHailDataFilesDirForTests()
+        }
     }
 
     /**
