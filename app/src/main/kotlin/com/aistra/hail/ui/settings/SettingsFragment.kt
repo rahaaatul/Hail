@@ -269,7 +269,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             sliderPreference(
                 key = HailData.HOME_FONT_SIZE,
-                defaultValue = 14f,
+                defaultValue = HailData.floatDefault(HailData.HOME_FONT_SIZE),
                 title = { Text(text = stringResource(R.string.home_font_size)) },
                 valueRange = HailData.floatRange(HailData.HOME_FONT_SIZE),
                 valueSteps = 4,
@@ -309,7 +309,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
             sliderPreference(
                 key = HailData.AUTO_FREEZE_DELAY,
-                defaultValue = 0f,
+                defaultValue = HailData.floatDefault(HailData.AUTO_FREEZE_DELAY),
                 title = { Text(text = stringResource(R.string.auto_freeze_delay)) },
                 valueRange = HailData.floatRange(HailData.AUTO_FREEZE_DELAY),
                 valueSteps = 29,

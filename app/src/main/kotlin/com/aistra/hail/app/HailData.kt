@@ -125,25 +125,54 @@ object HailData {
     const val SKIP_NOTIFYING_APP = "skip_notifying_app"
     const val DYNAMIC_SHORTCUT_ACTION = "dynamic_shortcut_action"
 
-    /**
-     * Every preference the app stores as a Float, with the range its slider allows.
-     *
-     * This is the single declaration of that surface. SettingsFragment asks this map
-     * for each Float slider's range and HBackup asks it for both the set of Float
-     * keys and the bounds a restored value has to fall inside, so the two cannot
-     * disagree about a key. A new Float slider has to be added here first, because
-     * [floatRange] fails loudly for a key that is missing - which is what stops the
-     * reader quietly losing track of one.
-     */
-    val FLOAT_PREFERENCE_RANGES: Map<String, ClosedFloatingPointRange<Float>> = mapOf(
-        HOME_FONT_SIZE to 11f..16f,
-        AUTO_FREEZE_DELAY to 0f..30f,
+    /** A preference the app stores as a [Float], with everything the settings screen offers. */
+    data class FloatPreference(
+        /** The bounds a slider for this key allows, inclusive at both ends. */
+        val range: ClosedFloatingPointRange<Float>,
+        /** What the app falls back to while the key has never been stored. */
+        val default: Float,
     )
 
-    /** The slider range for a Float preference declared in [FLOAT_PREFERENCE_RANGES]. */
-    fun floatRange(key: String): ClosedFloatingPointRange<Float> =
-        FLOAT_PREFERENCE_RANGES[key]
-            ?: error("'$key' is not a declared Float preference; add it to FLOAT_PREFERENCE_RANGES")
+    /**
+     * Every preference the app stores as a Float, with the range its slider allows and
+     * the default its getter falls back to.
+     *
+     * This is the single declaration of that surface, and it is declared in one place
+     * because three call sites used to state the same three facts separately: the
+     * settings screen asked for a slider's range, the getters carried their own default,
+     * and the backup reader carried a hand-maintained list of which keys are Floats. Any
+     * of them could drift and nothing would notice, and a key that drifted out of the
+     * reader's list is the #91 mis-typing all over again - the reader restores it with
+     * the type it finds rather than the type the app means, and a bare whole number then
+     * goes in as an Int and stays there on every later restore.
+     *
+     * Both directions are now enforced rather than asserted. A new Float slider has to be
+     * declared here first, because [floatPreference] fails loudly for a key that is
+     * missing and the screen asks it for every slider's range and default. A new Float
+     * read has to be declared here too, because the getters take their default from
+     * [floatDefault] rather than from a literal. So a Float preference cannot exist on
+     * either side of this map without it, which is what lets HBackup treat a key in it as
+     * a Float and refuse anything outside its range.
+     */
+    val FLOAT_PREFERENCES: Map<String, FloatPreference> = mapOf(
+        HOME_FONT_SIZE to FloatPreference(range = 11f..16f, default = 14f),
+        AUTO_FREEZE_DELAY to FloatPreference(range = 0f..30f, default = 0f),
+    )
+
+    /** The Float preference [key] names, or a loud failure when it is not a declared one. */
+    fun floatPreference(key: String): FloatPreference =
+        FLOAT_PREFERENCES[key]
+            ?: error("'$key' is not a declared Float preference; add it to FLOAT_PREFERENCES")
+
+    /** The slider range for a Float preference declared in [FLOAT_PREFERENCES]. */
+    fun floatRange(key: String): ClosedFloatingPointRange<Float> = floatPreference(key).range
+
+    /**
+     * The value a Float preference falls back to before it has ever been stored. The
+     * getters and each slider's own `defaultValue` both read it from here, so the two
+     * cannot state different defaults for one key.
+     */
+    fun floatDefault(key: String): Float = floatPreference(key).default
     val DYNAMIC_SHORTCUT_ACTIONS = listOf(
         ACTION_NONE,
         ACTION_FREEZE_ALL,
@@ -167,14 +196,14 @@ object HailData {
     val grayscaleIcon get() = sp.getBoolean(GRAYSCALE_ICON, true)
     val compactIcon get() = sp.getBoolean(COMPACT_ICON, false)
     val synthesizeAdaptiveIcons get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
-    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, 14f)
+    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, floatDefault(HOME_FONT_SIZE))
     val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, false)
     val nineKeySearch get() = sp.getBoolean(NINE_KEY_SEARCH, false)
     val tileAction get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
     var autoFreezeAfterLock
         get() = sp.getBoolean(AUTO_FREEZE_AFTER_LOCK, false)
         set(value) = sp.edit { putBoolean(AUTO_FREEZE_AFTER_LOCK, value) }
-    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, 0f).toLong()
+    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, floatDefault(AUTO_FREEZE_DELAY)).toLong()
     val skipWhileCharging get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
     val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
     val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)

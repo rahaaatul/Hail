@@ -54,18 +54,17 @@ object HBackup {
     // trip is the thing that cannot be undone, so it is the point where restoring is
     // refused rather than guessed.
     private const val DOUBLE_EXACT_INTEGER_LIMIT = 9.007199254740992E15
-    private val TOO_WIDE_MAGNITUDE = BigDecimal(DOUBLE_EXACT_INTEGER_LIMIT)
 
     // The preference keys the app declares to be a Float, with the range each allows.
     // Both are written by sliderPreference, so the type belongs to the key rather than to
     // whatever value happens to be stored under it, and a key listed here is a Float
-    // whatever an earlier build managed to put there. The map lives in HailData because
-    // SettingsFragment reads each slider's range out of it, so a new Float slider cannot
-    // be declared without also declaring its bounds here, and the reader's idea of the
-    // Float surface cannot drift away from the one the settings screen offers.
-    private val FLOAT_PREFERENCE_RANGES = HailData.FLOAT_PREFERENCE_RANGES
+    // whatever an earlier build managed to put there. The declaration lives in HailData
+    // because the settings screen and the app's own getters read their ranges and their
+    // defaults out of the same map: a Float preference cannot be declared on either side
+    // of it without it, so this reader's idea of the Float surface is the app's.
+    private val FLOAT_PREFERENCES = HailData.FLOAT_PREFERENCES
 
-    private val FLOAT_PREFERENCE_KEYS = FLOAT_PREFERENCE_RANGES.keys
+    private val FLOAT_PREFERENCE_KEYS = FLOAT_PREFERENCES.keys
 
     suspend fun backup(
         context: Context,
@@ -288,7 +287,7 @@ object HBackup {
                     // reader created exactly that by claiming the tag with putString.
                     declaredFloat || (floatTag != null && recorded !is String) -> {
                         val asFloat = floatTag ?: value.toNumberOrNull()?.toFloat()
-                        val range = FLOAT_PREFERENCE_RANGES[key]
+                        val range = FLOAT_PREFERENCES[key]?.range
                         when {
                             asFloat == null || !asFloat.isFinite() ->
                                 warnNotStorable(key, value, "Float")
@@ -452,27 +451,29 @@ object HBackup {
     }
 
     /**
-     * Whether a magnitude this large has already lost digits, whatever produced it.
+     * Whether a magnitude has already lost digits, whatever produced it.
      *
      * A Double carries 53 bits of significand, so from 2^53 upward it can no longer
      * name every integer: 2^53+1 and 2^53 are the same Double. A value that has
      * reached this function at that magnitude is therefore no longer the number the
-     * file wrote, and no preference can hold it.
+     * file wrote.
      *
-     * A non-finite magnitude is too wide as well, and answering otherwise was a
-     * disagreement between the two org.json implementations: AOSP parses the literal
-     * 1E1000 into a finite Double and refuses it, while org.json:json parses it into a
-     * BigDecimal, whose toDouble() is Infinity, and a guard that required a finite
-     * value waved that through. [Number.toExactLongOrNull] already refuses a
-     * non-finite Double, so this predicate agreeing with it is what keeps the same
-     * file on the same answer whichever implementation parsed it.
+     * A non-finite magnitude is too wide as well, because no preference can hold one and
+     * [Number.toExactLongOrNull] already refuses it. That is reachable from a real file
+     * rather than from a test: both parsers that read a literal as a number - the
+     * org.json:json artifact and the AOSP parser that adopted BigDecimal/BigInteger - hand
+     * 1E1000 back as a BigDecimal whose toDouble() is Infinity, so a guard that required a
+     * finite value waved through the one magnitude nothing can hold, and the Float arm then
+     * refused the file's integer under a "Float" target. AOSP releases older than that
+     * parser do not produce a Double for 1E1000 at all - they guard against a non-finite
+     * parse and hand the raw text back as a String - and a String is not a magnitude this
+     * function can be asked about, so that difference belongs to the parser rather than to
+     * the check.
      *
-     * Internal rather than private so the unit tests can exercise it directly. The
-     * caller, [Number.isTooWideInteger], only ever reaches its fallback arm with a
-     * BigInteger or BigDecimal, because org.json never hands a Double back to it -
-     * so on the JVM test classpath the Double path this predicate exists for is
-     * unreachable, and testing the predicate is the only way to pin what a device
-     * does.
+     * Internal rather than private so the unit tests can exercise it directly, which is
+     * the only way to pin what a device's parser decides: org.json never hands a Double to
+     * [Number.isTooWideInteger], so on the unit test classpath that answer is reachable
+     * only by calling this.
      */
     internal fun isMagnitudeTooWide(asDouble: Double): Boolean =
         !asDouble.isFinite() ||
@@ -490,22 +491,49 @@ object HBackup {
      * the same file silently stored a Float of a meaningless magnitude on one. The outcome
      * has to be the same either way, so all three arms are keyed off the magnitude.
      *
-     * A BigInteger is always an integer, so it is too wide exactly when it exceeds what a
-     * Long holds, which [Number.toExactLongOrNull] already answers. A BigDecimal is a
-     * magnitude question too: a positive scale only says the literal was written with
-     * fractional digits, which says nothing about how big it is. Reading the scale as the
-     * test let 9007199254740993.5 through as a perfectly good Float, where the same file on
-     * AOSP - whose parser hands back a Double - was correctly refused, so the two
-     * implementations disagreed about the same file and the JVM answer was the silent one.
+     * The BigInteger arm is unconditionally true, and it is only correct in combination
+     * with the call site's `asLong == null`: a BigInteger is an integer, so it is either
+     * one a Long holds - which [Number.toExactLongOrNull] answers, and the caller then
+     * stores - or wider than a Long, and nothing can hold it. Read on its own this arm
+     * would call 10000000000000000 too wide, which is a Long the app stores verbatim. It
+     * must not become a magnitude comparison either: 2^60 is holdable by a Long but past
+     * the 2^53 cut, and routing it through [isMagnitudeTooWide] would refuse a value the
+     * Long arm stores exactly.
      *
-     * The BigDecimal arm compares as a BigDecimal rather than going through toDouble(),
-     * which is not faithful out at that end of the range: every literal from 1E309 upward
-     * collapses onto Infinity, so a magnitude check built on it stops discriminating
-     * exactly where it is most needed.
+     * A BigDecimal is asked what a device's parser would have made of the same literal,
+     * which is two questions and not one. Going through toDouble() is lossy, and the
+     * direction it loses in decides the band that sits just below the cut:
+     * 9007199254740991.5 is the midpoint between two adjacent doubles, so a device that
+     * parsed the file as a Double holds 2^53 and refuses it, while comparing the BigDecimal
+     * exactly says "below the cut" and lets it through to putFloat(9.007199E15f) - the
+     * file's last digit dropped, with nothing logged. Asking the Double first closes that.
+     * The same loss in the other direction is the overflow the Double cannot express:
+     * 1E1000 is Infinity rather than a separable BigDecimal, and a check built on the
+     * exact value stops discriminating exactly there.
+     *
+     * The second question is whether that Double still names the number the file wrote.
+     * Above 2^52 a Double has no significand left for a fraction, so a literal that far
+     * out with a fractional part is a number no Double can print: the device that parsed
+     * it has already stored the whole number it rounded to, and the digits the file held
+     * are gone here too. Below 2^52 there is room for the fraction - 1.5, 1048576.5 - and
+     * those have to survive. Comparing the file's decimal against the decimal that Double
+     * prints answers both sides at once, and that is what keeps this arm the conservative
+     * one everywhere rather than only in the band above the cut.
      */
     private fun Number.isTooWideInteger(): Boolean = when (this) {
         is BigInteger -> true
-        is BigDecimal -> abs() >= TOO_WIDE_MAGNITUDE
+        is BigDecimal -> {
+            val magnitude = abs()
+            val asDouble = magnitude.toDouble()
+            // isMagnitudeTooWide first: a non-finite magnitude is refused there, and
+            // BigDecimal(Double.toString()) below would throw on an infinity.
+            isMagnitudeTooWide(asDouble) ||
+                // Double.toString is the shortest decimal that names that Double exactly,
+                // so this compares the file's decimal with the number a device would hold
+                // rather than with the binary expansion behind it. compareTo rather than
+                // equals, because 1.0E20 and 1E20 are the same number spelled differently.
+                BigDecimal(asDouble.toString()).compareTo(magnitude) != 0
+        }
         else -> isMagnitudeTooWide(toDouble())
     }
 

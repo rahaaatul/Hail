@@ -652,11 +652,13 @@ class HBackupTest {
 
     @Test
     fun `is magnitude too wide refuses both signs at and past 2 to the 53`() {
-        // The predicate is internal so this can be asked directly. On the unit test
-        // classpath org.json only ever hands isTooWideInteger a BigInteger or a
-        // BigDecimal, so its Double arm - the one a device takes, and the one that
-        // decides whether an AOSP-parsed file is refused - cannot be reached through
-        // restore() at all. Only this test covers it.
+        // The predicate is internal so this can be asked directly. org.json on the unit
+        // test classpath only ever hands isTooWideInteger a BigInteger or a BigDecimal, so
+        // restore() cannot reach this predicate with a number a device's parser produced:
+        // a literal like 9223372036854774784 arrives here as a Long, and a Long is stored
+        // before the check is ever consulted. The declared-Float branch does reach the
+        // predicate, but only with a value that is already a Float. So this test is what
+        // pins the answer a device gives.
         assertTrue(HBackup.isMagnitudeTooWide(9.007199254740992E15))
         assertTrue(HBackup.isMagnitudeTooWide(-9.007199254740992E15))
         assertTrue(HBackup.isMagnitudeTooWide(1.2345678E22))
@@ -705,12 +707,13 @@ class HBackupTest {
     }
 
     @Test
-    fun `is magnitude too wide refuses a non-finite magnitude`() {        // A non-finite value is too wide by definition: neither a Long nor a Float holds
+    fun `is magnitude too wide refuses a non-finite magnitude`() {
+        // A non-finite value is too wide by definition: neither a Long nor a Float holds
         // one, and toExactLongOrNull already answers null for it. This is not a corner
-        // case either - org.json:json parses the literal 1E1000 into a BigDecimal whose
-        // toDouble() is Infinity, and answering false for that is what let this check
-        // pass a magnitude AOSP's finite Double refused, so the two implementations
-        // logged different targets for one file.
+        // case either - both parsers that read a literal as a number hand 1E1000 back as
+        // a BigDecimal whose toDouble() is Infinity, and answering false for that is what
+        // let this check pass a magnitude the Float arm then had to refuse under a "Float"
+        // target, for what the file wrote as an integer.
         assertTrue(HBackup.isMagnitudeTooWide(Double.NaN))
         assertTrue(HBackup.isMagnitudeTooWide(Double.POSITIVE_INFINITY))
         assertTrue(HBackup.isMagnitudeTooWide(Double.NEGATIVE_INFINITY))
@@ -718,12 +721,14 @@ class HBackupTest {
 
     @Test
     fun `restore refuses a decimal too wide for a double, not just a finite one`() = runTest {
-        // 1E1000 overflows Double to Infinity, so a magnitude check built on toDouble()
-        // stops discriminating exactly here. Compared as a BigDecimal it is still
-        // separable, and the answer has to be a refusal: AOSP parses the same literal
-        // into a finite Double and refuses it, so the two implementations logging
-        // different targets for one file was the whole defect.
-        val editor = mockPreferences("a_long" to 1L)
+        // 1E1000 overflows Double to Infinity, so a magnitude check built on the exact
+        // BigDecimal value stops discriminating exactly here - and a check that requires a
+        // finite Double waves it through to putFloat, where it is refused under a "Float"
+        // target for what the file wrote as an integer. Nothing is recorded for the key
+        // here on purpose: with a recorded type the value takes the number arm instead and
+        // isTooWideInteger is never consulted, so the assertion below would pass whether
+        // or not this check existed.
+        val editor = mockPreferences()
         val zipFile = zipWithSettings("""{"a_long":1E1000}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
@@ -732,7 +737,32 @@ class HBackupTest {
         assertTrue(result.isSuccess)
         verify(exactly = 0) { editor.putLong(any(), any()) }
         verify(exactly = 0) { editor.putFloat(any(), any()) }
-        verify { HLog.w(any(), match { it.contains("a_long") }) }
+        // The target names what the file's number is, not what would have held it: no
+        // preference can hold this, and the Long arm is the one that refused it.
+        verify { HLog.w(any(), match { it.contains("a_long") && it.contains("Long") }) }
+    }
+
+    @Test
+    fun `restore skips a fraction whose double has already rounded it`() = runTest {
+        // Two fractions whose Double conversion is a different number, so the digits the
+        // file held are gone before the reader sees them. 9007199254740991.5 is the
+        // midpoint of two adjacent doubles and rounds up to 2^53, which the magnitude
+        // check refuses. 4503599627370494.5 is below the cut but still rounds, because a
+        // Double has no significand left for a fraction that far out; a device that
+        // parsed this file stores the whole number it landed on, so storing anything here
+        // would invent a value. Both are refused, and the second is the case a magnitude
+        // comparison on the exact BigDecimal alone waves through to putFloat(4.5035995E15f).
+        val editor = mockPreferences()
+        val zipFile = zipWithSettings("""{"a_wide":9007199254740991.5,"a_fraction":4503599627370494.5}""")
+        val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
+
+        val result = HBackup.restore(HailApp.app, zipFile, options)
+
+        assertTrue(result.isSuccess)
+        verify(exactly = 0) { editor.putLong(any(), any()) }
+        verify(exactly = 0) { editor.putFloat(any(), any()) }
+        verify { HLog.w(any(), match { it.contains("a_wide") }) }
+        verify { HLog.w(any(), match { it.contains("a_fraction") }) }
     }
 
     @Test
@@ -741,7 +771,7 @@ class HBackupTest {
         // reads it as an ordinary fraction and lets it through, where the same digits
         // without the .5 are refused. It then cannot be a Long either, so the only
         // thing left is putFloat(9.007199E15f): a number nobody chose, stored silently.
-        // AOSP hands the same file back as a Double, which the magnitude test refuses.
+        // A device hands the same file back as a Double, which the magnitude test refuses.
         // The two implementations must not disagree about one file.
         val editor = mockPreferences()
         val zipFile = zipWithSettings("""{"a_wide":9007199254740993.5}""")
@@ -752,23 +782,26 @@ class HBackupTest {
         assertTrue(result.isSuccess)
         verify(exactly = 0) { editor.putLong(any(), any()) }
         verify(exactly = 0) { editor.putFloat(any(), any()) }
-        verify { HLog.w(any(), match { it.contains("a_wide") }) }
+        verify { HLog.w(any(), match { it.contains("a_wide") && it.contains("Long") }) }
     }
 
     @Test
-    fun `restore keeps a large fraction that is small enough to be a float`() = runTest {
-        // The other side of the scale question, so the magnitude test cannot be read as
-        // "refuse every decimal with a positive scale". 1.5 is what a Float preference
-        // would have written, and it has to survive.
+    fun `restore keeps a fraction a double names exactly however far out it is`() = runTest {
+        // The other side of both questions, so neither can be read as "refuse every
+        // decimal that is not a whole number" or "refuse everything past 2^52". A Double
+        // carries 53 bits, so 2^20 + 0.5 is still named exactly that far out, and both
+        // parsers hand this file back a number they can still print: 1.5, and
+        // 1048576.5, which is a Float as well.
         val editor = mockPreferences()
-        val zipFile = zipWithSettings("""{"a_decimal":1.5}""")
+        val zipFile = zipWithSettings("""{"a_decimal":1.5,"a_outer_decimal":1048576.5}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
         val result = HBackup.restore(HailApp.app, zipFile, options)
 
         assertTrue(result.isSuccess)
         verify { editor.putFloat("a_decimal", 1.5f) }
-        verify(exactly = 0) { HLog.w(any(), match { it.contains("a_decimal") }) }
+        verify { editor.putFloat("a_outer_decimal", 1048576.5f) }
+        verify(exactly = 0) { HLog.w(any(), match { it.contains("a_") }) }
     }
 
     @Test
@@ -824,24 +857,39 @@ class HBackupTest {
     }
 
     @Test
-    fun `every declared float preference range covers the value its getter defaults to`() {
-        // The map is now the single declaration of the Float surface: SettingsFragment
-        // reads each slider's bounds out of it and the reader refuses anything outside
-        // them. So a default that fell outside its own range would be rejected on the
-        // first restore of an untouched install.
-        for (key in listOf(HailData.HOME_FONT_SIZE, HailData.AUTO_FREEZE_DELAY)) {
-            val range = HailData.floatRange(key)
-            val defaultValue = if (key == HailData.HOME_FONT_SIZE) 14f else 0f
-            assertTrue("$key default $defaultValue is outside $range", defaultValue in range)
+    fun `every declared float preference range covers the default it is read with`() {
+        // The map is the single declaration of the Float surface: the settings screen asks
+        // it for each slider's bounds and default, the getters read their fallback from
+        // it, and the reader refuses anything outside the bounds. So a default that fell
+        // outside its own range would be rejected on the first restore of an untouched
+        // install, and a key added to the map without a default to read it with would be
+        // rejected as undeclared. Iterating the map itself is what makes both visible: a
+        // copy of its keys in this test would pass whatever the map says, and a third key
+        // would never be checked at all.
+        for ((key, preference) in HailData.FLOAT_PREFERENCES) {
+            assertTrue(
+                "$key default ${preference.default} is outside ${preference.range}",
+                preference.default in preference.range
+            )
         }
     }
 
     @Test
-    fun `declaring a float slider without a range is rejected`() {
-        // The drift the hand-maintained key set could not prevent. SettingsFragment asks
-        // this map for a slider's bounds, so a new Float preference has to be declared
-        // here before it can be offered at all.
-        val error = runCatching { HailData.floatRange("a_key_nobody_declared") }.exceptionOrNull()
-        assertTrue("expected a missing range to fail loudly", error is IllegalStateException)
+    fun `declaring a float preference on one side of the map alone is rejected`() {
+        // Both directions of the drift, because either one leaves the reader restoring a
+        // Float with the type the app means for a key it treats as undeclared - or refusing
+        // a value the slider itself can produce. The settings screen asks for a slider's
+        // range and default, and the getters take their fallback from the same map, so a
+        // Float preference cannot be declared on either side without it.
+        for (undeclared in listOf("a_key_nobody_declared")) {
+            assertTrue(
+                "expected a missing range to fail loudly",
+                runCatching { HailData.floatRange(undeclared) }.exceptionOrNull() is IllegalStateException
+            )
+            assertTrue(
+                "expected a missing default to fail loudly",
+                runCatching { HailData.floatDefault(undeclared) }.exceptionOrNull() is IllegalStateException
+            )
+        }
     }
 }
