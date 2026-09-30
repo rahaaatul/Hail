@@ -36,7 +36,7 @@ reason for this design:
 
 | Question | Decision | Why |
 |---|---|---|
-| Where does it live? | One Settings row → one new destination `nav_backup`, `ui/backup/` | Four states (choose, name a file, work, report) do not belong in a modal, and `SettingsFragment.kt` is already 900 lines. Matches `ui/about`, `ui/apps`, `ui/actions` — one package per destination. |
+| Where does it live? | One Settings row → one new destination `nav_backup`, `ui/backup/` | Four states (choose, name a file, work, report) do not belong in a modal, and `SettingsFragment.kt` is already 867 lines. Matches `ui/about`, `ui/apps`, `ui/actions` — one package per destination. |
 | One row or two? | **One** row, "Backup & restore" | The two directions share the same four categories. Two rows make the user pick a direction *before* they know what the file holds, which is the thing the preview exists to fix. |
 | One screen or a picker between two? | One screen, two sections | Two tabs for two short forms adds a mode switch and hides the other side's state. Sections keep both flows legible at once; each has exactly one primary action. |
 | Feedback | In place, never a toast | A toast disappears, and the one that mattered most was the one that said "Exported" for a failed backup. Result and failure render where the button was. |
