@@ -146,13 +146,14 @@ object HailData {
      * the type it finds rather than the type the app means, and a bare whole number then
      * goes in as an Int and stays there on every later restore.
      *
-     * Both directions are now enforced rather than asserted. A new Float slider has to be
-     * declared here first, because [floatPreference] fails loudly for a key that is
-     * missing and the screen asks it for every slider's range and default. A new Float
-     * read has to be declared here too, because the getters take their default from
-     * [floatDefault] rather than from a literal. So a Float preference cannot exist on
-     * either side of this map without it, which is what lets HBackup treat a key in it as
-     * a Float and refuse anything outside its range.
+     * Both sides read this map rather than restating it, and both are checked rather
+     * than assumed. A lookup for a key the map does not list throws instead of inventing
+     * a default, so the screen and the getters cannot quietly disagree with the reader
+     * about a key. What no map can do is make the compiler object to a future literal,
+     * so the read side is pinned structurally: [declaredFloat] is the only call to
+     * `sp.getFloat` the app is allowed, and a test fails if a second one appears. That
+     * is what lets HBackup treat a key in here as a Float and refuse anything outside its
+     * range.
      */
     val FLOAT_PREFERENCES: Map<String, FloatPreference> = mapOf(
         HOME_FONT_SIZE to FloatPreference(range = 11f..16f, default = 14f),
@@ -173,6 +174,19 @@ object HailData {
      * cannot state different defaults for one key.
      */
     fun floatDefault(key: String): Float = floatPreference(key).default
+
+    /**
+     * The stored value of a declared Float preference, or the default it declares.
+     *
+     * The only call to `sp.getFloat` the app makes, and deliberately so: a getter that
+     * reached for the preference directly could state a default this map does not hold,
+     * and the backup reader would then treat its key as undeclared - which is #91 again
+     * under a different key. [floatDefault] throws for a key the map does not list, so a
+     * new read is a deliberate edit to this file, and
+     * `every float read in the app goes through the declared default` fails if a second
+     * `sp.getFloat` call turns up anywhere under `src/main/kotlin`.
+     */
+    private fun declaredFloat(key: String): Float = sp.getFloat(key, floatDefault(key))
     val DYNAMIC_SHORTCUT_ACTIONS = listOf(
         ACTION_NONE,
         ACTION_FREEZE_ALL,
@@ -196,14 +210,14 @@ object HailData {
     val grayscaleIcon get() = sp.getBoolean(GRAYSCALE_ICON, true)
     val compactIcon get() = sp.getBoolean(COMPACT_ICON, false)
     val synthesizeAdaptiveIcons get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
-    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, floatDefault(HOME_FONT_SIZE))
+    val homeFontSize get() = declaredFloat(HOME_FONT_SIZE)
     val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, false)
     val nineKeySearch get() = sp.getBoolean(NINE_KEY_SEARCH, false)
     val tileAction get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
     var autoFreezeAfterLock
         get() = sp.getBoolean(AUTO_FREEZE_AFTER_LOCK, false)
         set(value) = sp.edit { putBoolean(AUTO_FREEZE_AFTER_LOCK, value) }
-    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, floatDefault(AUTO_FREEZE_DELAY)).toLong()
+    val autoFreezeDelay get() = declaredFloat(AUTO_FREEZE_DELAY).toLong()
     val skipWhileCharging get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
     val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
     val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)

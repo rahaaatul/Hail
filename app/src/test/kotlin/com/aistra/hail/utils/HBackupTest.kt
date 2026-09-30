@@ -749,12 +749,15 @@ class HBackupTest {
         // midpoint between two adjacent doubles and rounds up to 2^53, which the magnitude
         // check refuses. 4503599627370496.5 is below the cut but still rounds, because a
         // Double only names whole numbers from 2^52 up and this one has a half left to
-        // place; a device that parsed this file stores the whole number it landed on, so
-        // storing anything here would invent a value. Both are refused, and the second is
-        // the case a magnitude comparison on the exact BigDecimal alone waves through to
-        // putFloat(4.5035996E15f). The fraction just below it, 4503599627370495.5, is one a
-        // Double does still name, which is what keeps this a question about the number
-        // rather than a cut at 2^52.
+        // place. Both are refused, and the second is the case a magnitude comparison on the
+        // exact BigDecimal alone waves through to putFloat(4.5035996E15f). The fraction
+        // just below it, 4503599627370495.5, is one a Double does still name, which is
+        // what keeps this a question about the number rather than a cut at 2^52.
+        //
+        // A device whose parser hands back a Double cannot agree about the second value,
+        // and this test does not pretend otherwise: by the time it is a Double the ".5" is
+        // gone, so there is nothing left there to refuse it by. The check exists on this
+        // side because this side still has the text.
         val editor = mockPreferences()
         val zipFile = zipWithSettings("""{"a_wide":9007199254740991.5,"a_fraction":4503599627370496.5}""")
 
@@ -879,21 +882,24 @@ class HBackupTest {
     }
 
     @Test
-    fun `declaring a float preference on one side of the map alone is rejected`() {
-        // Both directions of the drift, because either one leaves the reader restoring a
-        // Float with the type the app means for a key it treats as undeclared - or refusing
-        // a value the slider itself can produce. The settings screen asks for a slider's
-        // range and default, and the getters take their fallback from the same map, so a
-        // Float preference cannot be declared on either side without it.
-        for (undeclared in listOf("a_key_nobody_declared")) {
-            assertTrue(
-                "expected a missing range to fail loudly",
-                runCatching { HailData.floatRange(undeclared) }.exceptionOrNull() is IllegalStateException
-            )
-            assertTrue(
-                "expected a missing default to fail loudly",
-                runCatching { HailData.floatDefault(undeclared) }.exceptionOrNull() is IllegalStateException
-            )
-        }
+    fun `a float preference that is declared nowhere is rejected on both lookups`() {
+        // The map is the only place a Float preference is declared, so the two ways the app
+        // asks it for a key's facts have to fail for a key it does not list: floatRange for
+        // the settings screen, floatDefault for the getter. Either one inventing a default
+        // would leave the reader restoring a Float the app never declared as one.
+        //
+        // What this cannot cover is a key declared on one side and not the other - a slider
+        // with literal bounds, or a getter with a literal default - because the app has
+        // none. `every float read in the app goes through the declared default` in
+        // HailDataTest is what holds the read side down.
+        val undeclared = "a_key_nobody_declared"
+        assertTrue(
+            "expected a missing range to fail loudly",
+            runCatching { HailData.floatRange(undeclared) }.exceptionOrNull() is IllegalStateException
+        )
+        assertTrue(
+            "expected a missing default to fail loudly",
+            runCatching { HailData.floatDefault(undeclared) }.exceptionOrNull() is IllegalStateException
+        )
     }
 }

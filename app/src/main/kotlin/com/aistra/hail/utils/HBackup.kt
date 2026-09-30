@@ -362,10 +362,12 @@ object HBackup {
                     // to be taken at face value. Which Java class org.json hands back for a
                     // given literal differs between the two implementations this project can
                     // load - see isTooWideInteger - so nothing here may branch on the class.
-                    // The two outcomes are decided by magnitude instead: an integer no
-                    // preference can hold is skipped and logged rather than stored as a Float
-                    // of the right order but the wrong digits, and anything else is a Float,
-                    // because only a Float preference ever wrote decimal notation.
+                    // The outcomes are decided by what the number still is instead: an
+                    // integer no preference can hold is skipped and logged rather than stored
+                    // as a Float of the right order but the wrong digits, the same goes for
+                    // a fraction no Double can name, and what is left is stored as a Long or
+                    // a Float by whether the file wrote a whole number - the only thing a
+                    // Float preference ever wrote decimal notation for.
                     value is Number -> {
                         val asLong = value.toExactLongOrNull()
                         val asFloat = value.toFloat()
@@ -519,6 +521,14 @@ object HBackup {
      * to survive. Comparing the file's decimal against the decimal that Double.toString
      * prints answers both sides at once, and that is what keeps this arm the conservative
      * one everywhere rather than only in the band above the cut.
+     *
+     * The check is one-sided on purpose, because it can only be. A value that arrived as a
+     * Double no longer carries the file's text, so on that side there is nothing left to
+     * tell "the file wrote 4503599627370496" from "the file wrote 4503599627370496.5 and
+     * the parser rounded it", and refusing every Double at that magnitude would refuse
+     * every Long from 2^52 to Long.MAX_VALUE - including the one restore keeps working
+     * here. What this side has instead is the text, so this side refuses; a device that
+     * has already lost the digits cannot be argued with from here.
      */
     private fun Number.isTooWideInteger(): Boolean = when (this) {
         is BigInteger -> true
