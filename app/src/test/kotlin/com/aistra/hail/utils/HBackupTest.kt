@@ -817,7 +817,14 @@ class HBackupTest {
         // Without the guard this stores 1.2345678E22f under a slider whose range is
         // 11f..16f, and isFinite() accepts it happily, while the identical digits under
         // an undeclared key are refused. homeFontSize is passed straight to setTextSize.
-        val editor = mockPreferences(HailData.HOME_FONT_SIZE to 14f)
+        //
+        // Nothing is recorded for the key on purpose, which is the whole point of the test:
+        // `declaredFloat` is `recorded is Float || key in FLOAT_PREFERENCE_KEYS`, and a
+        // record of 14f would satisfy it on its own - so a reader that dropped the
+        // declared-key half of that test would still pass here while restoring a Float
+        // nobody declared. With the key unrecorded, the declaration is the only route into
+        // the Float arm.
+        val editor = mockPreferences()
         val zipFile = zipWithSettings("""{"${HailData.HOME_FONT_SIZE}":12345678901234567890123}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
@@ -835,7 +842,10 @@ class HBackupTest {
         // same file left an Int under this key, which getFloat reports as absent, so the
         // value was inert; restoring it as a Float hands a negative delay straight to
         // setInitialDelay and moves the recency window start past now.
-        val editor = mockPreferences(HailData.AUTO_FREEZE_DELAY to 0f)
+        //
+        // Unrecorded for the reason the test above gives: a Float record would put the
+        // value in the Float arm by itself, and the declared range is what is under test.
+        val editor = mockPreferences()
         val zipFile = zipWithSettings("""{"${HailData.AUTO_FREEZE_DELAY}":-5.0}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
@@ -852,7 +862,11 @@ class HBackupTest {
         // settings screen can produce for this key, so the guard that refuses -5 must
         // not refuse it: an off-by-one here would lock every user out of the setting
         // they actually chose.
-        val editor = mockPreferences(HailData.HOME_FONT_SIZE to 14f)
+        //
+        // Unrecorded like the two above, so the top of the range is accepted because the
+        // key is declared and the bound is inclusive, not because the key happened to hold
+        // a Float already.
+        val editor = mockPreferences()
         val zipFile = zipWithSettings("""{"${HailData.HOME_FONT_SIZE}":16.0}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
