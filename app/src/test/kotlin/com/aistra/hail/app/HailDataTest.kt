@@ -104,7 +104,7 @@ class HailDataTest {
 
     @Test
     fun `no value HailData initializes names the application`() {
-        // The invariant behind `dir` being resolved on first use (HailData.kt:232), and the
+        // The invariant behind `dir` being resolved on first use (HailData.kt:233), and the
         // only thing in this file that keeps it that way. An ordinary `val` is resolved while
         // the object initializes, so it captures whatever `app` was at the moment something
         // first touched HailData - which in the app is onCreate, and in a JVM test is whichever
@@ -112,22 +112,69 @@ class HailDataTest {
         // exactly that cross-class ordering dependency, and nothing else in the suite notices:
         // the suites that would suffer all mock the calls that would reach the path.
         //
-        // Stated over every eager initializer rather than over the three declarations, so it
-        // also covers the next value somebody adds that needs the application, and so it does
-        // not care whether that value is `by lazy` or a computed property.
+        // Stated over every eager initializer in the object rather than over the declarations
+        // this branch happens to have touched, so it also covers the next value somebody adds
+        // that needs the application, and does not care whether that value turns out to be
+        // `by lazy` or a computed property. Which is why the pattern accepts a type
+        // annotation, any modifier, and `var`: a check that only recognises one spelling of an
+        // eager initializer is a check on the spelling.
         val source = hailDataSource()
-        val eager = source.readLines().withIndex().mapNotNull { (index, line) ->
-            val declared = withoutComments(line)
-            val declaration = EAGER_PROPERTY.find(declared) ?: return@mapNotNull null
-            val initializer = declared.substring(declaration.range.last + 1)
-            if (APPLICATION.containsMatchIn(initializer)) "${source.name}:${index + 1} ${line.trim()}" else null
-        }
+        val declared = withoutComments(source.readText())
+        val eager = EAGER_PROPERTY.findAll(declared).mapNotNull { declaration ->
+            val initializer = initializerAfter(declared, declaration.range.last + 1)
+            // A reference is either code or a template hole. A word inside a string's own text
+            // is neither, so it takes both a strings-blanked and a strings-kept reading to
+            // tell `"${'$'}{app.filesDir.path}/v1"` from "the app is frozen".
+            val reference = APPLICATION.containsMatchIn(code(initializer)) ||
+                    TEMPLATE_REFERENCE.containsMatchIn(initializer)
+            if (reference) {
+                "${source.name}:${lineOf(declared, declaration.range.first)} " +
+                    "${declaration.value.trim()} ${initializer.trim()}"
+            } else null
+        }.toList()
         assertTrue(
             "these values capture the application while HailData initializes, so they keep " +
                 "whatever was installed at that moment for every later test in the JVM: $eager",
             eager.isEmpty()
         )
     }
+
+    /**
+     * The initializer beginning at [index], which is just after an `=`, read over as many lines
+     * as it takes: this file writes initializers one per line often enough that a
+     * single-line reading is a hole rather than a simplification, and a hole in *this* check
+     * is a `dir` that has gone back to being eager.
+     */
+    private fun initializerAfter(text: String, index: Int): String {
+        var depth = 0
+        var end = index
+        while (end < text.length) {
+            // A literal is stepped over as a unit, because a raw string spans lines and its
+            // interior newlines are not the end of anything.
+            val literal = literalEndingAt(text, end)
+            if (literal >= 0) {
+                end = literal
+                continue
+            }
+            when (text[end]) {
+                '(', '[', '{' -> depth++
+                ')', ']', '}' -> depth--
+                // A line ends the value unless the value is still open, or has not started.
+                '\n' -> if (depth <= 0 && endsAValue(text.substring(index, end))) return text.substring(index, end)
+            }
+            end++
+        }
+        return text.substring(index)
+    }
+
+    /** Whether [value] is a complete expression, rather than one waiting for its next line. */
+    private fun endsAValue(value: String): Boolean {
+        val last = value.trimEnd().lastOrNull() ?: return false
+        return last !in UNFINISHED
+    }
+
+    /** The 1-based line [offset] falls on. */
+    private fun lineOf(text: String, offset: Int): Int = text.take(offset).count { it == '\n' } + 1
 
     @Test
     fun `every float slider takes its bounds and default from the declaration`() {
@@ -282,32 +329,56 @@ class HailDataTest {
      */
     private fun code(text: String): String = blank(text, keepStrings = false)
 
+    /**
+     * [text] with the regions named by the mode replaced by spaces, same length throughout and
+     * with the newlines left in place so a location is still counted in them.
+     *
+     * A literal is stepped over as a unit in both modes - `keepStrings` decides whether its
+     * text survives, not whether its contents are read as code. That is the difference between
+     * masking a URL and losing everything after the two slashes in its scheme, and the flag
+     * has to mean what it says: a kept literal that contains what would otherwise open a
+     * comment is still a literal.
+     */
     private fun blank(text: String, keepStrings: Boolean): String {
         val out = StringBuilder(text)
         var index = 0
         while (index < text.length) {
-            val end = when {
-                keepStrings && (text[index] == '"' || text[index] == '\'') && !text.startsWith(TRIPLE_QUOTE, index) -> -1
-                text.startsWith("//", index) -> text.indexOf('\n', index).orEndAt(text.length)
-                text.startsWith("/*", index) -> text.indexOf(END_COMMENT, index + 2).orEndAt(text.length, 2)
-                keepStrings && text.startsWith(TRIPLE_QUOTE, index) -> -1
-                text.startsWith(TRIPLE_QUOTE, index) ->
-                    text.indexOf(TRIPLE_QUOTE, index + 3).orEndAt(text.length, 3)
-                text[index] == '"' -> text.endOfLiteral(index, '"')
-                text[index] == '\'' -> text.endOfLiteral(index, '\'')
-                else -> -1
+            val literal = literalEndingAt(text, index)
+            if (literal >= 0) {
+                if (!keepStrings) blankOut(out, index, literal)
+                index = literal
+                continue
             }
-            if (end < 0) {
-                index++
-            } else {
-                // Newlines stay, because a location is counted in them.
-                for (blanked in index until end) {
-                    if (out[blanked] != '\n') out[blanked] = ' '
-                }
-                index = end
+            val comment = commentEndingAt(text, index)
+            if (comment >= 0) {
+                blankOut(out, index, comment)
+                index = comment
+                continue
             }
+            index++
         }
         return out.toString()
+    }
+
+    /** The end of the string, char or raw-string literal starting at [index], or -1. */
+    private fun literalEndingAt(text: String, index: Int): Int = when {
+        text.startsWith(TRIPLE_QUOTE, index) -> text.indexOf(TRIPLE_QUOTE, index + 3).orEndAt(text.length, 3)
+        text[index] == '"' -> text.endOfLiteral(index, '"')
+        text[index] == '\'' -> text.endOfLiteral(index, '\'')
+        else -> -1
+    }
+
+    /** The end of the line or block comment starting at [index], or -1. */
+    private fun commentEndingAt(text: String, index: Int): Int = when {
+        text.startsWith("//", index) -> text.indexOf('\n', index).orEndAt(text.length)
+        text.startsWith("/*", index) -> text.indexOf(END_COMMENT, index + 2).orEndAt(text.length, 2)
+        else -> -1
+    }
+
+    private fun blankOut(out: StringBuilder, from: Int, to: Int) {
+        for (index in from until minOf(to, out.length)) {
+            if (out[index] != '\n') out[index] = ' '
+        }
     }
 
     /** The end of the string or char literal starting at [start], its closing quote included. */
@@ -369,7 +440,14 @@ class HailDataTest {
         private const val TRIPLE_QUOTE = "\"\"\""
         private const val END_COMMENT = "*/"
         private val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
-        private val EAGER_PROPERTY = Regex("^\\s*(?:private\\s+)?val\\s+\\w+\\s*=(?!=)")
+        // Four spaces, because a `val` in a data class's parameter list is a parameter and
+        // has no initializer: without that, `val range: ClosedFloatingPointRange<Float>,` runs
+        // its type past the closing parenthesis and swallows the next declaration whole.
+        private val EAGER_PROPERTY =
+            Regex("^ {4}(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
+        // A reference to the application from inside a string template, which masking erases.
+        private val TEMPLATE_REFERENCE = Regex("\\$\\{[^}]*?(?<![\\w/])app(?![\\w])")
+        private val UNFINISHED = charArrayOf('(', '[', '{', ',', '=', '+', '-', '*', '/', '<', '>', '?', ':', '&', '|', '.', '\\')
         // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
         private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
