@@ -112,15 +112,28 @@ class HailDataTest {
         // exactly that cross-class ordering dependency, and nothing else in the suite notices:
         // the suites that would suffer all mock the calls that would reach the path.
         //
-        // Stated over every eager initializer in the object rather than over the declarations
-        // this branch happens to have touched, so it also covers the next value somebody adds
-        // that needs the application, and does not care whether that value turns out to be
-        // `by lazy` or a computed property. Which is why the pattern accepts a type
-        // annotation, any modifier, and `var`: a check that only recognises one spelling of an
+        // Stated over every eager initializer rather than over the declarations this branch
+        // happens to have touched, so it also covers the next value somebody adds that needs
+        // the application, and does not care how that value is spelled: a type annotation, any
+        // modifier, `var`, any indentation, and a value continued over several lines either by
+        // a trailing operator or a leading one. A check that recognises one spelling of an
         // eager initializer is a check on the spelling.
+        //
+        // The one thing it does not look at is a local inside a lambda, which is not an object
+        // initializer either - it is scanned along with everything else, and this file has no
+        // such local naming the application, which is the only reason that costs nothing.
         val source = hailDataSource()
         val declared = withoutComments(source.readText())
+        // A declaration inside a parameter list is a parameter, not an initializer - and it
+        // sits at eight spaces, so the pattern cannot tell it from a member by indentation
+        // alone. Parentheses can: a parameter is always inside one.
+        val parameterised = insideParentheses(code(declared))
         val eager = EAGER_PROPERTY.findAll(declared).mapNotNull { declaration ->
+            if (parameterised[declaration.range.first]) return@mapNotNull null
+            // A computed property runs its body on every access and captures nothing at
+            // initialization, so `val sp: SharedPreferences get() = …` is not a hit. The
+            // annotation does not change that, and both spellings are excluded here.
+            if (GETTER.containsMatchIn(declaration.value)) return@mapNotNull null
             val initializer = initializerAfter(declared, declaration.range.last + 1)
             // A reference is either code or a template hole. A word inside a string's own text
             // is neither, so it takes both a strings-blanked and a strings-kept reading to
@@ -159,18 +172,58 @@ class HailDataTest {
             when (text[end]) {
                 '(', '[', '{' -> depth++
                 ')', ']', '}' -> depth--
-                // A line ends the value unless the value is still open, or has not started.
-                '\n' -> if (depth <= 0 && endsAValue(text.substring(index, end))) return text.substring(index, end)
+                // A line ends the value unless the value is still open, has not started, or
+                // the next line leads with an operator - which is this codebase's other way of
+                // writing a long value, and the one a trailing-character rule cannot see.
+                '\n' -> if (depth <= 0 && !awaitsRest(text.substring(index, end), text, end + 1)) {
+                    return text.substring(index, end)
+                }
             }
             end++
         }
         return text.substring(index)
     }
 
-    /** Whether [value] is a complete expression, rather than one waiting for its next line. */
-    private fun endsAValue(value: String): Boolean {
-        val last = value.trimEnd().lastOrNull() ?: return false
-        return last !in UNFINISHED
+    /**
+     * Whether the value read so far is finished, which is three ways of not being finished:
+     * it ends in something a value cannot end in, the next line leads with an operator, or it
+     * has opened a branch whose `else` has not arrived. All three are spellings this codebase
+     * uses for a long initializer, and a check that misses one reports a `dir` as clean.
+     */
+    private fun awaitsRest(value: String, text: String, nextLine: Int): Boolean {
+        val last = value.trimEnd().lastOrNull() ?: return true
+        if (last in UNFINISHED || leadsWithOperator(text, nextLine)) return true
+        // A line that ends on a word which cannot end an expression - `else` with its branch
+        // still to come - and a branch opened with no `else` seen yet, are the same fact.
+        if (DANGLING_KEYWORD.containsMatchIn(value)) return true
+        return BRANCH_OPENING.containsMatchIn(value) && !ELSE_BRANCH.containsMatchIn(value)
+    }
+
+    /**
+     * Whether the next line to say anything continues the value, by starting with an operator
+     * or an `else` - `context` on one line and `.getSharedPreferences(app.packageName, 0)` on
+     * the next is one expression, and reading only the first line is how a real reference gets
+     * missed by a check whose whole job is not to miss it.
+     */
+    private fun leadsWithOperator(text: String, from: Int): Boolean {
+        var index = from
+        while (index < text.length && text[index].isWhitespace()) index++
+        if (index >= text.length) return false
+        return text[index] in LEADING || text.startsWith(ELSE, index)
+    }
+
+    /** For each character of [text], whether it is inside a parenthesis or a bracket. */
+    private fun insideParentheses(text: String): BooleanArray {
+        val inside = BooleanArray(text.length)
+        var depth = 0
+        for (index in text.indices) {
+            when (text[index]) {
+                '(', '[' -> depth++
+                ')', ']' -> depth--
+            }
+            inside[index] = depth > 0
+        }
+        return inside
     }
 
     /** The 1-based line [offset] falls on. */
@@ -440,14 +493,22 @@ class HailDataTest {
         private const val TRIPLE_QUOTE = "\"\"\""
         private const val END_COMMENT = "*/"
         private val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
-        // Four spaces, because a `val` in a data class's parameter list is a parameter and
-        // has no initializer: without that, `val range: ClosedFloatingPointRange<Float>,` runs
-        // its type past the closing parenthesis and swallows the next declaration whole.
+        // Any indentation, because a nested object or class inside the file has its properties
+        // deeper and a parameter list is told apart by its parentheses rather than by depth.
+        // The type annotation cannot cross a line: bounded to one, a declaration with no `=` on
+        // its own line simply does not match, instead of reaching down the file to whatever `=`
+        // comes next and reporting a span that has nothing to do with it.
         private val EAGER_PROPERTY =
-            Regex("^ {4}(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
+            Regex("^[ \\t]+(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
+        private val GETTER = Regex("\\bget\\s*\\(")
         // A reference to the application from inside a string template, which masking erases.
         private val TEMPLATE_REFERENCE = Regex("\\$\\{[^}]*?(?<![\\w/])app(?![\\w])")
         private val UNFINISHED = charArrayOf('(', '[', '{', ',', '=', '+', '-', '*', '/', '<', '>', '?', ':', '&', '|', '.', '\\')
+        private val LEADING = charArrayOf('(', '[', '.', '+', '-', '*', '/', '%', '?', ':', '&', '|', '=', '<', '>', '!')
+        private const val ELSE = "else"
+        private val DANGLING_KEYWORD = Regex("\\b(?:else|if|when|try|do|return|throw|in|by)\\s*$")
+        private val BRANCH_OPENING = Regex("\\b(?:if|when|try|do)\\s*[({]")
+        private val ELSE_BRANCH = Regex("\\belse\\b")
         // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
         private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
