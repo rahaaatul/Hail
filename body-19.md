@@ -1,0 +1,5 @@
+**Accept** — `09793ca`. Agreed, and `val FLOAT_PREFERENCES: Map<String, FloatPreference> =` at :158 is the argument: the spelling you call exempt was the object I was reading when I wrote the pattern.
+
+It now accepts a type annotation, any modifier, and `var`. It also requires four spaces of indentation, for the reason your data-class example exposes: a `val` in a parameter list has no initializer, and without the indentation requirement `val range: ClosedFloatingPointRange<Float>,` runs its type part past the closing parenthesis and swallows the next declaration whole — the match then starts at a parameter and its "initializer" is the following declaration's value, which reports the wrong line and can miss a real reference on the way.
+
+Eighteen mutations are checked against the real tree, including every spelling you listed plus a multiline type annotation, a wrapped lambda, a `listOf(` spanning lines, a raw string, and a `const` template. The lazy and computed forms still pass, which is the point of stating it over eager initializers rather than over the three declarations.

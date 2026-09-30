@@ -1,0 +1,3 @@
+**Accept** — `ce4164c`. Agreed, and the argument that convinced me is the last one: the failure mode is a message that describes the file rather than the mistake, which is the specific thing the masking was added to prevent.
+
+`valueOf` reads through `code(arguments)` like `keyConstant` and `takes` already did. Worth noting the trade rather than pretending there is none: a value that *is* a string literal now comes back blanked, so a diagnostic about a quoted argument loses its quotes. I took that deliberately — a message with the quotes missing is still about the right argument, and a message that quotes a `// valueRange used to be 11f..16f` comment is confidently about the wrong one.
