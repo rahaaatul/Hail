@@ -1,11 +1,9 @@
 package com.aistra.hail.app
 
-import com.aistra.hail.installHailDataFilesDirForTests
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.BeforeClass
 import org.junit.Test
 
 class HailDataTest {
@@ -213,9 +211,17 @@ class HailDataTest {
         Regex("\\b${Regex.escape(name)}\\s*=\\s*${Regex.escape(value)}(?=\\s*(?:,|$))")
             .containsMatchIn(code(arguments))
 
-    /** The text after `name = ` on its first line, for a message that has to be readable. */
+    /**
+     * The text after `name = ` on its first line, for a message that has to be readable.
+     *
+     * Read through [code] like every other search on this call, so a comment placed before
+     * the argument cannot supply the quoted value and hide the one that actually failed. A
+     * string literal would be blanked here too, which costs a message its quotes in the one
+     * case where a quoted string is the value - worth it, since the alternative is a
+     * diagnostic that describes the file rather than the mistake.
+     */
     private fun Call.valueOf(name: String): String =
-        Regex("\\b${Regex.escape(name)}\\s*=\\s*([^\\n]*)").find(arguments)
+        Regex("\\b${Regex.escape(name)}\\s*=\\s*([^\\n]*)").find(code(arguments))
             ?.groupValues?.get(1)?.trim()
             ?.takeIf { it.isNotEmpty() } ?: "no $name"
 
@@ -306,21 +312,7 @@ class HailDataTest {
         val location: String get() = "${file.name}:$line"
     }
 
-    companion object {
-
-        /**
-         * Before any test, and not in `@Before`: `HailData` is an object whose initializers
-         * name `app.filesDir`, so the first class to touch it decides what the whole JVM
-         * sees - both whether it initializes at all and which directory it froze onto. See
-         * `installHailDataFilesDirForTests`, and the same call in `HBackupTest`, which is
-         * just as capable of being first.
-         */
-        @BeforeClass
-        @JvmStatic
-        fun installFilesDir() {
-            installHailDataFilesDirForTests()
-        }
-
+    private companion object {
         private const val HAIL_DATA_PATH = "com/aistra/hail/app/HailData.kt"
         private const val HAIL_DATA_FILE_NAME = "HailData.kt"
         private const val GET_FLOAT = "getFloat("

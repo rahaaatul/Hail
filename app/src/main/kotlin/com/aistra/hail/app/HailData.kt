@@ -223,9 +223,15 @@ object HailData {
     val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
     val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
 
-    private val dir = "${app.filesDir.path}/v1"
-    private val appsPath = "$dir/apps.json"
-    private val tagsPath = "$dir/tags.json"
+    // Resolved when they are first needed rather than while this object initializes, because
+    // the paths name `app`, and an object initializer that names the application captures
+    // whatever the application was at the moment something first touched HailData. In the app
+    // that is onCreate setting `app` (HailApp.kt:32) before any screen or service can reach
+    // here, so the eager version happened to work; on a JVM test it does not, where a relaxed
+    // mock is often installed first and `filesDir.path` is whatever the mock answers with.
+    private val dir by lazy { "${app.filesDir.path}/v1" }
+    private val appsPath by lazy { "$dir/apps.json" }
+    private val tagsPath by lazy { "$dir/tags.json" }
     private val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
