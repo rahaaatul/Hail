@@ -3,13 +3,12 @@ package com.aistra.hail.app
 import com.aistra.hail.HailApp
 import io.mockk.every
 import io.mockk.mockk
+import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class HailDataTest {
 
@@ -19,16 +18,26 @@ class HailDataTest {
     // test in the same JVM gets NoClassDefFoundError from a class it never asked about. The
     // cost of getting this wrong is not one red test, it is the whole suite going red for
     // something that looks like an Android failure. Installed before any test runs.
-    @Rule
-    @JvmField
-    val temporaryFolder = TemporaryFolder()
-
     @Before
     fun setUp() {
         val mockApp = mockk<HailApp>(relaxed = true)
-        every { mockApp.filesDir } returns temporaryFolder.newFolder("files")
+        every { mockApp.filesDir } returns filesDirThatOutlivesThisClass()
         HailApp.setAppForTest(mockApp)
     }
+
+    /**
+     * A directory that is never deleted, deliberately.
+     *
+     * `HailData.dir` is a plain `val` built from `app.filesDir` (HailData.kt:226), so the
+     * first test in the JVM to touch the object freezes it for every test after that one -
+     * and installing a different app in a later `setUp` cannot move it. A per-test temporary
+     * folder would therefore leave the object pointing into a directory that no longer
+     * exists, which costs nothing today (the suites that touch it stub what they call) and
+     * costs the next test that calls `saveApps()` for real: it writes into a path that is
+     * gone and reports it as an `HFiles` failure. One directory for the JVM, no cleanup.
+     */
+    private fun filesDirThatOutlivesThisClass(): File =
+        File(System.getProperty("java.io.tmpdir"), "hail-unit-test-files").apply { mkdirs() }
 
     @Test
     fun `working mode default is correct`() {
@@ -61,7 +70,11 @@ class HailDataTest {
         // one of them, it lives in HailData.kt, and the key it reads is the key the default
         // is asked about - which is the property that makes the accessor's default the right
         // one for whatever key a caller passed it.
-        val reads = callSites(GET_FLOAT)
+        //
+        // The calls are read whole and balanced over newlines, because a read spelled the
+        // way the rest of this file spells long calls - one argument per line - otherwise
+        // yields two empty extractions that compare equal to each other and check nothing.
+        val reads = callArguments(GET_FLOAT)
         assertTrue("expected at least one SharedPreferences Float read to check", reads.isNotEmpty())
         assertEquals(
             "these SharedPreferences Float reads bypass HailData.declaredFloat, so their " +
@@ -75,10 +88,21 @@ class HailDataTest {
             HAIL_DATA_FILE_NAME,
             read.file.name
         )
+        val defaults = callsIn(read.arguments, FLOAT_DEFAULT)
+        assertEquals(
+            "the one SharedPreferences Float read must ask the declaration for its default, " +
+                "once: ${read.location}",
+            1,
+            defaults.size
+        )
+        val readKey = firstArgumentOf(read.arguments)
+        val defaultKey = firstArgumentOf(defaults.single())
+        assertNotNull("could not read the key the Float read uses: ${read.location}", readKey)
+        assertNotNull("could not read the key the default is asked about: ${read.location}", defaultKey)
         assertEquals(
             "a Float read must take its default from the declaration of the same key: ${read.location}",
-            argumentOf(read.text, GET_FLOAT),
-            argumentOf(read.text, FLOAT_DEFAULT)
+            readKey,
+            defaultKey
         )
     }
 
@@ -90,8 +114,8 @@ class HailDataTest {
         // fact about the app rather than a fact about this file. Keys are matched by the
         // string they resolve to, so renaming a constant does not quietly undeclare it.
         val constants = constantStringsIn(hailDataSource())
-        val accessorArguments = callSites(DECLARED_FLOAT)
-            .map { argumentOf(it.text, DECLARED_FLOAT)?.substringAfterLast('.') }
+        val accessorArguments = callArguments(DECLARED_FLOAT)
+            .mapNotNull { firstArgumentOf(it.arguments)?.substringAfterLast('.') }
             .toSet()
         for (key in HailData.FLOAT_PREFERENCES.keys) {
             val identifier = constants.entries.firstOrNull { it.value == key }?.key
@@ -122,68 +146,148 @@ class HailDataTest {
         // be told about the difference rather than left to fail.
         val sliders = callArguments(SLIDER_PREFERENCE)
         assertTrue("expected at least one slider to check", sliders.isNotEmpty())
-        for ((location, arguments) in sliders) {
-            val key = named(arguments, "key")?.substringAfterLast('.')
-            assertTrue("$location declares no key", key != null)
+        for (slider in sliders) {
+            val location = slider.location
+            val arguments = namedArgumentsOf(slider.arguments)
+            val key = arguments["key"]?.substringAfterLast('.')
+            assertNotNull("$location must name the key it edits", key)
             assertEquals(
                 "$location must take its bounds from the declaration, not a literal",
                 "HailData.floatRange(HailData.$key)",
-                named(arguments, "valueRange")
+                arguments["valueRange"]
             )
             assertEquals(
                 "$location must take its default from the declaration, not a literal",
                 "HailData.floatDefault(HailData.$key)",
-                named(arguments, "defaultValue")
+                arguments["defaultValue"]
             )
         }
     }
 
-    /** Every line in the app's Kotlin sources that contains [needle]. */
-    private fun callSites(needle: String): List<CallSite> =
-        kotlinSources().flatMap { file ->
-            file.readLines().withIndex()
-                .filter { (_, line) -> line.contains(needle) }
-                .map { (index, line) -> CallSite(file, index + 1, line.trim()) }
-        }
-
-    /**
-     * The argument text of every call to [needle], balanced over newlines so a call written
-     * one argument per line is read whole, paired with a location a failure can name.
-     */
-    private fun callArguments(needle: String): List<Pair<String, String>> =
+    /** One call to [needle] in the app's Kotlin sources, with its argument text and where it is. */
+    private fun callArguments(needle: String): List<Call> =
         kotlinSources().flatMap { file ->
             val text = file.readText()
-            val sites = mutableListOf<Pair<String, String>>()
-            var from = 0
-            while (true) {
-                val start = text.indexOf(needle, from)
-                if (start < 0) break
-                from = start + needle.length
-                var depth = 1
-                var index = from
-                while (index < text.length && depth > 0) {
-                    when (text[index]) {
-                        '(' -> depth++
-                        ')' -> depth--
-                    }
-                    index++
-                }
-                sites += "${file.name}:${text.take(start).count { it == '\n' } + 1}" to
-                        text.substring(from, index - 1)
+            argumentTexts(code(text), text, needle).map { (start, arguments) ->
+                Call(file, text.take(start).count { it == '\n' } + 1, arguments)
             }
-            sites
         }
 
-    /** The first argument after [needle] in [text], qualified names and all. */
-    private fun argumentOf(text: String, needle: String): String? {
-        val after = text.substringAfter(needle, "")
-        if (after.isEmpty()) return null
-        return FIRST_ARGUMENT.find(after)?.groupValues?.get(1)
+    /** The argument text of every call to [needle] inside [text], for a call nested in another. */
+    private fun callsIn(text: String, needle: String): List<String> =
+        argumentTexts(code(text), text, needle).map { it.second }
+
+    /**
+     * `(offset of the call, its argument text)` for every call to [needle] in [masked], which
+     * must be [original] with every comment and string blanked out. The offsets come from the
+     * masked text so that a `(` in a comment is not a call, and the argument text comes from
+     * the original so that a failure can be read. A declaration is not a call, so
+     * `fun declaredFloat(key: String)` is not read as one - which matters here, because the
+     * declaration's own "arguments" are a parameter list and would name no key at all.
+     */
+    private fun argumentTexts(masked: String, original: String, needle: String): List<Pair<Int, String>> {
+        val calls = mutableListOf<Pair<Int, String>>()
+        var from = 0
+        while (true) {
+            val start = masked.indexOf(needle, from)
+            if (start < 0) break
+            from = start + needle.length
+            if (FUNCTION_DECLARATION.containsMatchIn(masked.substring(0, start))) continue
+            var depth = 1
+            var index = from
+            while (index < masked.length && depth > 0) {
+                when (masked[index]) {
+                    '(' -> depth++
+                    ')' -> depth--
+                }
+                index++
+            }
+            calls += start to original.substring(from, index - 1)
+        }
+        return calls
     }
 
-    /** The value of `name = …` inside a call's argument text. */
-    private fun named(arguments: String, name: String): String? =
-        Regex("$name\\s*=\\s*([\\w.]+(?:\\([^()]*\\))?)").find(arguments)?.groupValues?.get(1)
+    /** The first argument of a call's argument text, whether or not it was named. */
+    private fun firstArgumentOf(arguments: String): String? =
+        splitArguments(arguments).firstOrNull()?.second
+
+    /** The `name = value` pairs of a call's argument text; positional arguments are dropped. */
+    private fun namedArgumentsOf(arguments: String): Map<String, String> =
+        splitArguments(arguments).mapNotNull { (name, value) -> if (name == null) null else name to value }
+            .toMap()
+
+    /** A call's argument text as `name = value` pairs, positional ones keyed by null. */
+    private fun splitArguments(arguments: String): List<Pair<String?, String>> {
+        val masked = code(arguments)
+        val parts = mutableListOf<String>()
+        var depth = 0
+        var start = 0
+        for (index in arguments.indices) {
+            when (masked[index]) {
+                '(', '[', '{' -> depth++
+                ')', ']', '}' -> depth--
+                // A trailing comma leaves an empty part behind, and the loop below drops it.
+                ',' -> if (depth == 0) {
+                    parts += arguments.substring(start, index)
+                    start = index + 1
+                }
+            }
+        }
+        parts += arguments.substring(start)
+        return parts.map { part ->
+            val body = part.trim()
+            val named = NAMED_ARGUMENT.matchEntire(body)
+            if (named != null) named.groupValues[1] to named.groupValues[2].trim() else null to body
+        }.filter { (name, value) -> name != null || value.isNotEmpty() }
+    }
+
+    /**
+     * [text] with every comment and string literal replaced by spaces, so that indexes still
+     * line up and a bracket inside one of them cannot move a counter.
+     *
+     * Counting brackets in raw text is the kind of thing that works until someone writes a
+     * comment. A lone `)` - `"%d of %d)"`, or a `// (see #91)` - used to close the argument
+     * list early, and the failure then named the wrong argument on a call site that was
+     * entirely correct. A lone `(` went the other way and swallowed the next call site's
+     * arguments, which is worse: the assertion can be satisfied by a neighbouring slider.
+     * This file is a scanner over a source tree that is written by hand, and this branch adds
+     * a lot of prose inside argument lists, so the exposure is not hypothetical.
+     */
+    private fun code(text: String): String {
+        val out = StringBuilder(text)
+        var index = 0
+        while (index < text.length) {
+            val end = when {
+                text.startsWith("//", index) -> text.indexOf('\n', index).orEndAt(text.length)
+                text.startsWith("/*", index) -> text.indexOf(END_COMMENT, index + 2).orEndAt(text.length, 2)
+                text.startsWith(TRIPLE_QUOTE, index) ->
+                    text.indexOf(TRIPLE_QUOTE, index + 3).orEndAt(text.length, 3)
+                text[index] == '"' -> text.endOfLiteral(index, '"')
+                text[index] == '\'' -> text.endOfLiteral(index, '\'')
+                else -> -1
+            }
+            if (end < 0) {
+                index++
+            } else {
+                // Newlines stay, because a location is counted in them.
+                for (blanked in index until end) {
+                    if (out[blanked] != '\n') out[blanked] = ' '
+                }
+                index = end
+            }
+        }
+        return out.toString()
+    }
+
+    /** The end of the string or char literal starting at [start], its closing quote included. */
+    private fun String.endOfLiteral(start: Int, quote: Char): Int {
+        var index = start + 1
+        while (index < length && this[index] != quote) index += if (this[index] == '\\') 2 else 1
+        return if (index < length) index + 1 else length
+    }
+
+    /** [this] when it is a found index, otherwise [length] plus [tail] - a literal running to the end. */
+    private fun Int.orEndAt(length: Int, tail: Int = 0): Int = if (this < 0) length else this + tail
 
     /** `const val NAME = "value"` pairs, which is how a preference key reaches the map. */
     private fun constantStringsIn(file: File): Map<String, String> =
@@ -213,7 +317,7 @@ class HailDataTest {
         )
     }
 
-    private data class CallSite(val file: File, val line: Int, val text: String) {
+    private data class Call(val file: File, val line: Int, val arguments: String) {
         val location: String get() = "${file.name}:$line"
     }
 
@@ -224,6 +328,9 @@ class HailDataTest {
         const val FLOAT_DEFAULT = "floatDefault("
         const val DECLARED_FLOAT = "declaredFloat("
         const val SLIDER_PREFERENCE = "sliderPreference("
-        val FIRST_ARGUMENT = Regex("^\\s*([\\w.]+)\\s*[,)]")
+        const val TRIPLE_QUOTE = "\"\"\""
+        const val END_COMMENT = "*/"
+        val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
+        val NAMED_ARGUMENT = Regex("(\\w+)\\s*=(?!=)([\\s\\S]*)")
     }
 }
