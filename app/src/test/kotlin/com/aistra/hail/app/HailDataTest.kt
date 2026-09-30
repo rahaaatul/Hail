@@ -115,19 +115,25 @@ class HailDataTest {
         // Stated over every eager initializer rather than over the declarations this branch
         // happens to have touched, so it also covers the next value somebody adds that needs
         // the application, and does not care how that value is spelled: a type annotation, any
-        // modifier, `var`, any indentation, and a value continued over several lines either by
-        // a trailing operator or a leading one. A check that recognises one spelling of an
+        // modifier, an annotation on the same line as the keyword, `var`, any indentation, and a
+        // value continued over several lines either by a trailing operator or a leading one, or
+        // by a head with no value behind it yet. A check that recognises one spelling of an
         // eager initializer is a check on the spelling.
         //
-        // The one thing it does not look at is a local inside a lambda, which is not an object
-        // initializer either - it is scanned along with everything else, and this file has no
-        // such local naming the application, which is the only reason that costs nothing.
+        // A local inside a function is not looked at, and the difference is not tidiness: it
+        // runs when the function runs, so `val path = app.filesDir` inside `saveAppsLocked` is
+        // correct code, and reporting it would be reporting a rule the invariant does not have.
+        // An `init` block is the other kind of block that is not a function body, and its values
+        // are eager by definition, so it stays in scope.
         val source = hailDataSource()
-        val declared = withoutComments(source.readText())
+        val declared = withoutFunctionBodies(withoutComments(source.readText()))
         // A declaration inside a parameter list is a parameter, not an initializer - and it
         // sits at eight spaces, so the pattern cannot tell it from a member by indentation
-        // alone. Parentheses can: a parameter is always inside one.
-        val parameterised = insideParentheses(code(declared))
+        // alone. The header it sits under can: a parameter list belongs to a `fun` or a class
+        // header, and nothing else. "Inside some parenthesis" would be the wrong test twice
+        // over - it is true of a member of an object expression passed as an argument, which
+        // is exactly the thing to catch, and false of nothing that matters.
+        val parameterised = parameters(code(declared))
         val eager = EAGER_PROPERTY.findAll(declared).mapNotNull { declaration ->
             if (parameterised[declaration.range.first]) return@mapNotNull null
             // A computed property runs its body on every access and captures nothing at
@@ -187,16 +193,25 @@ class HailDataTest {
     /**
      * Whether the value read so far is finished, which is three ways of not being finished:
      * it ends in something a value cannot end in, the next line leads with an operator, or it
-     * has opened a branch whose `else` has not arrived. All three are spellings this codebase
-     * uses for a long initializer, and a check that misses one reports a `dir` as clean.
+     * ends on a word that cannot end an expression - a head with no value behind it yet, or an
+     * `else` whose branch has not arrived. All three are spellings this codebase uses for a
+     * long initializer, and a check that misses one reports a `dir` as clean.
+     *
+     * The patterns run over the value with its literals blanked, so the text of a `String`
+     * cannot decide where a value ends; only the final character is read raw, because a
+     * literal that ends on a quote ends there.
      */
     private fun awaitsRest(value: String, text: String, nextLine: Int): Boolean {
         val last = value.trimEnd().lastOrNull() ?: return true
         if (last in UNFINISHED || leadsWithOperator(text, nextLine)) return true
         // A line that ends on a word which cannot end an expression - `else` with its branch
         // still to come - and a branch opened with no `else` seen yet, are the same fact.
-        if (DANGLING_KEYWORD.containsMatchIn(value)) return true
-        return BRANCH_OPENING.containsMatchIn(value) && !ELSE_BRANCH.containsMatchIn(value)
+        if (DANGLING_KEYWORD.containsMatchIn(code(value))) return true
+        // A head with no value behind it yet: `if (x)` on its own line is a decision waiting
+        // for its branches, and only `if` is closed by an `else` - a brace-less `when`, a
+        // `try` and a `do` are closed by something else or by nothing at all, so pairing
+        // them with `else` sent the read to the end of the file.
+        return AWAITING_HEAD.containsMatchIn(code(value))
     }
 
     /**
@@ -212,18 +227,69 @@ class HailDataTest {
         return text[index] in LEADING || text.startsWith(ELSE, index)
     }
 
-    /** For each character of [text], whether it is inside a parenthesis or a bracket. */
-    private fun insideParentheses(text: String): BooleanArray {
+    /**
+     * [text] with the body of every function replaced by spaces, same length throughout.
+     *
+     * What is left is everything that can be resolved while the object initializes: its own
+     * members, those of a nested object or class, and those of an `init` block.
+     */
+    private fun withoutFunctionBodies(text: String): String {
+        val code = code(text)
+        val blanked = StringBuilder(text)
+        for (fun in FUNCTIONS.findAll(code)) {
+            val open = code.indexOf(BRACE, fun.range.last)
+            if (open < 0) continue
+            val close = closingBrace(code, open) ?: continue
+            for (index in open..close) if (blanked[index] != '\n') blanked.setCharAt(index, ' ')
+        }
+        return blanked.toString()
+    }
+
+    /** The offset of the `}` matching the `{` at [open], or null when there is none. */
+    private fun closingBrace(text: String, open: Int): Int? {
+        var depth = 0
+        for (index in open until text.length) {
+            when (text[index]) {
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) return index
+                }
+            }
+        }
+        return null
+    }
+
+    /** For each character of [text], whether it is inside a function's or class's parameters. */
+    private fun parameters(text: String): BooleanArray {
         val inside = BooleanArray(text.length)
         var depth = 0
+        val opening = ArrayDeque<Int>()
         for (index in text.indices) {
             when (text[index]) {
-                '(', '[' -> depth++
-                ')', ']' -> depth--
+                '(', '[' -> {
+                    opening.addLast(index)
+                    depth++
+                }
+                ')', ']' -> {
+                    opening.removeLastOrNull()
+                    depth--
+                }
             }
-            inside[index] = depth > 0
+            inside[index] = depth > 0 && opening.lastOrNull()?.let { isHeader(text, it) } == true
         }
         return inside
+    }
+
+    /**
+     * Whether the parenthesis at [open] opens a parameter list, which is to say whether a
+     * `fun` or a class header is what it belongs to - `fun range(from: Float, to: Float)`
+     * and `private data class Slider(key: String, value: Float = 0f)`, but not the arguments
+     * of `Config(`.
+     */
+    private fun isHeader(text: String, open: Int): Boolean {
+        val start = HEADER_START.find(text, open - 1)?.range?.last?.plus(1) ?: return false
+        return HEADER.containsMatchIn(text.substring(start, open))
     }
 
     /** The 1-based line [offset] falls on. */
@@ -499,7 +565,7 @@ class HailDataTest {
         // its own line simply does not match, instead of reaching down the file to whatever `=`
         // comes next and reporting a span that has nothing to do with it.
         private val EAGER_PROPERTY =
-            Regex("^[ \\t]+(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
+            Regex("^[ \\t]+(?:@[\\w.]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
         private val GETTER = Regex("\\bget\\s*\\(")
         // A reference to the application from inside a string template, which masking erases.
         private val TEMPLATE_REFERENCE = Regex("\\$\\{[^}]*?(?<![\\w/])app(?![\\w])")
@@ -507,8 +573,9 @@ class HailDataTest {
         private val LEADING = charArrayOf('(', '[', '.', '+', '-', '*', '/', '%', '?', ':', '&', '|', '=', '<', '>', '!')
         private const val ELSE = "else"
         private val DANGLING_KEYWORD = Regex("\\b(?:else|if|when|try|do|return|throw|in|by)\\s*$")
-        private val BRANCH_OPENING = Regex("\\b(?:if|when|try|do)\\s*[({]")
-        private val ELSE_BRANCH = Regex("\\belse\\b")
+        private const val BRACE = '{'
+        private val FUNCTIONS = Regex("\\bfun\\b")
+        private val AWAITING_HEAD = Regex("\\b(?:if|when|while)\\s*\\([^()]*\\)\\s*$")
         // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
         private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
