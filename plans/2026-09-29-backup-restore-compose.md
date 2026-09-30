@@ -2,6 +2,10 @@
 
 Status: proposal, not started. Branch not yet cut.
 
+**The screen design now lives in [2026-09-30-backup-restore-ui-design.md](2026-09-30-backup-restore-ui-design.md)** — wireframes, state model, behaviour rules, copy, and the phasing. The "How it should look" sketch below is the first draft and is kept for history; the design document supersedes it wherever they differ.
+
+**Defect 1 of three is already fixed.** #92 (the discarded backup `Result`) is fixed by PR #109, along with #83 and #91. Defects 2 (the leaked staged restore file) and 3 (`pendingBackupOptions`) are untouched, and they are what the first PR below is for.
+
 ## Premise correction — read this first
 
 **Backup and restore are already in Settings, not the Home tab.** On `main`
@@ -38,12 +42,12 @@ spinner, `R.layout.dialog_progress`, which also displays the app slogan.
 
 Three are real and confirmed against `main`. Two of them are already filed.
 
-1. **The backup `Result` is discarded — issue #92.** `backupLauncher` wraps the
+1. **The backup `Result` is discarded — issue #92. FIXED IN PR #109.** `backupLauncher` wraps the
    call in `runCatching { HBackup.backup(ctx, file, ...) }`, but `HBackup.backup`
    returns `Result<Unit>` and never throws. A `Result.failure` therefore falls
    straight through, the copy to the user's URI still runs, `onSuccess` fires,
    and the user is told `Exported: backup-….zip` for a backup that failed. This
-   was how the `mkdirs()` bug (#83) stayed invisible for so long.
+   was how the `mkdirs()` bug (#83) stayed invisible for so long. PR #109 resolves the result and deletes the staged cache file on failure, so the copy no longer runs and no success toast appears for a failed backup.
 2. **The staged restore file leaks.** `showRestoreDialog` sets
    `restoreStarted = true` at 801, then returns early at 810 when nothing is
    checked. The dismiss listener at 835 only deletes the file when
@@ -149,10 +153,11 @@ additionally disabled while no archive is loaded.
 - `stringResource` for every user-visible string. The only hardcoded literals in
   the Compose codebase today are two `"%.0f".format(it)` slider formatters, and
   that is not a precedent worth following.
-- **Removed:** `MaterialAlertDialogBuilder` in both flows, `R.layout.dialog_progress`,
-  and the `showBackupDialog` / `showRestoreDialog` functions. That layout file and
-  the `app_slogan` text it carried are no longer used by anything — verify before
-  deleting.
+- **Removed:** `MaterialAlertDialogBuilder` in both flows, and the
+  `showBackupDialog` / `showRestoreDialog` functions.
+- **Kept:** `R.layout.dialog_progress` and the `app_slogan` it carries — **verified,
+  not assumed:** `AppsFragment.kt:63` still opens it while the app list is loading.
+  The slogan moves into the About screen only if that call goes too.
 - **Stays View-based, unavoidably:** the SAF launchers. `CreateDocument` and
   `OpenDocument` must be registered with `registerForActivityResult` on a
   Fragment or ComponentActivity, so `BackupRestoreFragment` remains the host and
@@ -166,15 +171,16 @@ additionally disabled while no archive is loaded.
 
 Three PRs, each mergeable on its own.
 
-**PR 1 — fix the defects, no UI change.** Inspect the `Result` from
-`HBackup.backup` before copying (#92), delete the staged file on the
-all-unchecked restore path, clear `pendingBackupOptions` after use. Small, and it
-makes the flow honest while the UI is still the old one. Closes #92.
+**PR 1 — fix the two remaining defects, no UI change.** Delete the staged file on
+the all-unchecked restore path, and clear `pendingBackupOptions` after use (or drop
+the field, which the design does). Small, and it stops the leak while the UI is
+still the old one. #92 came in with PR #109, so this closes nothing new.
 
-**PR 2 — the Compose screen and destination.** The bulk. The post-restore
-refresh replaces the `parentFragmentManager.fragments` walk with a signal the
-ViewModel exposes and `PagerFragment` observes, or a single shared repository
-write that the app list already reads.
+**PR 2 — the Compose screen and destination.** The bulk; the design document is
+the specification. The post-restore refresh replaces the
+`parentFragmentManager.fragments` walk with `AppMetaCache.invalidateAll()`, whose
+`revision` `StateFlow` `PagerFragment.kt:121` already collects — an existing
+signal, not a new one.
 
 **PR 3 — tests.** See below. Kept separate so PR 2 is not held up on adding a
 test dependency.
