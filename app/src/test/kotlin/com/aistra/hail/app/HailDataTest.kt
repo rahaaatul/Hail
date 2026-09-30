@@ -10,21 +10,6 @@ import org.junit.Test
 
 class HailDataTest {
 
-    companion object {
-        /**
-         * Before any test, and not in `@Before`: `HailData` is an object whose initializers
-         * name `app.filesDir`, so the first class to touch it decides what the whole JVM
-         * sees - both whether it initializes at all and which directory it froze onto. See
-         * `installHailDataFilesDirForTests`, and the same call in `HBackupTest`, which is
-         * just as capable of being first.
-         */
-        @BeforeClass
-        @JvmStatic
-        fun installFilesDir() {
-            installHailDataFilesDirForTests()
-        }
-    }
-
     @Test
     fun `working mode default is correct`() {
         assertEquals("default", HailData.MODE_DEFAULT)
@@ -321,16 +306,30 @@ class HailDataTest {
         val location: String get() = "${file.name}:$line"
     }
 
-    private companion object {
-        const val HAIL_DATA_PATH = "com/aistra/hail/app/HailData.kt"
-        const val HAIL_DATA_FILE_NAME = "HailData.kt"
-        const val GET_FLOAT = "getFloat("
-        const val FLOAT_DEFAULT = "floatDefault("
-        const val DECLARED_FLOAT = "declaredFloat("
-        const val SLIDER_PREFERENCE = "sliderPreference("
-        const val TRIPLE_QUOTE = "\"\"\""
-        const val END_COMMENT = "*/"
-        val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
-        val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
+    companion object {
+
+        /**
+         * Before any test, and not in `@Before`: `HailData` is an object whose initializers
+         * name `app.filesDir`, so the first class to touch it decides what the whole JVM
+         * sees - both whether it initializes at all and which directory it froze onto. See
+         * `installHailDataFilesDirForTests`, and the same call in `HBackupTest`, which is
+         * just as capable of being first.
+         */
+        @BeforeClass
+        @JvmStatic
+        fun installFilesDir() {
+            installHailDataFilesDirForTests()
+        }
+
+        private const val HAIL_DATA_PATH = "com/aistra/hail/app/HailData.kt"
+        private const val HAIL_DATA_FILE_NAME = "HailData.kt"
+        private const val GET_FLOAT = "getFloat("
+        private const val FLOAT_DEFAULT = "floatDefault("
+        private const val DECLARED_FLOAT = "declaredFloat("
+        private const val SLIDER_PREFERENCE = "sliderPreference("
+        private const val TRIPLE_QUOTE = "\"\"\""
+        private const val END_COMMENT = "*/"
+        private val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
+        private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
     }
 }
