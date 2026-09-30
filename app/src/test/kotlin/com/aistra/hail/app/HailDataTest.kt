@@ -281,10 +281,10 @@ class HailDataTest {
 
     /**
      * [this] when it is a found index, otherwise [length] - a comment or literal that runs to
-     * the end of the text. Clamped to [length] even when it was found: an unterminated `/*`
-     * or `"""` has no closing delimiter to add [tail] to, and the alternative to blanking
-     * the rest is an index past the end of the buffer being blanked, thrown from inside the
-     * helper with no hint of which file was being scanned.
+     * the end of the text. Clamped to [length] even when it was found: an unterminated block
+     * comment or raw string has no closing delimiter to add [tail] to, and the alternative to
+     * blanking the rest is an index past the end of the buffer being blanked, thrown from
+     * inside the helper with no hint of which file was being scanned.
      */
     private fun Int.orEndAt(length: Int, tail: Int = 0): Int =
         (if (this < 0) length else this + tail).coerceAtMost(length)

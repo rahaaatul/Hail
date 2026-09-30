@@ -30,7 +30,7 @@ import java.nio.file.Files
  */
 fun installHailDataFilesDirForTests() {
     val app = mockk<HailApp>(relaxed = true)
-    every { app.filesDir } returns filesDirForTheLengthOfThisJvm()
+    every { app.filesDir } returns filesDirForTheLengthOfThisJvm
     HailApp.setAppForTest(app)
     // Any read of a non-const member runs the static initializer, and the statement has to
     // mean something so that nobody "cleans it up" as a no-op later.
