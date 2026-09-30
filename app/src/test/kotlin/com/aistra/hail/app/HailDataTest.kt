@@ -103,6 +103,33 @@ class HailDataTest {
     }
 
     @Test
+    fun `no value HailData initializes names the application`() {
+        // The invariant behind `dir` being resolved on first use (HailData.kt:232), and the
+        // only thing in this file that keeps it that way. An ordinary `val` is resolved while
+        // the object initializes, so it captures whatever `app` was at the moment something
+        // first touched HailData - which in the app is onCreate, and in a JVM test is whichever
+        // mock that test class happened to install. Reverting `dir` to a plain `val` restores
+        // exactly that cross-class ordering dependency, and nothing else in the suite notices:
+        // the suites that would suffer all mock the calls that would reach the path.
+        //
+        // Stated over every eager initializer rather than over the three declarations, so it
+        // also covers the next value somebody adds that needs the application, and so it does
+        // not care whether that value is `by lazy` or a computed property.
+        val source = hailDataSource()
+        val eager = source.readLines().withIndex().mapNotNull { (index, line) ->
+            val declared = withoutComments(line)
+            val declaration = EAGER_PROPERTY.find(declared) ?: return@mapNotNull null
+            val initializer = declared.substring(declaration.range.last + 1)
+            if (APPLICATION.containsMatchIn(initializer)) "${source.name}:${index + 1} ${line.trim()}" else null
+        }
+        assertTrue(
+            "these values capture the application while HailData initializes, so they keep " +
+                "whatever was installed at that moment for every later test in the JVM: $eager",
+            eager.isEmpty()
+        )
+    }
+
+    @Test
     fun `every float slider takes its bounds and default from the declaration`() {
         // The screen side of the same declaration, and the failure it prevents is silent
         // rather than wrong: a slider left with literal bounds narrower than the map's lets
@@ -215,15 +242,31 @@ class HailDataTest {
      * The text after `name = ` on its first line, for a message that has to be readable.
      *
      * Read through [code] like every other search on this call, so a comment placed before
-     * the argument cannot supply the quoted value and hide the one that actually failed. A
-     * string literal would be blanked here too, which costs a message its quotes in the one
-     * case where a quoted string is the value - worth it, since the alternative is a
-     * diagnostic that describes the file rather than the mistake.
+     * the argument cannot supply the quoted value and hide the one that actually failed.
+     *
+     * The masking erases a string literal, and an erased value is indistinguishable from an
+     * absent one - so when the masked read comes back empty the raw text is quoted instead.
+     * Without that, a value that *is* a literal would be reported as missing, which is the one
+     * thing a failure message must not do. The residual is that a comment can be quoted in
+     * exactly the case where there is no real value to quote, which is also the case the
+     * message already says has no value.
      */
-    private fun Call.valueOf(name: String): String =
-        Regex("\\b${Regex.escape(name)}\\s*=\\s*([^\\n]*)").find(code(arguments))
-            ?.groupValues?.get(1)?.trim()
-            ?.takeIf { it.isNotEmpty() } ?: "no $name"
+    private fun Call.valueOf(name: String): String {
+        val afterName = Regex("\\b${Regex.escape(name)}\\s*=\\s*([^\\n]*)")
+        val masked = afterName.find(code(arguments))?.groupValues?.get(1)?.trim()
+        if (!masked.isNullOrEmpty()) return masked
+        val raw = afterName.find(arguments)?.groupValues?.get(1)?.trim()
+        return if (raw.isNullOrEmpty()) "no $name" else raw
+    }
+
+    /**
+     * [text] with every comment replaced by spaces and every string literal kept, which is what
+     * a search for a *name in a value* needs: `val dir = "${app.filesDir.path}/v1"` says `app`
+     * only inside a string literal, so blanking strings erases the very thing being looked for.
+     * A URL that happens to contain `app` is not a reference, which is what [APPLICATION] is
+     * for. Only the bracket-counting paths may not use this.
+     */
+    private fun withoutComments(text: String): String = blank(text, keepStrings = true)
 
     /**
      * [text] with every comment and string literal replaced by spaces, so that indexes still
@@ -237,13 +280,17 @@ class HailDataTest {
      * This file is a scanner over a source tree that is written by hand, and this branch adds
      * a lot of prose inside argument lists, so the exposure is not hypothetical.
      */
-    private fun code(text: String): String {
+    private fun code(text: String): String = blank(text, keepStrings = false)
+
+    private fun blank(text: String, keepStrings: Boolean): String {
         val out = StringBuilder(text)
         var index = 0
         while (index < text.length) {
             val end = when {
+                keepStrings && (text[index] == '"' || text[index] == '\'') && !text.startsWith(TRIPLE_QUOTE, index) -> -1
                 text.startsWith("//", index) -> text.indexOf('\n', index).orEndAt(text.length)
                 text.startsWith("/*", index) -> text.indexOf(END_COMMENT, index + 2).orEndAt(text.length, 2)
+                keepStrings && text.startsWith(TRIPLE_QUOTE, index) -> -1
                 text.startsWith(TRIPLE_QUOTE, index) ->
                     text.indexOf(TRIPLE_QUOTE, index + 3).orEndAt(text.length, 3)
                 text[index] == '"' -> text.endOfLiteral(index, '"')
@@ -322,6 +369,9 @@ class HailDataTest {
         private const val TRIPLE_QUOTE = "\"\"\""
         private const val END_COMMENT = "*/"
         private val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
+        private val EAGER_PROPERTY = Regex("^\\s*(?:private\\s+)?val\\s+\\w+\\s*=(?!=)")
+        // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
+        private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
     }
 }

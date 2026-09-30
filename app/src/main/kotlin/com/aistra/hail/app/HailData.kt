@@ -223,15 +223,19 @@ object HailData {
     val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
     val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
 
-    // Resolved when they are first needed rather than while this object initializes, because
-    // the paths name `app`, and an object initializer that names the application captures
-    // whatever the application was at the moment something first touched HailData. In the app
-    // that is onCreate setting `app` (HailApp.kt:32) before any screen or service can reach
-    // here, so the eager version happened to work; on a JVM test it does not, where a relaxed
-    // mock is often installed first and `filesDir.path` is whatever the mock answers with.
+    // Resolved when first needed rather than while this object initializes. An initializer
+    // that names the application captures whatever the application happened to be at the
+    // moment something first touched HailData, and in the app that is onCreate setting `app`
+    // (HailApp.kt:32) before any screen or service can reach here - so the eager version
+    // worked, which is why nobody had a reason to look at it. On a JVM test it does not: a
+    // relaxed mock is often installed first, and `filesDir.path` is whatever the mock
+    // answers with, which freezes the path for every test that follows.
     private val dir by lazy { "${app.filesDir.path}/v1" }
-    private val appsPath by lazy { "$dir/apps.json" }
-    private val tagsPath by lazy { "$dir/tags.json" }
+
+    // Derived rather than lazy: `dir` already caches, and these are on the write path, where
+    // every save reads them.
+    private val appsPath get() = "$dir/apps.json"
+    private val tagsPath get() = "$dir/tags.json"
     private val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
