@@ -236,8 +236,8 @@ class HailDataTest {
     private fun withoutFunctionBodies(text: String): String {
         val code = code(text)
         val blanked = StringBuilder(text)
-        for (fun in FUNCTIONS.findAll(code)) {
-            val open = code.indexOf(BRACE, fun.range.last)
+        for (function in FUNCTIONS.findAll(code)) {
+            val open = code.indexOf(BRACE, function.range.last)
             if (open < 0) continue
             val close = closingBrace(code, open) ?: continue
             for (index in open..close) if (blanked[index] != '\n') blanked.setCharAt(index, ' ')
