@@ -9,8 +9,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.Row
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsStateWithLifecycle
@@ -21,14 +25,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aistra.hail.R
-import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.BackupCategory
 import com.aistra.hail.backup.BackupPreview.canStartBackup
 import com.aistra.hail.backup.Phase
 import com.aistra.hail.ui.theme.AppTheme
+import com.aistra.hail.ui.theme.MaterialTheme
 
 @Composable
 fun BackupRestoreScreen(
@@ -37,6 +42,8 @@ fun BackupRestoreScreen(
     val context = LocalContext.current
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     val restoreState by viewModel.restoreState.collectAsStateWithLifecycle()
+
+    val canBackup = canStartBackup(backupState.options)
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -49,8 +56,8 @@ fun BackupRestoreScreen(
         item {
             Text(
                 text = stringResource(R.string.title_backup),
-                style = HailData.MaterialTheme.typography.titleSmall,
-                color = HailData.MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -92,12 +99,46 @@ fun BackupRestoreScreen(
             )
         }
 
+        // Backup section action area: button / progress / result / disabled reason
+        when (backupState.phase) {
+            Phase.Idle -> {
+                item {
+                    BackupActionButton(
+                        text = stringResource(R.string.action_create_backup),
+                        enabled = canBackup,
+                        onClick = { viewModel.startBackup(context) },
+                        disabledReason = if (!canBackup) stringResource(R.string.msg_no_items_to_select) else null
+                    )
+                }
+                if (!canBackup && backupState.message != null) {
+                    item {
+                        DisabledReasonText(text = backupState.message!!)
+                    }
+                }
+            }
+            Phase.Working -> {
+                item {
+                    ProgressRow(
+                        label = stringResource(R.string.msg_exporting, backupState.message ?: "")
+                    )
+                }
+            }
+            Phase.Done, Phase.Failed -> {
+                item {
+                    ResultLine(
+                        phase = backupState.phase,
+                        message = backupState.message ?: ""
+                    )
+                }
+            }
+        }
+
         // Restore section header
         item {
             Text(
-                text = stringResource(R.string.title_restore),
-                style = HailData.MaterialTheme.typography.titleSmall,
-                color = HailData.MaterialTheme.colorScheme.primary
+                text = stringResource(R.string.action_restore),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -129,4 +170,75 @@ private fun BackupOptionRow(
             )
         }
     )
+}
+
+@Composable
+private fun BackupActionButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    disabledReason: String? = null
+) {
+    Button(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        enabled = enabled
+    ) {
+        Text(text = text)
+    }
+    if (!enabled && disabledReason != null) {
+        DisabledReasonText(text = disabledReason)
+    }
+}
+
+@Composable
+private fun DisabledReasonText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = dimensionResource(R.dimen.padding_small))
+    )
+}
+
+@Composable
+private fun ProgressRow(label: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(20.dp),
+            strokeWidth = 2.dp
+        )
+        androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.foundation.layout.Modifier.padding(start = dimensionResource(R.dimen.padding_medium)))
+        Text(text = label)
+    }
+}
+
+@Composable
+private fun ResultLine(
+    phase: Phase,
+    message: String
+) {
+    val isSuccess = phase == Phase.Done
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (isSuccess) Icons.Outlined.CheckCircle else Icons.Outlined.ErrorOutline,
+            contentDescription = null,
+            tint = if (isSuccess) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+        )
+        androidx.compose.foundation.layout.Spacer(modifier = androidx.compose.foundation.layout.Modifier.padding(start = dimensionResource(R.dimen.padding_medium)))
+        Text(
+            text = message,
+            color = if (isSuccess) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+            maxLines = 3,
+            overflow = androidx.compose.ui.text.TextOverflow.Ellipsis
+        )
+    }
 }
