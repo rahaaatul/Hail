@@ -124,6 +124,69 @@ object HailData {
     const val SKIP_FOREGROUND_APP = "skip_foreground_app"
     const val SKIP_NOTIFYING_APP = "skip_notifying_app"
     const val DYNAMIC_SHORTCUT_ACTION = "dynamic_shortcut_action"
+
+    /** A preference the app stores as a [Float], with everything the settings screen offers. */
+    data class FloatPreference(
+        /** The bounds a slider for this key allows, inclusive at both ends. */
+        val range: ClosedFloatingPointRange<Float>,
+        /** What the app falls back to while the key has never been stored. */
+        val default: Float,
+    )
+
+    /**
+     * Every preference the app stores as a Float, with the range its slider allows and
+     * the default its getter falls back to.
+     *
+     * This is the single declaration of that surface, and it is declared in one place
+     * because three call sites used to state the same three facts separately: the
+     * settings screen asked for a slider's range, the getters carried their own default,
+     * and the backup reader carried a hand-maintained list of which keys are Floats. Any
+     * of them could drift and nothing would notice, and a key that drifted out of the
+     * reader's list is the #91 mis-typing all over again - the reader restores it with
+     * the type it finds rather than the type the app means, and a bare whole number then
+     * goes in as an Int and stays there on every later restore.
+     *
+     * Both sides read this map rather than restating it, and both are checked rather
+     * than assumed. A lookup for a key the map does not list throws instead of inventing
+     * a default, so the screen and the getters cannot quietly disagree with the reader
+     * about a key. What no map can do is make the compiler object to a future literal,
+     * so the read side is pinned structurally: [declaredFloat] is the only call to
+     * `sp.getFloat` the app is allowed, and a test fails if a second one appears. That
+     * is what lets HBackup treat a key in here as a Float and refuse anything outside its
+     * range.
+     */
+    val FLOAT_PREFERENCES: Map<String, FloatPreference> = mapOf(
+        HOME_FONT_SIZE to FloatPreference(range = 11f..16f, default = 14f),
+        AUTO_FREEZE_DELAY to FloatPreference(range = 0f..30f, default = 0f),
+    )
+
+    /** The Float preference [key] names, or a loud failure when it is not a declared one. */
+    fun floatPreference(key: String): FloatPreference =
+        FLOAT_PREFERENCES[key]
+            ?: error("'$key' is not a declared Float preference; add it to FLOAT_PREFERENCES")
+
+    /** The slider range for a Float preference declared in [FLOAT_PREFERENCES]. */
+    fun floatRange(key: String): ClosedFloatingPointRange<Float> = floatPreference(key).range
+
+    /**
+     * The value a Float preference falls back to before it has ever been stored. The
+     * getters and each slider's own `defaultValue` both read it from here, so the two
+     * cannot state different defaults for one key.
+     */
+    fun floatDefault(key: String): Float = floatPreference(key).default
+
+    /**
+     * The stored value of a declared Float preference, or the default it declares.
+     *
+     * The only call to `sp.getFloat` the app makes, and deliberately so: a getter that
+     * reached for the preference directly could state a default this map does not hold,
+     * and the backup reader would then treat its key as undeclared - which is #91 again
+     * under a different key. [floatDefault] throws for a key the map does not list, so a
+     * new read is a deliberate edit to this file, and
+     * `every float read in the app goes through the declared default` fails if a second
+     * `sp.getFloat` call turns up anywhere under `src/main/kotlin`.
+     */
+    private fun declaredFloat(key: String): Float = sp.getFloat(key, floatDefault(key))
     val DYNAMIC_SHORTCUT_ACTIONS = listOf(
         ACTION_NONE,
         ACTION_FREEZE_ALL,
@@ -147,22 +210,32 @@ object HailData {
     val grayscaleIcon get() = sp.getBoolean(GRAYSCALE_ICON, true)
     val compactIcon get() = sp.getBoolean(COMPACT_ICON, false)
     val synthesizeAdaptiveIcons get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
-    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, 14f)
+    val homeFontSize get() = declaredFloat(HOME_FONT_SIZE)
     val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, false)
     val nineKeySearch get() = sp.getBoolean(NINE_KEY_SEARCH, false)
     val tileAction get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
     var autoFreezeAfterLock
         get() = sp.getBoolean(AUTO_FREEZE_AFTER_LOCK, false)
         set(value) = sp.edit { putBoolean(AUTO_FREEZE_AFTER_LOCK, value) }
-    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, 0f).toLong()
+    val autoFreezeDelay get() = declaredFloat(AUTO_FREEZE_DELAY).toLong()
     val skipWhileCharging get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
     val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
     val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
     val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
 
-    private val dir = "${app.filesDir.path}/v1"
-    private val appsPath = "$dir/apps.json"
-    private val tagsPath = "$dir/tags.json"
+    // Resolved when first needed rather than while this object initializes. An initializer
+    // that names the application captures whatever the application happened to be at the
+    // moment something first touched HailData, and in the app that is onCreate setting `app`
+    // (HailApp.kt:32) before any screen or service can reach here - so the eager version
+    // worked, which is why nobody had a reason to look at it. On a JVM test it does not: a
+    // relaxed mock is often installed first, and `filesDir.path` is whatever the mock
+    // answers with, which freezes the path for every test that follows.
+    private val dir by lazy { "${app.filesDir.path}/v1" }
+
+    // Derived rather than lazy: `dir` already caches, and these are on the write path, where
+    // every save reads them.
+    private val appsPath get() = "$dir/apps.json"
+    private val tagsPath get() = "$dir/tags.json"
     private val checkedListLock = Object()
 
     val checkedList: MutableList<AppInfo> by lazy {
