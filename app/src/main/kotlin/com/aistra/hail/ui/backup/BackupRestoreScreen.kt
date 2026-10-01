@@ -166,23 +166,24 @@ fun BackupRestoreScreen(
                 }
             }
             is RestoreState.Loaded -> {
+                val loadedState = restoreState
                 item {
                     RestoreFileSlotLoaded(
-                        state = restoreState,
+                        state = loadedState,
                         onChangeClick = { viewModel.onChangeArchiveClick() },
                         context = context
                     )
                 }
                 // Restore entry rows
-                restoreState.entries.forEach { entry ->
+                loadedState.entries.forEach { entry ->
                     item {
                         RestoreEntryRow(
                             entry = entry,
                             checked = when (entry.category) {
-                                BackupCategory.APPS -> restoreState.options.apps
-                                BackupCategory.WHITELIST -> restoreState.options.whitelist
-                                BackupCategory.ACTIONS -> restoreState.options.actions
-                                BackupCategory.SETTINGS -> restoreState.options.settings
+                                BackupCategory.APPS -> loadedState.options.apps
+                                BackupCategory.WHITELIST -> loadedState.options.whitelist
+                                BackupCategory.ACTIONS -> loadedState.options.actions
+                                BackupCategory.SETTINGS -> loadedState.options.settings
                             },
                             onCheckedChange = { viewModel.onRestoreOptionChange(entry.category, it) },
                             enabled = entry.present,
@@ -191,8 +192,8 @@ fun BackupRestoreScreen(
                     }
                 }
                 // Restore section action area
-                val canRestore = canStartRestore(restoreState)
-                when (restoreState.phase) {
+                val canRestore = canStartRestore(loadedState)
+                when (loadedState.phase) {
                     Phase.Idle -> {
                         item {
                             RestoreActionButton(
@@ -202,24 +203,24 @@ fun BackupRestoreScreen(
                                 disabledReason = if (!canRestore) stringResource(R.string.msg_no_items_to_select) else null
                             )
                         }
-                        if (!canRestore && restoreState.message != null) {
+                        if (!canRestore && loadedState.message != null) {
                             item {
-                                DisabledReasonText(text = restoreState.message!!)
+                                DisabledReasonText(text = loadedState.message!!)
                             }
                         }
                     }
                     Phase.Working -> {
                         item {
                             ProgressRow(
-                                label = stringResource(R.string.msg_importing, restoreState.displayName)
+                                label = stringResource(R.string.msg_importing, loadedState.displayName)
                             )
                         }
                     }
                     Phase.Done, Phase.Failed -> {
                         item {
                             ResultLine(
-                                phase = restoreState.phase,
-                                message = restoreState.message ?: ""
+                                phase = loadedState.phase,
+                                message = loadedState.message ?: ""
                             )
                         }
                     }
@@ -411,7 +412,7 @@ private fun RestoreEntryRow(
             .toggleable(
                 value = checked,
                 role = Role.Checkbox,
-                onValueChange = if (enabled) onCheckedChange else null
+                onValueChange = if (enabled) onCheckedChange else { }
             ),
         headlineContent = { Text(text = categoryName) },
         supportingContent = { Text(text = supportingText, color = supportingColor) },
