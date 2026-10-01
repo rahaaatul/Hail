@@ -576,6 +576,8 @@ class HailDataTest {
         private const val BRACE = '{'
         private val FUNCTIONS = Regex("\\bfun\\b")
         private val AWAITING_HEAD = Regex("\\b(?:if|when|while)\\s*\\([^()]*\\)\\s*$")
+        private val HEADER = Regex("(?:fun|class|interface|object)\\s+[\\w<>,.? ]*$")
+        private val HEADER_START = Regex("(?m)^[ \\t]*(?:@\\S+[ \\t]*)*$|[;{}]")
         // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
         private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
