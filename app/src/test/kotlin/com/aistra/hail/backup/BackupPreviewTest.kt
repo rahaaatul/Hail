@@ -181,8 +181,8 @@ class BackupPreviewTest {
 
         assertEquals(4, entries.size)
         assertEquals(BackupCategory.APPS, entries[0].category)
-        assertTrue(entries[0].present, "zero-byte entry must be present")
-        assertEquals(0L, entries[0].sizeBytes, "zero-byte entry size must be 0")
+        assertTrue("zero-byte entry must be present", entries[0].present)
+        assertEquals("zero-byte entry size must be 0", 0L, entries[0].sizeBytes)
     }
 
     @Test
@@ -199,8 +199,8 @@ class BackupPreviewTest {
 
         assertEquals(4, entries.size)
         entries.forEach { entry ->
-            assertTrue(entry.present, "${entry.category} must be present despite directory entry")
-            assertTrue(entry.sizeBytes > 0, "${entry.category} size must be unchanged")
+            assertTrue("${entry.category} must be present despite directory entry", entry.present)
+            assertTrue("${entry.category} size must be unchanged", entry.sizeBytes > 0)
         }
     }
 
