@@ -97,7 +97,7 @@ class BackupPreviewTest {
     }
 
     @Test
-    fun `entriesOf returns present false and size 0 for missing settings.json`() {
+    fun `entriesOf returns present false and size 0 for missing settings_json`() {
         val zipFile = writeZip(
             "apps.json" to """["pkg1"]""",
             "whitelist.json" to """[]""",
