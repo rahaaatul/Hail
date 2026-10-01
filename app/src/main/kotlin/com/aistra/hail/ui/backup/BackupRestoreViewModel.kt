@@ -8,7 +8,6 @@ import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.lifecycle.viewModelScope
 import com.aistra.hail.R
-import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.BackupCategory
 import com.aistra.hail.backup.BackupEntry
 import com.aistra.hail.backup.Phase
@@ -16,7 +15,6 @@ import com.aistra.hail.backup.RestoreState
 import com.aistra.hail.backup.canStartBackup
 import com.aistra.hail.backup.canStartRestore
 import com.aistra.hail.backup.entriesOf
-import com.aistra.hail.backup.entryCategory
 import com.aistra.hail.utils.HBackup
 import com.aistra.hail.utils.HFiles
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
-import kotlin.Result
 import kotlin.runCatching
 
 class BackupRestoreViewModel(application: Application) : AndroidViewModel(application) {
@@ -262,10 +259,10 @@ class BackupRestoreViewModel(application: Application) : AndroidViewModel(applic
                         (context as? android.app.Activity)?.invalidateOptionsMenu()
                     }
                     deleteStagedFile()
-                    _restoreState.value = _restoreState.value as RestoreState.Loaded
+                    _restoreState.value = (_restoreState.value as RestoreState.Loaded)
                         .copy(phase = Phase.Done, message = context.getString(R.string.msg_restored, current.file.name))
                 }.onFailure {
-                    _restoreState.value = _restoreState.value as RestoreState.Loaded
+                    _restoreState.value = (_restoreState.value as RestoreState.Loaded)
                         .copy(phase = Phase.Failed, message = context.getString(R.string.operation_failed, it.message ?: context.getString(R.string.error_unknown)))
                 }
             }

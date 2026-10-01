@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.CheckBox
@@ -39,22 +38,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aistra.hail.R
 import com.aistra.hail.backup.BackupCategory
 import com.aistra.hail.backup.BackupEntry
-import com.aistra.hail.backup.BackupPreview.canStartBackup
-import com.aistra.hail.backup.BackupPreview.canStartRestore
+import com.aistra.hail.backup.canStartBackup
+import com.aistra.hail.backup.canStartRestore
 import com.aistra.hail.backup.Phase
 import com.aistra.hail.backup.RestoreState
-import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.HBackup
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
 fun BackupRestoreScreen(
-    viewModel: BackupRestoreViewModel = viewModel()
+    viewModel: BackupRestoreViewModel
 ) {
     val context = LocalContext.current
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
