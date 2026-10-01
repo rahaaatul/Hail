@@ -17,6 +17,7 @@ import com.aistra.hail.backup.canStartRestore
 import com.aistra.hail.backup.entriesOf
 import com.aistra.hail.utils.HBackup
 import com.aistra.hail.utils.HFiles
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -64,27 +65,38 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val cacheFile = File(context.cacheDir, "backup-${System.currentTimeMillis()}.zip")
             var result = HBackup.backup(context, cacheFile, current.options)
-            if (result.isSuccess) {
-                result = runCatching {
-                    context.contentResolver.openOutputStream(destinationUri)?.use { output ->
-                        cacheFile.inputStream().use { input ->
-                            HFiles.copy(input, output)
-                        }
-                    } ?: throw IllegalStateException(context.getString(R.string.cannot_open_selected_file))
+            try {
+                if (result.isSuccess) {
+                    try {
+                        context.contentResolver.openOutputStream(destinationUri)?.use { output ->
+                            cacheFile.inputStream().use { input ->
+                                HFiles.copy(input, output)
+                            }
+                        } ?: throw IllegalStateException(context.getString(R.string.cannot_open_selected_file))
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: IOException) {
+                        result = Result.failure(e)
+                    }
+                }
+                if (result.isSuccess) {
+                    _backupState.value = _backupState.value.copy(
+                        phase = Phase.Done,
+                        message = context.getString(R.string.msg_exported, getDisplayName(destinationUri, context))
+                    )
+                } else {
+                    _backupState.value = _backupState.value.copy(
+                        phase = Phase.Failed,
+                        message = context.getString(R.string.operation_failed, result.exceptionOrNull()?.message ?: context.getString(R.string.error_unknown))
+                    )
+                }
+            } finally {
+                try {
+                    cacheFile.delete()
+                } catch (e: Exception) {
+                    // Failed to delete cache file; do not surface as backup failure.
                 }
             }
-            if (result.isSuccess) {
-                _backupState.value = _backupState.value.copy(
-                    phase = Phase.Done,
-                    message = context.getString(R.string.msg_exported, cacheFile.name)
-                )
-            } else {
-                _backupState.value = _backupState.value.copy(
-                    phase = Phase.Failed,
-                    message = context.getString(R.string.operation_failed, result.exceptionOrNull()?.message ?: context.getString(R.string.error_unknown))
-                )
-            }
-            cacheFile.delete()
         }
     }
 
@@ -96,7 +108,8 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
             val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
             deleteStagedFile()
             stagedFile = file
-            runCatching {
+            var success = false
+            try {
                 val inputStream = ctx.contentResolver.openInputStream(uri)
                 if (inputStream == null) {
                     throw IOException("Null input stream")
@@ -106,7 +119,13 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
                         HFiles.copy(input, output)
                     }
                 }
-            }.onSuccess {
+                success = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                // ignore, success stays false
+            }
+            if (success) {
                 val entries = entriesOf(file)
                 val displayName = getDisplayName(uri, ctx)
                 val sizeBytes = file.length()
@@ -120,7 +139,7 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
                     message = null
                 )
                 _restoreError.value = null
-            }.onFailure {
+            } else {
                 deleteStagedFile()
                 _restoreState.value = RestoreState.Empty
                 _restoreError.value = ctx.getString(R.string.msg_not_a_backup)
@@ -171,11 +190,9 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
                     if (current.options.settings) {
                         (context as? android.app.Activity)?.invalidateOptionsMenu()
                     }
-                    deleteStagedFile()
                     _restoreState.value = (_restoreState.value as RestoreState.Loaded)
                         .copy(phase = Phase.Done, message = context.getString(R.string.msg_restored, current.file.name))
                 }.onFailure {
-                    deleteStagedFile()
                     _restoreState.value = (_restoreState.value as RestoreState.Loaded)
                         .copy(phase = Phase.Failed, message = context.getString(R.string.operation_failed, it.message ?: context.getString(R.string.error_unknown)))
                 }
