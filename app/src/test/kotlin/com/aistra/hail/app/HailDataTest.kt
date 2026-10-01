@@ -237,21 +237,34 @@ class HailDataTest {
         val code = code(text)
         val blanked = StringBuilder(text)
         for (function in FUNCTIONS.findAll(code)) {
+            val parameters = code.indexOf('(', function.range.last)
+            val close = if (parameters < 0) null else matchingBracket(code, parameters)
             val open = code.indexOf(BRACE, function.range.last)
-            if (open < 0) continue
-            val close = closingBrace(code, open) ?: continue
-            for (index in open..close) if (blanked[index] != '\n') blanked.setCharAt(index, ' ')
+            if (open < 0 || close == null) continue
+            // `fun f(x: Int): T = expression` has no brace of its own: the first `{` after the
+            // keyword belongs to the expression, and blanking from there would hide a
+            // declaration this test exists to see. The `=` after the parameter list says so,
+            // and after the list rather than inside it, so a default argument does not.
+            val assigned = code.indexOf('=', close)
+            if (assigned in (close + 1) until open) continue
+            val end = matchingBracket(code, open) ?: continue
+            for (index in open..end) if (blanked[index] != '\n') blanked.setCharAt(index, ' ')
         }
         return blanked.toString()
     }
 
-    /** The offset of the `}` matching the `{` at [open], or null when there is none. */
-    private fun closingBrace(text: String, open: Int): Int? {
+    /** The offset of the bracket closing the one at [open], or null when there is none. */
+    private fun matchingBracket(text: String, open: Int): Int? {
+        val close = when (text[open]) {
+            '(' -> ')'
+            '[' -> ']'
+            else -> '}'
+        }
         var depth = 0
         for (index in open until text.length) {
             when (text[index]) {
-                '{' -> depth++
-                '}' -> {
+                text[open] -> depth++
+                close -> {
                     depth--
                     if (depth == 0) return index
                 }
@@ -572,7 +585,7 @@ class HailDataTest {
         // its own line simply does not match, instead of reaching down the file to whatever `=`
         // comes next and reporting a span that has nothing to do with it.
         private val EAGER_PROPERTY =
-            Regex("^[ \\t]+(?:@[\\w.]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
+            Regex("^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
         private val GETTER = Regex("\\bget\\s*\\(")
         // A reference to the application from inside a string template, which masking erases.
         private val TEMPLATE_REFERENCE = Regex("\\$\\{[^}]*?(?<![\\w/])app(?![\\w])")
@@ -582,9 +595,9 @@ class HailDataTest {
         private val DANGLING_KEYWORD = Regex("\\b(?:else|if|when|try|do|return|throw|in|by)\\s*$")
         private const val BRACE = '{'
         private val FUNCTIONS = Regex("\\bfun\\b")
-        private val AWAITING_HEAD = Regex("\\b(?:if|when|while)\\s*\\([^()]*\\)\\s*$")
-        private val HEADER = Regex("(?:fun|class|interface|object)\\s+[\\w<>,.? ]*$")
-        private val HEADER_START = Regex("(?m)^[ \\t]*(?:@\\S+[ \\t]*)*$|[;{}]")
+        private val AWAITING_HEAD = Regex("\\b(?:if|when|while)\\s*\\((?:[^()]|\\([^()]*\\))*\\)\\s*$")
+        private val HEADER = Regex("(?:fun|class|interface|object|constructor)\\s+[\\w<>,.?: ]*$")
+        private val HEADER_START = Regex("(?m)^[ \\t]*(?:@\\w[\\w.:]*(?:\\([^)\\n]*\\))?[ \\t]*)*$|[;{}]")
         // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
         private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")
