@@ -85,7 +85,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         islandPermissionRequest?.complete(isGranted)
     }
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
-        // Consumed on every path, including a cancelled picker: leaving it set let a later
+        // Consumed on every path, including a cancelled picker: leaving it set lets a later
         // backup reuse whatever the previous dialog checked.
         val options = pendingBackupOptions
         pendingBackupOptions = null
