@@ -59,6 +59,7 @@ fun BackupRestoreScreen(
     val context = LocalContext.current
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
     val restoreState by viewModel.restoreState.collectAsStateWithLifecycle()
+    val restoreError by viewModel.restoreError.collectAsStateWithLifecycle()
 
     val canBackup = canStartBackup(backupState.options)
 
@@ -164,7 +165,8 @@ fun BackupRestoreScreen(
             is RestoreState.Empty -> {
                 item {
                     RestoreFileSlotEmpty(
-                        onClick = onChooseArchive
+                        onClick = onChooseArchive,
+                        errorMessage = restoreError
                     )
                 }
             }
@@ -333,7 +335,10 @@ private fun ResultLine(
 }
 
 @Composable
-private fun RestoreFileSlotEmpty(onClick: () -> Unit) {
+private fun RestoreFileSlotEmpty(
+    onClick: () -> Unit,
+    errorMessage: String? = null
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
@@ -344,11 +349,19 @@ private fun RestoreFileSlotEmpty(onClick: () -> Unit) {
         ) {
             Text(text = stringResource(R.string.action_choose_archive))
         }
-        Text(
-            text = stringResource(R.string.summary_choose_archive),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.summary_choose_archive),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

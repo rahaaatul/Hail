@@ -32,6 +32,9 @@ class BackupRestoreViewModel(application: Application) : AndroidViewModel(applic
     private val _restoreState = MutableStateFlow<RestoreState>(RestoreState.Empty)
     val restoreState = _restoreState.asStateFlow()
 
+    private val _restoreError = MutableStateFlow<String?>(null)
+    val restoreError = _restoreError.asStateFlow()
+
     private var stagedFile: File? = null
 
     data class BackupSectionState(
@@ -116,22 +119,11 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
                     phase = Phase.Idle,
                     message = null
                 )
+                _restoreError.value = null
             }.onFailure {
                 deleteStagedFile()
-                _restoreState.value = RestoreState.Loaded(
-                    file = file,
-                    displayName = getDisplayName(uri, ctx),
-                    sizeBytes = 0,
-                    entries = listOf(
-                        BackupEntry(BackupCategory.APPS, false, 0),
-                        BackupEntry(BackupCategory.WHITELIST, false, 0),
-                        BackupEntry(BackupCategory.ACTIONS, false, 0),
-                        BackupEntry(BackupCategory.SETTINGS, false, 0)
-                    ),
-                    options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = false),
-                    phase = Phase.Failed,
-                    message = ctx.getString(R.string.msg_not_a_backup)
-                )
+                _restoreState.value = RestoreState.Empty
+                _restoreError.value = ctx.getString(R.string.msg_not_a_backup)
             }
         }
     }
@@ -149,6 +141,7 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
     fun onChangeArchiveClick() {
         deleteStagedFile()
         _restoreState.value = RestoreState.Empty
+        _restoreError.value = null
     }
 
     fun onRestoreOptionChange(category: BackupCategory, checked: Boolean) {
@@ -182,6 +175,7 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
                     _restoreState.value = (_restoreState.value as RestoreState.Loaded)
                         .copy(phase = Phase.Done, message = context.getString(R.string.msg_restored, current.file.name))
                 }.onFailure {
+                    deleteStagedFile()
                     _restoreState.value = (_restoreState.value as RestoreState.Loaded)
                         .copy(phase = Phase.Failed, message = context.getString(R.string.operation_failed, it.message ?: context.getString(R.string.error_unknown)))
                 }
@@ -198,10 +192,7 @@ fun onBackupOptionChange(category: BackupCategory, checked: Boolean) {
 
     override fun onCleared() {
         super.onCleared()
-        val backupWorking = _backupState.value.phase == Phase.Working
-        val restoreWorking = (_restoreState.value as? RestoreState.Loaded)?.phase == Phase.Working
-        if (!backupWorking && !restoreWorking) {
-            deleteStagedFile()
-        }
+        // Staged file is worthless once ViewModel is cleared; delete unconditionally.
+        deleteStagedFile()
     }
 }
