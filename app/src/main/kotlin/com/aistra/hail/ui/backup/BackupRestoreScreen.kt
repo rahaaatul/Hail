@@ -51,7 +51,10 @@ import java.util.Locale
 
 @Composable
 fun BackupRestoreScreen(
-    viewModel: BackupRestoreViewModel
+    viewModel: BackupRestoreViewModel,
+    onCreateBackup: () -> Unit,
+    onChooseArchive: () -> Unit,
+    onRestoreConfirm: () -> Unit
 ) {
     val context = LocalContext.current
     val backupState by viewModel.backupState.collectAsStateWithLifecycle()
@@ -120,7 +123,7 @@ fun BackupRestoreScreen(
                     BackupActionButton(
                         text = stringResource(R.string.action_create_backup),
                         enabled = canBackup,
-                        onClick = { viewModel.startBackup(context) },
+                        onClick = onCreateBackup,
                         disabledReason = if (!canBackup) stringResource(R.string.msg_no_items_to_select) else null
                     )
                 }
@@ -161,7 +164,7 @@ fun BackupRestoreScreen(
             is RestoreState.Empty -> {
                 item {
                     RestoreFileSlotEmpty(
-                        onClick = { /* Fragment will handle SAF launch */ }
+                        onClick = onChooseArchive
                     )
                 }
             }
@@ -197,9 +200,9 @@ fun BackupRestoreScreen(
                     Phase.Idle -> {
                         item {
                             RestoreActionButton(
-                                text = stringResource(R.string.action_restore),
+                                text = stringResource(R.string.action_restore_selected),
                                 enabled = canRestore,
-                                onClick = { /* confirmation dialog handled by Fragment */ },
+                                onClick = onRestoreConfirm,
                                 disabledReason = if (!canRestore) stringResource(R.string.msg_no_items_to_select) else null
                             )
                         }

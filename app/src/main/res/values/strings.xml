@@ -120,6 +120,7 @@
     <string name="action_create_backup">Create backup</string>
     <string name="action_choose_archive">Choose backup file\u2026</string>
     <string name="action_change_archive">Change</string>
+    <string name="action_restore_selected">Restore selected</string>
     <string name="summary_choose_archive">Pick a .zip this app wrote. Nothing is read until you choose one.</string>
     <string name="label_in_this_archive">In this archive</string>
     <string name="label_not_in_archive">Not in this archive</string>
