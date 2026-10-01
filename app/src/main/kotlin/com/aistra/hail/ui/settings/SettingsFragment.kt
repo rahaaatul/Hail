@@ -819,7 +819,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 )
                 if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
                     HUI.showToast(R.string.msg_no_items_to_select)
-                    return@setPositive
+                    return@setPositiveButton
                 }
                 // The flag marks the restore as handed off so the dismiss listener keeps the file.
                 restoreStarted = true
