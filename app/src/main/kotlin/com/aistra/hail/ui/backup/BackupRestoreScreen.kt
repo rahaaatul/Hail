@@ -164,7 +164,7 @@ fun BackupRestoreScreen(
                 }
             }
             is RestoreState.Loaded -> {
-                val loadedState = restoreState
+                val loadedState = restoreState as RestoreState.Loaded
                 item {
                     RestoreFileSlotLoaded(
                         state = loadedState,
