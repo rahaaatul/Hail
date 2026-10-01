@@ -85,15 +85,19 @@ class BackupPreviewTest {
         assertEquals(BackupCategory.APPS, entries[0].category)
         assertTrue(entries[0].present)
         assertTrue(entries[0].sizeBytes > 0)
+        assertEquals("apps.json", entries[0].name)
         assertEquals(BackupCategory.WHITELIST, entries[1].category)
         assertTrue(entries[1].present)
         assertTrue(entries[1].sizeBytes > 0)
+        assertEquals("whitelist.json", entries[1].name)
         assertEquals(BackupCategory.ACTIONS, entries[2].category)
         assertTrue(entries[2].present)
         assertTrue(entries[2].sizeBytes > 0)
+        assertEquals("actions.json", entries[2].name)
         assertEquals(BackupCategory.SETTINGS, entries[3].category)
         assertTrue(entries[3].present)
         assertTrue(entries[3].sizeBytes > 0)
+        assertEquals("settings.json", entries[3].name)
     }
 
     @Test
@@ -113,6 +117,7 @@ class BackupPreviewTest {
         assertEquals(BackupCategory.SETTINGS, entries[3].category)
         assertFalse(entries[3].present)
         assertEquals(0L, entries[3].sizeBytes)
+        assertEquals("settings.json", entries[3].name)
     }
 
     @Test
@@ -127,11 +132,15 @@ class BackupPreviewTest {
 
         assertEquals(4, entries.size)
         assertTrue(entries[0].present)
+        assertEquals("apps.json", entries[0].name)
         assertTrue(entries[1].present)
+        assertEquals("whitelist.json", entries[1].name)
         assertFalse(entries[2].present)
         assertEquals(0L, entries[2].sizeBytes)
+        assertEquals("actions.json", entries[2].name)
         assertFalse(entries[3].present)
         assertEquals(0L, entries[3].sizeBytes)
+        assertEquals("settings.json", entries[3].name)
     }
 
     @Test
@@ -148,6 +157,10 @@ class BackupPreviewTest {
             assertFalse(entry.present)
             assertEquals(0L, entry.sizeBytes)
         }
+        assertEquals("apps.json", entries[0].name)
+        assertEquals("whitelist.json", entries[1].name)
+        assertEquals("actions.json", entries[2].name)
+        assertEquals("settings.json", entries[3].name)
     }
 
     @Test
@@ -162,9 +175,13 @@ class BackupPreviewTest {
         val entries = entriesOf(zipFile)
 
         assertEquals(BackupCategory.APPS, entries[0].category)
+        assertEquals("apps.json", entries[0].name)
         assertEquals(BackupCategory.WHITELIST, entries[1].category)
+        assertEquals("whitelist.json", entries[1].name)
         assertEquals(BackupCategory.ACTIONS, entries[2].category)
+        assertEquals("actions.json", entries[2].name)
         assertEquals(BackupCategory.SETTINGS, entries[3].category)
+        assertEquals("settings.json", entries[3].name)
     }
 
     @Test
@@ -181,6 +198,7 @@ class BackupPreviewTest {
 
         assertEquals(4, entries.size)
         assertEquals(BackupCategory.APPS, entries[0].category)
+        assertEquals("apps.json", entries[0].name)
         assertTrue("zero-byte entry must be present", entries[0].present)
         assertEquals("zero-byte entry size must be 0", 0L, entries[0].sizeBytes)
     }
@@ -201,6 +219,12 @@ class BackupPreviewTest {
         entries.forEach { entry ->
             assertTrue("${entry.category} must be present despite directory entry", entry.present)
             assertTrue("${entry.category} size must be unchanged", entry.sizeBytes > 0)
+            when (entry.category) {
+                BackupCategory.APPS -> assertEquals("apps.json", entry.name)
+                BackupCategory.WHITELIST -> assertEquals("whitelist.json", entry.name)
+                BackupCategory.ACTIONS -> assertEquals("actions.json", entry.name)
+                BackupCategory.SETTINGS -> assertEquals("settings.json", entry.name)
+            }
         }
     }
 
