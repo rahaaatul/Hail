@@ -43,7 +43,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: 'platform-tools platforms;android-37.0 build-tools;37.0.0'
+          packages: 'platform-tools platforms;android-37.2 build-tools;36.0.0'
           accept-android-sdk-licenses: true
 
       # A tag reachable from main is a release; anything else is a pre-release.
