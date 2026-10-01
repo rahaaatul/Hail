@@ -9,12 +9,11 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.fragment.app.OnBackPressedCallback
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.aistra.hail.R
@@ -22,8 +21,8 @@ import com.aistra.hail.backup.Phase
 import com.aistra.hail.backup.RestoreState
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.utils.HUI
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
 class BackupRestoreFragment : MainFragment() {
@@ -36,7 +35,7 @@ class BackupRestoreFragment : MainFragment() {
         }
 
     private val restoreLauncher =
-        registerForActivityResult(OpenDocument(arrayOf("application/zip"))) { uri: Uri? ->
+        registerForActivityResult(OpenDocument()) { uri: Uri? ->
             uri?.let { viewModel.onArchivePicked(it, requireContext()) }
         }
 
@@ -47,7 +46,7 @@ class BackupRestoreFragment : MainFragment() {
                 val backupWorking = viewModel.backupState.value.phase == Phase.Working
                 val restoreWorking = (viewModel.restoreState.value as? RestoreState.Loaded)?.phase == Phase.Working
                 if (backupWorking || restoreWorking) {
-                    HUI.showSnackbar(requireView(), R.string.msg_wait_for_operation)
+                    Snackbar.make(activity.fab, R.string.msg_wait_for_operation, Snackbar.LENGTH_LONG).show()
                 } else {
                     isEnabled = false
                     requireActivity().onBackPressedDispatcher.onBackPressed()
@@ -65,7 +64,7 @@ class BackupRestoreFragment : MainFragment() {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AppTheme {
-                    Surface(modifier = androidx.compose.foundation.layout.Modifier.fillMaxSize()) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
                         BackupRestoreScreen(
                             viewModel = viewModel,
                             onCreateBackup = { backupLauncher.launch("backup-${System.currentTimeMillis()}.zip") },
@@ -77,22 +76,7 @@ class BackupRestoreFragment : MainFragment() {
             }
         }
     }
-
-    @Composable
-    private fun BackupRestoreScreen(
-        viewModel: BackupRestoreViewModel,
-        onCreateBackup: () -> Unit,
-        onChooseArchive: () -> Unit,
-        onRestoreConfirm: () -> Unit
-    ) {
-        com.aistra.hail.ui.backup.BackupRestoreScreen(
-            viewModel = viewModel,
-            onCreateBackup = onCreateBackup,
-            onChooseArchive = onChooseArchive,
-            onRestoreConfirm = onRestoreConfirm
-        )
-    }
-
+    
     private fun showRestoreConfirmation() {
         val state = viewModel.restoreState.value
         if (state !is RestoreState.Loaded) return
