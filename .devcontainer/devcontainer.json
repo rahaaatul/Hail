@@ -1,0 +1,35 @@
+{
+    "name": "Hail",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "hostRequirements": {
+        "cpus": 4,
+        "memory": "16gb",
+        "storage": "32gb"
+    },
+    "mounts": [
+        "source=hail-gradle-cache,target=/home/vscode/.gradle,type=volume"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "java.jdt.ls.java.home": "${containerEnv:JAVA_HOME}",
+                "java.configuration.runtimes": [
+                    {
+                        "name": "JavaSE-27",
+                        "path": "${containerEnv:JAVA_HOME}",
+                        "default": true
+                    }
+                ]
+            },
+            "extensions": [
+                "fwcd.kotlin",
+                "vscjava.vscode-java-pack",
+                "vscjava.vscode-gradle"
+            ]
+        }
+    },
+    "postCreateCommand": "chmod +x ./gradlew && ./gradlew --version",
+    "remoteUser": "vscode"
+}
