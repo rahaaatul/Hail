@@ -306,9 +306,14 @@ class HailDataTest {
         // find the first match at or after it - almost always a `}` or `{` below the
         // declaration being tested - which put `start` past `open` and threw from
         // `text.substring(start, open)`.
+        //
+        // With no match at all before `open` the whole prefix is the candidate: `HEADER`
+        // is anchored at the end, so only the tail decides, and a header that starts at
+        // the very top of the file is then still recognised rather than its parameters
+        // being reported as eager initializers.
         val start = HEADER_START.findAll(text)
             .takeWhile { it.range.last < open }
-            .lastOrNull()?.range?.last?.plus(1) ?: return false
+            .lastOrNull()?.range?.last?.plus(1) ?: 0
         return HEADER.containsMatchIn(text.substring(start, open))
     }
 
