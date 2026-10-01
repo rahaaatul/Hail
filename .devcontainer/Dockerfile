@@ -96,8 +96,8 @@ RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" && \
 
 # Install SDK packages. One invocation per package: `android sdk install`
 # accepts exactly one positional package, so each gets its own call. Paths
-# use the slash form that `sdk list` prints; the previous Dockerfile used
-# semicolon paths that no longer exist - platforms;android-37 and
+# use the slash form that `android sdk list` prints; the previous Dockerfile
+# used semicolon paths that no longer exist - platforms;android-37 and
 # build-tools;37.2.0 are both absent from repository2-3.xml.
 #
 # platforms/android-37.2 is the latest revision of the android-37 platform,
@@ -105,13 +105,14 @@ RUN mkdir -p "${ANDROID_HOME}/cmdline-tools" && \
 # platforms are separate packages.
 #
 # The old `yes | sdkmanager --licenses` step is gone: cmdline-tools v23.0's
-# sdkmanager only prints "Warning: The --licenses option is no longer needed",
-# and an unattended install auto-accepts licenses, writing
-# ${ANDROID_HOME}/licenses/android-sdk-license on its own.
+# `android sdk` command auto-accepts licenses on unattended install, writing
+# ${ANDROID_HOME}/licenses/android-sdk-license on its own. The deprecated
+# `sdkmanager` binary still exists in cmdline-tools but prints a deprecation
+# warning; `android` (at cmdline-tools/latest/bin/android) is its replacement.
 RUN set -eux; \
-    "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" "platforms/android-37.2"; \
-    "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" "build-tools/36.0.0"; \
-    "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" "platform-tools"
+    "${ANDROID_HOME}/cmdline-tools/latest/bin/android" --sdk="${ANDROID_HOME}" sdk install "platforms/android-37.2"; \
+    "${ANDROID_HOME}/cmdline-tools/latest/bin/android" --sdk="${ANDROID_HOME}" sdk install "build-tools/36.0.0"; \
+    "${ANDROID_HOME}/cmdline-tools/latest/bin/android" --sdk="${ANDROID_HOME}" sdk install "platform-tools"
 
 # The SDK is installed as root at image build time, but Gradle runs as the
 # non-root vscode user and writes licenses and build caches into the SDK
