@@ -169,30 +169,33 @@ fun BackupRestoreScreen(
                     RestoreFileSlotLoaded(
                         state = loadedState,
                         onChangeClick = { viewModel.onChangeArchiveClick() },
-                        context = context
+                        context = context,
+                        enabled = loadedState.phase != Phase.Working
                     )
+                }
+                // Restore entry rows (render in every phase, disabled during Working)
+                val notBusy = loadedState.phase != Phase.Working
+                loadedState.entries.forEach { entry ->
+                    item {
+                        RestoreEntryRow(
+                            entry = entry,
+                            checked = when (entry.category) {
+                                BackupCategory.APPS -> loadedState.options.apps
+                                BackupCategory.WHITELIST -> loadedState.options.whitelist
+                                BackupCategory.ACTIONS -> loadedState.options.actions
+                                BackupCategory.SETTINGS -> loadedState.options.settings
+                            },
+                            onCheckedChange = { viewModel.onRestoreOptionChange(entry.category, it) },
+                            entryPresent = entry.present,
+                            enabled = notBusy,
+                            context = context
+                        )
+                    }
                 }
                 // Restore section action area
                 val canRestore = canStartRestore(loadedState)
                 when (loadedState.phase) {
                     Phase.Idle -> {
-                        // Restore entry rows
-                        loadedState.entries.forEach { entry ->
-                            item {
-                                RestoreEntryRow(
-                                    entry = entry,
-                                    checked = when (entry.category) {
-                                        BackupCategory.APPS -> loadedState.options.apps
-                                        BackupCategory.WHITELIST -> loadedState.options.whitelist
-                                        BackupCategory.ACTIONS -> loadedState.options.actions
-                                        BackupCategory.SETTINGS -> loadedState.options.settings
-                                    },
-                                    onCheckedChange = { viewModel.onRestoreOptionChange(entry.category, it) },
-                                    entryPresent = entry.present,
-                                    context = context
-                                )
-                            }
-                        }
                         item {
                             RestoreActionButton(
                                 text = stringResource(R.string.action_restore_selected),
@@ -358,7 +361,8 @@ private fun RestoreFileSlotEmpty(
 private fun RestoreFileSlotLoaded(
     state: RestoreState.Loaded,
     onChangeClick: () -> Unit,
-    context: android.content.Context
+    context: android.content.Context,
+    enabled: Boolean = true
 ) {
     val sizeText = Formatter.formatFileSize(context, state.sizeBytes)
     val dateText = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(state.file.lastModified())
@@ -373,7 +377,7 @@ private fun RestoreFileSlotLoaded(
             Text(text = summaryText, maxLines = 2, overflow = TextOverflow.Ellipsis)
         },
         trailingContent = {
-            TextButton(onClick = onChangeClick) {
+            TextButton(onClick = onChangeClick, enabled = enabled) {
                 Text(text = stringResource(R.string.action_change_archive))
             }
         }
@@ -386,6 +390,7 @@ private fun RestoreEntryRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     entryPresent: Boolean,
+    enabled: Boolean,
     context: android.content.Context
 ) {
     val supportingText = if (entryPresent) {
@@ -399,13 +404,15 @@ private fun RestoreEntryRow(
     else 
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     
+    val interactive = entryPresent && enabled
+    
     ListItem(
         modifier = Modifier
             .fillMaxWidth()
             .toggleable(
                 value = checked,
                 role = Role.Checkbox,
-                onValueChange = if (entryPresent) onCheckedChange else { _ -> }
+                onValueChange = if (interactive) onCheckedChange else { _ -> }
             ),
         headlineContent = { Text(text = entry.name) },
         supportingContent = { Text(text = supportingText, color = supportingColor) },
@@ -414,7 +421,7 @@ private fun RestoreEntryRow(
                 checked = checked,
                 onCheckedChange = null,
                 modifier = Modifier.padding(end = dimensionResource(R.dimen.padding_medium)),
-                enabled = entryPresent
+                enabled = interactive
             )
         }
     )
