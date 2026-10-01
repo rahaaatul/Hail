@@ -1,7 +1,9 @@
 package com.aistra.hail.ui.backup
 
+import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,7 +17,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Row
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,7 +42,6 @@ import com.aistra.hail.backup.RestoreState
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.ui.theme.MaterialTheme
 import com.aistra.hail.utils.HBackup
-import com.aistra.hail.utils.HUI
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -156,7 +157,7 @@ fun BackupRestoreScreen(
             is RestoreState.Empty -> {
                 item {
                     RestoreFileSlotEmpty(
-                        onClick = { viewModel.onArchivePicked(null, context) } // Fragment will handle the actual SAF launch
+                        onClick = { /* Fragment will handle SAF launch */ }
                     )
                 }
             }
@@ -164,7 +165,8 @@ fun BackupRestoreScreen(
                 item {
                     RestoreFileSlotLoaded(
                         state = restoreState,
-                        onChangeClick = { viewModel.onChangeArchiveClick() }
+                        onChangeClick = { viewModel.onChangeArchiveClick() },
+                        context = context
                     )
                 }
                 // Restore entry rows
@@ -179,7 +181,8 @@ fun BackupRestoreScreen(
                                 BackupCategory.SETTINGS -> restoreState.options.settings
                             },
                             onCheckedChange = { viewModel.onRestoreOptionChange(entry.category, it) },
-                            enabled = entry.present
+                            enabled = entry.present,
+                            context = context
                         )
                     }
                 }
@@ -189,7 +192,7 @@ fun BackupRestoreScreen(
                     Phase.Idle -> {
                         item {
                             RestoreActionButton(
-                                text = stringResource(R.string.action_restore_selected),
+                                text = stringResource(R.string.action_restore),
                                 enabled = canRestore,
                                 onClick = { /* confirmation dialog handled by Fragment */ },
                                 disabledReason = if (!canRestore) stringResource(R.string.msg_no_items_to_select) else null
@@ -316,7 +319,7 @@ private fun ResultLine(
             text = message,
             color = if (isSuccess) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
             maxLines = 3,
-            overflow = androidx.compose.ui.text.TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -344,9 +347,10 @@ private fun RestoreFileSlotEmpty(onClick: () -> Unit) {
 @Composable
 private fun RestoreFileSlotLoaded(
     state: RestoreState.Loaded,
-    onChangeClick: () -> Unit
+    onChangeClick: () -> Unit,
+    context: android.content.Context
 ) {
-    val sizeText = HUI.formatFileSize(state.sizeBytes)
+    val sizeText = Formatter.formatFileSize(context, state.sizeBytes)
     val dateText = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(state.file.lastModified())
     val summaryText = "$sizeText · $dateText"
     
@@ -357,10 +361,10 @@ private fun RestoreFileSlotLoaded(
         ListItem(
             modifier = Modifier.fillMaxWidth(),
             headlineContent = {
-                Text(text = state.displayName, maxLines = 1, overflow = androidx.compose.ui.text.TextOverflow.Ellipsis)
+                Text(text = state.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
             },
             supportingContent = {
-                Text(text = summaryText, maxLines = 2, overflow = androidx.compose.ui.text.TextOverflow.Ellipsis)
+                Text(text = summaryText, maxLines = 2, overflow = TextOverflow.Ellipsis)
             },
             trailingContent = {
                 TextButton(onClick = onChangeClick) {
@@ -376,7 +380,8 @@ private fun RestoreEntryRow(
     entry: BackupEntry,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    context: android.content.Context
 ) {
     val categoryName = when (entry.category) {
         BackupCategory.APPS -> stringResource(R.string.backup_apps)
@@ -386,12 +391,15 @@ private fun RestoreEntryRow(
     }
     
     val supportingText = if (enabled) {
-        HUI.formatFileSize(entry.sizeBytes)
+        Formatter.formatFileSize(context, entry.sizeBytes)
     } else {
         stringResource(R.string.label_not_in_archive)
     }
     
-    val supportingColor = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    val supportingColor = if (enabled) 
+        MaterialTheme.colorScheme.onSurfaceVariant 
+    else 
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     
     ListItem(
         modifier = Modifier
@@ -401,7 +409,6 @@ private fun RestoreEntryRow(
                 role = Role.Checkbox,
                 onValueChange = if (enabled) onCheckedChange else null
             ),
-        enabled = enabled,
         headlineContent = { Text(text = categoryName) },
         supportingContent = { Text(text = supportingText, color = supportingColor) },
         leadingContent = {
