@@ -111,7 +111,7 @@
     <string name="msg_exported">Exported: %s</string>
     <string name="msg_restored">Restored: %s</string>
     <string name="msg_text_copied">Copied: %s</string>
-    <string name="title_backup_restore">Backup & restore</string>
+    <string name="title_backup_restore">Backup &amp; restore</string>
     <string name="summary_backup_apps">Pinned and selected apps</string>
     <string name="summary_backup_whitelist">Apps excluded from freezing</string>
     <string name="summary_backup_actions">Freeze and unfreeze recipes</string>
