@@ -166,7 +166,7 @@ fun BackupRestoreScreen(
                 }
             }
             is RestoreState.Loaded -> {
-                val loadedState = restoreState
+                val loadedState = restoreState as RestoreState.Loaded
                 item {
                     RestoreFileSlotLoaded(
                         state = loadedState,
@@ -412,7 +412,7 @@ private fun RestoreEntryRow(
             .toggleable(
                 value = checked,
                 role = Role.Checkbox,
-                onValueChange = if (enabled) onCheckedChange else { }
+                onValueChange = if (enabled) onCheckedChange else { _ -> }
             ),
         headlineContent = { Text(text = categoryName) },
         supportingContent = { Text(text = supportingText, color = supportingColor) },
