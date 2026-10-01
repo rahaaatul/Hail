@@ -85,7 +85,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
         islandPermissionRequest?.complete(isGranted)
     }
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
-        if (uri == null) return@registerForActivityResult
+        // Consumed on every path, including a cancelled picker: leaving it set let a later
+        // backup reuse whatever the previous dialog checked.
+        val options = pendingBackupOptions
+        pendingBackupOptions = null
+        if (uri == null || options == null) return@registerForActivityResult
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
         if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
@@ -102,7 +106,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             // into a crash. runCatching catches CancellationException too, so cancelling
             // lifecycleScope lands here rather than skipping it.
             runCatching {
-                HBackup.backup(ctx, file, pendingBackupOptions ?: return@launch).getOrThrow()
+                HBackup.backup(ctx, file, options).getOrThrow()
                 try {
                     val outputStream = ctx.contentResolver.openOutputStream(uri)
                         ?: throw IllegalStateException(app.getString(R.string.cannot_open_selected_file))
@@ -807,7 +811,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 checkedItems
             ) { _, _, _ -> }
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                restoreStarted = true
                 val options = RestoreOptions(
                     apps = checkedItems[0],
                     whitelist = checkedItems[1],
@@ -816,8 +819,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 )
                 if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
                     HUI.showToast(R.string.msg_no_items_to_select)
-                    return@setPositiveButton
+                    return@setPositive
                 }
+                // The flag marks the restore as handed off so the dismiss listener keeps the file.
+                restoreStarted = true
                 lifecycleScope.launch {
                     val dialog = MaterialAlertDialogBuilder(requireActivity()).setView(R.layout.dialog_progress).setCancelable(false).show()
                     val result = HBackup.restore(requireContext(), file, options)
