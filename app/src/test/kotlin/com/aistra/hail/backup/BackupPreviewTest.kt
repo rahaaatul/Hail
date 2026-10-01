@@ -167,6 +167,43 @@ class BackupPreviewTest {
         assertEquals(BackupCategory.SETTINGS, entries[3].category)
     }
 
+    @Test
+    fun `entriesOf reports present true and size 0 for zero-byte entry`() {
+        // A zero-byte entry in the zip must be present but with size 0
+        val zipFile = writeZip(
+            "apps.json" to "",
+            "whitelist.json" to """[]""",
+            "actions.json" to """[]""",
+            "settings.json" to """{}"""
+        )
+
+        val entries = entriesOf(zipFile)
+
+        assertEquals(4, entries.size)
+        assertEquals(BackupCategory.APPS, entries[0].category)
+        assertTrue(entries[0].present, "zero-byte entry must be present")
+        assertEquals(0L, entries[0].sizeBytes, "zero-byte entry size must be 0")
+    }
+
+    @Test
+    fun `entriesOf ignores directory entries alongside the four files`() {
+        val zipFile = writeZip(
+            "apps.json" to """["pkg1"]""",
+            "whitelist.json" to """[]""",
+            "actions.json" to """[]""",
+            "settings.json" to """{}""",
+            "somedir/" to ""  // directory entry
+        )
+
+        val entries = entriesOf(zipFile)
+
+        assertEquals(4, entries.size)
+        entries.forEach { entry ->
+            assertTrue(entry.present, "${entry.category} must be present despite directory entry")
+            assertTrue(entry.sizeBytes > 0, "${entry.category} size must be unchanged")
+        }
+    }
+
     // ===== canStartBackup tests =====
 
     @Test
