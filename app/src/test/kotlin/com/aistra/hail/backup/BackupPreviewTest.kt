@@ -19,7 +19,7 @@ class BackupPreviewTest {
     @JvmField
     val temporaryFolder = TemporaryFolder()
 
-    private fun writeZip(entries: Map<String, String>): File {
+    private fun writeZip(vararg entries: Pair<String, String>): File {
         val zipFile = temporaryFolder.newFile("test.zip")
         ZipOutputStream(FileOutputStream(zipFile)).use { zipOutputStream ->
             entries.forEach { (name, content) ->
@@ -34,22 +34,22 @@ class BackupPreviewTest {
     // ===== entryCategory tests =====
 
     @Test
-    fun `entryCategory maps apps.json to APPS`() {
+    fun `entryCategory maps apps_json to APPS`() {
         assertEquals(BackupCategory.APPS, entryCategory("apps.json"))
     }
 
     @Test
-    fun `entryCategory maps whitelist.json to WHITELIST`() {
+    fun `entryCategory maps whitelist_json to WHITELIST`() {
         assertEquals(BackupCategory.WHITELIST, entryCategory("whitelist.json"))
     }
 
     @Test
-    fun `entryCategory maps actions.json to ACTIONS`() {
+    fun `entryCategory maps actions_json to ACTIONS`() {
         assertEquals(BackupCategory.ACTIONS, entryCategory("actions.json"))
     }
 
     @Test
-    fun `entryCategory maps settings.json to SETTINGS`() {
+    fun `entryCategory maps settings_json to SETTINGS`() {
         assertEquals(BackupCategory.SETTINGS, entryCategory("settings.json"))
     }
 
