@@ -37,16 +37,31 @@ fun entryCategory(name: String): BackupCategory? = when (name) {
     else -> null
 }
 
+/**
+ * Reads the central directory of a zip file and returns one [BackupEntry] per category.
+ * The returned list always contains exactly four entries in fixed order: APPS, WHITELIST,
+ * ACTIONS, SETTINGS. Each entry's [BackupEntry.present] is true when an entry with the
+ * corresponding name exists in the zip, regardless of its size (including zero-byte entries).
+ * [BackupEntry.sizeBytes] is the uncompressed size from the central directory, or 0 when
+ * the size is unknown (-1 in the ZIP format) or the category is absent.
+ *
+ * If the zip contains multiple entries with the same name, the last one encountered
+ * (the one `ZipFile.entries()` yields last) is the one reported, matching the behaviour
+ * of the restore path which reads entries sequentially.
+ *
+ * @throws java.util.zip.ZipException if the file is not a valid zip archive or cannot be read.
+ */
 fun entriesOf(file: File): List<BackupEntry> {
     val zipFile = ZipFile(file)
     try {
-        val entries = mutableMapOf<BackupCategory, Long>()
-        val enum = zipFile.entries()
-        while (enum.hasMoreElements()) {
-            val entry = enum.nextElement()
+        val entries = mutableMapOf<BackupCategory, Pair<Boolean, Long>>()
+        val zipEntries = zipFile.entries()
+        while (zipEntries.hasMoreElements()) {
+            val entry = zipEntries.nextElement()
             if (!entry.isDirectory) {
                 entryCategory(entry.name)?.let { category ->
-                    entries[category] = entry.size
+                    val size = if (entry.size >= 0) entry.size else 0L
+                    entries[category] = true to size
                 }
             }
         }
@@ -56,8 +71,8 @@ fun entriesOf(file: File): List<BackupEntry> {
             BackupCategory.ACTIONS,
             BackupCategory.SETTINGS
         ).map { category ->
-            val size = entries[category] ?: 0L
-            BackupEntry(category, size > 0, size)
+            val (present, size) = entries[category] ?: (false to 0L)
+            BackupEntry(category, present, size)
         }
     } finally {
         zipFile.close()
