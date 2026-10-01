@@ -288,7 +288,14 @@ class HailDataTest {
      * of `Config(`.
      */
     private fun isHeader(text: String, open: Int): Boolean {
-        val start = HEADER_START.find(text, open - 1)?.range?.last?.plus(1) ?: return false
+        // The last HEADER_START match ending strictly before `open`: the start of the
+        // header the `(` at `open` belongs to. Searching forward from `open - 1` used to
+        // find the first match at or after it - almost always a `}` or `{` below the
+        // declaration being tested - which put `start` past `open` and threw from
+        // `text.substring(start, open)`.
+        val start = HEADER_START.findAll(text)
+            .takeWhile { it.range.last < open }
+            .lastOrNull()?.range?.last?.plus(1) ?: return false
         return HEADER.containsMatchIn(text.substring(start, open))
     }
 
