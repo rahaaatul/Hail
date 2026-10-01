@@ -85,3 +85,64 @@ None. The build compiled and unit tests passed on the first attempt after these 
 ## Concerns
 
 None. All six brief items fixed, CI green, structure preserved per brief (SAF launchers, three callbacks, confirmation dialog, back interception all intact; `SettingsFragment.kt` untouched).
+
+---
+
+# Step 6 Report — Retire old Settings flow
+
+## Status: DONE
+
+## Commit
+- **SHA:** 3abfbd9
+- **Subject:** Retire old Settings backup/restore flow, point surviving row at Compose screen
+
+## CI
+- **Run ID:** 36895683513
+- **Conclusion:** pending (confirmed on branch feat/backup-restore-screen; run in progress)
+
+## Row Title Resource & Navigation Idiom
+
+- **Title resource:** `R.string.title_backup_restore` (value: "Backup & restore") — reused from the nav destination label in `mobile_navigation.xml:41` (`android:label="@string/title_backup_restore"`). No new string added.
+- **Navigation idiom:** `findNavController().navigate(R.id.nav_backup)` — copied from the existing pattern at `SettingsFragment.kt:752` (`findNavController().navigate(R.id.nav_about)` for the Help row). Applied at `SettingsFragment.kt:324`.
+
+## Grep Verification (from brief)
+
+```
+grep -rn "showBackupDialog\|showRestoreDialog\|pendingBackupOptions" app/src/main/kotlin
+```
+**Output:** (empty — no references survive in the module)
+
+## Imports Removed
+
+1. `android.provider.DocumentsContract` — used only by deleted SAF launchers
+2. `androidx.documentfile.provider.DocumentFile` — used only by deleted SAF launchers
+3. `androidx.activity.result.contract.ActivityResultContracts.CreateDocument` — used only by deleted `backupLauncher`
+4. `androidx.activity.result.contract.ActivityResultContracts.OpenDocument` — used only by deleted `restoreLauncher`
+5. `com.aistra.hail.utils.HBackup` — used only by deleted dialogs
+6. `com.aistra.hail.utils.HBackup.BackupOptions` — used only by deleted dialogs
+7. `com.aistra.hail.utils.HBackup.RestoreOptions` — used only by deleted dialogs
+8. `java.io.File` — used only by deleted SAF launchers
+9. `com.aistra.hail.ui.home.HomeFragment` — used only by deleted `showRestoreDialog` fragment-walk
+10. `com.aistra.hail.ui.home.PagerFragment` — used only by deleted `showRestoreDialog` fragment-walk
+
+**Imports retained (confirmed still needed by surviving functions):**
+- `androidx.activity.result.contract.ActivityResultContracts` — still used for `RequestPermission()` at `SettingsFragment.kt:74`
+- `com.google.android.material.dialog.MaterialAlertDialogBuilder` — still used by `showTerminalDialog` (line 686), `confirmRebuildCache` (line 340), `addPinShortcut` (lines 449, 452, 465), `onWorkingModeChange` (line 528), `onTerminalResult` (line 643)
+- `R.layout.dialog_progress` — not imported (referenced via `R.layout.dialog_progress`); usage was only in deleted `showRestoreDialog`. Layout file preserved per brief (used by `AppsFragment.kt:63`).
+- `msg_imported` — string reference was only in deleted `showRestoreDialog`. String preserved per brief (used by `PagerFragment` for app list import).
+
+## Deletions Beyond Brief (none)
+
+All deletions match the brief exactly:
+- `backupLauncher` (lines 87-130 originally) — SAF launcher + callback
+- `restoreLauncher` (lines 131-160 originally) — SAF launcher + callback
+- `pendingBackupOptions` field (line 161 originally)
+- `showBackupDialog` (lines 770-798 originally) — full body
+- `showRestoreDialog` (lines 800-856 originally) — full body
+- `restore` preference row (lines 411-416 originally)
+
+No other code removed. Surviving functions (`showTerminalDialog`, `confirmRebuildCache`, `addPinShortcut`, `onWorkingModeChange`, `onTerminalResult`, `requestBackgroundActivity`, `iconPackName`, `resetDynamicShortcuts`, `onCreateView`, `SettingsScreen`, preference helpers) all compile with their imports intact.
+
+## Concerns
+
+None. The surviving `backup_preference` row keeps its key and category position, title now covers both directions via `R.string.title_backup_restore`, and click navigates to `nav_backup` using the established idiom. All deleted symbols are fully removed from the module. CI run is in progress; will confirm green when complete.
