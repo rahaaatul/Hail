@@ -15,7 +15,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,7 +44,6 @@ import com.aistra.hail.backup.canStartBackup
 import com.aistra.hail.backup.canStartRestore
 import com.aistra.hail.backup.Phase
 import com.aistra.hail.backup.RestoreState
-import com.aistra.hail.utils.HBackup
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -82,38 +80,38 @@ fun BackupRestoreScreen(
         // Backup option rows
         item {
             BackupOptionRow(
-                category = BackupCategory.APPS,
                 title = stringResource(R.string.backup_apps),
                 summary = stringResource(R.string.summary_backup_apps),
                 checked = backupState.options.apps,
-                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.APPS, it) }
+                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.APPS, it) },
+                enabled = backupState.phase != Phase.Working
             )
         }
         item {
             BackupOptionRow(
-                category = BackupCategory.WHITELIST,
                 title = stringResource(R.string.backup_whitelist),
                 summary = stringResource(R.string.summary_backup_whitelist),
                 checked = backupState.options.whitelist,
-                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.WHITELIST, it) }
+                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.WHITELIST, it) },
+                enabled = backupState.phase != Phase.Working
             )
         }
         item {
             BackupOptionRow(
-                category = BackupCategory.ACTIONS,
                 title = stringResource(R.string.backup_actions),
                 summary = stringResource(R.string.summary_backup_actions),
                 checked = backupState.options.actions,
-                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.ACTIONS, it) }
+                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.ACTIONS, it) },
+                enabled = backupState.phase != Phase.Working
             )
         }
         item {
             BackupOptionRow(
-                category = BackupCategory.SETTINGS,
                 title = stringResource(R.string.backup_settings),
                 summary = stringResource(R.string.summary_backup_settings),
                 checked = backupState.options.settings,
-                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.SETTINGS, it) }
+                onCheckedChange = { viewModel.onBackupOptionChange(BackupCategory.SETTINGS, it) },
+                enabled = backupState.phase != Phase.Working
             )
         }
 
@@ -127,11 +125,6 @@ fun BackupRestoreScreen(
                         onClick = onCreateBackup,
                         disabledReason = if (!canBackup) stringResource(R.string.msg_no_items_to_select) else null
                     )
-                }
-                if (!canBackup && backupState.message != null) {
-                    item {
-                        DisabledReasonText(text = backupState.message!!)
-                    }
                 }
             }
             Phase.Working -> {
@@ -171,7 +164,7 @@ fun BackupRestoreScreen(
                 }
             }
             is RestoreState.Loaded -> {
-                val loadedState = restoreState as RestoreState.Loaded
+                val loadedState = restoreState
                 item {
                     RestoreFileSlotLoaded(
                         state = loadedState,
@@ -179,27 +172,27 @@ fun BackupRestoreScreen(
                         context = context
                     )
                 }
-                // Restore entry rows
-                loadedState.entries.forEach { entry ->
-                    item {
-                        RestoreEntryRow(
-                            entry = entry,
-                            checked = when (entry.category) {
-                                BackupCategory.APPS -> loadedState.options.apps
-                                BackupCategory.WHITELIST -> loadedState.options.whitelist
-                                BackupCategory.ACTIONS -> loadedState.options.actions
-                                BackupCategory.SETTINGS -> loadedState.options.settings
-                            },
-                            onCheckedChange = { viewModel.onRestoreOptionChange(entry.category, it) },
-                            enabled = entry.present,
-                            context = context
-                        )
-                    }
-                }
                 // Restore section action area
                 val canRestore = canStartRestore(loadedState)
                 when (loadedState.phase) {
                     Phase.Idle -> {
+                        // Restore entry rows
+                        loadedState.entries.forEach { entry ->
+                            item {
+                                RestoreEntryRow(
+                                    entry = entry,
+                                    checked = when (entry.category) {
+                                        BackupCategory.APPS -> loadedState.options.apps
+                                        BackupCategory.WHITELIST -> loadedState.options.whitelist
+                                        BackupCategory.ACTIONS -> loadedState.options.actions
+                                        BackupCategory.SETTINGS -> loadedState.options.settings
+                                    },
+                                    onCheckedChange = { viewModel.onRestoreOptionChange(entry.category, it) },
+                                    entryPresent = entry.present,
+                                    context = context
+                                )
+                            }
+                        }
                         item {
                             RestoreActionButton(
                                 text = stringResource(R.string.action_restore_selected),
@@ -207,11 +200,6 @@ fun BackupRestoreScreen(
                                 onClick = onRestoreConfirm,
                                 disabledReason = if (!canRestore) stringResource(R.string.msg_no_items_to_select) else null
                             )
-                        }
-                        if (!canRestore && loadedState.message != null) {
-                            item {
-                                DisabledReasonText(text = loadedState.message!!)
-                            }
                         }
                     }
                     Phase.Working -> {
@@ -237,11 +225,11 @@ fun BackupRestoreScreen(
 
 @Composable
 private fun BackupOptionRow(
-    category: BackupCategory,
     title: String,
     summary: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true
 ) {
     ListItem(
         modifier = Modifier
@@ -249,7 +237,7 @@ private fun BackupOptionRow(
             .toggleable(
                 value = checked,
                 role = Role.Checkbox,
-                onValueChange = onCheckedChange
+                onValueChange = if (enabled) onCheckedChange else { _ -> }
             ),
         headlineContent = { Text(text = title) },
         supportingContent = { Text(text = summary) },
@@ -257,7 +245,8 @@ private fun BackupOptionRow(
             Checkbox(
                 checked = checked,
                 onCheckedChange = null,
-                modifier = Modifier.padding(end = dimensionResource(R.dimen.padding_medium))
+                modifier = Modifier.padding(end = dimensionResource(R.dimen.padding_medium)),
+                enabled = enabled
             )
         }
     )
@@ -375,25 +364,20 @@ private fun RestoreFileSlotLoaded(
     val dateText = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(state.file.lastModified())
     val summaryText = "$sizeText · $dateText"
     
-    Column(
+    ListItem(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
-    ) {
-        ListItem(
-            modifier = Modifier.fillMaxWidth(),
-            headlineContent = {
-                Text(text = state.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            },
-            supportingContent = {
-                Text(text = summaryText, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            },
-            trailingContent = {
-                TextButton(onClick = onChangeClick) {
-                    Text(text = stringResource(R.string.action_change_archive))
-                }
+        headlineContent = {
+            Text(text = state.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        supportingContent = {
+            Text(text = summaryText, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        },
+        trailingContent = {
+            TextButton(onClick = onChangeClick) {
+                Text(text = stringResource(R.string.action_change_archive))
             }
-        )
-    }
+        }
+    )
 }
 
 @Composable
@@ -401,23 +385,16 @@ private fun RestoreEntryRow(
     entry: BackupEntry,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean,
+    entryPresent: Boolean,
     context: android.content.Context
 ) {
-    val categoryName = when (entry.category) {
-        BackupCategory.APPS -> stringResource(R.string.backup_apps)
-        BackupCategory.WHITELIST -> stringResource(R.string.backup_whitelist)
-        BackupCategory.ACTIONS -> stringResource(R.string.backup_actions)
-        BackupCategory.SETTINGS -> stringResource(R.string.backup_settings)
-    }
-    
-    val supportingText = if (enabled) {
+    val supportingText = if (entryPresent) {
         Formatter.formatFileSize(context, entry.sizeBytes)
     } else {
         stringResource(R.string.label_not_in_archive)
     }
     
-    val supportingColor = if (enabled) 
+    val supportingColor = if (entryPresent) 
         MaterialTheme.colorScheme.onSurfaceVariant 
     else 
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -428,16 +405,16 @@ private fun RestoreEntryRow(
             .toggleable(
                 value = checked,
                 role = Role.Checkbox,
-                onValueChange = if (enabled) onCheckedChange else { _ -> }
+                onValueChange = if (entryPresent) onCheckedChange else { _ -> }
             ),
-        headlineContent = { Text(text = categoryName) },
+        headlineContent = { Text(text = entry.name) },
         supportingContent = { Text(text = supportingText, color = supportingColor) },
         leadingContent = {
             Checkbox(
                 checked = checked,
                 onCheckedChange = null,
                 modifier = Modifier.padding(end = dimensionResource(R.dimen.padding_medium)),
-                enabled = enabled
+                enabled = entryPresent
             )
         }
     )

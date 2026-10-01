@@ -10,6 +10,7 @@ enum class BackupCategory {
 
 data class BackupEntry(
     val category: BackupCategory,
+    val name: String,
     val present: Boolean,
     val sizeBytes: Long
 )
@@ -44,6 +45,8 @@ fun entryCategory(name: String): BackupCategory? = when (name) {
  * corresponding name exists in the zip, regardless of its size (including zero-byte entries).
  * [BackupEntry.sizeBytes] is the uncompressed size from the central directory, or 0 when
  * the size is unknown (-1 in the ZIP format) or the category is absent.
+ * [BackupEntry.name] is the archive's own entry name when present, otherwise the canonical
+ * name for that category (apps.json, whitelist.json, actions.json, settings.json).
  *
  * If the zip contains multiple entries with the same name, the last one encountered
  * (the one `ZipFile.entries()` yields last) is the one reported, matching the behaviour
@@ -54,14 +57,14 @@ fun entryCategory(name: String): BackupCategory? = when (name) {
 fun entriesOf(file: File): List<BackupEntry> {
     val zipFile = ZipFile(file)
     try {
-        val entries = mutableMapOf<BackupCategory, Pair<Boolean, Long>>()
+        val entries = mutableMapOf<BackupCategory, Pair<String, Long>>()
         val zipEntries = zipFile.entries()
         while (zipEntries.hasMoreElements()) {
             val entry = zipEntries.nextElement()
             if (!entry.isDirectory) {
                 entryCategory(entry.name)?.let { category ->
                     val size = if (entry.size >= 0) entry.size else 0L
-                    entries[category] = true to size
+                    entries[category] = entry.name to size
                 }
             }
         }
@@ -71,12 +74,20 @@ fun entriesOf(file: File): List<BackupEntry> {
             BackupCategory.ACTIONS,
             BackupCategory.SETTINGS
         ).map { category ->
-            val (present, size) = entries[category] ?: (false to 0L)
-            BackupEntry(category, present, size)
+            val (name, size) = entries[category] ?: (canonicalName(category) to 0L)
+            val present = category in entries
+            BackupEntry(category, name, present, size)
         }
     } finally {
         zipFile.close()
     }
+}
+
+private fun canonicalName(category: BackupCategory): String = when (category) {
+    BackupCategory.APPS -> "apps.json"
+    BackupCategory.WHITELIST -> "whitelist.json"
+    BackupCategory.ACTIONS -> "actions.json"
+    BackupCategory.SETTINGS -> "settings.json"
 }
 
 fun canStartBackup(options: HBackup.BackupOptions): Boolean =
