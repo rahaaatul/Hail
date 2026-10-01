@@ -380,7 +380,7 @@ object HBackup {
                         }
                     }
 
-                    else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}")
+                    else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value.javaClass.simpleName}")
                 }
             }
         }
