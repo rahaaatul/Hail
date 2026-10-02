@@ -80,7 +80,6 @@
     <string name="msg_remove_owner">If Hail is removed as the device owner, there may be difficulties reorganizing Apps after Hail removal.
 \nFrozen apps will remain frozen after removal, please make sure you have unfrozen the important apps.</string>
     <string name="tap_to_select">Tap to multiselect</string>
-    <string name="no_items_to_select">No items to select</string>
     <string name="filter_by">Filter</string>
     <string name="filter_user_apps">User</string>
     <string name="filter_all_apps">All</string>
@@ -111,7 +110,26 @@
     <string name="msg_selected">Selected: %s</string>
     <string name="msg_exported">Exported: %s</string>
     <string name="msg_imported">Imported: %s</string>
+    <string name="msg_restored">Restored: %s</string>
     <string name="msg_text_copied">Copied: %s</string>
+    <string name="title_backup_restore">Backup &amp; restore</string>
+    <string name="summary_backup_apps">Pinned and selected apps</string>
+    <string name="summary_backup_whitelist">Apps excluded from freezing</string>
+    <string name="summary_backup_actions">Freeze and unfreeze recipes</string>
+    <string name="summary_backup_settings">Preferences and app config</string>
+    <string name="action_create_backup">Create backup</string>
+    <string name="action_choose_archive">Choose backup file\u2026</string>
+    <string name="action_change_archive">Change</string>
+    <string name="action_restore_selected">Restore selected</string>
+    <string name="summary_choose_archive">Pick a .zip this app wrote. Nothing is read until you choose one.</string>
+    <string name="label_in_this_archive">In this archive</string>
+    <string name="label_not_in_archive">Not in this archive</string>
+    <string name="msg_exporting">Exporting %1$s\u2026</string>
+    <string name="msg_importing">Restoring %1$s\u2026</string>
+    <string name="msg_restore_confirm_title">Restore this backup?</string>
+    <string name="msg_restore_confirm_body">%1$s will be replaced on this device. This cannot be undone.</string>
+    <string name="msg_wait_for_operation">Wait for the current operation to finish</string>
+    <string name="msg_not_a_backup">Not a Hail backup</string>
     <string name="msg_extract_apk">Extracted to: %s</string>
     <string name="msg_freeze">Froze: %s</string>
     <string name="msg_unfreeze">Unfroze: %s</string>
@@ -188,7 +206,7 @@
     <string name="backup_whitelist">Whitelist</string>
     <string name="backup_actions">Actions</string>
     <string name="backup_settings">Settings</string>
-    <string name="msg_no_items_to_select">No items to select</string>
+    <string name="msg_no_items_to_select">Select at least one item</string>
     <string name="title_backup">Backup</string>
     <string name="pick_file_not_folder">Please select a file, not a folder</string>
     <string name="cannot_open_selected_file">Cannot open the selected file</string>

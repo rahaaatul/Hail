@@ -5,14 +5,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
-import android.provider.DocumentsContract
 import android.provider.Settings
 import android.util.Log
 import android.view.*
-import androidx.documentfile.provider.DocumentFile
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
-import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.compose.runtime.SideEffect
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
@@ -52,15 +48,10 @@ import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
-import com.aistra.hail.ui.home.HomeFragment
-import com.aistra.hail.ui.home.PagerFragment
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.*
-import com.aistra.hail.utils.HBackup
-import com.aistra.hail.utils.HBackup.BackupOptions
-import com.aistra.hail.utils.HBackup.RestoreOptions
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textview.MaterialTextView
 import com.rosan.dhizuku.api.Dhizuku
@@ -76,7 +67,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.zhanghai.compose.preference.*
 import rikka.shizuku.Shizuku
-import java.io.File
 
 class SettingsFragment : MainFragment(), MenuProvider {
     private var islandPermissionRequest: CompletableDeferred<Boolean>? = null
@@ -84,81 +74,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         islandPermissionRequest?.complete(isGranted)
     }
-    private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
-        // Consumed on every path, including a cancelled picker: leaving it set lets a later
-        // backup reuse whatever the previous dialog checked.
-        val options = pendingBackupOptions
-        pendingBackupOptions = null
-        if (uri == null || options == null) return@registerForActivityResult
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
-        val ctx = context ?: return@registerForActivityResult
-        if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
-            HUI.showToast(R.string.pick_file_not_folder)
-            return@registerForActivityResult
-        }
-        lifecycleScope.launch {
-            val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
-            // Every string below is resolved from the application context, never from getString:
-            // by the time any of this runs the fragment can be detached - a back press, a
-            // rotation, a document provider that takes its time - and Fragment.getString throws
-            // "not attached to a context" from outside every try in the chain, so the failure
-            // path would raise it instead of the error it is reporting, and turn a failed export
-            // into a crash. runCatching catches CancellationException too, so cancelling
-            // lifecycleScope lands here rather than skipping it.
-            runCatching {
-                HBackup.backup(ctx, file, options).getOrThrow()
-                try {
-                    val outputStream = ctx.contentResolver.openOutputStream(uri)
-                        ?: throw IllegalStateException(app.getString(R.string.cannot_open_selected_file))
-                    outputStream.use { output ->
-                        file.inputStream().use { input ->
-                            HFiles.copy(input, output)
-                        }
-                    }
-                } catch (e: java.io.FileNotFoundException) {
-                    file.delete()
-                    HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
-                    return@launch
-                }
-            }.onSuccess {
-                HUI.showToast(R.string.msg_exported, file.name)
-            }.onFailure {
-                file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
-            }
-        }
-    }
-    private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@registerForActivityResult
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
-        val ctx = context ?: return@registerForActivityResult
-        if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
-            HUI.showToast(R.string.pick_file_not_folder)
-            return@registerForActivityResult
-        }
-        lifecycleScope.launch {
-            val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
-            runCatching {
-                try {
-                    ctx.contentResolver.openInputStream(uri)?.use { input ->
-                        file.outputStream().use { output ->
-                            HFiles.copy(input, output)
-                        }
-                    }
-                } catch (e: java.io.FileNotFoundException) {
-                    file.delete()
-                    HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
-                    return@launch
-                }
-            }.onSuccess {
-                showRestoreDialog(file)
-            }.onFailure {
-                file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
-            }
-        }
-    }
-    private var pendingBackupOptions: BackupOptions? = null
     private val _iconPackValues = mutableStateOf(listOf(HailData.ACTION_NONE))
     private val _iconPackNames = mutableStateOf(mapOf<String, String>())
 
@@ -404,15 +319,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
             preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
             preference(
                 key = "backup_preference",
-                title = { Text(text = stringResource(R.string.action_backup)) },
+                title = { Text(text = stringResource(R.string.title_backup_restore)) },
                 icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
-                onClick = ::showBackupDialog
-            )
-            preference(
-                key = "restore",
-                title = { Text(text = stringResource(R.string.action_restore)) },
-                icon = { Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null) },
-                onClick = { restoreLauncher.launch(arrayOf("application/zip")) }
+                onClick = { findNavController().navigate(R.id.nav_backup) }
             )
         }
     }
@@ -765,94 +674,6 @@ class SettingsFragment : MainFragment(), MenuProvider {
             )
         ) menu.findItem(R.id.action_terminal).isVisible = true
         else if (HPolicy.isDeviceOwnerActive) menu.findItem(R.id.action_remove_owner).isVisible = true
-    }
-
-    private fun showBackupDialog() {
-        val checkedItems = booleanArrayOf(true, true, true, true)
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_backup)
-            .setMultiChoiceItems(
-                arrayOf(
-                    getString(R.string.backup_apps),
-                    getString(R.string.backup_whitelist),
-                    getString(R.string.backup_actions),
-                    getString(R.string.backup_settings)
-                ),
-                checkedItems
-            ) { _, _, _ -> }
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val options = BackupOptions(
-                    apps = checkedItems[0],
-                    whitelist = checkedItems[1],
-                    actions = checkedItems[2],
-                    settings = checkedItems[3]
-                )
-                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
-                    HUI.showToast(R.string.msg_no_items_to_select)
-                    return@setPositiveButton
-                }
-                pendingBackupOptions = options
-                backupLauncher.launch("hail-backup-${System.currentTimeMillis()}.zip")
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun showRestoreDialog(file: File) {
-        var restoreStarted = false
-        val checkedItems = booleanArrayOf(true, true, true, true)
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_restore)
-            .setMultiChoiceItems(
-                arrayOf(
-                    getString(R.string.backup_apps),
-                    getString(R.string.backup_whitelist),
-                    getString(R.string.backup_actions),
-                    getString(R.string.backup_settings)
-                ),
-                checkedItems
-            ) { _, _, _ -> }
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val options = RestoreOptions(
-                    apps = checkedItems[0],
-                    whitelist = checkedItems[1],
-                    actions = checkedItems[2],
-                    settings = checkedItems[3]
-                )
-                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
-                    HUI.showToast(R.string.msg_no_items_to_select)
-                    return@setPositiveButton
-                }
-                // The flag marks the restore as handed off so the dismiss listener keeps the file.
-                restoreStarted = true
-                lifecycleScope.launch {
-                    val dialog = MaterialAlertDialogBuilder(requireActivity()).setView(R.layout.dialog_progress).setCancelable(false).show()
-                    val result = HBackup.restore(requireContext(), file, options)
-                    dialog.dismiss()
-                    result.onSuccess {
-                        if (options.apps) {
-                            parentFragmentManager.fragments.forEach { fragment ->
-                                if (fragment is HomeFragment) {
-                                    fragment.childFragmentManager.fragments.forEach { pager ->
-                                        if (pager is PagerFragment) {
-                                            pager.updateCurrentList()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if (options.settings) {
-                            activity.invalidateOptionsMenu()
-                        }
-                        HUI.showToast(R.string.msg_imported)
-                    }.onFailure {
-                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
-                    }
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .setOnDismissListener {
-                if (!restoreStarted) file.delete()
-            }
-            .show()
     }
 
     private fun showTerminalDialog() {

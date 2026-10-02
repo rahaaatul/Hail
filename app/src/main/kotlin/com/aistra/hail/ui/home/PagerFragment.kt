@@ -344,7 +344,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private fun onMultiselectLongClick() {
         val currentList = pagerAdapter.currentList
         if (currentList.isEmpty()) {
-            HUI.showToast(R.string.no_items_to_select)
+            HUI.showToast(R.string.msg_no_items_to_select)
             return
         }
 
