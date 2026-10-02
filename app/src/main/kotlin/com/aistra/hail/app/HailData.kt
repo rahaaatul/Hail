@@ -236,7 +236,7 @@ object HailData {
     // every save reads them.
     private val appsPath get() = "$dir/apps.json"
     private val tagsPath get() = "$dir/tags.json"
-    private val checkedListLock = Object()
+    private val checkedListLock = Any()
 
     val checkedList: MutableList<AppInfo> by lazy {
         mutableListOf<AppInfo>().apply {
