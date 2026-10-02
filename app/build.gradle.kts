@@ -105,8 +105,20 @@ android {
     }
     testOptions {
         unitTests.all {
-            it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+            it.jvmArgs(
+                "-Dnet.bytebuddy.experimental=true",
+                // Robolectric's FileDescriptorInterceptor reaches into
+                // jdk.internal.access.SharedSecrets, which JDK 27 no longer
+                // exports to the unnamed module, so it throws
+                // "Failed to interact with raw FileDescriptor internals".
+                "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+                "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+            )
         }
+        // Robolectric loads real resources and a real Android runtime, so the
+        // merged resources and manifest have to be handed to the unit test JVM
+        // instead of being stubbed out.
+        unitTests.isIncludeAndroidResources = true
     }
 }
 java {
@@ -162,6 +174,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("androidx.room3:room3-testing:3.0.3")
     testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation(libs.robolectric)
     testImplementation("org.json:json:20260814")
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
