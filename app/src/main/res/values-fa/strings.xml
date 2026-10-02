@@ -4,6 +4,8 @@
     <string name="app_slogan">یخبندان!</string>
     <string name="title_home">خانه</string>
     <string name="title_apps">برنامه‌ها</string>
+    <string name="action_add_action">افزودن عمل</string>
+    <string name="action_add_apps">افزودن برنامه‌ها</string>
     <string name="title_settings">تنظیمات</string>
     <string name="title_about">درباره</string>
     <string name="label_default">پیش‌گزیده</string>

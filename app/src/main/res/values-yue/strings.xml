@@ -4,6 +4,8 @@
     <string name="app_slogan">实现冻结自由！</string>
     <string name="title_home">首頁</string>
     <string name="title_apps">應用</string>
+    <string name="action_add_action">加行動</string>
+    <string name="action_add_apps">加應用程式</string>
     <string name="title_settings">設置</string>
     <string name="title_about">關於</string>
     <string name="label_default">預設</string>

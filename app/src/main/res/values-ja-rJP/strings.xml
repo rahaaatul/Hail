@@ -4,6 +4,8 @@
     <string name="app_slogan">Freezedom!</string>
     <string name="title_home">ホーム</string>
     <string name="title_apps">アプリ</string>
+    <string name="action_add_action">アクションを追加</string>
+    <string name="action_add_apps">アプリを追加</string>
     <string name="title_settings">設定</string>
     <string name="title_about">情報</string>
     <string name="label_default">デフォルト</string>

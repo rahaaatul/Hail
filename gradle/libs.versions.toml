@@ -26,6 +26,7 @@ libxposed = "102.0.0"
 libsu = "6.0.0"
 room = "3.0.3"
 ksp = "2.3.12"
+robolectric = "4.17"
 sqlite = "2.7.1"
 
 [libraries]
@@ -63,6 +64,7 @@ androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref =
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }

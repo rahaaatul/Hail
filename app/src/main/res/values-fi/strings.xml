@@ -3,6 +3,8 @@
     <string name="label_default">Oletus</string>
     <string name="app_slogan">Freezedom!</string>
     <string name="title_apps">Sovellukset</string>
+    <string name="action_add_action">Lisää toiminto</string>
+    <string name="action_add_apps">Lisää sovelluksia</string>
     <string name="title_settings">Asetukset</string>
     <string name="title_about">Tietoja</string>
     <string name="action_qq">QQ Ryhmä</string>

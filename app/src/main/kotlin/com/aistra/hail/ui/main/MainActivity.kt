@@ -121,13 +121,17 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         when (destination.id) {
             R.id.nav_home -> {
                 fab.setIconResource(R.drawable.ic_round_add)
-                fab.contentDescription = getString(R.string.title_apps)
+                fab.setText(R.string.action_add_apps)
+                fab.setExtended(isLandscape)
+                fab.contentDescription = getString(R.string.action_add_apps)
                 fab.setOnClickListener { controller.navigate(R.id.nav_apps) }
                 fab.show()
             }
             R.id.nav_actions -> {
                 fab.setIconResource(R.drawable.ic_round_add)
-                fab.contentDescription = getString(R.string.action_create_action)
+                fab.setText(R.string.action_add_action)
+                fab.setExtended(isLandscape)
+                fab.contentDescription = getString(R.string.action_add_action)
                 fab.setOnClickListener {
                     (supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment)
                         ?.childFragmentManager?.primaryNavigationFragment?.let { fragment ->
