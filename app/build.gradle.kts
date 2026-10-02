@@ -113,6 +113,10 @@ android {
                 // "Failed to interact with raw FileDescriptor internals".
                 "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
                 "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+                // Robolectric loads librobolectric-nativeruntime with System.load,
+                // which JEP 472 restricts from JDK 24 on: the JVM runs it but warns,
+                // and promises to block it once native access stops being implied.
+                "--enable-native-access=ALL-UNNAMED",
             )
         }
         // Robolectric loads real resources and a real Android runtime, so the
