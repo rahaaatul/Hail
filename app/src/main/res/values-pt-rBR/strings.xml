@@ -120,6 +120,8 @@
     <string name="title_settings">Configurações</string>
     <string name="label_version">Versão</string>
     <string name="title_apps">Apps</string>
+    <string name="action_add_action">Adicionar ação</string>
+    <string name="action_add_apps">Adicionar aplicativos</string>
     <string name="title_set_owner">Definir proprietário do dispositivo</string>
     <string name="action_freeze_current">Congelar o visível</string>
     <string name="msg_extract_apk">Extraído para: %s</string>

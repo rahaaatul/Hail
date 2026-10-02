@@ -7,6 +7,8 @@
     <string name="app_slogan">فریزڈم!</string>
     <string name="title_home">گھر</string>
     <string name="title_apps">ایپس</string>
+    <string name="action_add_action">ایکشن شامل کریں</string>
+    <string name="action_add_apps">ایپس شامل کریں</string>
     <string name="title_settings">ترتیبات</string>
     <string name="title_about">تعارف</string>
     <string name="label_default">طے شدہ</string>

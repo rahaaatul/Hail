@@ -107,6 +107,8 @@
     <string name="title_settings">Thiết lập</string>
     <string name="label_version">Phiên bản</string>
     <string name="title_apps">DS ứng dụng</string>
+    <string name="action_add_action">Thêm hành động</string>
+    <string name="action_add_apps">Thêm ứng dụng</string>
     <string name="title_set_owner">Thiết lập Chủ Sở Hữu Thiết Bị</string>
     <string name="action_freeze_current">Đóng băng trang hiện tại</string>
     <string name="msg_extract_apk">Đã trích xuất vào: %s</string>

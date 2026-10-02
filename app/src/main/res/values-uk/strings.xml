@@ -102,6 +102,8 @@
     <string name="tile_action">Швидке налаштування дій плитки</string>
     <string name="title_about">Про застосунок</string>
     <string name="title_apps">Застосунки</string>
+    <string name="action_add_action">Додати дію</string>
+    <string name="action_add_apps">Додати застосунки</string>
     <string name="title_customize">Зовнішній вигляд</string>
     <string name="title_donate">Дякуємо!</string>
     <string name="title_home">Головна</string>

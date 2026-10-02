@@ -39,4 +39,6 @@
     <string name="mode_default">ଅକାମ</string>
     <string name="mode_dhizuku_hide">Dhizuku - ଲୁଚାଅ</string>
     <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="action_add_action">କର୍ମ ଯୋଡ଼ନ୍ତୁ</string>
+    <string name="action_add_apps">ଆପ୍ ଯୋଡ଼ନ୍ତୁ</string>
 </resources>
