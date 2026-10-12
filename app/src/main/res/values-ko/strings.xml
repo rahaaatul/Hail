@@ -8,6 +8,8 @@
     <string name="app_slogan">Freezedom!</string>
     <string name="title_home">홈</string>
     <string name="title_apps">앱</string>
+    <string name="action_add_action">액션 추가</string>
+    <string name="action_add_apps">앱 추가</string>
     <string name="title_settings">설정</string>
     <string name="title_about">정보</string>
     <string name="label_time">설치일</string>

@@ -105,22 +105,52 @@ android {
     }
     testOptions {
         unitTests.all {
-            it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+    testOptions {
+        unitTests.all {
+            it.jvmArgs(
+                "-Dnet.bytebuddy.experimental=true",
+                # Robolectric's FileDescriptorInterceptor reaches into
+                # jdk.internal.access.SharedSecrets, which JDK 27 no longer
+                # exports to the unnamed module, so it throws
+                # "Failed to interact with raw FileDescriptor internals".
+                # Safe due to java.toolchain.languageVersion = 27 pinning the test JDK.
+                "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+                "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+                # Robolectric loads librobolectric-nativeruntime with System.load,
+                # which JEP 472 restricts from JDK 24 on: the JVM runs it but warns,
+                # and promises to block it once native access stops being implied.
+                # Safe due to java.toolchain.languageVersion = 27 pinning the test JDK.
+                "--enable-native-access=ALL-UNNAMED",
+            )
+        }
+        # Robolectric loads real resources and a real Android runtime, so the
+        # merged resources and manifest have to be handed to the unit test JVM
+        # instead of being stubbed out.
+        # This setting is required for Robolectric tests to function correctly.
+        # While it applies to all unit tests, it is safe because:
+        # 1. The test toolchain is pinned to JDK 27 ensuring compatibility
+        # 2. Non-Robolectric unit tests in this project are compatible with
+        #    real Android resources
+        unitTests.isIncludeAndroidResources = true
+    }
+// 1. The test toolchain is pinned to JDK 27 ensuring compatibility
+// 2. Non-Robolectric unit tests in this project are compatible with
+//    real Android resources
+        unitTests.isIncludeAndroidResources = true
+    }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(27)
         }
     }
-}
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(27)
+    kotlin {
+        jvmToolchain(27)
     }
-}
-kotlin {
-    jvmToolchain(27)
-}
 
-dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.activity.compose)
+    dependencies {
+        implementation(platform(libs.androidx.compose.bom))
+        implementation(libs.androidx.activity.compose)
+
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.ui.tooling.preview)
@@ -162,7 +192,13 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("androidx.room3:room3-testing:3.0.3")
     testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation(libs.robolectric)
     testImplementation("org.json:json:20260814")
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.junit.vintage)
+    testImplementation(libs.assertj)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotlin-test-junit5)
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")

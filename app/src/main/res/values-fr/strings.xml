@@ -8,6 +8,8 @@
     <string name="label_default">Par défaut</string>
     <string name="label_version">Version</string>
     <string name="title_apps">Applis</string>
+    <string name="action_add_action">Ajouter une action</string>
+    <string name="action_add_apps">Ajouter des applications</string>
     <string name="action_remove_home">Retirer de l\'accueil</string>
     <string name="title_settings">Paramètres</string>
     <string name="label_time">Date d\'installation</string>

@@ -116,6 +116,8 @@
     <string name="app_name">Hail</string>
     <string name="action_telegram">Telegram Grubu</string>
     <string name="title_apps">Uygulamalar</string>
+    <string name="action_add_action">Eylem ekle</string>
+    <string name="action_add_apps">Uygulama ekle</string>
     <string name="action_freeze">Dondur</string>
     <string name="action_qq">QQ Grubu</string>
     <string name="action_details">Uygulama bilgisi</string>

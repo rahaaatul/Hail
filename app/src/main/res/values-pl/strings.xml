@@ -65,6 +65,8 @@
     <string name="app_name">Hail</string>
     <string name="title_home">Ekran główny</string>
     <string name="title_apps">Aplikacje</string>
+    <string name="action_add_action">Dodaj akcję</string>
+    <string name="action_add_apps">Dodaj aplikacje</string>
     <string name="action_freeze_all">Zamroź wszystkie</string>
     <string name="action_unfreeze_all">Odmróź wszystko</string>
     <string name="action_lock">Zablokuj</string>

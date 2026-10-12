@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_apps">Alkalmazások</string>
+    <string name="action_add_action">Művelet hozzáadása</string>
+    <string name="action_add_apps">Alkalmazások hozzáadása</string>
     <string name="title_settings">Beállítások</string>
     <string name="title_about">Névjegy</string>
     <string name="app_name">Hail</string>

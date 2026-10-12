@@ -3,6 +3,8 @@
     <string name="app_slogan">Liberefrostigi!</string>
     <string name="title_home">Ĉefpaĝo</string>
     <string name="title_apps">Aplikaĵoj</string>
+    <string name="action_add_action">Aldoni agon</string>
+    <string name="action_add_apps">Aldoni programojn</string>
     <string name="title_about">Pri</string>
     <string name="label_version">Versio</string>
     <string name="label_time">Instaltempo</string>

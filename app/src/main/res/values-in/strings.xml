@@ -3,6 +3,8 @@
     <string name="title_settings">Pengaturan</string>
     <string name="title_about">Tentang</string>
     <string name="title_apps">Daftar aplikasi</string>
+    <string name="action_add_action">Tambah tindakan</string>
+    <string name="action_add_apps">Tambah aplikasi</string>
     <string name="title_home">Beranda</string>
     <string name="label_default">Bawaan</string>
     <string name="label_time">Tanggal instalasi</string>

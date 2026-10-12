@@ -4,6 +4,8 @@
     <string name="app_slogan">जमाव-मुक्ति!</string>
     <string name="title_home">मुख्य पृष्ठ</string>
     <string name="title_apps">ऐप्स</string>
+    <string name="action_add_action">कार्रवाई जोड़ें</string>
+    <string name="action_add_apps">ऐप जोड़ें</string>
     <string name="title_settings">सेटिंग्स</string>
     <string name="title_about">परिचय</string>
     <string name="label_default">डिफ़ॉल्ट</string>

@@ -40,6 +40,8 @@
     <string name="app_slogan">உறைபனி!</string>
     <string name="title_home">முகப்பு</string>
     <string name="title_apps">பயன்பாடுகள்</string>
+    <string name="action_add_action">செயலைச் சேர்</string>
+    <string name="action_add_apps">பயன்பாடுகளைச் சேர்</string>
     <string name="title_settings">அமைப்புகள்</string>
     <string name="title_about">பற்றி</string>
     <string name="label_default">இயல்புநிலை</string>

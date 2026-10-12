@@ -17,6 +17,8 @@
     <string name="app_name">Hail</string>
     <string name="action_tag_remove">Fjern etikett</string>
     <string name="title_apps">Programmer</string>
+    <string name="action_add_action">Legg til handling</string>
+    <string name="action_add_apps">Legg til apper</string>
     <string name="title_about">Om</string>
     <string name="label_default">Forvalg</string>
     <string name="label_time">Installasjonstidspunkt</string>

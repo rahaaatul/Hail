@@ -2,6 +2,8 @@
 <resources>
     <string name="app_slogan">Freezedom!</string>
     <string name="title_apps">Праграмы</string>
+    <string name="action_add_action">Дадаць дзеянне</string>
+    <string name="action_add_apps">Дадаць праграмы</string>
     <string name="title_settings">Налады</string>
     <string name="title_about">Пра праграму</string>
     <string name="label_default">Стандартна</string>

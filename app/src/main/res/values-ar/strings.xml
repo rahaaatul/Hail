@@ -126,6 +126,8 @@
     <string name="title_settings">الإعدادات</string>
     <string name="label_version">الإصدار</string>
     <string name="title_apps">التطبيقات</string>
+    <string name="action_add_action">إضافة إجراء</string>
+    <string name="action_add_apps">إضافة تطبيقات</string>
     <string name="title_set_owner">تعيين مالك الجهاز</string>
     <string name="action_freeze_current">تجميد مرئي</string>
     <string name="msg_extract_apk">مستخرج إلى: %s</string>

@@ -4,6 +4,8 @@
     <string name="app_slogan">Freezedom!</string>
     <string name="title_home">Home</string>
     <string name="title_apps">Applicazioni</string>
+    <string name="action_add_action">Aggiungi azione</string>
+    <string name="action_add_apps">Aggiungi app</string>
     <string name="title_settings">Impostazioni</string>
     <string name="title_about">Informazioni</string>
     <string name="label_default">Preimpostato</string>

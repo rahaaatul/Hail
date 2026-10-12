@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_apps">Aplikace</string>
+    <string name="action_add_action">Přidat akci</string>
+    <string name="action_add_apps">Přidat aplikace</string>
     <string name="title_settings">Nastavení</string>
     <string name="title_about">O nás</string>
     <string name="label_default">Výchozí</string>

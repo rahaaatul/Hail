@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="action_add_action">添行動</string>
+    <string name="action_add_apps">添應用程式</string>
 </resources>

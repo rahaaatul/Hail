@@ -4,6 +4,8 @@
     <string name="app_slogan">Mütləq Azadlıq!</string>
     <string name="title_home">Ev</string>
     <string name="title_apps">Tətbiqlər</string>
+    <string name="action_add_action">Fəaliyyət əlavə et</string>
+    <string name="action_add_apps">Tətbiqlər əlavə et</string>
     <string name="title_settings">Tənzimləmələr</string>
     <string name="title_about">Haqqında</string>
     <string name="label_default">Standart</string>
