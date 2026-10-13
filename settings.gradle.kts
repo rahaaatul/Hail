@@ -1,6 +1,7 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
+        maven { url = uri("https://packages.jetbrains.team/maven/p/kt/dev") }
         google()
         mavenCentral()
     }

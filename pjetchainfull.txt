@@ -1,0 +1,85 @@
+CONNECTED(00000003)
+---
+Certificate chain
+ 0 s:CN = packages.jetbrains.team
+   i:CN = Cloudflare TLS proxy-everything Intercept CA
+   a:PKEY: id-ecPublicKey, 256 (bit); sigalg: ecdsa-with-SHA256
+   v:NotBefore: Oct 13 03:26:54 2026 GMT; NotAfter: Oct 14 04:26:54 2026 GMT
+-----BEGIN CERTIFICATE-----
+MIIBxDCCAWqgAwIBAgIRALTXKcIHhJjBMgXBIvMrYqAwCgYIKoZIzj0EAwIwNzE1
+MDMGA1UEAxMsQ2xvdWRmbGFyZSBUTFMgcHJveHktZXZlcnl0aGluZyBJbnRlcmNl
+cHQgQ0EwHhcNMjYxMDEzMDMyNjU0WhcNMjYxMDE0MDQyNjU0WjAiMSAwHgYDVQQD
+ExdwYWNrYWdlcy5qZXRicmFpbnMudGVhbTBZMBMGByqGSM49AgEGCCqGSM49AwEH
+A0IABLOC5oAlWIJbsVbUC+7X3RpuVrsfHe/4DZ+a/afwU7W7WY1uwmtHKcMtSiwo
+UyRdQtBUA27uglYmEvsOm9qg96WjbDBqMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUE
+DDAKBggrBgEFBQcDATAfBgNVHSMEGDAWgBSa0rof19uzv9bKzcUYPtDNK/A1iTAi
+BgNVHREEGzAZghdwYWNrYWdlcy5qZXRicmFpbnMudGVhbTAKBggqhkjOPQQDAgNI
+ADBFAiEA80UnXSyAqtoUeAk+Bhx29uSCsVQZJyfw2jHM3GrCvKACIGIxhxajQlav
++qelcUsO/4pztfFTVnRWRA2u6UOO4Tza
+-----END CERTIFICATE-----
+ 1 s:CN = Cloudflare TLS proxy-everything Intercept CA
+   i:CN = Cloudflare TLS proxy-everything Intercept CA
+   a:PKEY: id-ecPublicKey, 256 (bit); sigalg: ecdsa-with-SHA256
+   v:NotBefore: Oct 13 03:14:51 2026 GMT; NotAfter: Nov 12 04:14:51 2026 GMT
+-----BEGIN CERTIFICATE-----
+MIIBsTCCAVigAwIBAgIRAOa3uuq8Q/YsqN0cV+xKwaUwCgYIKoZIzj0EAwIwNzE1
+MDMGA1UEAxMsQ2xvdWRmbGFyZSBUTFMgcHJveHktZXZlcnl0aGluZyBJbnRlcmNl
+cHQgQ0EwHhcNMjYxMDEzMDMxNDUxWhcNMjYxMTEyMDQxNDUxWjA3MTUwMwYDVQQD
+EyxDbG91ZGZsYXJlIFRMUyBwcm94eS1ldmVyeXRoaW5nIEludGVyY2VwdCBDQTBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABIrxCGSNHDQT+CvnKO2KzDNRClkyzjAK
+o2cJVRAM+4JHY9RKxUuqKs2uydWxUg1CG/gFvBTzgTD4r4uhUHlTj7GjRTBDMA4G
+A1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSa0rof
+19uzv9bKzcUYPtDNK/A1iTAKBggqhkjOPQQDAgNHADBEAiASm6Vd/ezn4Exws/tb
+nkzFnaYw1p75of7Uk3xLqJVj7AIgYJlkqG9JRy59bEa0wNcrzEzdpsvwT3eHgJUV
+KYu1iCs=
+-----END CERTIFICATE-----
+---
+Server certificate
+subject=CN = packages.jetbrains.team
+issuer=CN = Cloudflare TLS proxy-everything Intercept CA
+---
+No client certificate CA names sent
+Peer signing digest: SHA256
+Peer signature type: ECDSA
+Server Temp Key: X25519, 253 bits
+---
+SSL handshake has read 1257 bytes and written 389 bytes
+Verification error: self-signed certificate in certificate chain
+---
+New, TLSv1.3, Cipher is TLS_AES_128_GCM_SHA256
+Server public key is 256 bit
+Secure Renegotiation IS NOT supported
+Compression: NONE
+Expansion: NONE
+No ALPN negotiated
+Early data was not sent
+Verify return code: 19 (self-signed certificate in certificate chain)
+---
+---
+Post-Handshake New Session Ticket arrived:
+SSL-Session:
+    Protocol  : TLSv1.3
+    Cipher    : TLS_AES_128_GCM_SHA256
+    Session-ID: 4EF2F56DCC0AA028DED3511B63BDD31BA4929389BDD13571DFCAC7DF464CD863
+    Session-ID-ctx: 
+    Resumption PSK: 48DB7C1B51FBA08CEEBF2480251BBC9439F407069788DF4A29EB0371348DBDEA
+    PSK identity: None
+    PSK identity hint: None
+    SRP username: None
+    TLS session ticket lifetime hint: 604800 (seconds)
+    TLS session ticket:
+    0000 - 95 e3 65 f1 ae 98 38 ae-2d 94 bd 98 28 0e 97 b2   ..e...8.-...(...
+    0010 - 3b aa 67 a8 64 64 7d e0-01 40 bb b2 c6 89 b3 ec   ;.g.dd}..@......
+    0020 - 39 8b 04 dd df ed 8d 43-97 cf b3 8b c2 dc a7 51   9......C.......Q
+    0030 - 5b 07 fa b4 08 0b 93 6d-20 97 5e 9b 1f 4b c2 22   [......m .^..K."
+    0040 - 81 36 7f 16 e0 bb 49 23-1a 64 ff be 90 37 62 2b   .6....I#.d...7b+
+    0050 - be 16 50 29 b6 f6 ab a5-67 b3 ca 69 0c 32 cd 95   ..P)....g..i.2..
+    0060 - 89 88 e0 0e 73 de 4c a4-f0                        ....s.L..
+
+    Start Time: 1791865733
+    Timeout   : 7200 (sec)
+    Verify return code: 19 (self-signed certificate in certificate chain)
+    Extended master secret: no
+    Max Early Data: 0
+---
+read R BLOCK
