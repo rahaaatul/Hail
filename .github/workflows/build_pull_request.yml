@@ -65,10 +65,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Assign PR to author
-        if: github.event_name == 'pull_request'
-        run: |
-          gh pr edit ${{ github.event.pull_request.number }} --add-assignee ${{ github.actor }}
       - uses: .github/actions/commitlint
         with:
           config-file: './commitlint.config.js'

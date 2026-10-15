@@ -17,3 +17,5 @@ commits_since_v1.10.3.txt
 *.jks
 *.keystore
 !.github/debug.keystore
+
+/.tmp/
