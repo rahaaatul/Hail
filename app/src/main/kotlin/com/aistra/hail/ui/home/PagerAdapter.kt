@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -68,8 +67,10 @@ class PagerAdapter(
             textSize = TextUnit.Unspecified,
             enabled = true
         ))
+        private var currentAppInfo: com.aistra.hail.app.AppInfo? = null
 
         fun bind(info: com.aistra.hail.app.AppInfo) {
+            currentAppInfo = info
             state.value = state.value.copy(
                 icon = null, // We'll load the icon asynchronously
                 appName = info.name,
@@ -78,10 +79,10 @@ class PagerAdapter(
                 enabled = true
             )
             // Update textColor based on info state
-            val context = composeView.context
+            val context = itemView.context
             when {
-                info in selectedList -> state.value = state.value.copy(textColor = Color(ContextCompat.getColor(context, androidx.appcompat.R.attr.colorPrimary)))
-                info.state == com.aistra.hail.app.AppInfo.State.NOT_FOUND -> state.value = state.value.copy(textColor = Color(ContextCompat.getColor(context, androidx.appcompat.R.attr.colorError)))
+                info in selectedList -> state.value = state.value.copy(textColor = Color(MaterialColors.getColor(itemView, androidx.appcompat.R.attr.colorPrimary)))
+                info.state == com.aistra.hail.app.AppInfo.State.NOT_FOUND -> state.value = state.value.copy(textColor = Color(MaterialColors.getColor(itemView, androidx.appcompat.R.attr.colorError)))
                 else -> state.value = state.value.copy(textColor = Color.Unspecified)
             }
             state.value = state.value.copy(textSize = HailData.homeFontSize.sp)
@@ -92,8 +93,8 @@ class PagerAdapter(
             composeView.setContent {
                 ItemHome(
                     state = state.value,
-                    onClick = { onItemClickListener.onItemClick(info) },
-                    onLongClick = { onItemLongClickListener.onItemLongClick(info) }
+                    onClick = { currentAppInfo?.let { onItemClickListener.onItemClick(it) } },
+                    onLongClick = { currentAppInfo?.let { onItemLongClickListener.onItemLongClick(it) } }
                 )
             }
         }
