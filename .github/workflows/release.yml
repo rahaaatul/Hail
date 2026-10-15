@@ -49,10 +49,7 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
-      - name: Read metadata
-        uses: .github/actions/read-metadata
-        id: metadata
-      - name: Build both APKs (matrix)
+      - name: Build both APKs (with metadata, tests, and Detekt)
         uses: .github/actions/build-apk
         id: build
       - name: Release (semantic-release)

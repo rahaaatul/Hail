@@ -1,9 +1,10 @@
 # Build APK Action
 
-This action builds both release and debug APKs for an Android project with unit testing and code quality checks.
+This action extracts metadata, runs unit tests and Detekt code quality checks, then builds both release and debug APKs for an Android project.
 
 ## Features
 
+- Extracts version and app name from build.gradle.kts and AndroidManifest.xml
 - Runs unit tests (`./gradlew test`)
 - Runs Detekt code quality checks (`./gradlew detekt`)
 - Builds both release and debug APKs in parallel using Gradle's `--parallel` flag
@@ -23,8 +24,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           gradle-cache: 'true'
-      - uses: .github/actions/read-metadata
-        id: metadata
       - uses: .github/actions/build-apk
         id: build
       - name: Upload release APK
@@ -50,9 +49,10 @@ jobs:
 
 ## How it works
 
-1. **Quality Checks**: Runs unit tests and Detekt first - if these fail, the APKs won't be built
-2. **Parallel Build**: Uses `./gradlew assembleRelease assembleDebug --no-daemon --parallel` to build both APKs simultaneously
-3. **Automatic Naming**: The APK naming is handled by `applicationVariants.all` in `build.gradle.kts`:
+1. **Metadata Extraction**: Reads version from `build.gradle.kts` and app name from `AndroidManifest.xml`
+2. **Quality Checks**: Runs unit tests first (fast feedback), then Detekt - if either fails, APKs won't be built
+3. **Parallel Build**: Uses `./gradlew assembleRelease assembleDebug --no-daemon --parallel` to build both APKs simultaneously
+4. **Automatic Naming**: The APK naming is handled by `applicationVariants.all` in `build.gradle.kts`:
    ```kotlin
    applicationVariants.all { variant ->
        val appName = rootProject.findProperty("appName") as String?
@@ -70,9 +70,9 @@ jobs:
 
 ## Required metadata
 
-This action expects the following to be available:
-- Java 21 JDK setup (via setup-java-gradle action)
-- Version and appName metadata (via read-metadata action or similar)
+This action expects the following to be available in the repository:
+- `build.gradle.kts` with version property
+- `src/main/AndroidManifest.xml` with android:label attribute
 
 ## Example workflow
 

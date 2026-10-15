@@ -1,5 +1,5 @@
 name: Build APK
-description: Build both release and debug APKs with unit testing and code quality checks (APKs are automatically named by build.gradle.kts)
+description: Extract metadata, run unit tests and Detekt code quality checks, then build both release and debug APKs (APKs are automatically named by build.gradle.kts)
 inputs:
 outputs:
   releaseApkPath:
@@ -9,11 +9,21 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Run Detekt code quality checks
-      run: ./gradlew detekt --no-daemon
+    - name: Extract metadata
+      id: metadata
+      run: |
+        # Extract version from build.gradle.kts
+        VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' build.gradle.kts || echo "0.0.0")
+        # Extract app name from AndroidManifest.xml
+        APP_NAME=$(grep -oP 'android:label\s*=\s*"\K[^"]+' src/main/AndroidManifest.xml || echo "App")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "appName=$APP_NAME" >> $GITHUB_OUTPUT
       shell: bash
     - name: Run unit tests
       run: ./gradlew test --no-daemon
+      shell: bash
+    - name: Run Detekt code quality checks
+      run: ./gradlew detekt --no-daemon
       shell: bash
     - name: Build APKs (matrix)
       id: build_matrix
