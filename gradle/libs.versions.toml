@@ -1,4 +1,5 @@
 [versions]
+detekt = "1.23.0"
 androidGradlePlugin = "9.4.1"
 kotlin = "2.4.21"
 appcompat = "1.8.0"
@@ -71,6 +72,7 @@ androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "b
 androidx-biometric-compose = { module = "androidx.biometric:biometric-compose", version.ref = "biometricCompose" }
 
 [plugins]
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
