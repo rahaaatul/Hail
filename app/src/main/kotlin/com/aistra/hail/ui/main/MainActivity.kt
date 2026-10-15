@@ -147,5 +147,6 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
             }
         }
         binding.bottomNav?.isVisible = destination.id != R.id.nav_about
+        binding.navRail?.isVisible = destination.id != R.id.nav_about
     }
 }
