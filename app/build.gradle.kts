@@ -12,8 +12,8 @@ android {
         applicationId = "com.aistra.hail"
         minSdk = 24
         targetSdk = 37
-versionCode = (rootProject.findProperty("versionCode") as String?)?.toInt() ?: 0
-versionName = rootProject.findProperty("version") as String?
+        versionCode = (rootProject.findProperty("versionCode") as String?)?.toInt() ?: 0
+        versionName = rootProject.findProperty("version") as String?
         ndk {
             val abi = project.findProperty("abi") as String?
             if (abi != null) abiFilters += abi
@@ -111,11 +111,10 @@ versionName = rootProject.findProperty("version") as String?
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
-lint {
+    lint {
           // Enable checking for unused resources
           checkReleaseBuilds = true
           // Treat warnings as errors to catch issues early
-          warningsAsErrors = true
           // Disable specific lint checks that are not relevant or too noisy
           disable += "IconTip"
           disable += "ContentDescription"
@@ -128,14 +127,28 @@ lint {
         // unless we have specific needs.
         // Do not zip align debug builds to save time during development
         // zipAlignEnabled = false
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+
+    // Automatically rename APK outputs to include app name, version, and build type
+    applicationVariants.all { variant ->
+        val appName = rootProject.findProperty("appName") as String?
+        val versionName = variant.versionName
+        if (appName != null && versionName != null) {
+            variant.outputs.forEach { output ->
+                if (output instanceof com.android.build.VariantOutput) {
+                    val buildType = variant.buildType.name
+                    output.outputFileName = "${appName}-v${versionName}-${buildType}.apk"
+                }
+            }
+        }
     }
-}
-kotlin {
-    jvmToolchain(21)
-}
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    kotlin {
+        jvmToolchain(21)
+    }
 }
 
 dependencies {

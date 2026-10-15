@@ -70,20 +70,6 @@ jobs:
       - name: Read metadata
         uses: .github/actions/read-metadata
         id: metadata
-      - name: Build both APKs
+      - name: Build both APKs (matrix)
         uses: .github/actions/build-apk
         id: build
-      - name: Rename release APK
-        uses: .github/actions/rename-apk
-        id: rename_release
-        with:
-          apkPath: ${{ steps.build.outputs.releaseApkPath }}
-          version: ${{ steps.metadata.outputs.version }}
-          appName: ${{ steps.metadata.outputs.appName }}
-      - name: Rename debug APK
-        uses: .github/actions/rename-apk
-        id: rename_debug
-        with:
-          apkPath: ${{ steps.build.outputs.debugApkPath }}
-          version: ${{ steps.metadata.outputs.version }}
-          appName: ${{ steps.metadata.outputs.appName }}

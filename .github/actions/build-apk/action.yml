@@ -1,5 +1,5 @@
 name: Build APK
-description: Build both release and debug APKs with unit testing and code quality checks
+description: Build both release and debug APKs with unit testing and code quality checks (APKs are automatically named by build.gradle.kts)
 inputs:
 outputs:
   releaseApkPath:
@@ -15,21 +15,21 @@ runs:
     - name: Run Detekt code quality checks
       run: ./gradlew detekt --no-daemon
       shell: bash
-    - name: Assemble release APK
-      run: ./gradlew assembleRelease --no-daemon
-      shell: bash
-    - name: Assemble debug APK
-      run: ./gradlew assembleDebug --no-daemon
-      shell: bash
+    - name: Build APKs (matrix)
+      id: build_matrix
+      run: |
+        # Build both release and debug APKs in parallel using Gradle's native parallel execution
+        ./gradlew assembleRelease assembleDebug --no-daemon --parallel
+        shell: bash
     - name: Find release APK
       id: find_release
       run: |
-        APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+        APK=$(find app/build/outputs/apk -name "*-release.apk" | head -n 1)
         echo "releaseApkPath=$APK" >> $GITHUB_OUTPUT
       shell: bash
     - name: Find debug APK
       id: find_debug
       run: |
-        APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+        APK=$(find app/build/outputs/apk -name "*-debug.apk" | head -n 1)
         echo "debugApkPath=$APK" >> $GITHUB_OUTPUT
       shell: bash
