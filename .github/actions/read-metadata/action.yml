@@ -1,7 +1,6 @@
 name: 'Read Metadata'
 description: 'Read version and app name from build.gradle.kts and AndroidManifest.xml'
-inputs:
-  # We don't have any inputs for this action, but we can add if needed
+inputs: {}
 outputs:
   version:
     description: 'Version of the app'
