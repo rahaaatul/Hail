@@ -114,7 +114,7 @@ android {
     // Automatically rename APK outputs to include app name, version, and build type
     applicationVariants.all { variant ->
         val appName = rootProject.findProperty("appName") as String?
-        val versionName = variant.versionName
+        val versionName = variant.versionName.orNull
         if (appName != null && versionName != null) {
             variant.outputs.forEach { output ->
                 if (output instanceof com.android.build.VariantOutput) {
