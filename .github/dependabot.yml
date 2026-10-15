@@ -1,29 +1,4 @@
 version: 2
-# Group dependencies to reduce pull request noise
-groups:
-  # npm development dependencies
-  npm-dev-deps:
-    patterns:
-      - "*"
-    dependency-type: "development"
-    update-types:
-      - "minor"
-      - "patch"
-  # Gradle dependencies (all)
-  gradle-deps:
-    patterns:
-      - "*"
-    update-types:
-      - "minor"
-      - "patch"
-  # GitHub Actions
-  github-actions:
-    patterns:
-      - "*"
-    update-types:
-      - "minor"
-      - "patch"
-
 updates:
   # npm dependencies in the root directory
   - package-ecosystem: "npm"
@@ -40,7 +15,14 @@ updates:
       prefix-development: "deps-dev"
       include: "scope"
     groups:
-      - npm-dev-deps
+      # npm development dependencies
+      npm-dev-deps:
+        patterns:
+          - "*"
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "semantic-release"
         versions: ["22.x"]  # Pin to specific version if needed, or remove to allow updates
@@ -64,7 +46,13 @@ updates:
       prefix-development: "deps-dev"
       include: "scope"
     groups:
-      - gradle-deps
+      # Gradle dependencies (all)
+      gradle-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     # For Gradle, we might want to ignore certain versions or dependencies
     ignore:
       - dependency-name: "com.android.tools.build:gradle"
@@ -90,7 +78,13 @@ updates:
       prefix-development: "deps-dev"
       include: "scope"
     groups:
-      - github-actions
+      # GitHub Actions
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     # GitHub Actions dependencies are the actions used in workflows
     ignore:
       - dependency-name: "actions/checkout"
