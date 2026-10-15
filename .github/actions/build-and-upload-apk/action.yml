@@ -1,5 +1,5 @@
 name: 'Build and Upload APK'
-description: 'Build, rename, and upload an APK for the specified build type'
+description: 'Run unit tests, build, rename, and upload an APK for the specified build type'
 inputs:
   buildType:
     description: 'Type of build (release or debug)'
@@ -13,6 +13,9 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Run unit tests
+      run: ./gradlew test
+      shell: bash
     - name: Build APK
       run: ./gradlew assemble${{ inputs.buildType }}
       shell: bash
