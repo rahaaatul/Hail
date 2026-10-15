@@ -60,7 +60,6 @@ updates:
     # Explicit updates for specific dependencies
     allow:
       - dependency-name: "org.lsposed.hiddenapibypass:hiddenapibypass"
-        version-type: semver
       - dependency-type: "development"
 
   # GitHub Actions in the root directory
