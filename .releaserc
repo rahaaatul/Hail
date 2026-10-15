@@ -1,0 +1,76 @@
+{
+  "branches": [
+    "main",
+    {
+      "name": "dev",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "releaseRules": [
+          { "type": "fix", "release": "patch" },
+          { "type": "feat", "release": "minor" },
+          { "type": "perf", "release": "patch" },
+          { "type": "build", "scope": "Needs bump", "release": "patch" }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "✨ Features", "hidden": false },
+            { "type": "perf", "section": "🔧 Improvements", "hidden": false },
+            { "type": "fix", "section": "🐛 Bug Fixes", "hidden": false },
+            { "type": "build", "hidden": true }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "echo \"version=${nextRelease.version}\" > gradle.properties.tmp && echo \"versionCode=$(echo ${nextRelease.version} | awk -F. '{print ($1*10000 + $2*100 + $3)}')\" >> gradle.properties.tmp && grep -v '^version=' gradle.properties >> gradle.properties.tmp && grep -v '^versionCode=' gradle.properties.tmp > gradle.properties && mv gradle.properties.tmp gradle.properties"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "gradle.properties",
+          "CHANGELOG.md"
+        ],
+        "message": "chore: Release v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "app/build/outputs/apk/**/*.apk"
+          }
+        ],
+        "successComment": false
+      }
+    ],
+    [
+      "@cleyrop-org/semantic-release-backmerge",
+      {
+        "backmergeBranches": [{"from": "main", "to": "dev"}],
+        "clearWorkspace": true
+      }
+    ]
+  ]
+}

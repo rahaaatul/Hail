@@ -1,0 +1,50 @@
+name: Build APK
+description: Extract metadata, run unit tests and Detekt code quality checks, then build both release and debug APKs (APKs are automatically named by build.gradle.kts)
+inputs:
+outputs:
+  releaseApkPath:
+    description: Path to the built release APK
+  debugApkPath:
+    description: Path to the built debug APK
+runs:
+  using: composite
+  steps:
+    - name: Extract metadata
+      id: metadata
+      run: |
+        # Extract version from build.gradle.kts
+        VERSION=$(grep -oE 'version\s*=\s*"[^"]+' build.gradle.kts | cut -d'"' -f2)
+        # Extract app name from AndroidManifest.xml
+        APP_NAME=$(grep -oE 'android:label\s*=\s*"[^"]+' src/main/AndroidManifest.xml | cut -d'"' -f2)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "appName=$APP_NAME" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Run unit tests
+      run: |
+        set -euo pipefail
+        ./gradlew test --no-daemon
+      shell: bash
+    - name: Run Detekt code quality checks
+      run: |
+        set -euo pipefail
+        ./gradlew detekt --no-daemon
+      shell: bash
+    - name: Build APKs (matrix)
+      id: build_matrix
+      run: |
+        set -euo pipefail
+        # Build both release and debug APKs in parallel using Gradle's native parallel execution
+        ./gradlew assembleRelease assembleDebug --no-daemon --parallel
+      shell: bash
+    - name: Find release APK
+      id: find_release
+      run: |
+        APK=$(find app/build/outputs/apk -name "*-release.apk" | head -n 1)
+        echo "releaseApkPath=$APK" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Find debug APK
+      id: find_debug
+      run: |
+        APK=$(find app/build/outputs/apk -name "*-debug.apk" | head -n 1)
+        echo "debugApkPath=$APK" >> $GITHUB_OUTPUT
+      shell: bash

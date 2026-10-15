@@ -1,23 +1,99 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
+# Group dependencies to reduce pull request noise
+groups:
+  # npm development dependencies
+  npm-dev-deps:
+    patterns:
+      - "*"
+    dependency-type: "development"
+    update-types:
+      - "minor"
+      - "patch"
+  # Gradle dependencies (all)
+  gradle-deps:
+    patterns:
+      - "*"
+    update-types:
+      - "minor"
+      - "patch"
+  # GitHub Actions
+  github-actions:
+    patterns:
+      - "*"
+    update-types:
+      - "minor"
+      - "patch"
+
 updates:
-  - package-ecosystem: "maven"
+  # npm dependencies in the root directory
+  - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
+      time: "00:00"
+    timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    groups:
+      - npm-dev-deps
+    ignore:
+      - dependency-name: "semantic-release"
+        versions: ["22.x"]  # Pin to specific version if needed, or remove to allow updates
+      - dependency-name: "@semantic-release/git"
+        versions: ["10.x"]  # Example of pinning
+    allow:
+      - dependency-type: "development"  # Only update devDependencies for npm
+
+  # Gradle dependencies in the root directory
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
+      time: "00:00"
+    timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "gradle"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    groups:
+      - gradle-deps
+    # For Gradle, we might want to ignore certain versions or dependencies
+    ignore:
+      - dependency-name: "com.android.tools.build:gradle"
+        versions: ["8.x"]  # Example if we want to pin AGP version
+    # Explicit updates for specific dependencies
+    allow:
+      - dependency-name: "org.lsposed.hiddenapibypass:hiddenapibypass"
+        version-type: semver
+      - dependency-type: "development"
+
+  # GitHub Actions in the root directory
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
-  - package-ecosystem: "pre-commit"
-    directory: "/"
-    schedule:
-      interval: "daily"
+      time: "00:00"
+    timezone: "America/New_York"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    groups:
+      - github-actions
+    # GitHub Actions dependencies are the actions used in workflows
+    ignore:
+      - dependency-name: "actions/checkout"
+        versions: ["v4"]  # Example if we want to stay on v3
+      - dependency-name: "actions/setup-node"
+        versions: ["v4"]  # Example if we want to stay on v3

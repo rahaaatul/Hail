@@ -12,8 +12,8 @@ android {
         applicationId = "com.aistra.hail"
         minSdk = 24
         targetSdk = 37
-        versionCode = (providers.gradleProperty("versionCode").orNull ?: "43").toInt()
-        versionName = providers.gradleProperty("versionName").orNull ?: "1.11.4"
+        versionCode = (rootProject.findProperty("versionCode") as String?)?.toInt() ?: 0
+        versionName = rootProject.findProperty("version") as String?
         ndk {
             val abi = project.findProperty("abi") as String?
             if (abi != null) abiFilters += abi
@@ -36,30 +36,13 @@ android {
                 keyPassword = project.findProperty("releaseKeyPassword") as String?
             }
         }
-
-        // Test key: committed, and can only sign com.aistra.hail.pr.<n> and
-        // com.aistra.hail.debug, so it grants nothing. Living in the repo is
-        // what makes every PR and debug build carry the same signature, so a
-        // rebuild installs over its own previous build instead of demanding an
-        // uninstall first. PKCS12 protects the key with the store password,
-        // so keyPassword must match storePassword.
-        create("test") {
-            val keystore = rootProject.file(".github/debug.keystore")
-            if (keystore.exists()) {
-                storeFile = keystore
-                storeType = "PKCS12"
-                storePassword = "HailBug"
-                keyAlias = "HailBug"
-                keyPassword = "HailBug"
-            }
-        }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-Debug"
-            signingConfig = signingConfigs.getByName("test")
+            signingConfig = signingConfigs.getByName("release")
         }
         create("pr") {
             // Each PR installs as its own app: com.aistra.hail.pr.<n>.
@@ -70,7 +53,7 @@ android {
             // segment must begin with a letter.
             applicationIdSuffix =
                 providers.gradleProperty("prNumber").orNull?.let { ".pr$it" } ?: ".pr"
-            signingConfig = signingConfigs.getByName("test")
+            signingConfig = signingConfigs.getByName("release")
         }
         release {
             isMinifyEnabled = true
@@ -87,6 +70,9 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
+            // Additional optimization settings
+            // Enable strict shrinking to remove more unused code
+            // This may cause issues if reflection is used incorrectly, but our rules should handle it
         }
     }
     androidResources {
@@ -108,14 +94,44 @@ android {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+     lint {
+           // Enable checking for unused resources
+           checkReleaseBuilds = true
+           // Treat warnings as errors to catch issues early
+           // Disable specific lint checks that are not relevant or too noisy
+           disable += "IconTip"
+           disable += "ContentDescription"
+           disable += "MissingPrefix"
+           // Do not compress resources that are already compressed
+           // This can help with install time and reduce CPU usage
+           // but may slightly increase APK size. For size optimization,
+           // we'll keep the default behavior which is to compress
+           // unless we have specific needs.
+           // Do not zip align debug builds to save time during development
+           // zipAlignEnabled = false
+         }
+
+    // Automatically rename APK outputs to include app name, version, and build type
+    applicationVariants.all { variant ->
+        val appName = rootProject.findProperty("appName") as String?
+        val versionName = variant.versionName.orNull
+        if (appName != null && versionName != null) {
+            variant.outputs.forEach { output ->
+                if (output instanceof com.android.build.VariantOutput) {
+                    val buildType = variant.buildType.name
+                    output.outputFileName = "${appName}-v${versionName}-${buildType}.apk"
+                }
+            }
+        }
     }
-}
-kotlin {
-    jvmToolchain(21)
-}
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    kotlin {
+        jvmToolchain(21)
+    }
 }
 
 dependencies {

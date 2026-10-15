@@ -1,0 +1,101 @@
+name: Build pull request
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'src/**'
+      - 'gradle/**'
+      - '**.kt'
+      - '**.java'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'AndroidManifest.xml'
+      - 'res/**'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - 'src/main/assets/**'
+      - 'src/main/jni/**'
+      - 'src/main/aidl/**'
+      - 'src/main/rs/**'
+      - '!**.md'
+      - '!**.txt'
+      - '!LICENSE'
+      - '!README.md'
+  pull_request:
+    branches:
+      - dev
+      - main
+    paths:
+      - 'src/**'
+      - 'gradle/**'
+      - '**.kt'
+      - '**.java'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'AndroidManifest.xml'
+      - 'res/**'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - 'src/main/assets/**'
+      - 'src/main/jni/**'
+      - 'src/main/aidl/**'
+      - 'src/main/rs/**'
+      - '!**.md'
+      - '!**.txt'
+      - '!LICENSE'
+      - '!README.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build APK
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assign PR to author
+        if: github.event_name == 'pull_request'
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --add-assignee ${{ github.actor }}
+      - uses: .github/actions/commitlint
+        with:
+          config-file: './commitlint.config.js'
+      - name: Setup Java and Gradle
+        uses: .github/actions/setup-java-gradle
+        with:
+          java-version: 21
+          distribution: temurin
+          gradle-cache: true
+          keystore-file: '${{ secrets.KEYSTORE }}'
+          keystore-password: '${{ secrets.KEYSTORE_PASSWORD }}'
+          key-alias: '${{ secrets.KEYSTORE_ALIAS }}'
+          key-password: '${{ secrets.KEYSTORE_ALIAS_PASSWORD }}'
+      - name: Build both APKs (with metadata, tests, and Detekt)
+        uses: .github/actions/build-apk
+        id: build
+      - name: Upload release APK as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-${{ github.sha }}
+          path: ${{ steps.build.outputs.releaseApkPath }}
+          retention-days: 30
+      - name: Upload debug APK as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.sha }}
+          path: ${{ steps.build.outputs.debugApkPath }}
+          retention-days: 30
