@@ -13,19 +13,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Run unit tests
-      run: ./gradlew test
-      shell: bash
-    - name: Build APK
-      run: ./gradlew assemble${{ inputs.buildType }}
-      shell: bash
-    - name: Rename APK
-      run: |
-        APK_DIR=app/build/outputs/apk/${{ inputs.buildType }}
-        APK_NAME=$(ls $APK_DIR/*.apk)
-        NEW_NAME="${{ inputs.appName }}-${{ inputs.version }}-${{ inputs.buildType }}.apk"
-        mv "$APK_NAME" "$APK_DIR/$NEW_NAME"
-      shell: bash
+    - name: Set up script permissions
+      run: chmod +x build-and-rename-and-test.sh
+    - name: Build, rename, and test APK
+      run: ./build-and-rename-and-test.sh
+      env:
+        BUILD_TYPE: ${{ inputs.buildType }}
+        VERSION: ${{ inputs.version }}
+        APP_NAME: ${{ inputs.appName }}
     - name: Upload APK artifact
       uses: actions/upload-artifact@v7
       with:
