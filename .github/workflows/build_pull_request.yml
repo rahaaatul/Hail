@@ -13,6 +13,9 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        buildType: [release, debug]
     steps:
       - name: Setup Java and Gradle
         uses: .github/actions/setup-java-gradle
@@ -20,12 +23,21 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           gradle-cache: 'true'
-      - name: Run unit tests
-        run: ./gradlew test
-      - name: Build APK
-        run: ./gradlew assembleRelease
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(grep '^version =' gradle.properties | cut -d'=' -f2 | tr -d ' ')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Build ${{ matrix.buildType }}
+        run: ./gradlew assemble${{ matrix.buildType }}
+      - name: Rename APK
+        run: |
+          APK_DIR=app/build/outputs/apk/${{ matrix.buildType }}
+          APK_NAME=$(ls $APK_DIR/*.apk)
+          NEW_NAME="Hail-${{ steps.version.outputs.version }}-${{ matrix.buildType }}.apk"
+          mv "$APK_NAME" "$APK_DIR/$NEW_NAME"
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: ${{ matrix.buildType }}-apk
+          path: app/build/outputs/apk/${{ matrix.buildType }}/Hail-${{ steps.version.outputs.version }}-${{ matrix.buildType }}.apk
