@@ -87,6 +87,6 @@ updates:
     # GitHub Actions dependencies are the actions used in workflows
     ignore:
       - dependency-name: "actions/checkout"
-        versions: ["v4"]  # Example if we want to stay on v3
+        versions: ["4"]  # Example if we want to stay on v4
       - dependency-name: "actions/setup-node"
-        versions: ["v4"]  # Example if we want to stay on v3
+        versions: ["4"]  # Example if we want to stay on v4
