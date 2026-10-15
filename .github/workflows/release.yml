@@ -52,12 +52,24 @@ jobs:
       - name: Build both APKs (with metadata, tests, and Detekt)
         uses: .github/actions/build-apk
         id: build
+      - name: Generate attestation for release APK
+        id: attest-release
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ${{ steps.build.outputs.releaseApkPath }}
+          push-to-registry: false
+      - name: Generate attestation for debug APK
+        id: attest-debug
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ${{ steps.build.outputs.debugApkPath }}
+          push-to-registry: false
       - name: Release (semantic-release)
         uses: cycjimmy/semantic-release-action@v6
         id: release_step
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload APKs to Release
+      - name: Upload APKs and attestations to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.release_step.outputs.upload_url }}
@@ -66,3 +78,19 @@ jobs:
           asset_content_type: application/vnd.android.package-archive
         matrix:
           buildType: [release, debug]
+      - name: Upload release attestation to Release
+        if: steps.attest-release.outputs.attestation-path != ''
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.release_step.outputs.upload_url }}
+          asset_path: ${{ steps.attest-release.outputs.attestation-path }}
+          asset_name: ${{ steps.attest-release.outputs.attestation-path }}
+          asset_content_type: application/vnd.in-toto+json
+      - name: Upload debug attestation to Release
+        if: steps.attest-debug.outputs.attestation-path != ''
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.release_step.outputs.upload_url }}
+          asset_path: ${{ steps.attest-debug.outputs.attestation-path }}
+          asset_name: ${{ steps.attest-debug.outputs.attestation-path }}
+          asset_content_type: application/vnd.in-toto+json
