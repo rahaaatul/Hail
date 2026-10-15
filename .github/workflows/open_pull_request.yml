@@ -4,6 +4,27 @@ on:
   push:
     branches:
       - dev
+    paths:
+      - 'src/**'
+      - 'gradle/**'
+      - '**.kt'
+      - '**.java'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'AndroidManifest.xml'
+      - 'res/**'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - 'src/main/assets/**'
+      - 'src/main/jni/**'
+      - 'src/main/aidl/**'
+      - 'src/main/rs/**'
+      - '**.md'
+      - '**.txt'
+      - 'LICENSE'
+      - 'README.md'
+      - '.gitignore'
   workflow_dispatch:
 
 env:

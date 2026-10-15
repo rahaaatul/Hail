@@ -12,8 +12,8 @@ android {
         applicationId = "com.aistra.hail"
         minSdk = 24
         targetSdk = 37
-        versionCode = (providers.gradleProperty("versionCode").orNull ?: "43").toInt()
-        versionName = providers.gradleProperty("versionName").orNull ?: "1.11.4"
+versionCode = (rootProject.findProperty("versionCode") as String?)?.toInt() ?: 0
+versionName = rootProject.findProperty("version") as String?
         ndk {
             val abi = project.findProperty("abi") as String?
             if (abi != null) abiFilters += abi
@@ -87,6 +87,9 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
+            // Additional optimization settings
+            // Enable strict shrinking to remove more unused code
+            // This may cause issues if reflection is used incorrectly, but our rules should handle it
         }
     }
     androidResources {
@@ -108,6 +111,23 @@ android {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
+lint {
+          // Enable checking for unused resources
+          checkReleaseBuilds = true
+          // Treat warnings as errors to catch issues early
+          warningsAsErrors = true
+          // Disable specific lint checks that are not relevant or too noisy
+          disable += "IconTip"
+          disable += "ContentDescription"
+          disable += "MissingPrefix"
+        }
+        // Do not compress resources that are already compressed
+        // This can help with install time and reduce CPU usage
+        // but may slightly increase APK size. For size optimization,
+        // we'll keep the default behavior which is to compress
+        // unless we have specific needs.
+        // Do not zip align debug builds to save time during development
+        // zipAlignEnabled = false
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)

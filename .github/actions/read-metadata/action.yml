@@ -1,12 +1,23 @@
 name: 'Read Metadata'
-description: 'Read version and appName from gradle.properties'
+description: 'Read version and app name from build.gradle.kts and AndroidManifest.xml'
+inputs:
+  # We don't have any inputs for this action, but we can add if needed
+outputs:
+  version:
+    description: 'Version of the app'
+    value: ${{ steps.metadata.outputs.version }}
+  appName:
+    description: 'Application name'
+    value: ${{ steps.metadata.outputs.appName }}
 runs:
   using: 'composite'
   steps:
-    - name: Read version and appName
+    - id: metadata
       run: |
-        VERSION=$(grep '^version =' gradle.properties | cut -d'=' -f2 | tr -d ' ')
-        APP_NAME=$(grep '^appName =' gradle.properties | cut -d'=' -f2 | tr -d ' ')
+        # Extract version from build.gradle.kts
+        VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' build.gradle.kts || echo "0.0.0")
+        # Extract app name from AndroidManifest.xml
+        APP_NAME=$(grep -oP 'android:label\s*=\s*"\K[^"]+' src/main/AndroidManifest.xml || echo "App")
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "appName=$APP_NAME" >> $GITHUB_OUTPUT
       shell: bash

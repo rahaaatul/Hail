@@ -1,0 +1,31 @@
+name: 'Build APK'
+description: 'Build the APK for the specified build type with unit testing and code quality checks'
+inputs:
+  buildType:
+    description: 'Type of build (release or debug)'
+    required: true
+    default: 'debug'
+outputs:
+  apkPath:
+    description: 'Path to the built APK'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run unit tests
+      run: |
+        ./gradlew test --no-daemon
+      shell: bash
+    - name: Run Detekt code quality checks
+      run: |
+        ./gradlew detekt --no-daemon
+      shell: bash
+    - name: Assemble APK
+      run: |
+        ./gradlew assemble${{ inputs.buildType }} --no-daemon
+      shell: bash
+    - name: Find APK
+      id: find_apk
+      run: |
+        APK=$(find app/build/outputs/apk/${{ inputs.buildType }} -name "*.apk" | head -n 1)
+        echo "apkPath=$APK" >> $GITHUB_OUTPUT
+      shell: bash
