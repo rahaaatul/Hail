@@ -4,6 +4,8 @@ kotlin = "2.4.21"
 appcompat = "1.8.0"
 appiconloader = "1.5.0"
 biometricKtx = "1.4.0-alpha02"
+biometric = "1.4.0-alpha02"
+biometricCompose = "1.4.0-alpha02"
 commonsText = "1.15.0"
 composeBom = "2026.09.00"
 composePreference = "2.2.0"
@@ -65,6 +67,9 @@ androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref =
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
+
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
+androidx-biometric-compose = { module = "androidx.biometric:biometric-compose", version.ref = "biometricCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
