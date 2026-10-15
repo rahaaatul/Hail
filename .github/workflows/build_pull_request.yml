@@ -20,6 +20,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           gradle-cache: 'true'
+      - name: Run unit tests
+        run: ./gradlew test
       - name: Build APK
         run: ./gradlew assembleRelease
       - name: Upload APK artifact

@@ -28,6 +28,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
+      - name: Run unit tests
+        run: ./gradlew test
       - name: Build APK
         uses: .github/actions/build-apk
       - name: Release
