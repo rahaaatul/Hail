@@ -1,27 +1,24 @@
-name: 'Build APK'
-description: 'Build the APK for the specified build type with unit testing and code quality checks'
+name: Build APK
+description: Build the APK for the specified build type with unit testing and code quality checks
 inputs:
   buildType:
-    description: 'Type of build (release or debug)'
+    description: Type of build (release or debug)
     required: true
-    default: 'debug'
+    default: debug
 outputs:
   apkPath:
-    description: 'Path to the built APK'
+    description: Path to the built APK
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Run unit tests
-      run: |
-        ./gradlew test --no-daemon
+      run: ./gradlew test --no-daemon
       shell: bash
     - name: Run Detekt code quality checks
-      run: |
-        ./gradlew detekt --no-daemon
+      run: ./gradlew detekt --no-daemon
       shell: bash
     - name: Assemble APK
-      run: |
-        ./gradlew assemble${{ inputs.buildType }} --no-daemon
+      run: ./gradlew assemble${{ inputs.buildType }} --no-daemon
       shell: bash
     - name: Find APK
       id: find_apk

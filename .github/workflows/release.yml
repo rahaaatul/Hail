@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
     paths:
       - 'src/**'
       - 'gradle/**'
@@ -26,96 +27,24 @@ on:
       - '!README.md'
 
 jobs:
-  metadata:
-    name: Read metadata
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.read-metadata.outputs.version }}
-      appName: ${{ steps.read-metadata.outputs.appName }}
-    steps:
-      - name: Setup Java and Gradle
-        uses: .github/actions/setup-java-gradle
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          gradle-cache: 'true'
-      - name: Read metadata
-        uses: .github/actions/read-metadata
-        id: read-metadata
-
-  build-release-apk:
-    name: Build release APK
-    needs: metadata
-    runs-on: ubuntu-latest
-    outputs:
-      apkPath: ${{ steps.rename-apk.outputs.renamedApkPath }}
-    steps:
-      - name: Setup Java and Gradle
-        uses: .github/actions/setup-java-gradle
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          gradle-cache: 'true'
-      - name: Read metadata
-        uses: .github/actions/read-metadata
-        id: metadata
-        with:
-          # We could reuse the metadata from the needs, but we need to read again because outputs are not directly accessible? 
-          # Actually we can use needs.metadata.outputs
-          # But the action doesn't have inputs for version and appName; we need to pass them to rename-apk.
-          # We'll read metadata again; it's cheap.
-      - name: Build APK
-        uses: .github/actions/build-apk
-        id: build-apk
-        with:
-          buildType: 'release'
-      - name: Rename APK
-        uses: .github/actions/rename-apk
-        id: rename-apk
-        with:
-          apkPath: ${{ steps.build-apk.outputs.apkPath }}
-          version: ${{ needs.metadata.outputs.version }}
-          appName: ${{ needs.metadata.outputs.appName }}
-
-  build-debug-apk:
-    name: Build debug APK
-    needs: metadata
-    runs-on: ubuntu-latest
-    outputs:
-      apkPath: ${{ steps.rename-apk.outputs.renamedApkPath }}
-    steps:
-      - name: Setup Java and Gradle
-        uses: .github/actions/setup-java-gradle
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-          gradle-cache: 'true'
-      - name: Read metadata
-        uses: .github/actions/read-metadata
-        id: metadata
-      - name: Build APK
-        uses: .github/actions/build-apk
-        id: build-apk
-        with:
-          buildType: 'debug'
-      - name: Rename APK
-        uses: .github/actions/rename-apk
-        id: rename-apk
-        with:
-          apkPath: ${{ steps.build-apk.outputs.apkPath }}
-          version: ${{ needs.metadata.outputs.version }}
-          appName: ${{ needs.metadata.outputs.appName }}
-
-  release-and-upload:
-    name: Release and upload APKs
-    needs: [metadata, build-release-apk, build-debug-apk]
-    runs-on: ubuntu-latest
+  release:
+    name: Release
     permissions:
       contents: write
       packages: write
       id-token: write
       attestations: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        buildType: [release, debug]
     steps:
+      - name: Setup Java and Gradle
+        uses: .github/actions/setup-java-gradle
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          gradle-cache: 'true'
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -123,22 +52,30 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
+      - name: Read metadata
+        uses: .github/actions/read-metadata
+        id: metadata
+      - name: Build APK
+        uses: .github/actions/build-apk
+        id: build
+        with:
+          buildType: ${{ matrix.buildType }}
+      - name: Rename APK
+        uses: .github/actions/rename-apk
+        id: rename
+        with:
+          apkPath: ${{ steps.build.outputs.apkPath }}
+          version: ${{ steps.metadata.outputs.version }}
+          appName: ${{ steps.metadata.outputs.appName }}
       - name: Release (semantic-release)
         uses: cycjimmy/semantic-release-action@v6
         id: release_step
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload Release APK to Release
+      - name: Upload APK to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.release_step.outputs.upload_url }}
-          asset_path: ${{ needs.build-release-apk.outputs.apkPath }}
-          asset_name: ${{ needs.build-release-apk.outputs.apkPath }}
-          asset_content_type: application/vnd.android.package-archive
-      - name: Upload Debug APK to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.release_step.outputs.upload_url }}
-          asset_path: ${{ needs.build-debug-apk.outputs.apkPath }}
-          asset_name: ${{ needs.build-debug-apk.outputs.apkPath }}
+          asset_path: ${{ steps.rename.outputs.renamedApkPath }}
+          asset_name: ${{ steps.rename.outputs.renamedApkPath }}
           asset_content_type: application/vnd.android.package-archive
