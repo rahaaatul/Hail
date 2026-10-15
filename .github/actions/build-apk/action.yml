@@ -1,0 +1,10 @@
+name: 'Build APK'
+description: 'Build the release APK using Gradle'
+inputs:
+  # No inputs for now
+runs:
+  using: 'composite'
+  steps:
+    - name: Build APK
+      run: ./gradlew assembleRelease
+      shell: bash
