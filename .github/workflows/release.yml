@@ -60,24 +60,12 @@ jobs:
         id: release_step
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload release APK to Release
+      - name: Upload APKs to Release
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.release_step.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.releaseApkPath }}
-          asset_name: ${{ steps.build.outputs.releaseApkPath }}
+          asset_path: ${{ matrix.buildType == 'release' && steps.build.outputs.releaseApkPath || steps.build.outputs.debugApkPath }}
+          asset_name: ${{ matrix.buildType == 'release' && steps.build.outputs.releaseApkPath || steps.build.outputs.debugApkPath }}
           asset_content_type: application/vnd.android.package-archive
-      - name: Upload debug APK to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.release_step.outputs.upload_url }}
-          asset_path: ${{ steps.build.outputs.debugApkPath }}
-          asset_name: ${{ steps.build.outputs.debugApkPath }}
-          asset_content_type: application/vnd.android.package-archive
-      - name: Upload debug APK to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.release_step.outputs.upload_url }}
-          asset_path: ${{ steps.rename_debug.outputs.renamedApkPath }}
-          asset_name: ${{ steps.rename_debug.outputs.renamedApkPath }}
-          asset_content_type: application/vnd.android.package-archive
+        matrix:
+          buildType: [release, debug]
