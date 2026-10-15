@@ -45,6 +45,7 @@ runs:
       if: ${{ inputs.keystore-file != '' }}
       run: |
         echo "${{ inputs.keystore-file }}" | base64 --decode > /tmp/release.keystore
+        chmod 600 /tmp/release.keystore
         echo "RELEASE_KEYSTORE_PATH=/tmp/release.keystore" >> $GITHUB_ENV
         echo "releaseStorePassword=${{ inputs.keystore-password }}" >> $GITHUB_ENV
         echo "releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV

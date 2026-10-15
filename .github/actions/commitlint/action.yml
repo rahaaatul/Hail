@@ -28,7 +28,7 @@ runs:
       shell: bash
     - name: Lint commit messages
       run: |
-        npx commitlint --from=$(git merge-base HEAD ${{ github.event.before || github.event.pull_request.base.sha || github.event.after }}) --verbose
+        npx commitlint --from=$(git merge-base HEAD ${{ github.event.before || github.event.pull_request.base.sha || github.event.after }}) --verbose --config $CONFIG_FILE
       shell: bash
       env:
         CONFIG_FILE: ${{ inputs.config-file }}

@@ -13,24 +13,29 @@ runs:
       id: metadata
       run: |
         # Extract version from build.gradle.kts
-        VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' build.gradle.kts || echo "0.0.0")
+        VERSION=$(grep -oE 'version\s*=\s*"[^"]+' build.gradle.kts | cut -d'"' -f2)
         # Extract app name from AndroidManifest.xml
-        APP_NAME=$(grep -oP 'android:label\s*=\s*"\K[^"]+' src/main/AndroidManifest.xml || echo "App")
+        APP_NAME=$(grep -oE 'android:label\s*=\s*"[^"]+' src/main/AndroidManifest.xml | cut -d'"' -f2)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "appName=$APP_NAME" >> $GITHUB_OUTPUT
       shell: bash
     - name: Run unit tests
-      run: ./gradlew test --no-daemon
+      run: |
+        set -euo pipefail
+        ./gradlew test --no-daemon
       shell: bash
     - name: Run Detekt code quality checks
-      run: ./gradlew detekt --no-daemon
+      run: |
+        set -euo pipefail
+        ./gradlew detekt --no-daemon
       shell: bash
     - name: Build APKs (matrix)
       id: build_matrix
       run: |
+        set -euo pipefail
         # Build both release and debug APKs in parallel using Gradle's native parallel execution
         ./gradlew assembleRelease assembleDebug --no-daemon --parallel
-        shell: bash
+      shell: bash
     - name: Find release APK
       id: find_release
       run: |
