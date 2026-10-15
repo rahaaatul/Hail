@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: "daily"
       time: "00:00"
-    timezone: "America/New_York"
+      timezone: "America/New_York"
     labels:
       - "dependencies"
       - "npm"
@@ -37,7 +37,7 @@ updates:
     schedule:
       interval: "daily"
       time: "00:00"
-    timezone: "America/New_York"
+      timezone: "America/New_York"
     labels:
       - "dependencies"
       - "gradle"
@@ -68,7 +68,7 @@ updates:
     schedule:
       interval: "daily"
       time: "00:00"
-    timezone: "America/New_York"
+      timezone: "America/New_York"
     labels:
       - "dependencies"
       - "github-actions"
