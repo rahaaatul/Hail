@@ -25,75 +25,69 @@ groups:
       - "patch"
 
 updates:
-  # npm dependencies in the root directory
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "00:00"
-    timezone: "America/New_York"
-    labels:
-      - "dependencies"
-      - "npm"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    groups:
-      - npm-dev-deps
-    ignore:
-      - dependency-name: "semantic-release"
-        versions: ["22.x"]  # Pin to specific version if needed, or remove to allow updates
-      - dependency-name: "@semantic-release/git"
-        versions: ["10.x"]  # Example of pinning
-    allow:
-      - dependency-type: "development"  # Only update devDependencies for npm
+   # npm dependencies in the root directory
+   - package-ecosystem: "npm"
+     directory: "/"
+     schedule:
+       interval: "daily"
+       time: "00:00"
+     timezone: "America/New_York"
+     labels:
+       - "dependencies"
+       - "npm"
+     commit-message:
+       prefix: "deps"
+       prefix-development: "deps-dev"
+       include: "scope"
+     ignore:
+       - dependency-name: "semantic-release"
+         versions: ["22.x"]  # Pin to specific version if needed, or remove to allow updates
+       - dependency-name: "@semantic-release/git"
+         versions: ["10.x"]  # Example of pinning
+     allow:
+       - dependency-type: "development"  # Only update devDependencies for npm
 
-  # Gradle dependencies in the root directory
-  - package-ecosystem: "gradle"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "00:00"
-    timezone: "America/New_York"
-    labels:
-      - "dependencies"
-      - "gradle"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    groups:
-      - gradle-deps
-    # For Gradle, we might want to ignore certain versions or dependencies
-    ignore:
-      - dependency-name: "com.android.tools.build:gradle"
-        versions: ["8.x"]  # Example if we want to pin AGP version
-    # Explicit updates for specific dependencies
-    allow:
-      - dependency-name: "org.lsposed.hiddenapibypass:hiddenapibypass"
-        version-type: semver
-      - dependency-type: "development"
+   # Gradle dependencies in the root directory
+   - package-ecosystem: "gradle"
+     directory: "/"
+     schedule:
+       interval: "daily"
+       time: "00:00"
+     timezone: "America/New_York"
+     labels:
+       - "dependencies"
+       - "gradle"
+     commit-message:
+       prefix: "deps"
+       prefix-development: "deps-dev"
+       include: "scope"
+     # For Gradle, we might want to ignore certain versions or dependencies
+     ignore:
+       - dependency-name: "com.android.tools.build:gradle"
+         versions: ["8.x"]  # Example if we want to pin AGP version
+     # Explicit updates for specific dependencies
+     allow:
+       - dependency-name: "org.lsposed.hiddenapibypass:hiddenapibypass"
+         version-type: semver
+       - dependency-type: "development"
 
-  # GitHub Actions in the root directory
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "00:00"
-    timezone: "America/New_York"
-    labels:
-      - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    groups:
-      - github-actions
-    # GitHub Actions dependencies are the actions used in workflows
-    ignore:
-      - dependency-name: "actions/checkout"
-        versions: ["v4"]  # Example if we want to stay on v3
-      - dependency-name: "actions/setup-node"
-        versions: ["v4"]  # Example if we want to stay on v3
+   # GitHub Actions in the root directory
+   - package-ecosystem: "github-actions"
+     directory: "/"
+     schedule:
+       interval: "daily"
+       time: "00:00"
+     timezone: "America/New_York"
+     labels:
+       - "dependencies"
+       - "github-actions"
+     commit-message:
+       prefix: "deps"
+       prefix-development: "deps-dev"
+       include: "scope"
+     # GitHub Actions dependencies are the actions used in workflows
+     ignore:
+       - dependency-name: "actions/checkout"
+         versions: ["v4"]  # Example if we want to stay on v3
+       - dependency-name: "actions/setup-node"
+         versions: ["v4"]  # Example if we want to stay on v3
