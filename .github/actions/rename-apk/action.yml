@@ -1,0 +1,22 @@
+name: 'Rename APK'
+description: 'Rename the built APK to include app name, version, and build type'
+inputs:
+  buildType:
+    description: 'Type of build (release or debug)'
+    required: true
+  version:
+    description: 'Version of the app'
+    required: true
+  appName:
+    description: 'Name of the app'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Rename APK
+      run: |
+        APK_DIR=app/build/outputs/apk/${{ inputs.buildType }}
+        APK_NAME=$(ls $APK_DIR/*.apk)
+        NEW_NAME="${{ inputs.appName }}-${{ inputs.version }}-${{ inputs.buildType }}.apk"
+        mv "$APK_NAME" "$APK_DIR/$NEW_NAME"
+      shell: bash

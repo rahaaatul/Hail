@@ -1,10 +1,13 @@
 name: 'Build APK'
-description: 'Build the release APK using Gradle'
+description: 'Build the APK for the specified build type'
 inputs:
-  # No inputs for now
+  buildType:
+    description: 'Type of build (release or debug)'
+    required: false
+    default: 'release'
 runs:
   using: 'composite'
   steps:
     - name: Build APK
-      run: ./gradlew assembleRelease
+      run: ./gradlew assemble${{ inputs.buildType }}
       shell: bash

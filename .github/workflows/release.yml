@@ -30,8 +30,13 @@ jobs:
         run: npm install
       - name: Run unit tests
         run: ./gradlew test
+      - name: Read metadata
+        uses: .github/actions/read-metadata
+        id: metadata
       - name: Build APK
         uses: .github/actions/build-apk
+        with:
+          buildType: 'release'
       - name: Release
         uses: cycjimmy/semantic-release-action@v6
         env:
