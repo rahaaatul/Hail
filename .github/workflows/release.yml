@@ -35,7 +35,7 @@ jobs:
         uses: .github/actions/read-metadata
         id: metadata
       - name: Build and upload APK
-        uses: .github/actions/build-and-upload-apk
+        uses: .github/actions/build-and-upload
         with:
           buildType: ${{ matrix.buildType }}
           version: ${{ steps.metadata.outputs.version }}
