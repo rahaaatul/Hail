@@ -94,22 +94,22 @@ android {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
-    lint {
-          // Enable checking for unused resources
-          checkReleaseBuilds = true
-          // Treat warnings as errors to catch issues early
-          // Disable specific lint checks that are not relevant or too noisy
-          disable += "IconTip"
-          disable += "ContentDescription"
-          disable += "MissingPrefix"
-        }
-        // Do not compress resources that are already compressed
-        // This can help with install time and reduce CPU usage
-        // but may slightly increase APK size. For size optimization,
-        // we'll keep the default behavior which is to compress
-        // unless we have specific needs.
-        // Do not zip align debug builds to save time during development
-        // zipAlignEnabled = false
+     lint {
+           // Enable checking for unused resources
+           checkReleaseBuilds = true
+           // Treat warnings as errors to catch issues early
+           // Disable specific lint checks that are not relevant or too noisy
+           disable += "IconTip"
+           disable += "ContentDescription"
+           disable += "MissingPrefix"
+           // Do not compress resources that are already compressed
+           // This can help with install time and reduce CPU usage
+           // but may slightly increase APK size. For size optimization,
+           // we'll keep the default behavior which is to compress
+           // unless we have specific needs.
+           // Do not zip align debug builds to save time during development
+           // zipAlignEnabled = false
+         }
 
     // Automatically rename APK outputs to include app name, version, and build type
     applicationVariants.all { variant ->

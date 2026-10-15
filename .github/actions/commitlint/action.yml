@@ -24,10 +24,12 @@ runs:
         cache: 'npm'
     - name: Install commitlint dependencies
       run: |
+        set -euo pipefail
         npm install @commitlint/cli @commitlint/config-conventional --save-dev
       shell: bash
     - name: Lint commit messages
       run: |
+        set -euo pipefail
         npx commitlint --from=$(git merge-base HEAD ${{ github.event.before || github.event.pull_request.base.sha || github.event.after }}) --verbose --config $CONFIG_FILE
       shell: bash
       env:
