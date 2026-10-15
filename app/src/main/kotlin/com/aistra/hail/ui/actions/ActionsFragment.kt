@@ -24,6 +24,7 @@ import com.aistra.hail.utils.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ActionsFragment : MainFragment() {
     private var _binding: FragmentActionsBinding? = null
@@ -203,15 +204,24 @@ class ActionsFragment : MainFragment() {
             override fun afterTextChanged(s: android.text.Editable?) = Unit
         })
         pickerDialog.show()
-        viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val apps = AppMetaCache.getInstalledApplicationsCacheFirst()
-            val sortedApps = apps.sortedBy { it.loadLabel(activity.packageManager).toString() }
-            val labels = sortedApps.associate { it.packageName to it.loadLabel(activity.packageManager).toString() }
-            viewLifecycleOwner.lifecycleScope.launch {
-                allApps = sortedApps
-                labelMap = labels
-                updateFilter(search.text.toString())
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Capture PackageManager on the main thread (requireContext() is non-null or throws)
+            val pm = requireContext().packageManager
+
+            // Do the heavy IO work off the main thread, but don't call Fragment APIs from IO
+            val (sortedApps, labels) = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                // Load each label once: loadLabel() hits PackageManager, and the
+                // old code called it again per app while building the label map.
+                val labeled = AppMetaCache.getInstalledApplicationsCacheFirst()
+                    .map { it to it.loadLabel(pm).toString() }
+                val sorted = labeled.sortedBy { (_, label) -> label }
+                sorted.map { it.first } to sorted.associate { (app, label) -> app.packageName to label }
             }
+
+            // Update UI state on the main thread
+            allApps = sortedApps
+            labelMap = labels
+            updateFilter(search.text.toString())
         }
     }
 
