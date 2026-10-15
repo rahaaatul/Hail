@@ -1,5 +1,5 @@
 name: Setup Java and Gradle
-description: Checkout code, setup Java, and cache Gradle
+description: Checkout code, setup Java, cache Gradle, and set up release keystore if provided
 inputs:
   java-version:
     description: Java version to setup
@@ -13,6 +13,22 @@ inputs:
     description: Enable Gradle caching
     required: false
     default: true
+  keystore-file:
+    description: Base64 encoded keystore file
+    required: false
+    default: ""
+  keystore-password:
+    description: Keystore password
+    required: false
+    default: ""
+  key-alias:
+    description: Key alias
+    required: false
+    default: ""
+  key-password:
+    description: Key password
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -25,6 +41,14 @@ runs:
       with:
         distribution: '${{ inputs.distribution }}'
         java-version: '${{ inputs.java-version }}'
+    - name: Set up release keystore
+      if: ${{ inputs.keystore-file != '' }}
+      run: |
+        echo "${{ inputs.keystore-file }}" | base64 --decode > /tmp/release.keystore
+        echo "RELEASE_KEYSTORE_PATH=/tmp/release.keystore" >> $GITHUB_ENV
+        echo "releaseStorePassword=${{ inputs.keystore-password }}" >> $GITHUB_ENV
+        echo "releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
+        echo "releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
     - name: Cache Gradle
       if: ${{ inputs.gradle-cache == true }}
       uses: burrunan/gradle-cache-action@v3

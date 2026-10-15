@@ -64,6 +64,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Assign PR to author
+        if: github.event_name == 'pull_request'
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --add-assignee ${{ github.actor }}
       - uses: .github/actions/commitlint
         with:
           config-file: './commitlint.config.js'
@@ -73,6 +77,10 @@ jobs:
           java-version: 21
           distribution: temurin
           gradle-cache: true
+          keystore-file: '${{ secrets.KEYSTORE }}'
+          keystore-password: '${{ secrets.KEYSTORE_PASSWORD }}'
+          key-alias: '${{ secrets.KEYSTORE_ALIAS }}'
+          key-password: '${{ secrets.KEYSTORE_ALIAS_PASSWORD }}'
       - name: Build both APKs (with metadata, tests, and Detekt)
         uses: .github/actions/build-apk
         id: build

@@ -29,10 +29,9 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "America/New_York"
+      interval: "daily"
+      time: "00:00"
+    timezone: "America/New_York"
     labels:
       - "dependencies"
       - "npm"
@@ -50,38 +49,13 @@ updates:
     allow:
       - dependency-type: "development"  # Only update devDependencies for npm
 
-  # npm dependencies in the morphe-patches directory
-  - package-ecosystem: "npm"
-    directory: "/morphe-patches"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:30"
-      timezone: "America/New_York"
-    labels:
-      - "dependencies"
-      - "npm"
-      - "morphe-patches"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    groups:
-      - npm-dev-deps
-    ignore:
-      - dependency-name: "semantic-release"
-        versions: ["25.x"]
-    allow:
-      - dependency-type: "development"
-
   # Gradle dependencies in the root directory
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "tuesday"
-      time: "09:00"
-      timezone: "America/New_York"
+      interval: "daily"
+      time: "00:00"
+    timezone: "America/New_York"
     labels:
       - "dependencies"
       - "gradle"
@@ -95,34 +69,19 @@ updates:
     ignore:
       - dependency-name: "com.android.tools.build:gradle"
         versions: ["8.x"]  # Example if we want to pin AGP version
-
-  # Gradle dependencies in the morphe-patches directory
-  - package-ecosystem: "gradle"
-    directory: "/morphe-patches"
-    schedule:
-      interval: "weekly"
-      day: "thursday"
-      time: "09:00"
-      timezone: "America/New_York"
-    labels:
-      - "dependencies"
-      - "gradle"
-      - "morphe-patches"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    groups:
-      - gradle-deps
+    # Explicit updates for specific dependencies
+    allow:
+      - dependency-name: "org.lsposed.hiddenapibypass:hiddenapibypass"
+        version-type: semver
+      - dependency-type: "development"
 
   # GitHub Actions in the root directory
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "wednesday"
-      time: "10:00"
-      timezone: "America/New_York"
+      interval: "daily"
+      time: "00:00"
+    timezone: "America/New_York"
     labels:
       - "dependencies"
       - "github-actions"
@@ -138,22 +97,3 @@ updates:
         versions: ["v4"]  # Example if we want to stay on v3
       - dependency-name: "actions/setup-node"
         versions: ["v4"]  # Example if we want to stay on v3
-
-  # GitHub Actions in the morphe-patches directory
-  - package-ecosystem: "github-actions"
-    directory: "/morphe-patches"
-    schedule:
-      interval: "weekly"
-      day: "friday"
-      time: "09:00"
-      timezone: "America/New_York"
-    labels:
-      - "dependencies"
-      - "github-actions"
-      - "morphe-patches"
-    commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
-      include: "scope"
-    groups:
-      - github-actions

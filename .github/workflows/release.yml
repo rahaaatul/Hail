@@ -48,6 +48,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           gradle-cache: 'true'
+          keystore-file: '${{ secrets.KEYSTORE }}'
+          keystore-password: '${{ secrets.KEYSTORE_PASSWORD }}'
+          key-alias: '${{ secrets.KEYSTORE_ALIAS }}'
+          key-password: '${{ secrets.KEYSTORE_ALIAS_PASSWORD }}'
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:

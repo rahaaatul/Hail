@@ -36,30 +36,13 @@ android {
                 keyPassword = project.findProperty("releaseKeyPassword") as String?
             }
         }
-
-        // Test key: committed, and can only sign com.aistra.hail.pr.<n> and
-        // com.aistra.hail.debug, so it grants nothing. Living in the repo is
-        // what makes every PR and debug build carry the same signature, so a
-        // rebuild installs over its own previous build instead of demanding an
-        // uninstall first. PKCS12 protects the key with the store password,
-        // so keyPassword must match storePassword.
-        create("test") {
-            val keystore = rootProject.file(".github/debug.keystore")
-            if (keystore.exists()) {
-                storeFile = keystore
-                storeType = "PKCS12"
-                storePassword = "HailBug"
-                keyAlias = "HailBug"
-                keyPassword = "HailBug"
-            }
-        }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-Debug"
-            signingConfig = signingConfigs.getByName("test")
+            signingConfig = signingConfigs.getByName("release")
         }
         create("pr") {
             // Each PR installs as its own app: com.aistra.hail.pr.<n>.
@@ -70,7 +53,7 @@ android {
             // segment must begin with a letter.
             applicationIdSuffix =
                 providers.gradleProperty("prNumber").orNull?.let { ".pr$it" } ?: ".pr"
-            signingConfig = signingConfigs.getByName("test")
+            signingConfig = signingConfigs.getByName("release")
         }
         release {
             isMinifyEnabled = true
