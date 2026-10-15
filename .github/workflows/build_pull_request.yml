@@ -60,9 +60,6 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        buildType: [release, debug]
     steps:
       - name: Setup Java and Gradle
         uses: .github/actions/setup-java-gradle
@@ -73,15 +70,20 @@ jobs:
       - name: Read metadata
         uses: .github/actions/read-metadata
         id: metadata
-      - name: Build APK
+      - name: Build both APKs
         uses: .github/actions/build-apk
         id: build
-        with:
-          buildType: ${{ matrix.buildType }}
-      - name: Rename APK
+      - name: Rename release APK
         uses: .github/actions/rename-apk
-        id: rename
+        id: rename_release
         with:
-          apkPath: ${{ steps.build.outputs.apkPath }}
+          apkPath: ${{ steps.build.outputs.releaseApkPath }}
+          version: ${{ steps.metadata.outputs.version }}
+          appName: ${{ steps.metadata.outputs.appName }}
+      - name: Rename debug APK
+        uses: .github/actions/rename-apk
+        id: rename_debug
+        with:
+          apkPath: ${{ steps.build.outputs.debugApkPath }}
           version: ${{ steps.metadata.outputs.version }}
           appName: ${{ steps.metadata.outputs.appName }}
