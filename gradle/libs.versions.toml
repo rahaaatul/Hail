@@ -3,9 +3,8 @@ androidGradlePlugin = "9.4.1"
 kotlin = "2.4.21"
 appcompat = "1.8.0"
 appiconloader = "1.5.0"
-biometricKtx = "1.4.0-alpha02"
-biometric = "1.4.0-alpha02"
-biometricCompose = "1.4.0-alpha02"
+biometric = "1.4.0-alpha07"
+biometricCompose = "1.4.0-alpha07"
 commonsText = "1.15.0"
 composeBom = "2026.09.00"
 composePreference = "2.2.0"
@@ -35,7 +34,7 @@ navigationCompose = "2.10.2"
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
-androidx-biometric-ktx = { module = "androidx.biometric:biometric-ktx", version.ref = "biometricKtx" }
+
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }

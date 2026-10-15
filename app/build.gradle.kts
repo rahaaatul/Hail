@@ -126,7 +126,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.biometric.ktx)
+    implementation(libs.androidx.biometric.compose)
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
