@@ -108,14 +108,14 @@ android {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
-}
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(27)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 kotlin {
-    jvmToolchain(27)
+    jvmToolchain(21)
+}
 }
 
 dependencies {
@@ -126,12 +126,14 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.biometric.ktx)
+    implementation(libs.androidx.biometric.compose)
+    implementation(libs.androidx.biometric)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
+    implementation(libs.navigation.compose)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.work.runtime)
