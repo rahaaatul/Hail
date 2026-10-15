@@ -9,11 +9,11 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Run unit tests
-      run: ./gradlew test --no-daemon
-      shell: bash
     - name: Run Detekt code quality checks
       run: ./gradlew detekt --no-daemon
+      shell: bash
+    - name: Run unit tests
+      run: ./gradlew test --no-daemon
       shell: bash
     - name: Build APKs (matrix)
       id: build_matrix
