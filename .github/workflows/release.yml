@@ -36,21 +36,12 @@ jobs:
       - name: Read metadata
         uses: .github/actions/read-metadata
         id: metadata
-      - name: Build APK
-        uses: .github/actions/build-apk
-        with:
-          buildType: ${{ matrix.buildType }}
-      - name: Rename APK
-        uses: .github/actions/rename-apk
+      - name: Build and upload APK
+        uses: .github/actions/build-and-upload-apk
         with:
           buildType: ${{ matrix.buildType }}
           version: ${{ steps.metadata.outputs.version }}
           appName: ${{ steps.metadata.outputs.appName }}
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.buildType }}-apk
-          path: app/build/outputs/apk/${{ matrix.buildType }}/${{ steps.metadata.outputs.appName }}-${{ steps.metadata.outputs.version }}-${{ matrix.buildType }}.apk
       - name: Release
         if: matrix.buildType == 'release'  # Only run semantic-release once, e.g., on the release matrix
         uses: cycjimmy/semantic-release-action@v6
