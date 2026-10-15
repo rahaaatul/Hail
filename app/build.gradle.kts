@@ -108,14 +108,19 @@ android {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
-}
+    testOptions {
+        unitTests.all {
+            it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+        }
+    }
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(27)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 kotlin {
-    jvmToolchain(27)
+    jvmToolchain(21)
+}
 }
 
 dependencies {

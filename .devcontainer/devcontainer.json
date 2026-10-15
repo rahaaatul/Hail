@@ -17,7 +17,7 @@
                 "java.jdt.ls.java.home": "${containerEnv:JAVA_HOME}",
                 "java.configuration.runtimes": [
                     {
-                        "name": "JavaSE-27",
+                        "name": "JavaSE-21",
                         "path": "${containerEnv:JAVA_HOME}",
                         "default": true
                     }

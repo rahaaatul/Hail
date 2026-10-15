@@ -9,29 +9,29 @@
 # returns HTTP 404, so that image could never build.
 FROM mcr.microsoft.com/devcontainers/base:bookworm
 
-# Temurin 27 install. The project requires JDK 27: app/build.gradle.kts sets
-# java.toolchain to JavaLanguageVersion.of(27) and kotlin.jvmToolchain(27),
-# .github/.java-version is 27, and CI uses actions/setup-java with
-# distribution temurin. JDK 27 GA (jdk-27+35) was released September 15, 2026;
-# Gradle 9.8.0 (released September 29, 2026) added explicit Java 27 support,
-# which is why the wrapper is bumped to 9.8.0 alongside this JDK. No JDK 27
-# image ships on MCR, so install Temurin 27 from Adoptium - the same vendor
-# CI uses - into a path that does not change when the patch version bumps:
-# /usr/lib/jvm/temurin-27.
+# Temurin 21 install. The project requires JDK 21: app/build.gradle.kts sets
+# java.toolchain to JavaLanguageVersion.of(21) and kotlin.jvmToolchain(21),
+# .github/.java-version is 21, and CI uses actions/setup-java with
+# distribution temurin. Temurin 21 is LTS, it is the same JDK major version
+# as the JetBrains Runtime Android Studio has bundled since Ladybug, and every
+# consumer in the build chain accepts it (AGP 9.4 requires 17+, Gradle 9.x
+# runs on 17-27), so nothing forces the previous non-LTS 27. Install into a
+# path that does not change when the patch version bumps:
+# /usr/lib/jvm/temurin-21.
 #
 # Re-derive these values from
-# https://api.adoptium.net/v3/assets/latest/27/hotspot?architecture=x64&image_type=jdk&os=linux&vendor=eclipse
+# https://api.adoptium.net/v3/assets/latest/21/hotspot?architecture=x64&image_type=jdk&os=linux&vendor=eclipse
 # (and the aarch64 variant) when bumping the JDK. The release printed by that
-# API as of 2026-09-21 is 27+35.
-ARG JDK_RELEASE=27+35
-ARG JDK_SHA256_AMD64=1cf69a4848ffb728b3b260dfd45206a51566ab571a02a30092271d4c580bccbc
-ARG JDK_SHA256_ARM64=e4ec5c7276290c7bde0baecba9a29be4962f5388684296406a9799d465936087
+# API as of 2026-10-15 is 21.0.12.1+1 (LTS).
+ARG JDK_RELEASE=21.0.12.1+1
+ARG JDK_SHA256_AMD64=ce79869e1307ed8ee1e2baa86a412b1eb5b75d10a01006d788a6f968bcfaee94
+ARG JDK_SHA256_ARM64=23e37e026f12f3e706f18938ff611db3032d075b09d0879a25d06718c773e223
 ARG TARGETARCH
 
 # JAVA_HOME is exported before the install RUN so the same step can use it as
 # the extraction destination, instead of leaving the tarball in /usr/lib/jvm
 # while JAVA_HOME points one level deeper at a never-created directory.
-ENV JAVA_HOME=/usr/lib/jvm/temurin-27
+ENV JAVA_HOME=/usr/lib/jvm/temurin-21
 ENV PATH=${JAVA_HOME}/bin:${PATH}
 
 # Lean apt install. The repo's helper scripts (build.sh, version.sh,
@@ -63,9 +63,9 @@ RUN set -eux; \
     # while the filename uses "_" instead of "+", so derive both forms from the
     # same release string rather than hardcoding the literal URL and drifting
     # out of sync.
-    FILE="OpenJDK27U-jdk_${ARCH}_linux_hotspot_$(printf '%s' "${JDK_RELEASE}" | tr '+' '_').tar.gz"; \
+    FILE="OpenJDK21U-jdk_${ARCH}_linux_hotspot_$(printf '%s' "${JDK_RELEASE}" | tr '+' '_').tar.gz"; \
     RELEASE_PATH="$(printf '%s' "${JDK_RELEASE}" | sed 's/+/%2B/g')"; \
-    curl -fsSL -O "https://github.com/adoptium/temurin27-binaries/releases/download/jdk-${RELEASE_PATH}/${FILE}"; \
+    curl -fsSL -O "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-${RELEASE_PATH}/${FILE}"; \
     echo "${SHA}  ${FILE}" | sha256sum -c; \
     mkdir -p "${JAVA_HOME}"; \
     tar -xzf "${FILE}" -C "${JAVA_HOME}" --strip-components=1; \
