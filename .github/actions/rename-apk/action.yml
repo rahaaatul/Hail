@@ -1,20 +1,20 @@
-name: 'Rename APK'
-description: 'Rename the APK to include version and app name'
+name: Rename APK
+description: Rename the APK to include version and app name
 inputs:
   apkPath:
-    description: 'Path to the APK to rename'
+    description: Path to the APK to rename
     required: true
   version:
-    description: 'Version of the app'
+    description: Version of the app
     required: true
   appName:
-    description: 'Application name'
+    description: Application name
     required: true
 outputs:
   renamedApkPath:
-    description: 'Path to the renamed APK'
+    description: Path to the renamed APK
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Rename APK
       id: rename

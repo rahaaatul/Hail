@@ -1,20 +1,20 @@
-name: 'Setup Java and Gradle'
-description: 'Checkout code, setup Java, and cache Gradle'
+name: Setup Java and Gradle
+description: Checkout code, setup Java, and cache Gradle
 inputs:
   java-version:
-    description: 'Java version to setup'
+    description: Java version to setup
     required: false
-    default: '21'
+    default: 21
   distribution:
-    description: 'Java distribution to setup'
+    description: Java distribution to setup
     required: false
-    default: 'temurin'
+    default: temurin
   gradle-cache:
-    description: 'Enable Gradle caching'
+    description: Enable Gradle caching
     required: false
-    default: 'true'
+    default: true
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Checkout
       uses: actions/checkout@v7
@@ -26,7 +26,7 @@ runs:
         distribution: '${{ inputs.distribution }}'
         java-version: '${{ inputs.java-version }}'
     - name: Cache Gradle
-      if: ${{ inputs.gradle-cache == 'true' }}
+      if: ${{ inputs.gradle-cache == true }}
       uses: burrunan/gradle-cache-action@v3
     - name: Set Gradle properties for optimization
       run: |

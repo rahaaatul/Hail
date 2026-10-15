@@ -1,15 +1,15 @@
-name: 'Read Metadata'
-description: 'Read version and app name from build.gradle.kts and AndroidManifest.xml'
+name: Read Metadata
+description: Read version and app name from build.gradle.kts and AndroidManifest.xml
 inputs: {}
 outputs:
   version:
-    description: 'Version of the app'
+    description: Version of the app
     value: ${{ steps.metadata.outputs.version }}
   appName:
-    description: 'Application name'
+    description: Application name
     value: ${{ steps.metadata.outputs.appName }}
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - id: metadata
       run: |
