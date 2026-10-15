@@ -61,6 +61,12 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: .github/actions/commitlint
+        with:
+          config-file: './commitlint.config.js'
       - name: Setup Java and Gradle
         uses: .github/actions/setup-java-gradle
         with:
@@ -70,3 +76,17 @@ jobs:
       - name: Build both APKs (with metadata, tests, and Detekt)
         uses: .github/actions/build-apk
         id: build
+      - name: Upload release APK as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-${{ github.sha }}
+          path: ${{ steps.build.outputs.releaseApkPath }}
+          retention-days: 30
+      - name: Upload debug APK as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.sha }}
+          path: ${{ steps.build.outputs.debugApkPath }}
+          retention-days: 30

@@ -1,0 +1,34 @@
+name: Lint Commit Messages
+description: Lint commit messages using Commitlint to enforce Conventional Commits standard
+inputs:
+  config-file:
+    description: Path to commitlint config file
+    required: false
+    default: './commitlint.config.js'
+  fail-on-warning:
+    description: Whether to fail on warnings
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Checkout code (if not already done)
+      if: ${{ env.ACTIONS_CHECKOUT_DONE != 'true' }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup Node.js for commitlint
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
+    - name: Install commitlint dependencies
+      run: |
+        npm install @commitlint/cli @commitlint/config-conventional --save-dev
+      shell: bash
+    - name: Lint commit messages
+      run: |
+        npx commitlint --from=$(git merge-base HEAD ${{ github.event.before || github.event.pull_request.base.sha || github.event.after }}) --verbose
+      shell: bash
+      env:
+        CONFIG_FILE: ${{ inputs.config-file }}

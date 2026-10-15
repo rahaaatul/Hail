@@ -36,6 +36,12 @@ jobs:
       attestations: write
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: .github/actions/commitlint
+        with:
+          config-file: './commitlint.config.js'
       - name: Setup Java and Gradle
         uses: .github/actions/setup-java-gradle
         with:
