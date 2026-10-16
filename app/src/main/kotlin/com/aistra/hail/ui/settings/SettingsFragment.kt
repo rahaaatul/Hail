@@ -3,7 +3,9 @@ package com.aistra.hail.ui.settings
 import android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.Menu
@@ -26,9 +28,12 @@ import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.AppShortcut
 import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.BatterySaver
+import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.DashboardCustomize
 import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Dialpad
 import androidx.compose.material.icons.outlined.FilterBAndW
 import androidx.compose.material.icons.outlined.Fingerprint
@@ -39,10 +44,16 @@ import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.ScreenLockPortrait
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ComposeView
@@ -55,6 +66,7 @@ import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
@@ -65,6 +77,7 @@ import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.AppIconCache
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
 import com.aistra.hail.utils.HIsland
 import com.aistra.hail.utils.HLog
@@ -127,6 +140,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
     @Suppress("FunctionNaming", "LongMethod")
     private fun SettingsScreen() {
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
+        var showCacheRebuildConfirmation by remember { mutableStateOf(false) }
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             listPreference(
                 key = HailData.WORKING_MODE,
@@ -318,7 +332,65 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
                 onClick = ::resetDynamicShortcuts
             )
+            horizontalDivider()
+            preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
+            preference(
+                key = "rebuild_cache",
+                title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
+                summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
+                icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
+                onClick = { showCacheRebuildConfirmation = true }
+            )
+            preference(
+                key = "background_activity",
+                title = { Text(text = stringResource(R.string.allow_background_activity)) },
+                summary = { Text(text = stringResource(R.string.summary_background_activity)) },
+                icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
+                onClick = ::requestBackgroundActivity
+            )
+            horizontalDivider()
+            preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup_restore)) })
+            preference(
+                key = "backup_preference",
+                title = { Text(text = stringResource(R.string.title_backup_restore)) },
+                icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
+                onClick = { findNavController().navigate(R.id.nav_backup) }
+            )
         }
+        if (showCacheRebuildConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showCacheRebuildConfirmation = false },
+                title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
+                text = { Text(text = stringResource(R.string.msg_confirm_rebuild_cache)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showCacheRebuildConfirmation = false
+                            AppIconCache.clear()
+                            AppMetaCache.clearAndRebuild()
+                        }
+                    ) {
+                        Text(text = stringResource(R.string.action_rebuild_cache))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCacheRebuildConfirmation = false }) {
+                        Text(text = stringResource(android.R.string.cancel))
+                    }
+                }
+            )
+        }
+    }
+
+    private fun requestBackgroundActivity() {
+        val context = requireContext()
+        val powerManager = context.getSystemService(PowerManager::class.java)
+        if (powerManager.isIgnoringBatteryOptimizations(context.packageName)) return
+        startActivity(
+            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+        )
     }
 
     private fun LazyListScope.horizontalDivider() = item { HorizontalDivider() }

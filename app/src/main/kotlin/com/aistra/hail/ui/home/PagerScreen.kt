@@ -213,8 +213,11 @@ private fun PagerAppTile(
 ) {
     val icon by produceState(
         defaultIcon,
+        context,
         packageName,
         applicationInfo,
+        userId,
+        iconSizePx,
         HailData.iconPack,
         HailData.synthesizeAdaptiveIcons,
     ) {
