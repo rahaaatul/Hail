@@ -3,13 +3,24 @@ package com.aistra.hail.ui.home
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CheckboxDefaults
@@ -29,25 +40,38 @@ import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
+import com.google.android.material.color.MaterialColors
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailApi.addTag
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.databinding.FragmentPagerBinding
-import com.aistra.hail.extensions.*
+import com.aistra.hail.extensions.applyDefaultInsetter
+import com.aistra.hail.extensions.isLandscape
+import com.aistra.hail.extensions.isRtl
+import com.aistra.hail.extensions.marginRelative
+import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.AppActions
+import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.FuzzySearch
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HShizuku
+import com.aistra.hail.utils.HShortcuts
+import com.aistra.hail.utils.HUI
+import com.aistra.hail.utils.NameComparator
+import com.aistra.hail.utils.NineKeySearch
+import com.aistra.hail.utils.PinyinSearch
 import com.aistra.hail.work.HWork
-import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -57,6 +81,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 
+private const val TAG_LIST_TOP_SPACING_DP = 16
+private const val TAG_ROW_HORIZONTAL_PADDING_DP = 24
+private const val TAG_ROW_VERTICAL_PADDING_DP = 12
+private const val TAG_CHECKBOX_TEXT_SPACING_DP = 24
+
+@Suppress("LargeClass", "TooManyFunctions")
 class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAdapter.OnItemLongClickListener,
     MenuProvider {
     private var query: String = String()
@@ -165,138 +195,155 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     override fun onItemClick(info: AppInfo) {
         if (!isAdded) return
-        if (multiselect) {
-            if (info in selectedList) selectedList.remove(info)
-            else selectedList.add(info)
-            updateCurrentList()
-            updateBarTitle()
-            return
+        when {
+            multiselect -> {
+                if (info in selectedList) selectedList.remove(info)
+                else selectedList.add(info)
+                updateCurrentList()
+                updateBarTitle()
+            }
+
+            info.applicationInfo == null -> Snackbar.make(
+                activity.fab, R.string.app_not_installed, Snackbar.LENGTH_LONG
+            ).setAction(R.string.action_remove_home) { removeCheckedApp(info.packageName) }.show()
+
+            else -> launchApp(info.packageName)
         }
-        if (info.applicationInfo == null) {
-            Snackbar.make(activity.fab, R.string.app_not_installed, Snackbar.LENGTH_LONG)
-                .setAction(R.string.action_remove_home) { removeCheckedApp(info.packageName) }.show()
-            return
-        }
-        launchApp(info.packageName)
     }
 
     override fun onItemLongClick(info: AppInfo): Boolean {
-        if (info.applicationInfo == null && (!multiselect || info !in selectedList)) {
-            exportToClipboard(listOf(info))
-            return true
+        return when {
+            info.applicationInfo == null && (!multiselect || info !in selectedList) -> {
+                exportToClipboard(listOf(info))
+                true
+            }
+
+            info in selectedList -> {
+                onMultiSelect()
+                true
+            }
+
+            else -> {
+                showItemActionDialog(info)
+                true
+            }
         }
-        if (info in selectedList) {
-            onMultiSelect()
-            return true
-        }
+    }
+
+    private fun showItemActionDialog(info: AppInfo) {
         val pkg = info.packageName
         val frozen = AppManager.isAppFrozen(pkg)
-        val freezeStr = getString(R.string.action_freeze)
-        val unfreezeStr = getString(R.string.action_unfreeze)
-        val pinStr = getString(R.string.action_pin)
-        val unpinStr = getString(R.string.action_unpin)
-        val whitelistStr = getString(R.string.action_whitelist)
-        val removeWhitelistStr = getString(R.string.action_remove_whitelist)
-        val unfreezeRemoveHomeStr = getString(R.string.action_unfreeze_remove_home)
-        val launchStr = getString(R.string.action_launch)
-        val deferredTaskStr = getString(R.string.action_deferred_task)
-        val tagSetStr = getString(R.string.action_tag_set)
-        val addPinShortcutStr = getString(R.string.action_add_pin_shortcut)
-        val exportClipboardStr = getString(R.string.action_export_clipboard)
-        val removeHomeStr = getString(R.string.action_remove_home)
-        val filteredEntries = resources.getStringArray(R.array.home_action_entries).filter {
-            (it != freezeStr || !frozen) && (it != unfreezeStr || frozen) && (it != pinStr || !info.pinned) &&
-                (it != unpinStr || info.pinned) && (it != whitelistStr || !info.whitelisted) &&
-                (it != removeWhitelistStr || info.whitelisted) && (it != unfreezeRemoveHomeStr || frozen)
-        }
-        val actionIds = filteredEntries.map { entry ->
-            when (entry) {
-                launchStr -> R.string.action_launch
-                freezeStr -> R.string.action_freeze
-                unfreezeStr -> R.string.action_unfreeze
-                deferredTaskStr -> R.string.action_deferred_task
-                pinStr -> R.string.action_pin
-                unpinStr -> R.string.action_unpin
-                whitelistStr -> R.string.action_whitelist
-                removeWhitelistStr -> R.string.action_remove_whitelist
-                tagSetStr -> R.string.action_tag_set
-                addPinShortcutStr -> R.string.action_add_pin_shortcut
-                exportClipboardStr -> R.string.action_export_clipboard
-                removeHomeStr -> R.string.action_remove_home
-                unfreezeRemoveHomeStr -> R.string.action_unfreeze_remove_home
-                else -> throw IllegalStateException("Unhandled action entry: $entry")
-            }
-        }
-        MaterialAlertDialogBuilder(activity).setTitle(info.name).setItems(filteredEntries.toTypedArray()) { _, which ->
-            when (actionIds[which]) {
-                R.string.action_launch -> launchApp(pkg)
-                R.string.action_freeze, R.string.action_unfreeze -> setListFrozen(!frozen, listOf(info))
-                R.string.action_deferred_task -> {
-                    val values = resources.getIntArray(R.array.deferred_task_values)
-                    val entries = arrayOfNulls<String>(values.size)
-                    values.forEachIndexed { i, it ->
-                        entries[i] = resources.getQuantityString(R.plurals.deferred_task_entry, it, it)
-                    }
-                    MaterialAlertDialogBuilder(activity).setTitle(R.string.action_deferred_task)
-                        .setItems(entries) { _, i ->
-                            HWork.setDeferredFrozen(pkg, !frozen, values[i].toLong())
-                            val deferredAction = getString(if (!frozen) R.string.action_freeze else R.string.action_unfreeze)
-                            Snackbar.make(
-                                activity.fab, resources.getQuantityString(
-                                    R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name
-                                ), Snackbar.LENGTH_INDEFINITE
-                            ).setAction(R.string.action_undo) { HWork.cancelWork(pkg) }.show()
-                        }.setNegativeButton(android.R.string.cancel, null).show()
-                }
-
-                R.string.action_pin, R.string.action_unpin -> {
-                    info.pinned = !info.pinned
-                    HailData.saveApps()
-                    updateCurrentList()
-                }
-
-                R.string.action_whitelist, R.string.action_remove_whitelist -> {
-                    info.whitelisted = !info.whitelisted
-                    HailData.saveApps()
-                    updateCurrentList()
-                }
-
-                R.string.action_tag_set -> tagDialog(info)
-
-                R.string.action_add_pin_shortcut -> tabs?.takeIf { it.tabCount > 1 }?.let {
-                    MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
-                        .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                            HShortcuts.addPinShortcut(
-                                info,
-                                pkg,
-                                info.name,
-                                HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first)
-                            )
-                        }.setPositiveButton(R.string.action_skip) { _, _ ->
-                            HShortcuts.addPinShortcut(
-                                info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg)
-                            )
-                        }.setNegativeButton(android.R.string.cancel, null).show()
-                } ?: HShortcuts.addPinShortcut(
-                    info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg)
-                )
-
-                R.string.action_export_clipboard -> exportToClipboard(listOf(info))
-                R.string.action_remove_home -> removeCheckedApp(pkg)
-                R.string.action_unfreeze_remove_home -> {
-                    val job = setListFrozen(false, listOf(info), false)
-                    lifecycleScope.launch {
-                        job.join()
-                        if (!AppManager.isAppFrozen(pkg)) removeCheckedApp(pkg)
-                    }
-                }
-            }
+        val actions = createItemActionMenu(info, frozen)
+        MaterialAlertDialogBuilder(activity).setTitle(info.name).setItems(
+            actions.map { it.first }.toTypedArray()
+        ) { _, index ->
+            handleItemAction(info, frozen, actions[index].second)
         }.setNeutralButton(R.string.action_details) { _, _ ->
             HUI.startActivity(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS, HPackages.packageUri(pkg)
             )
         }.setNegativeButton(android.R.string.cancel, null).show()
-        return true
+    }
+
+    private fun createItemActionMenu(info: AppInfo, frozen: Boolean): List<Pair<String, Int>> {
+        val actionIds = listOf(
+            R.string.action_launch,
+            R.string.action_freeze,
+            R.string.action_unfreeze,
+            R.string.action_deferred_task,
+            R.string.action_pin,
+            R.string.action_unpin,
+            R.string.action_whitelist,
+            R.string.action_remove_whitelist,
+            R.string.action_tag_set,
+            R.string.action_add_pin_shortcut,
+            R.string.action_export_clipboard,
+            R.string.action_remove_home,
+            R.string.action_unfreeze_remove_home
+        ).associateBy(::getString)
+        val hiddenActions = buildSet {
+            add(if (frozen) R.string.action_freeze else R.string.action_unfreeze)
+            add(if (info.pinned) R.string.action_pin else R.string.action_unpin)
+            add(if (info.whitelisted) R.string.action_whitelist else R.string.action_remove_whitelist)
+            if (!frozen) add(R.string.action_unfreeze_remove_home)
+        }
+        return resources.getStringArray(R.array.home_action_entries).map { entry ->
+            entry to (actionIds[entry] ?: error("Unhandled action entry: $entry"))
+        }.filterNot { (_, actionId) -> actionId in hiddenActions }
+    }
+
+    private fun handleItemAction(info: AppInfo, frozen: Boolean, actionId: Int) {
+        when (actionId) {
+            R.string.action_launch -> launchApp(info.packageName)
+            R.string.action_freeze, R.string.action_unfreeze -> setListFrozen(!frozen, listOf(info))
+            R.string.action_deferred_task -> showDeferredTaskDialog(info, frozen)
+            R.string.action_pin, R.string.action_unpin -> {
+                info.pinned = !info.pinned
+                HailData.saveApps()
+                updateCurrentList()
+            }
+
+            R.string.action_whitelist, R.string.action_remove_whitelist -> {
+                info.whitelisted = !info.whitelisted
+                HailData.saveApps()
+                updateCurrentList()
+            }
+
+            R.string.action_tag_set -> tagDialog(info)
+            R.string.action_add_pin_shortcut -> addPinShortcut(info)
+            R.string.action_export_clipboard -> exportToClipboard(listOf(info))
+            R.string.action_remove_home -> removeCheckedApp(info.packageName)
+            R.string.action_unfreeze_remove_home -> unfreezeAndRemoveHome(info)
+            else -> error("Unhandled action id: $actionId")
+        }
+    }
+
+    private fun showDeferredTaskDialog(info: AppInfo, frozen: Boolean) {
+        val values = resources.getIntArray(R.array.deferred_task_values)
+        val entries = values.map {
+            resources.getQuantityString(R.plurals.deferred_task_entry, it, it)
+        }.toTypedArray()
+        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_deferred_task)
+            .setItems(entries) { _, index ->
+                val minutes = values[index]
+                HWork.setDeferredFrozen(info.packageName, !frozen, minutes.toLong())
+                val deferredAction = getString(
+                    if (!frozen) R.string.action_freeze else R.string.action_unfreeze
+                )
+                Snackbar.make(
+                    activity.fab,
+                    resources.getQuantityString(
+                        R.plurals.msg_deferred_task, minutes, minutes, deferredAction, info.name
+                    ),
+                    Snackbar.LENGTH_INDEFINITE
+                ).setAction(R.string.action_undo) { HWork.cancelWork(info.packageName) }.show()
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun addPinShortcut(info: AppInfo) {
+        val packageName = info.packageName
+        val launchIntent = HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, packageName)
+        val tabLayout = tabs
+        if (tabLayout == null || tabLayout.tabCount <= 1) {
+            HShortcuts.addPinShortcut(info, packageName, info.name, launchIntent)
+            return
+        }
+        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
+            .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
+                HShortcuts.addPinShortcut(
+                    info, packageName, info.name, launchIntent.addTag(HailData.tags[index].first)
+                )
+            }.setPositiveButton(R.string.action_skip) { _, _ ->
+                HShortcuts.addPinShortcut(info, packageName, info.name, launchIntent)
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun unfreezeAndRemoveHome(info: AppInfo) {
+        val job = setListFrozen(false, listOf(info), false)
+        lifecycleScope.launch {
+            job.join()
+            if (!AppManager.isAppFrozen(info.packageName)) removeCheckedApp(info.packageName)
+        }
     }
 
     private fun tagDialog(info: AppInfo) {
@@ -382,45 +429,44 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     private fun onMultiSelect() {
         if (!isAdded) return
+        val actions = listOf(
+            R.string.action_freeze,
+            R.string.action_unfreeze,
+            R.string.action_tag_set,
+            R.string.action_export_clipboard,
+            R.string.action_remove_home,
+            R.string.action_unfreeze_remove_home
+        )
         MaterialAlertDialogBuilder(activity).setTitle(
             getString(
                 R.string.msg_selected, selectedList.size.toString()
             )
-        ).setItems(
-            intArrayOf(
-                R.string.action_freeze,
-                R.string.action_unfreeze,
-                R.string.action_tag_set,
-                R.string.action_export_clipboard,
-                R.string.action_remove_home,
-                R.string.action_unfreeze_remove_home
-            ).map { getString(it) }.toTypedArray()
-        ) { _, which ->
-            when (which) {
-                0 -> {
+        ).setItems(actions.map(::getString).toTypedArray()) { _, which ->
+            when (actions[which]) {
+                R.string.action_freeze -> {
                     setListFrozen(true, selectedList, false)
                     deselect()
                 }
 
-                1 -> {
+                R.string.action_unfreeze -> {
                     setListFrozen(false, selectedList, false)
                     deselect()
                 }
 
-                2 -> triStateTagDialog()
+                R.string.action_tag_set -> triStateTagDialog()
 
-                3 -> {
+                R.string.action_export_clipboard -> {
                     exportToClipboard(selectedList)
                     deselect()
                 }
 
-                4 -> {
+                R.string.action_remove_home -> {
                     selectedList.forEach { removeCheckedApp(it.packageName, false) }
                     HailData.saveApps()
                     deselect()
                 }
 
-                5 -> {
+                R.string.action_unfreeze_remove_home -> {
                     val job = setListFrozen(false, selectedList, false)
                     lifecycleScope.launch {
                         job.join()
@@ -452,7 +498,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 else -> ToggleableState.Indeterminate
             }
         }
-        val states = mutableStateListOf(*initialStates)
+        val states = mutableStateListOf<ToggleableState>().apply {
+            initialStates.forEach { add(it) }
+        }
         MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setView(ComposeView(activity).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent { AppTheme { TriStateTagList(initialStates, states) } }
@@ -478,11 +526,13 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
+    @Suppress("FunctionNaming")
     @Composable
-    private fun TriStateTagList(initialStates: Array<ToggleableState>, states: MutableList<ToggleableState>) = Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-    ) {
-        Spacer(modifier = Modifier.height(16.dp))
+    private fun TriStateTagList(
+        initialStates: Array<ToggleableState>,
+        states: MutableList<ToggleableState>
+    ) = Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+        Spacer(modifier = Modifier.height(TAG_LIST_TOP_SPACING_DP.dp))
         HailData.tags.forEachIndexed { index, tag ->
             Row(modifier = Modifier.fillMaxWidth().clickable {
                 states[index] = if (initialStates[index] == ToggleableState.Indeterminate) when (states[index]) {
@@ -492,13 +542,16 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 }
                 else if (states[index] == ToggleableState.On) ToggleableState.Off
                 else ToggleableState.On
-            }.padding(horizontal = 24.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            }.padding(
+                horizontal = TAG_ROW_HORIZONTAL_PADDING_DP.dp,
+                vertical = TAG_ROW_VERTICAL_PADDING_DP.dp
+            ), verticalAlignment = Alignment.CenterVertically) {
                 TriStateCheckbox(
                     state = states[index],
                     onClick = null,
                     colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.secondary)
                 )
-                Spacer(modifier = Modifier.width(24.dp))
+                Spacer(modifier = Modifier.width(TAG_CHECKBOX_TEXT_SPACING_DP.dp))
                 Text(
                     text = tag.first,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -527,18 +580,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private fun setListFrozen(
         frozen: Boolean, list: List<AppInfo> = HailData.checkedList, updateList: Boolean = true
     ): Job {
-        if (HailData.workingMode == HailData.MODE_DEFAULT) {
-            MaterialAlertDialogBuilder(activity).setMessage(R.string.msg_guide)
-                .setPositiveButton(android.R.string.ok, null).show()
+        if (showWorkingModeGuidance()) {
             return viewLifecycleOwner.lifecycleScope.launch { }
-        } else if (HailData.workingMode == HailData.MODE_SHIZUKU_HIDE) {
-            runCatching { HShizuku.isRoot }.onSuccess {
-                if (!it) {
-                    MaterialAlertDialogBuilder(activity).setMessage(R.string.shizuku_hide_adb)
-                        .setPositiveButton(android.R.string.ok, null).show()
-                    return viewLifecycleOwner.lifecycleScope.launch { }
-                }
-            }
         }
         val filtered = list.filter { it.isInstalled && AppManager.isAppFrozen(it.packageName) != frozen }
         return viewLifecycleOwner.lifecycleScope.launch {
@@ -555,60 +598,95 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
     }
 
+    private fun showWorkingModeGuidance(): Boolean {
+        val message = when {
+            HailData.workingMode == HailData.MODE_DEFAULT -> R.string.msg_guide
+            HailData.workingMode == HailData.MODE_SHIZUKU_HIDE &&
+                runCatching { HShizuku.isRoot }.getOrNull() == false -> R.string.shizuku_hide_adb
+            else -> null
+        }
+        message?.let {
+            MaterialAlertDialogBuilder(activity).setMessage(it)
+                .setPositiveButton(android.R.string.ok, null).show()
+        }
+        return message != null
+    }
+
     private fun showTagDialog(list: List<AppInfo>? = null) {
-        val tabLayout = tabs ?: return  // The view has been destroyed; return directly.
+        val tabLayout = tabs ?: return
         val homeAdapter = adapter ?: return
 
         val binding = DialogInputBinding.inflate(layoutInflater)
         binding.inputLayout.setHint(R.string.tag)
         list ?: binding.editText.setText(tag?.first ?: "")
-        MaterialAlertDialogBuilder(activity).setTitle(if (list != null) R.string.action_tag_add else R.string.action_tag_set)
+        MaterialAlertDialogBuilder(activity)
+            .setTitle(if (list != null) R.string.action_tag_add else R.string.action_tag_set)
             .setView(binding.root).setPositiveButton(android.R.string.ok) { _, _ ->
-                val tagName = binding.editText.text.toString()
-                val tagId = tagName.hashCode()
-                if (HailData.tags.any { it.first == tagName || it.second == tagId }) return@setPositiveButton
-                if (list != null) { // Add tag
-                    HailData.tags.add(tagName to tagId)
-                    homeAdapter.notifyItemInserted(homeAdapter.itemCount - 1)
-                    if (query.isEmpty() && tabLayout.tabCount == 2) tabLayout.isVisible = true
-                    if (list == selectedList) triStateTagDialog() else tagDialog(list.first())
-                } else { // Rename tag
-                    val position = tabLayout.selectedTabPosition
-                    val defaultTab = position == 0
-                    val oldTagId = HailData.tags[position].second
-                    HailData.tags[position] = tagName to if (defaultTab) 0 else tagId
-                    if (!defaultTab) {
-                        // Default tab (position 0) has tagId 0 meaning "no tag" and is not renamed.
-                        // Use snapshot to avoid ConcurrentModificationException since tagIdList is shared mutable state.
-                        // This runs on the main thread (UI), so no synchronization needed.
-                        val checkedSnapshot = HailData.checkedList.toList()
-                        val toUpdate = checkedSnapshot.filter { oldTagId in it.tagIdList }
-                        toUpdate.forEach { it.tagIdList.replaceAll { if (it == oldTagId) tagId else it } }
-                        HailData.saveApps()
-                    }
-                    homeAdapter.notifyItemChanged(position)
-                }
-                HailData.saveTags()
+                saveTag(list, binding.editText.text.toString(), tabLayout, homeAdapter)
             }.apply {
                 val position = tabLayout.selectedTabPosition
                 if (list != null || position == 0) return@apply
                 setNeutralButton(R.string.action_tag_remove) { _, _ ->
-                    val tagIdToRemove = HailData.tags[position].second
-                    val toRemove = mutableListOf<String>()
-                    val checkedSnapshot = HailData.checkedList.toList()
-                    checkedSnapshot.forEach {
-                        if (it.tagIdList.remove(tagIdToRemove) && it.tagIdList.isEmpty()) {
-                            toRemove.add(it.packageName)
-                        }
-                    }
-                    toRemove.forEach { removeCheckedApp(it, false) }
-                    HailData.tags.removeAt(position)
-                    homeAdapter.notifyItemRemoved(position)
-                    if (tabLayout.tabCount == 1) tabLayout.isVisible = false
-                    HailData.saveApps()
-                    HailData.saveTags()
+                    removeTag(position, tabLayout, homeAdapter)
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun saveTag(
+        list: List<AppInfo>?,
+        tagName: String,
+        tabLayout: TabLayout,
+        homeAdapter: HomeAdapter
+    ) {
+        val tagId = tagName.hashCode()
+        if (HailData.tags.any { it.first == tagName || it.second == tagId }) return
+        if (list == null) {
+            renameTag(tagName, tagId, tabLayout, homeAdapter)
+        } else {
+            HailData.tags.add(tagName to tagId)
+            homeAdapter.notifyItemInserted(homeAdapter.itemCount - 1)
+            if (query.isEmpty() && tabLayout.tabCount == 2) tabLayout.isVisible = true
+            if (list == selectedList) triStateTagDialog() else tagDialog(list.first())
+        }
+        HailData.saveTags()
+    }
+
+    private fun renameTag(
+        tagName: String,
+        tagId: Int,
+        tabLayout: TabLayout,
+        homeAdapter: HomeAdapter
+    ) {
+        val position = tabLayout.selectedTabPosition
+        val isDefaultTab = position == 0
+        val oldTagId = HailData.tags[position].second
+        HailData.tags[position] = tagName to if (isDefaultTab) 0 else tagId
+        if (!isDefaultTab) {
+            val checkedSnapshot = HailData.checkedList.toList()
+            val affectedApps = checkedSnapshot.filter { oldTagId in it.tagIdList }
+            affectedApps.forEach { app ->
+                app.tagIdList.replaceAll { if (it == oldTagId) tagId else it }
+            }
+            HailData.saveApps()
+        }
+        homeAdapter.notifyItemChanged(position)
+    }
+
+    private fun removeTag(position: Int, tabLayout: TabLayout, homeAdapter: HomeAdapter) {
+        val tagIdToRemove = HailData.tags[position].second
+        val packagesToRemove = HailData.checkedList.toList().mapNotNull { app ->
+            if (app.tagIdList.remove(tagIdToRemove) && app.tagIdList.isEmpty()) {
+                app.packageName
+            } else {
+                null
+            }
+        }
+        packagesToRemove.forEach { removeCheckedApp(it, false) }
+        HailData.tags.removeAt(position)
+        homeAdapter.notifyItemRemoved(position)
+        if (tabLayout.tabCount == 1) tabLayout.isVisible = false
+        HailData.saveApps()
+        HailData.saveTags()
     }
 
     private fun exportToClipboard(list: List<AppInfo>) {
@@ -622,27 +700,38 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         )
     }
 
-    private fun importFromClipboard() = runCatching {
-        val str = HUI.pasteText() ?: throw IllegalArgumentException()
-        val json = if (str.contains('[')) JSONArray(
-            str.substring(
-                str.indexOf('[')..str.indexOf(']', str.indexOf('['))
-            )
-        )
-        else JSONArray().put(str)
-        var i = 0
-        for (index in 0 until json.length()) {
-            val pkg = json.getString(index)
-            if (HPackages.getApplicationInfoOrNull(pkg) != null && !HailData.isChecked(pkg)) {
-                HailData.addCheckedApp(pkg, tag?.second ?: 0, false)
-                i++
+    private fun importFromClipboard() {
+        val str = HUI.pasteText()
+        if (str == null) {
+            HUI.showToast(R.string.operation_failed, "Clipboard is empty", true)
+            return
+        }
+        runCatching {
+            val json = if (str.contains('[')) JSONArray(
+                str.substring(
+                    str.indexOf('[')..str.indexOf(']', str.indexOf('['))
+                )
+            ) else JSONArray().put(str)
+            var importedCount = 0
+            for (index in 0 until json.length()) {
+                val packageName = json.getString(index)
+                if (HPackages.getApplicationInfoOrNull(packageName) != null &&
+                    !HailData.isChecked(packageName)
+                ) {
+                    HailData.addCheckedApp(packageName, tag?.second ?: 0, false)
+                    importedCount++
+                }
             }
+            if (importedCount > 0) {
+                HailData.saveApps()
+                updateCurrentList()
+            }
+            HUI.showToast(getString(R.string.msg_imported, importedCount.toString()))
+        }.onFailure {
+            HUI.showToast(
+                R.string.operation_failed, it.message ?: it.javaClass.simpleName, true
+            )
         }
-        if (i > 0) {
-            HailData.saveApps()
-            updateCurrentList()
-        }
-        HUI.showToast(getString(R.string.msg_imported, i.toString()))
     }
 
     private suspend fun importFrozenApp() = withContext(Dispatchers.IO) {
@@ -655,13 +744,6 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         HailData.removeCheckedApp(packageName, saveApps)
         if (saveApps) updateCurrentList()
     }
-
-    private fun MenuItem.updateIcon() = icon?.setTint(
-        MaterialColors.getColor(
-            activity.findViewById(R.id.toolbar),
-            if (multiselect) androidx.appcompat.R.attr.colorPrimary else com.google.android.material.R.attr.colorOnSurface
-        )
-    )
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
