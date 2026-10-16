@@ -4,6 +4,16 @@ This directory contains reusable GitHub Actions that encapsulate common workflow
 
 ## Available Actions
 
+### Release helpers
+
+- `prepare-release/prepare-release.sh` sets the semantic version and derives
+  Android's monotonically increasing `versionCode` from the GitHub Actions
+  workflow run number, then runs tests, Detekt, and both APK builds. It is
+  invoked by the semantic-release prepare hook.
+- `find-release-apks` exposes the release and debug APK paths as action outputs.
+- `upload-release-attestations` uploads both APK provenance bundles to the
+  semantic-release GitHub release.
+
 ### 1. Read Metadata (`read-metadata`)
 Extracts version and application name from project files.
 

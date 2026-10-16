@@ -41,7 +41,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "VERSION='${nextRelease.version}' && VERSION_CODE=$(printf '%s\\n' \"$VERSION\" | awk -F. '{print ($1*10000 + $2*100 + $3)}') && awk '!/^[[:space:]]*(version|versionCode)[[:space:]]*=/' gradle.properties > gradle.properties.tmp && printf 'version = %s\\nversionCode = %s\\n' \"$VERSION\" \"$VERSION_CODE\" >> gradle.properties.tmp && mv gradle.properties.tmp gradle.properties && ./gradlew test detekt assembleRelease assembleDebug --no-daemon --parallel"
+        "prepareCmd": "bash .github/actions/prepare-release/prepare-release.sh '${nextRelease.version}'"
       }
     ],
     [
