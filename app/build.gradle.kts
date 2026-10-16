@@ -113,19 +113,16 @@ android {
            // zipAlignEnabled = false
          }
 
-    // Automatically rename APK outputs to include app name, version, and build type
-    applicationVariants.all { variant ->
-        val appName = rootProject.findProperty("appName") as String?
-        val versionName = variant.versionName.orNull
-        if (appName != null && versionName != null) {
-            variant.outputs.forEach { output ->
-                if (output instanceof com.android.build.VariantOutput) {
-                    val buildType = variant.buildType.name
-                    output.outputFileName = "${appName}-v${versionName}-${buildType}.apk"
-                }
-            }
-        }
-    }
+     // Automatically rename APK outputs to include app name, version, and build type
+     androidComponents {
+         onVariants { variant ->
+             variant.outputs.forEach { output ->
+                 val appName = rootProject.findProperty("appName") as String?
+                 val name = "${appName}-${variant.name}.apk"
+                 output.outputFileName.set(name)
+             }
+         }
+     }
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(21)
