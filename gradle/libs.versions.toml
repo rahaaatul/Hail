@@ -1,5 +1,7 @@
 [versions]
-detekt = "1.23.0"
+detekt = "1.23.8"
+kover = "0.9.11"
+spotless = "8.10.4"
 androidGradlePlugin = "9.4.1"
 kotlin = "2.4.21"
 appcompat = "1.8.0"
@@ -30,6 +32,8 @@ room = "3.0.3"
 ksp = "2.3.12"
 sqlite = "2.7.1"
 navigationCompose = "2.10.2"
+benManesVersions = "0.66.0"
+versionCatalogUpdate = "1.1.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
@@ -73,6 +77,10 @@ androidx-biometric-compose = { module = "androidx.biometric:biometric-compose", 
 
 [plugins]
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ben-manes-versions = { id = "io.github.ben-manes.versions", version.ref = "benManesVersions" }
+version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "versionCatalogUpdate" }
