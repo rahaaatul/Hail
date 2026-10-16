@@ -13,6 +13,13 @@ This directory contains reusable GitHub Actions that encapsulate common workflow
 - `find-release-apks` exposes the release and debug APK paths as action outputs.
 - `upload-release-attestations` uploads both APK provenance bundles to the
   semantic-release GitHub release.
+- `download-release-apks` retrieves both APKs for an existing release so
+  attestations can be regenerated and uploaded by the manual recovery workflow.
+- `lint-workflows` runs actionlint against the repository workflows in CI.
+
+To recover missing attestations, run the **Recover Release Attestations**
+workflow and provide the existing release tag. It downloads the APKs from that
+release, generates provenance bundles, and uploads them back to the same tag.
 
 ### 1. Read Metadata (`read-metadata`)
 Extracts version and application name from project files.

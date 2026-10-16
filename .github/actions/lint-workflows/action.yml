@@ -1,0 +1,5 @@
+name: Lint GitHub Actions Workflows
+description: Validate workflow syntax and expressions with actionlint
+runs:
+  using: docker
+  image: docker://rhysd/actionlint:1.7.12

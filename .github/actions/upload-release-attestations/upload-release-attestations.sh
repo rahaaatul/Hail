@@ -6,6 +6,11 @@ set -euo pipefail
 : "${RELEASE_BUNDLE:?Release attestation bundle path must be set}"
 : "${DEBUG_BUNDLE:?Debug attestation bundle path must be set}"
 
+if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]]; then
+  echo "Invalid release tag: $RELEASE_TAG" >&2
+  exit 1
+fi
+
 for bundle in "$RELEASE_BUNDLE" "$DEBUG_BUNDLE"; do
   if [[ ! -f "$bundle" ]]; then
     echo "Attestation bundle does not exist: $bundle" >&2
