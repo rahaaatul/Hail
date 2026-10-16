@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.kover)
 }
 
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(files("$rootDir/config/detekt.yml"))
+}
+
 android {
     namespace = "com.aistra.hail"
     compileSdk = 37

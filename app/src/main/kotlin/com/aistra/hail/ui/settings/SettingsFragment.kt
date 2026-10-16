@@ -5,7 +5,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
@@ -16,7 +21,23 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Adb
+import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.AppShortcut
+import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.DashboardCustomize
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Dialpad
+import androidx.compose.material.icons.outlined.FilterBAndW
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.LockClock
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.ScreenLockPortrait
+import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -43,7 +64,17 @@ import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.AppIconCache
+import com.aistra.hail.utils.HDhizuku
+import com.aistra.hail.utils.HIsland
+import com.aistra.hail.utils.HLog
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HPolicy
+import com.aistra.hail.utils.HShell
+import com.aistra.hail.utils.HShortcuts
+import com.aistra.hail.utils.HSystem
+import com.aistra.hail.utils.HTarget
+import com.aistra.hail.utils.HUI
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textview.MaterialTextView
 import com.rosan.dhizuku.api.Dhizuku
@@ -55,9 +86,24 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.*
+import me.zhanghai.compose.preference.ListPreference
+import me.zhanghai.compose.preference.ListPreferenceType
+import me.zhanghai.compose.preference.ProvidePreferenceLocals
+import me.zhanghai.compose.preference.SwitchPreference
+import me.zhanghai.compose.preference.preference
+import me.zhanghai.compose.preference.preferenceCategory
+import me.zhanghai.compose.preference.rememberPreferenceState
+import me.zhanghai.compose.preference.sliderPreference
 import rikka.shizuku.Shizuku
 
+private const val FREEZE_ALL_SHORTCUT_INDEX = 2
+private const val UNFREEZE_ALL_SHORTCUT_INDEX = 3
+private const val FREEZE_NON_WHITELISTED_SHORTCUT_INDEX = 4
+private const val LOCK_SHORTCUT_INDEX = 5
+private const val LOCK_FREEZE_SHORTCUT_INDEX = 6
+private const val SHIZUKU_REQUEST_CODE = 0
+
+@Suppress("TooManyFunctions")
 class SettingsFragment : MainFragment(), MenuProvider {
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -71,12 +117,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     ProvidePreferenceLocals {
                         SettingsScreen()
                     }
+
                 }
             }
         }
     }
 
     @Composable
+    @Suppress("FunctionNaming", "LongMethod")
     private fun SettingsScreen() {
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -213,7 +261,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 defaultValue = false,
                 onValueChange = { _, value ->
                     if (value && !HSystem.checkOpUsageStats(requireContext())) {
-                        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        startActivity(
+                            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
                         false
                     } else true
                 },
@@ -229,7 +280,10 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         .contains(requireContext().packageName)
                     if (value && !isGranted) {
                         app.setAutoFreezeServiceEnabled(true)
-                        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        startActivity(
+                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
                         false
                     } else true
                 },
@@ -285,6 +339,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             icon = { Icon(imageVector = icon, contentDescription = null) })
     }
 
+    @Suppress("LongParameterList")
     private fun LazyListScope.switchPreference(
         key: String,
         defaultValue: Boolean,
@@ -300,6 +355,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         icon = icon
     )
 
+    @Suppress("LongParameterList")
     private fun LazyListScope.listPreference(
         key: String,
         defaultValue: String,
@@ -323,6 +379,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
             valueToText = { AnnotatedString(valueToText(it)) })
     }
 
+    @Suppress("LongParameterList")
     private fun LazyListScope.listPreference(
         key: String,
         defaultValue: String,
@@ -358,199 +415,172 @@ class SettingsFragment : MainFragment(), MenuProvider {
         MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_add_pin_shortcut)
             .setItems(R.array.pin_shortcut_entries) { _, which ->
                 when (which) {
-                    0 -> MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_freeze_tag)
-                        .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                            val tag = HailData.tags[index].first
-                            HShortcuts.addPinShortcut(
-                                AppCompatResources.getDrawable(
-                                    requireContext(), R.drawable.ic_round_frozen_shortcut
-                                )!!,
-                                HailApi.ACTION_FREEZE_TAG + tag,
-                                tag,
-                                HailApi.getIntentForTag(HailApi.ACTION_FREEZE_TAG, tag)
-                            )
-                        }.setNegativeButton(android.R.string.cancel, null).show()
-
-                    1 -> MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
-                        .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                            val tag = HailData.tags[index].first
-                            HShortcuts.addPinShortcut(
-                                AppCompatResources.getDrawable(
-                                    requireContext(), R.drawable.ic_round_unfrozen_shortcut
-                                )!!,
-                                HailApi.ACTION_UNFREEZE_TAG + tag,
-                                tag,
-                                HailApi.getIntentForTag(HailApi.ACTION_UNFREEZE_TAG, tag)
-                            )
-                        }.setNegativeButton(android.R.string.cancel, null).show()
-
-                    2 -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_round_frozen_shortcut
-                        )!!,
-                        HailApi.ACTION_FREEZE_ALL,
-                        getString(R.string.action_freeze_all),
-                        Intent(HailApi.ACTION_FREEZE_ALL)
-                    )
-
-                    3 -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_round_unfrozen_shortcut
-                        )!!,
-                        HailApi.ACTION_UNFREEZE_ALL,
-                        getString(R.string.action_unfreeze_all),
-                        Intent(HailApi.ACTION_UNFREEZE_ALL)
-                    )
-
-                    4 -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_round_frozen_shortcut
-                        )!!,
-                        HailApi.ACTION_FREEZE_NON_WHITELISTED,
-                        getString(R.string.action_freeze_non_whitelisted),
-                        Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED)
-                    )
-
-                    5 -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_outline_lock_shortcut
-                        )!!, HailApi.ACTION_LOCK, getString(R.string.action_lock), Intent(HailApi.ACTION_LOCK)
-                    )
-
-                    6 -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_outline_lock_shortcut
-                        )!!,
-                        HailApi.ACTION_LOCK_FREEZE,
-                        getString(R.string.action_lock_freeze),
-                        Intent(HailApi.ACTION_LOCK_FREEZE)
-                    )
+                    0 -> showTagPinShortcut(freeze = true)
+                    1 -> showTagPinShortcut(freeze = false)
+                    in FREEZE_ALL_SHORTCUT_INDEX..LOCK_FREEZE_SHORTCUT_INDEX ->
+                        addFixedPinShortcut(which)
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
+    private fun showTagPinShortcut(freeze: Boolean) {
+        val action = if (freeze) HailApi.ACTION_FREEZE_TAG else HailApi.ACTION_UNFREEZE_TAG
+        val icon = if (freeze) R.drawable.ic_round_frozen_shortcut
+        else R.drawable.ic_round_unfrozen_shortcut
+        val title = if (freeze) R.string.action_freeze_tag else R.string.action_unfreeze_tag
+        MaterialAlertDialogBuilder(requireActivity()).setTitle(title)
+            .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
+                val tag = HailData.tags[index].first
+                HShortcuts.addPinShortcut(
+                    AppCompatResources.getDrawable(requireContext(), icon)!!,
+                    action + tag,
+                    tag,
+                    HailApi.getIntentForTag(action, tag)
+                )
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun addFixedPinShortcut(index: Int) {
+        val icon = when (index) {
+            UNFREEZE_ALL_SHORTCUT_INDEX -> R.drawable.ic_round_unfrozen_shortcut
+            in LOCK_SHORTCUT_INDEX..LOCK_FREEZE_SHORTCUT_INDEX -> R.drawable.ic_outline_lock_shortcut
+            else -> R.drawable.ic_round_frozen_shortcut
+        }
+        val (action, title) = when (index) {
+            FREEZE_ALL_SHORTCUT_INDEX -> HailApi.ACTION_FREEZE_ALL to R.string.action_freeze_all
+            UNFREEZE_ALL_SHORTCUT_INDEX -> HailApi.ACTION_UNFREEZE_ALL to R.string.action_unfreeze_all
+            FREEZE_NON_WHITELISTED_SHORTCUT_INDEX ->
+                HailApi.ACTION_FREEZE_NON_WHITELISTED to R.string.action_freeze_non_whitelisted
+            LOCK_SHORTCUT_INDEX -> HailApi.ACTION_LOCK to R.string.action_lock
+            LOCK_FREEZE_SHORTCUT_INDEX -> HailApi.ACTION_LOCK_FREEZE to R.string.action_lock_freeze
+            else -> error("Unsupported shortcut index: $index")
+        }
+        HShortcuts.addPinShortcut(
+            AppCompatResources.getDrawable(requireContext(), icon)!!,
+            action,
+            getString(title),
+            Intent(action)
+        )
+    }
+
     fun onWorkingModeChange(rememberState: MutableState<String>, mode: String): Boolean {
-        // Show/hide terminal menu.
         activity.invalidateOptionsMenu()
-        when {
-            mode.startsWith(HailData.OWNER) -> if (!HPolicy.isDeviceOwnerActive) {
-                MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
-                    .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
-                    .setPositiveButton(android.R.string.ok, null)
-                    .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
-                    .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
-                return false
-            }
+        return when {
+            mode.startsWith(HailData.OWNER) -> checkOwnerMode()
+            mode.startsWith(HailData.DHIZUKU) -> checkDhizukuMode(rememberState, mode)
+            mode.startsWith(HailData.SU) -> checkSuMode()
+            mode == HailData.MODE_JAILBREAK_DISABLE -> checkJailbreakMode()
+            mode.startsWith(HailData.SHIZUKU) -> checkShizukuMode(rememberState, mode)
+            mode.startsWith(HailData.ISLAND) -> checkIslandMode(mode)
+            mode.startsWith(HailData.PRIVAPP) -> checkPrivilegedMode()
+            else -> true
+        }
+    }
 
-            mode.startsWith(HailData.DHIZUKU) -> return runCatching {
-                Dhizuku.init(app)
-                when {
-                    Dhizuku.isPermissionGranted() -> true
-                    else -> {
-                        lifecycleScope.launch {
-                            val result = callbackFlow {
-                                Dhizuku.requestPermission(object : DhizukuRequestPermissionListener() {
-                                    override fun onRequestPermission(grantResult: Int) {
-                                        trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
-                                    }
-                                })
-                                awaitClose()
-                            }.first()
-                            if (result) {
-                                rememberState.value = mode
-                                if (HTarget.O) HDhizuku.setDelegatedScopes()
-                            }
+    private fun checkOwnerMode(): Boolean {
+        if (HPolicy.isDeviceOwnerActive) return true
+        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
+            .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
+            .setPositiveButton(android.R.string.ok, null)
+            .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
+            .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
+        return false
+    }
+
+    private fun checkDhizukuMode(rememberState: MutableState<String>, mode: String): Boolean =
+        runCatching {
+            Dhizuku.init(app)
+            if (Dhizuku.isPermissionGranted()) return@runCatching true
+            lifecycleScope.launch {
+                val result = callbackFlow {
+                    Dhizuku.requestPermission(object : DhizukuRequestPermissionListener() {
+                        override fun onRequestPermission(grantResult: Int) {
+                            trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
                         }
-                        false
-                    }
-                }
-            }.getOrElse {
-                HLog.e(it)
-                HUI.showToast(R.string.permission_denied)
-                false
-            }
-
-            mode.startsWith(HailData.SU) -> if (!HShell.checkSU) {
-                HUI.showToast(R.string.permission_denied)
-                return false
-            }
-
-            mode == HailData.MODE_JAILBREAK_DISABLE -> if (
-                ContextCompat.checkSelfPermission(
-                    requireContext(),
-                    CHANGE_COMPONENT_ENABLED_STATE
-                ) == PackageManager.PERMISSION_DENIED
-                && !HShell.grantPermission(requireContext().packageName, CHANGE_COMPONENT_ENABLED_STATE)
-            ) {
-                HUI.showToast(R.string.permission_denied)
-                return false
-            }
-
-            mode.startsWith(HailData.SHIZUKU) -> return runCatching {
-                when {
-                    Shizuku.isPreV11() -> throw IllegalStateException("unsupported shizuku version")
-                    Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
-                    Shizuku.shouldShowRequestPermissionRationale() -> {
-                        HUI.showToast(R.string.permission_denied)
-                        false
-                    }
-
-                    else -> {
-                        lifecycleScope.launch {
-                            val result = callbackFlow {
-                                val shizukuRequestCode = 0
-                                val listener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-                                    if (requestCode != shizukuRequestCode) return@OnRequestPermissionResultListener
-                                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
-                                }
-                                Shizuku.addRequestPermissionResultListener(listener)
-                                Shizuku.requestPermission(shizukuRequestCode)
-                                awaitClose {
-                                    Shizuku.removeRequestPermissionResultListener(listener)
-                                }
-                            }.first()
-                            if (result) rememberState.value = mode
-                        }
-                        false
-                    }
-                }
-            }.getOrElse {
-                HLog.e(it)
-                HUI.showToast(R.string.shizuku_missing)
-                false
-            }
-
-            mode.startsWith(HailData.ISLAND) -> return runCatching {
-                when {
-                    mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
-                    mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
-                    else -> {
-                        lifecycleScope.launch {
-                            requestPermissionLauncher.launch(
-                                if (mode == HailData.MODE_ISLAND_HIDE) HIsland.PERMISSION_FREEZE_PACKAGE
-                                else HIsland.PERMISSION_SUSPEND_PACKAGE
-                            )
-                        }
-                        false
-                    }
-                }
-            }.getOrElse {
-                HLog.e(it)
-                HUI.showToast(R.string.permission_denied)
-                false
-            }.also {
-                if (it) {
-                    HIsland.checkOwnerApp()
+                    })
+                    awaitClose()
+                }.first()
+                if (result) {
+                    rememberState.value = mode
+                    if (HTarget.O) HDhizuku.setDelegatedScopes()
                 }
             }
-
-            mode.startsWith(HailData.PRIVAPP) -> if (!HPackages.isPrivilegedApp(app.packageName)) {
-                HUI.showToast(R.string.permission_denied)
-                return false
-            }
+            false
+        }.getOrElse {
+            HLog.e(it)
+            HUI.showToast(R.string.permission_denied)
+            false
         }
 
-        return true
+    private fun checkSuMode(): Boolean = HShell.checkSU || showPermissionDenied()
+
+    private fun checkJailbreakMode(): Boolean {
+        val permissionDenied = ContextCompat.checkSelfPermission(
+            requireContext(), CHANGE_COMPONENT_ENABLED_STATE
+        ) == PackageManager.PERMISSION_DENIED
+        return !permissionDenied ||
+            HShell.grantPermission(requireContext().packageName, CHANGE_COMPONENT_ENABLED_STATE) ||
+            showPermissionDenied()
+    }
+
+    private fun checkShizukuMode(rememberState: MutableState<String>, mode: String): Boolean =
+        runCatching {
+            check(!Shizuku.isPreV11()) { "Unsupported Shizuku version" }
+            when {
+                Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
+                Shizuku.shouldShowRequestPermissionRationale() -> showPermissionDenied()
+                else -> {
+                    requestShizukuPermission(rememberState, mode)
+                    false
+                }
+            }
+        }.getOrElse {
+            HLog.e(it)
+            HUI.showToast(R.string.shizuku_missing)
+            false
+        }
+
+    private fun requestShizukuPermission(rememberState: MutableState<String>, mode: String) {
+        lifecycleScope.launch {
+            val result = callbackFlow {
+                val listener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+                    if (requestCode != SHIZUKU_REQUEST_CODE) return@OnRequestPermissionResultListener
+                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
+                }
+                Shizuku.addRequestPermissionResultListener(listener)
+                Shizuku.requestPermission(SHIZUKU_REQUEST_CODE)
+                awaitClose { Shizuku.removeRequestPermissionResultListener(listener) }
+            }.first()
+            if (result) rememberState.value = mode
+        }
+    }
+
+    private fun checkIslandMode(mode: String): Boolean = runCatching {
+        when {
+            mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
+            mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
+            else -> {
+                lifecycleScope.launch {
+                    requestPermissionLauncher.launch(
+                        if (mode == HailData.MODE_ISLAND_HIDE) HIsland.PERMISSION_FREEZE_PACKAGE
+                        else HIsland.PERMISSION_SUSPEND_PACKAGE
+                    )
+                }
+                false
+            }
+        }
+    }.getOrElse {
+        HLog.e(it)
+        HUI.showToast(R.string.permission_denied)
+        false
+    }.also { if (it) HIsland.checkOwnerApp() }
+
+    private fun checkPrivilegedMode(): Boolean =
+        HPackages.isPrivilegedApp(app.packageName) || showPermissionDenied()
+
+    private fun showPermissionDenied(): Boolean {
+        HUI.showToast(R.string.permission_denied)
+        return false
     }
 
     private suspend fun onTerminalResult(exitValue: Int, msg: String?) = withContext(Dispatchers.Main) {
