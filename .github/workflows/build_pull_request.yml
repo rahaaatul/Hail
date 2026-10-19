@@ -62,36 +62,36 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: .github/actions/commitlint
-        with:
-          config-file: './commitlint.config.js'
-      - name: Setup Java and Gradle
-        uses: .github/actions/setup-java-gradle
-        with:
-          java-version: 21
-          distribution: temurin
-          gradle-cache: true
-          keystore-file: '${{ secrets.KEYSTORE }}'
-          keystore-password: '${{ secrets.KEYSTORE_PASSWORD }}'
-          key-alias: '${{ secrets.KEYSTORE_ALIAS }}'
-          key-password: '${{ secrets.KEYSTORE_ALIAS_PASSWORD }}'
-      - name: Build both APKs (with metadata, tests, and Detekt)
-        uses: .github/actions/build-apk
-        id: build
-      - name: Upload release APK as artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-apk-${{ github.sha }}
-          path: ${{ steps.build.outputs.releaseApkPath }}
-          retention-days: 30
-      - name: Upload debug APK as artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-apk-${{ github.sha }}
-          path: ${{ steps.build.outputs.debugApkPath }}
-          retention-days: 30
+        - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+          with:
+           fetch-depth: 0
+       - uses: .github/actions/commitlint
+          with:
+           config-file: './commitlint.config.js'
+       - name: Setup Java and Gradle
+         uses: .github/actions/setup-java-gradle
+         with:
+           java-version: 21
+           distribution: temurin
+           gradle-cache: true
+           keystore-file: '${{ secrets.KEYSTORE }}'
+           keystore-password: '${{ secrets.KEYSTORE_PASSWORD }}'
+           key-alias: '${{ secrets.KEYSTORE_ALIAS }}'
+           key-password: '${{ secrets.KEYSTORE_ALIAS_PASSWORD }}'
+        - name: Build both APKs (with metadata, tests, and Detekt)
+          uses: .github/actions/build-apk
+          id: build
+        - name: Upload release APK as artifact
+          if: success()
+          uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+         with:
+           name: release-apk-${{ github.sha }}
+           path: ${{ steps.build.outputs.releaseApkPath }}
+           retention-days: 30
+        - name: Upload debug APK as artifact
+          if: success()
+          uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+         with:
+           name: debug-apk-${{ github.sha }}
+           path: ${{ steps.build.outputs.debugApkPath }}
+           retention-days: 30

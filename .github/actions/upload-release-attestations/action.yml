@@ -1,0 +1,22 @@
+name: Upload Release Attestations
+description: Upload APK provenance bundles to a GitHub release
+inputs:
+  release-tag:
+    description: Git tag for the published release
+    required: true
+  release-bundle:
+    description: Provenance bundle path for the release APK
+    required: true
+  debug-bundle:
+    description: Provenance bundle path for the debug APK
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_TAG: ${{ inputs.release-tag }}
+        RELEASE_BUNDLE: ${{ inputs.release-bundle }}
+        DEBUG_BUNDLE: ${{ inputs.debug-bundle }}
+      run: bash "$GITHUB_ACTION_PATH/upload-release-attestations.sh"

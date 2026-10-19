@@ -1,0 +1,80 @@
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  schedule:
+    - cron: '28 9 * * 0'  # Every Sunday at 9:28 AM UTC
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-analysis
+  cancel-in-progress: true
+
+jobs:
+  # Pre-job to check for duplicate workflow runs
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - name: Check for duplicate workflow runs
+         id: skip_check
+         uses: fkirc/skip-duplicate-actions@fd5d0eb2d8b0f0f0de5b6f8d5c5b0b8f8f8f8f8f
+        with:
+          # Skip if duplicate succeeded
+          cancel_others: 'false'
+          # Skip if PR branch is weblate-dev
+          paths_ignore: ''
+          do_not_skip: '["push", "pull_request", "workflow_dispatch"]'
+          # Always run on schedule (no paths specified for schedule)
+  
+  analyze:
+    name: Analyze
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      # Grant the minimum required permissions for CodeQL analysis
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@3db7caf9014b962f9392088c0fcaf53eeddf47db
+        with:
+          languages: java,kotlin
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          gradle-cache: 'true'
+
+      - name: Build Preview Debug APK
+        uses: ./.github/actions/build-apk
+        with:
+          # Build the previewDebug variant for analysis as specified in user vision
+          variant: 'previewDebug'
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@3db7caf9014b962f9392088c0fcaf53eeddf47db
+        with:
+          category: "/language:${{matrix.language}}"

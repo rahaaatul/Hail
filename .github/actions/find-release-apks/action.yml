@@ -1,0 +1,15 @@
+name: Find Release APKs
+description: Find the release and debug APKs built by semantic-release preparation
+outputs:
+  releaseApkPath:
+    description: Path to the release APK
+    value: ${{ steps.find.outputs.releaseApkPath }}
+  debugApkPath:
+    description: Path to the debug APK
+    value: ${{ steps.find.outputs.debugApkPath }}
+runs:
+  using: composite
+  steps:
+    - id: find
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/find-release-apks.sh"

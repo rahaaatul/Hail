@@ -40,9 +40,9 @@
     ],
     [
       "@semantic-release/exec",
-      {
-        "prepareCmd": "echo \"version=${nextRelease.version}\" > gradle.properties.tmp && echo \"versionCode=$(echo ${nextRelease.version} | awk -F. '{print ($1*10000 + $2*100 + $3)}')\" >> gradle.properties.tmp && grep -v '^version=' gradle.properties >> gradle.properties.tmp && grep -v '^versionCode=' gradle.properties.tmp > gradle.properties && mv gradle.properties.tmp gradle.properties"
-      }
+       {
+          "prepareCmd": "echo \"version=${nextRelease.version}\" > gradle.properties.tmp && if [ \"${nextRelease.publish}\" = \"true\" ]; then source versionCode.properties; NEW_VERSION_CODE=$((VERSION_CODE + 1)); if [ \"$NEW_VERSION_CODE\" -gt 2100000000 ]; then echo \"versionCode=$NEW_VERSION_CODE exceeds Android maximum 2100000000\" >&2; exit 1; fi; echo \"VERSION_CODE=$NEW_VERSION_CODE\" > versionCode.properties; echo \"versionCode=$NEW_VERSION_CODE\" >> gradle.properties.tmp; else echo \"versionCode=$(cat versionCode.properties | grep -o 'VERSION_CODE=[0-9]*' | cut -d'=' -f2)\" >> gradle.properties.tmp; fi && grep -v '^version=' gradle.properties >> gradle.properties.tmp && grep -v '^versionCode=' gradle.properties.tmp > gradle.properties && mv gradle.properties.tmp gradle.properties"
+       }
     ],
     [
       "@semantic-release/git",

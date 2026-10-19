@@ -1,0 +1,46 @@
+name: Recover Release Attestations
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: Existing release tag whose APKs need attestations
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  attest:
+    name: Attest existing release APKs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        with:
+          fetch-depth: 0
+      - name: Download APKs from release
+        id: apks
+        uses: ./.github/actions/download-release-apks
+        with:
+          release-tag: ${{ inputs.release-tag }}
+      - name: Generate release APK attestation
+        id: attest-release
+        uses: actions/attest-build-provenance@9d57eef8c06cd9d6b433effeeb7a6a77b3ff94ad
+        with:
+          subject-path: ${{ steps.apks.outputs.releaseApkPath }}
+          push-to-registry: false
+      - name: Generate debug APK attestation
+        id: attest-debug
+        uses: actions/attest-build-provenance@9d57eef8c06cd9d6b433effeeb7a6a77b3ff94ad
+        with:
+          subject-path: ${{ steps.apks.outputs.debugApkPath }}
+          push-to-registry: false
+      - name: Upload APK attestations
+        uses: ./.github/actions/upload-release-attestations
+        with:
+          release-tag: ${{ inputs.release-tag }}
+          release-bundle: ${{ steps.attest-release.outputs.bundle-path }}
+          debug-bundle: ${{ steps.attest-debug.outputs.bundle-path }}

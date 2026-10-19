@@ -32,12 +32,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: actions/checkout@v7
+     - name: Checkout
+       uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
       with:
         fetch-depth: 0
-    - name: Setup Java
-      uses: actions/setup-java@v6
+     - name: Setup Java
+       uses: actions/setup-java@995857f181cade0d9d242507e0ee7e1fceae74aa
       with:
         distribution: '${{ inputs.distribution }}'
         java-version: '${{ inputs.java-version }}'
@@ -51,8 +51,8 @@ runs:
         echo "releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
         echo "releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
     - name: Cache Gradle
-      if: ${{ inputs.gradle-cache == true }}
-      uses: burrunan/gradle-cache-action@v3
+       if: ${{ inputs.gradle-cache == true }}
+       uses: burrunan/gradle-cache-action@a79b48da7d209a00a2c97b61e7b8b90c5a3a795b
     - name: Set Gradle properties for optimization
       run: |
         echo "org.gradle.caching=true" >> gradle.properties

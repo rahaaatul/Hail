@@ -19,3 +19,7 @@ commits_since_v1.10.3.txt
 !.github/debug.keystore
 
 /.tmp/
+/.cline/
+/.firecrawl/
+
+/.kotlin/
