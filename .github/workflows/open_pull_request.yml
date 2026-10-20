@@ -71,7 +71,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Check for commits to merge
+        id: changes
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          COUNT=$(git rev-list --count origin/main..HEAD)
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No commits ahead of main, nothing to merge."
+          else
+            echo "$COUNT commit(s) ahead of main."
+          fi
+        shell: bash
       - name: Open pull request
+        if: steps.changes.outputs.count != '0'
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
         with:
           destination_branch: main
