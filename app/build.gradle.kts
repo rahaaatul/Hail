@@ -38,11 +38,22 @@ android {
         }
     }
 
+    // The release signing config only carries a key when a keystore was
+    // supplied. Assigning it to a build type in that state makes AGP fail the
+    // validateSigning task with an opaque error, so the debug key is used
+    // instead, which keeps the artifact installable.
+    val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
+    val buildSigningConfig = if (keystore != null && keystore.exists()) {
+        signingConfigs.getByName("release")
+    } else {
+        signingConfigs.getByName("debug")
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-Debug"
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = buildSigningConfig
         }
         create("pr") {
             // Each PR installs as its own app: com.aistra.hail.pr.<n>.
@@ -53,17 +64,15 @@ android {
             // segment must begin with a letter.
             applicationIdSuffix =
                 providers.gradleProperty("prNumber").orNull?.let { ".pr$it" } ?: ".pr"
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = buildSigningConfig
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // Mirrors the keystore.exists() test inside the "release" signing
-            // config above. The two must agree: assigning a config whose
-            // storeFile was never set produces an opaque AGP failure
-            // ("missing required property 'storeFile'") instead of a plainly
-            // unsigned build.
-            val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
+            // Uses the same keystore test as the signing config above. The two
+            // must agree: assigning a config whose storeFile was never set
+            // produces an opaque AGP failure ("missing required property
+            // 'storeFile'") instead of a plainly unsigned build.
             if (keystore != null && keystore.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
