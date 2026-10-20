@@ -12,7 +12,7 @@ android {
         applicationId = "com.aistra.hail"
         minSdk = 24
         targetSdk = 37
-        versionCode = (rootProject.findProperty("versionCode") as String?)?.toInt() ?: 0
+        versionCode = (rootProject.findProperty("versionCode") as String?)?.toInt()?.takeIf { it > 0 } ?: 1
         versionName = rootProject.findProperty("version") as String?
         ndk {
             val abi = project.findProperty("abi") as String?
