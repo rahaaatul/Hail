@@ -83,6 +83,9 @@ runs:
         remote-build-cache-proxy-enabled: ${{ inputs.gradle-build-cache }}
     - name: Set Gradle properties for optimization
       run: |
+        # The release commits gradle.properties, so the block below carries a
+        # marker and is stripped from the file before it is committed.
+        echo "# --- applied by the setup-java-gradle action, not part of the repository ---" >> gradle.properties
         echo "org.gradle.caching=${{ inputs.gradle-build-cache == 'true' && 'true' || 'false' }}" >> gradle.properties
         echo "org.gradle.configuration-cache=true" >> gradle.properties
         echo "org.gradle.configuration-cache.problems=warn" >> gradle.properties
