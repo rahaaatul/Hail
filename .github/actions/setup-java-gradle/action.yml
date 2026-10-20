@@ -51,6 +51,7 @@ runs:
         java-version: '${{ inputs.java-version }}'
     - name: Set up release keystore
       if: ${{ inputs.keystore-file != '' }}
+      shell: bash
       run: |
         echo "${{ inputs.keystore-file }}" | base64 --decode > /tmp/release.keystore
         chmod 600 /tmp/release.keystore
