@@ -18,7 +18,7 @@ jobs:
     name: Attest existing release APKs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
       - name: Download APKs from release
@@ -28,13 +28,13 @@ jobs:
           release-tag: ${{ inputs.release-tag }}
       - name: Generate release APK attestation
         id: attest-release
-        uses: actions/attest-build-provenance@9d57eef8c06cd9d6b433effeeb7a6a77b3ff94ad
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
         with:
           subject-path: ${{ steps.apks.outputs.releaseApkPath }}
           push-to-registry: false
       - name: Generate debug APK attestation
         id: attest-debug
-        uses: actions/attest-build-provenance@9d57eef8c06cd9d6b433effeeb7a6a77b3ff94ad
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
         with:
           subject-path: ${{ steps.apks.outputs.debugApkPath }}
           push-to-registry: false

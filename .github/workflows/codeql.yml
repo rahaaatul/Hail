@@ -72,6 +72,11 @@ jobs:
         uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee
         with:
           languages: java-kotlin
+          # The default suite is the most precise one and returns few results.
+          # The security-extended suite adds the lower precision and lower
+          # severity queries on top of it, which is worth the extra noise for
+          # a project this small.
+          queries: security-extended
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle

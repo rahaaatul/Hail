@@ -41,7 +41,7 @@
     [
       "@semantic-release/exec",
        {
-          "prepareCmd": "echo \"version=${nextRelease.version}\" > gradle.properties.tmp && if [ \"${nextRelease.publish}\" = \"true\" ]; then source versionCode.properties; NEW_VERSION_CODE=$((VERSION_CODE + 1)); if [ \"$NEW_VERSION_CODE\" -gt 2100000000 ]; then echo \"versionCode=$NEW_VERSION_CODE exceeds Android maximum 2100000000\" >&2; exit 1; fi; echo \"VERSION_CODE=$NEW_VERSION_CODE\" > versionCode.properties; echo \"versionCode=$NEW_VERSION_CODE\" >> gradle.properties.tmp; else echo \"versionCode=$(cat versionCode.properties | grep -o 'VERSION_CODE=[0-9]*' | cut -d'=' -f2)\" >> gradle.properties.tmp; fi && grep -v '^version=' gradle.properties >> gradle.properties.tmp && grep -v '^versionCode=' gradle.properties.tmp > gradle.properties && mv gradle.properties.tmp gradle.properties"
+          "prepareCmd": "echo \"version = ${nextRelease.version}\" > gradle.properties.tmp && if [ \"${nextRelease.publish}\" = \"true\" ]; then CURRENT_VERSION_CODE=$(grep -oE 'VERSION_CODE=[0-9]+' versionCode.properties | cut -d'=' -f2); NEW_VERSION_CODE=$((CURRENT_VERSION_CODE + 1)); if [ \"$NEW_VERSION_CODE\" -gt 2100000000 ]; then echo \"versionCode=$NEW_VERSION_CODE exceeds Android maximum 2100000000\" >&2; exit 1; fi; echo \"VERSION_CODE=$NEW_VERSION_CODE\" > versionCode.properties; echo \"versionCode = $NEW_VERSION_CODE\" >> gradle.properties.tmp; else echo \"versionCode = $(grep -oE 'VERSION_CODE=[0-9]+' versionCode.properties | cut -d'=' -f2)\" >> gradle.properties.tmp; fi && grep -vE '^(version|versionCode)[[:space:]]*=' gradle.properties >> gradle.properties.tmp && mv gradle.properties.tmp gradle.properties"
        }
     ],
     [
@@ -49,6 +49,7 @@
       {
         "assets": [
           "gradle.properties",
+          "versionCode.properties",
           "CHANGELOG.md"
         ],
         "message": "chore: Release v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
@@ -69,7 +70,8 @@
       "@cleyrop-org/semantic-release-backmerge",
       {
         "backmergeBranches": [{"from": "main", "to": "dev"}],
-        "clearWorkspace": true
+        "clearWorkspace": true,
+        "ignorePaths": ["gradle.properties"]
       }
     ]
   ]

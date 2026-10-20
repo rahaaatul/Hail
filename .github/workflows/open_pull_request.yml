@@ -5,21 +5,21 @@ on:
     branches:
       - dev
     paths:
-      - 'src/**'
+      - 'app/src/**'
       - 'gradle/**'
       - '**.kt'
       - '**.java'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
-      - 'AndroidManifest.xml'
-      - 'res/**'
+      - 'app/src/main/AndroidManifest.xml'
+      - 'app/src/main/res/**'
       - '.github/workflows/**'
       - '.github/actions/**'
-      - 'src/main/assets/**'
-      - 'src/main/jni/**'
-      - 'src/main/aidl/**'
-      - 'src/main/rs/**'
+      - 'app/src/main/assets/**'
+      - 'app/src/main/jni/**'
+      - 'app/src/main/aidl/**'
+      - 'app/src/main/rs/**'
       - '**.md'
       - '**.txt'
       - 'LICENSE'
@@ -35,32 +35,30 @@ jobs:
       releaseApkPath: ${{ steps.build.outputs.releaseApkPath }}
       debugApkPath: ${{ steps.build.outputs.debugApkPath }}
     steps:
-       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
-         with:
-           fetch-depth: 0
-       - name: Setup Java and Gradle
-         uses: ./.github/actions/setup-java-gradle
-         with:
-           java-version: '21'
-           distribution: 'temurin'
-           gradle-cache: 'true'
-       - name: Build APKs (with metadata, tests, and Detekt)
-         id: build
-         uses: ./.github/actions/build-apk
-       - name: Upload release APK as artifact
-         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-         with:
-           name: open-pr-release-apk-${{ github.sha }}
-           path: ${{ steps.build.outputs.releaseApkPath }}
-           retention-days: 7
-           archive: false
-       - name: Upload debug APK as artifact
-         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-         with:
-           name: open-pr-debug-apk-${{ github.sha }}
-           path: ${{ steps.build.outputs.debugApkPath }}
-           retention-days: 7
-           archive: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          gradle-cache: 'true'
+      - name: Build APKs (with metadata, tests, and Detekt)
+        id: build
+        uses: ./.github/actions/build-apk
+      - name: Upload release APK as artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: open-pr-release-apk-${{ github.sha }}
+          path: ${{ steps.build.outputs.releaseApkPath }}
+          retention-days: 7
+      - name: Upload debug APK as artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: open-pr-debug-apk-${{ github.sha }}
+          path: ${{ steps.build.outputs.debugApkPath }}
+          retention-days: 7
 
   pull-request:
     name: Open pull request
@@ -72,7 +70,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Open pull request
         uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
         with:

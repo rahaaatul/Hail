@@ -12,13 +12,13 @@ inputs:
 runs:
   using: composite
   steps:
-       - name: Checkout code (if not already done)
-         if: ${{ env.ACTIONS_CHECKOUT_DONE != 'true' }}
-         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+    - name: Checkout code (if not already done)
+      if: ${{ env.ACTIONS_CHECKOUT_DONE != 'true' }}
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
-     - name: Setup Node.js for commitlint
-       uses: actions/setup-node@60edb5dd545a775178f52522783374182d1188df
+    - name: Setup Node.js for commitlint
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
       with:
         node-version: 'lts/*'
         cache: 'npm'
