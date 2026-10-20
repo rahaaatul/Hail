@@ -94,36 +94,47 @@ android {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
         }
     }
-     lint {
-           // Enable checking for unused resources
-           checkReleaseBuilds = true
-           // Treat warnings as errors to catch issues early
-           // Disable specific lint checks that are not relevant or too noisy
-           disable += "IconTip"
-           disable += "ContentDescription"
-           disable += "MissingPrefix"
-           // Do not compress resources that are already compressed
-           // This can help with install time and reduce CPU usage
-           // but may slightly increase APK size. For size optimization,
-           // we'll keep the default behavior which is to compress
-           // unless we have specific needs.
-           // Do not zip align debug builds to save time during development
-           // zipAlignEnabled = false
-         }
+      lint {
+            // Enable checking for unused resources
+            checkReleaseBuilds = true
+            // Treat warnings as errors to catch issues early
+            // Disable specific lint checks that are not relevant or too noisy
+            disable += "IconTip"
+            disable += "ContentDescription"
+            disable += "MissingPrefix"
+            // Do not compress resources that are already compressed
+            // This can help with install time and reduce CPU usage
+            // but may slightly increase APK size. For size optimization,
+            // we'll keep the default behavior which is to compress
+            // unless we have specific needs.
+             // Do not zip align debug builds to save time during development
+             // zipAlignEnabled = false
+      }
 
-    // Automatically rename APK outputs to include app name, version, and build type
-    applicationVariants.all { variant ->
-        val appName = rootProject.findProperty("appName") as String?
-        val versionName = variant.versionName.orNull
-        if (appName != null && versionName != null) {
-            variant.outputs.forEach { output ->
-                if (output instanceof com.android.build.VariantOutput) {
-                    val buildType = variant.buildType.name
-                    output.outputFileName = "${appName}-v${versionName}-${buildType}.apk"
-                }
-            }
-        }
-    }
+     // Temporarily disable applicationVariants block for debugging
+     /*
+     // Automatically rename APK outputs to include app name, version, and build type
+     val androidApp = project.extensions.getByName("android")
+     androidApp.compileSdk
+     androidApp.defaultConfig
+     androidApp.buildTypes
+     val variants = androidApp.applicationVariants
+     // variants.all { variant ->
+     //     // variant.outputs.all { output ->
+     //     //     val appName = rootProject.findProperty("appName") as String?
+     //     //     val versionName = variant.versionName.get()
+     //     //     if (appName != null && versionName != null) {
+     //     //         val buildType = variant.buildType.get().name
+     //     //         if (output.outputFileName != null) {
+     //     //             output.outputFileName.set("${appName}-v${versionName}-${buildType}.apk")
+     //     //         }
+     //     //     }
+     //     // }
+     // }
+     // variants.size
+     // variants.getAt(0)
+     */
+
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(21)
