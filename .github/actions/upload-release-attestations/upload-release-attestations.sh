@@ -18,4 +18,15 @@ for bundle in "$RELEASE_BUNDLE" "$DEBUG_BUNDLE"; do
   fi
 done
 
-gh release upload "$RELEASE_TAG" "$RELEASE_BUNDLE" "$DEBUG_BUNDLE" --clobber
+# The two bundles must not share a name. Uploading two assets with the same
+# name in one command fails with a 404, because the second upload takes the
+# place of the first one and the replacement cannot be found again.
+work_dir="$(mktemp -d)"
+trap 'rm -rf "$work_dir"' EXIT
+cp "$RELEASE_BUNDLE" "$work_dir/attestation-release.json"
+cp "$DEBUG_BUNDLE" "$work_dir/attestation-debug.json"
+
+gh release upload "$RELEASE_TAG" \
+  "$work_dir/attestation-release.json" \
+  "$work_dir/attestation-debug.json" \
+  --clobber

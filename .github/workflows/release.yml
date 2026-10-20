@@ -28,7 +28,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -89,7 +89,6 @@ jobs:
         with:
           subject-path: ${{ steps.build.outputs.releaseApkPath }}
           push-to-registry: false
-          bundle-path: attestation-release.json
       - name: Generate attestation for debug APK
         if: steps.release_step.outputs.new_release_published == 'true'
         id: attest-debug
@@ -97,7 +96,6 @@ jobs:
         with:
           subject-path: ${{ steps.build.outputs.debugApkPath }}
           push-to-registry: false
-          bundle-path: attestation-debug.json
       - name: Upload APKs to Release
         if: steps.release_step.outputs.new_release_published == 'true'
         env:
