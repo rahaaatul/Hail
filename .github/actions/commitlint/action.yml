@@ -30,7 +30,14 @@ runs:
     - name: Lint commit messages
       run: |
         set -euo pipefail
-        npx commitlint --from=$(git merge-base HEAD ${{ github.event.before || github.event.pull_request.base.sha || github.event.after }}) --verbose --config $CONFIG_FILE
+        BEFORE="${{ github.event.before || github.event.pull_request.base.sha || github.event.after }}"
+        if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+          npx commitlint --from="$(git merge-base HEAD "$BEFORE")" --to=HEAD --verbose --config "$CONFIG_FILE"
+        elif git rev-parse --verify --quiet HEAD^ >/dev/null; then
+          npx commitlint --from=HEAD^ --to=HEAD --verbose --config "$CONFIG_FILE"
+        else
+          npx commitlint --last --verbose --config "$CONFIG_FILE"
+        fi
       shell: bash
       env:
         CONFIG_FILE: ${{ inputs.config-file }}
