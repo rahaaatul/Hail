@@ -84,9 +84,3 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    # GitHub Actions dependencies are the actions used in workflows
-    ignore:
-      - dependency-name: "actions/checkout"
-        versions: ["4"]  # Example if we want to stay on v4
-      - dependency-name: "actions/setup-node"
-        versions: ["4"]  # Example if we want to stay on v4

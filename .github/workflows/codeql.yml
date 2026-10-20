@@ -5,10 +5,40 @@ on:
     branches:
       - main
       - dev
+    # Only scan when something the analysis depends on changed. The filter is
+    # deliberately not global: the scheduled scan and the merge queue check
+    # must run unconditionally, otherwise a documentation-only commit would
+    # suppress the weekly scan.
+    paths:
+      - 'app/src/**'
+      - 'app/build.gradle.kts'
+      - 'app/proguard-rules.pro'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - '.github/workflows/codeql.yml'
+      - '.github/actions/setup-java-gradle/**'
+      - '.github/actions/build-apk/**'
   pull_request:
     branches:
       - main
       - dev
+    paths:
+      - 'app/src/**'
+      - 'app/build.gradle.kts'
+      - 'app/proguard-rules.pro'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - '.github/workflows/codeql.yml'
+      - '.github/actions/setup-java-gradle/**'
+      - '.github/actions/build-apk/**'
+  merge_group:
+    # Required once a merge queue is enabled, otherwise the required check is
+    # never reported for a merge group and the merge cannot complete.
+    types: [checks_requested]
   schedule:
     - cron: '28 9 * * 0'  # Every Sunday at 9:28 AM UTC
 
@@ -25,6 +55,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
       # Grant the minimum required permissions for CodeQL analysis
       actions: read
@@ -32,13 +63,13 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@3db7caf9014b962f9392088c0fcaf53eeddf47db
+        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee
         with:
           languages: java-kotlin
 
@@ -53,6 +84,9 @@ jobs:
           # comes out empty or partial. Keep the dependency cache, drop the
           # build cache.
           gradle-build-cache: 'false'
+          # This job builds and analyses code from an untrusted pull request,
+          # so the token must not be left in the local git configuration.
+          persist-credentials: 'false'
 
       - name: Build APKs for CodeQL analysis
         uses: ./.github/actions/build-apk
@@ -67,6 +101,6 @@ jobs:
           variants: 'assembleRelease'
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@3db7caf9014b962f9392088c0fcaf53eeddf47db
+        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee
         with:
           category: "/language:java-kotlin"

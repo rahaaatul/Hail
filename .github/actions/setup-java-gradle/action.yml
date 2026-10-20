@@ -13,6 +13,13 @@ inputs:
     description: Enable Gradle caching
     required: false
     default: true
+  persist-credentials:
+    description: >-
+      Whether the checkout step leaves the GITHUB_TOKEN in the local git
+      configuration. Set to 'false' for jobs that build code from an
+      untrusted pull request.
+    required: false
+    default: 'true'
   gradle-build-cache:
     description: >-
       Enable the Gradle build cache (task output cache). Set to 'false' for CodeQL,
@@ -41,9 +48,10 @@ runs:
   using: composite
   steps:
     - name: Checkout
-      uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
+        persist-credentials: ${{ inputs.persist-credentials }}
     - name: Setup Java
       uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
       with:
@@ -60,8 +68,8 @@ runs:
         echo "releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
         echo "releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
     - name: Cache Gradle
-      if: ${{ inputs.gradle-cache == true }}
-      uses: burrunan/gradle-cache-action@c15634bb25b7284dc084f38dff4e838048b7feaf
+      if: ${{ inputs.gradle-cache == 'true' }}
+      uses: burrunan/gradle-cache-action@404534c34a2faa40430357a3183522a845b04f3b
       with:
         save-local-build-cache: ${{ inputs.gradle-build-cache }}
         remote-build-cache-proxy-enabled: ${{ inputs.gradle-build-cache }}
