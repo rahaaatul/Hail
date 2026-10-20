@@ -1,15 +1,33 @@
 name: Build APK
 description: Extract metadata, run unit tests and Detekt code quality checks, then build both release and debug APKs (APKs are automatically named by build.gradle.kts)
 inputs:
-  versionCodeOverride:
-    description: 'Optional versionCode to override the value in gradle.properties'
+  gradle-args:
+    description: 'Extra arguments appended to every Gradle invocation (e.g. --no-build-cache for CodeQL)'
     required: false
     default: ''
+  run-tests:
+    description: 'Run the unit test task. The test sources are compiled into the CodeQL database, but the test execution itself contributes no findings.'
+    required: false
+    default: 'true'
+  run-detekt:
+    description: >-
+      Run Detekt static analysis. Detekt parses sources without compiling them,
+      so it contributes no CodeQL findings. Off by default until the Detekt
+      plugin is committed alongside the app module; set to 'true' once the
+      io.gitlab.arturbosch.detekt plugin is applied in app/build.gradle.kts.
+    required: false
+    default: 'false'
+  variants:
+    description: 'Gradle assemble targets to build'
+    required: false
+    default: 'assembleRelease assembleDebug'
 outputs:
   releaseApkPath:
     description: Path to the built release APK
+    value: ${{ steps.find_release.outputs.releaseApkPath }}
   debugApkPath:
     description: Path to the built debug APK
+    value: ${{ steps.find_debug.outputs.debugApkPath }}
 runs:
   using: composite
   steps:
@@ -21,29 +39,33 @@ runs:
         VERSION=$(grep -oE '^version\s*=\s*.+' gradle.properties | cut -d'=' -f2 | tr -d ' ')
         # Extract app name from gradle.properties
         APP_NAME=$(grep -oE '^appName\s*=\s*.+' gradle.properties | cut -d'=' -f2 | tr -d ' ')
-        # Extract versionCode from gradle.properties or use override
-        if [ -n "${{ inputs.versionCodeOverride }}" ]; then
-          VERSION_CODE="${{ inputs.versionCodeOverride }}"
-        else
-          VERSION_CODE=$(grep -oE '^versionCode\s*=\s*.+' gradle.properties | cut -d'=' -f2 | tr -d ' ')
-        fi
+        # Extract versionCode from gradle.properties
+        VERSION_CODE=$(grep -oE '^versionCode\s*=\s*.+' gradle.properties | cut -d'=' -f2 | tr -d ' ')
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "appName=$APP_NAME" >> "$GITHUB_OUTPUT"
         echo "versionCode=$VERSION_CODE" >> "$GITHUB_OUTPUT"
 
     - name: Run unit tests
+      if: ${{ inputs.run-tests == 'true' }}
       shell: bash
       run: |
         set -euo pipefail
-        ./gradlew test --no-daemon
+        ./gradlew test --no-daemon ${{ inputs.gradle-args }}
 
-    - name: Build APKs (matrix)
-      id: build_matrix
+    - name: Run Detekt code quality checks
+      if: ${{ inputs.run-detekt == 'true' }}
       shell: bash
       run: |
         set -euo pipefail
-        # Build both release and debug APKs in parallel using Gradle's native parallel execution
-        ./gradlew assembleRelease assembleDebug --no-daemon --parallel
+        ./gradlew detekt --no-daemon ${{ inputs.gradle-args }}
+
+    - name: Build APKs (parallel)
+      id: build_parallel
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Build the requested variants in parallel using Gradle's native parallel execution
+        ./gradlew ${{ inputs.variants }} --no-daemon --parallel ${{ inputs.gradle-args }}
 
     - name: Find release APK
       id: find_release

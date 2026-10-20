@@ -18,31 +18,12 @@ permissions:
   security-events: write
 
 concurrency:
-  group: codeql-analysis
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Pre-job to check for duplicate workflow runs
-  pre_job:
-    runs-on: ubuntu-latest
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
-    steps:
-      - name: Check for duplicate workflow runs
-         id: skip_check
-         uses: fkirc/skip-duplicate-actions@fd5d0eb2d8b0f0f0de5b6f8d5c5b0b8f8f8f8f8f
-        with:
-          # Skip if duplicate succeeded
-          cancel_others: 'false'
-          # Skip if PR branch is weblate-dev
-          paths_ignore: ''
-          do_not_skip: '["push", "pull_request", "workflow_dispatch"]'
-          # Always run on schedule (no paths specified for schedule)
-  
   analyze:
     name: Analyze
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     permissions:
       # Grant the minimum required permissions for CodeQL analysis
@@ -59,7 +40,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@3db7caf9014b962f9392088c0fcaf53eeddf47db
         with:
-          languages: java,kotlin
+          languages: java-kotlin
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -67,14 +48,25 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           gradle-cache: 'true'
+          # CodeQL must observe the Kotlin/Java compiler actually running: task
+          # outputs restored FROM-CACHE produce no TRAP files, so the database
+          # comes out empty or partial. Keep the dependency cache, drop the
+          # build cache.
+          gradle-build-cache: 'false'
 
-      - name: Build Preview Debug APK
+      - name: Build APKs for CodeQL analysis
         uses: ./.github/actions/build-apk
         with:
-          # Build the previewDebug variant for analysis as specified in user vision
-          variant: 'previewDebug'
+          gradle-args: '--no-build-cache'
+          # Unit tests and Detekt contribute no CodeQL findings: the test
+          # execution runs no compiler, and Detekt only parses sources. The
+          # release variant is compiled and traced, which is what the
+          # database needs.
+          run-tests: 'false'
+          run-detekt: 'false'
+          variants: 'assembleRelease'
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@3db7caf9014b962f9392088c0fcaf53eeddf47db
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:java-kotlin"

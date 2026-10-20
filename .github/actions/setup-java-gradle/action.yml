@@ -13,6 +13,14 @@ inputs:
     description: Enable Gradle caching
     required: false
     default: true
+  gradle-build-cache:
+    description: >-
+      Enable the Gradle build cache (task output cache). Set to 'false' for CodeQL,
+      which must observe the compiler actually running: task outputs restored
+      FROM-CACHE produce no TRAP files and yield an empty or partial database.
+      The dependency cache is unaffected.
+    required: false
+    default: 'true'
   keystore-file:
     description: Base64 encoded keystore file
     required: false
@@ -32,12 +40,12 @@ inputs:
 runs:
   using: composite
   steps:
-     - name: Checkout
-       uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+    - name: Checkout
+      uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
       with:
         fetch-depth: 0
-     - name: Setup Java
-       uses: actions/setup-java@995857f181cade0d9d242507e0ee7e1fceae74aa
+    - name: Setup Java
+      uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3
       with:
         distribution: '${{ inputs.distribution }}'
         java-version: '${{ inputs.java-version }}'
@@ -51,11 +59,14 @@ runs:
         echo "releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
         echo "releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
     - name: Cache Gradle
-       if: ${{ inputs.gradle-cache == true }}
-       uses: burrunan/gradle-cache-action@a79b48da7d209a00a2c97b61e7b8b90c5a3a795b
+      if: ${{ inputs.gradle-cache == true }}
+      uses: burrunan/gradle-cache-action@c15634bb25b7284dc084f38dff4e838048b7feaf
+      with:
+        save-local-build-cache: ${{ inputs.gradle-build-cache }}
+        remote-build-cache-proxy-enabled: ${{ inputs.gradle-build-cache }}
     - name: Set Gradle properties for optimization
       run: |
-        echo "org.gradle.caching=true" >> gradle.properties
+        echo "org.gradle.caching=${{ inputs.gradle-build-cache == 'true' && 'true' || 'false' }}" >> gradle.properties
         echo "org.gradle.configuration-cache=true" >> gradle.properties
         echo "org.gradle.configuration-cache.problems=warn" >> gradle.properties
         echo "org.gradle.parallel=true" >> gradle.properties
