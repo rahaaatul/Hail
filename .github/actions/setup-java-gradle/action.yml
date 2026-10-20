@@ -63,10 +63,18 @@ runs:
       run: |
         echo "${{ inputs.keystore-file }}" | base64 --decode > /tmp/release.keystore
         chmod 600 /tmp/release.keystore
+        if [ ! -s /tmp/release.keystore ]; then
+          echo "The release keystore decoded to an empty file." >&2
+          exit 1
+        fi
+        ls -l /tmp/release.keystore
         echo "RELEASE_KEYSTORE_PATH=/tmp/release.keystore" >> $GITHUB_ENV
-        echo "releaseStorePassword=${{ inputs.keystore-password }}" >> $GITHUB_ENV
-        echo "releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
-        echo "releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
+        # The build script reads the credentials as project properties, and an
+        # environment variable named ORG_GRADLE_PROJECT_<name> is the one Gradle
+        # exposes as the project property <name>.
+        echo "ORG_GRADLE_PROJECT_releaseStorePassword=${{ inputs.keystore-password }}" >> $GITHUB_ENV
+        echo "ORG_GRADLE_PROJECT_releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
+        echo "ORG_GRADLE_PROJECT_releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
     - name: Cache Gradle
       if: ${{ inputs.gradle-cache == 'true' }}
       uses: burrunan/gradle-cache-action@404534c34a2faa40430357a3183522a845b04f3b

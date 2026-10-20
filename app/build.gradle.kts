@@ -25,35 +25,29 @@ android {
         // RUNNER_TEMP because Gradle's signingConfig takes a File. The
         // credentials never touch the filesystem — they arrive as
         // ORG_GRADLE_PROJECT_* environment variables, which Gradle exposes as
-        // project properties. With neither present the config stays empty and
-        // the build type is left unsigned rather than debug-signed.
-        create("release") {
-            val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
-            if (keystore != null && keystore.exists()) {
+        // project properties.
+        //
+        // The configuration is only created when the key is actually there.
+        // A signing config named "release" is picked up by the build type of
+        // the same name by default, so an empty one makes every build fail
+        // with "Keystore file not set for signing config release", even the
+        // tasks that never sign anything. Without the key the build is
+        // unsigned, which is a state the build can complete.
+        val keystore = providers.environmentVariable("RELEASE_KEYSTORE_PATH").orNull?.let { file(it) }
+        if (keystore != null && keystore.exists()) {
+            create("release") {
                 storeFile = keystore
-                storePassword = project.findProperty("releaseStorePassword") as String?
-                keyAlias = project.findProperty("releaseKeyAlias") as String?
-                keyPassword = project.findProperty("releaseKeyPassword") as String?
+                storePassword = providers.gradleProperty("releaseStorePassword").orNull
+                keyAlias = providers.gradleProperty("releaseKeyAlias").orNull
+                keyPassword = providers.gradleProperty("releaseKeyPassword").orNull
             }
         }
-    }
-
-    // The release signing config only carries a key when a keystore was
-    // supplied. Assigning it to a build type in that state makes AGP fail the
-    // validateSigning task with an opaque error, so the debug key is used
-    // instead, which keeps the artifact installable.
-    val keystore = System.getenv("RELEASE_KEYSTORE_PATH")?.let { file(it) }
-    val buildSigningConfig = if (keystore != null && keystore.exists()) {
-        signingConfigs.getByName("release")
-    } else {
-        signingConfigs.getByName("debug")
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-Debug"
-            signingConfig = buildSigningConfig
         }
         create("pr") {
             // Each PR installs as its own app: com.aistra.hail.pr.<n>.
@@ -64,18 +58,17 @@ android {
             // segment must begin with a letter.
             applicationIdSuffix =
                 providers.gradleProperty("prNumber").orNull?.let { ".pr$it" } ?: ".pr"
-            signingConfig = buildSigningConfig
+            // Signed with the debug key so the artifact stays installable when
+            // no release key is available.
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // Uses the same keystore test as the signing config above. The two
-            // must agree: assigning a config whose storeFile was never set
-            // produces an opaque AGP failure ("missing required property
-            // 'storeFile'") instead of a plainly unsigned build.
-            if (keystore != null && keystore.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // Signed with the release key when it was staged, unsigned
+            // otherwise. The guard must agree with the one that creates the
+            // signing config above.
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
