@@ -7,6 +7,8 @@ on:
       - dev
     paths:
       - 'app/src/**'
+      - 'app/build.gradle.kts'
+      - 'app/proguard-rules.pro'
       - 'gradle/**'
       - '**.kt'
       - '**.java'
@@ -31,6 +33,8 @@ on:
       - main
     paths:
       - 'app/src/**'
+      - 'app/build.gradle.kts'
+      - 'app/proguard-rules.pro'
       - 'gradle/**'
       - '**.kt'
       - '**.java'
