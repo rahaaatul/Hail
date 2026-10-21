@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.DocumentsContract
 import android.provider.Settings
-import android.util.Log
 import android.view.*
 import androidx.documentfile.provider.DocumentFile
 import androidx.activity.result.contract.ActivityResultContracts
@@ -200,7 +199,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
     private fun SettingsScreen() {
         if (BuildConfig.DEBUG) {
             SideEffect {
-                Log.d("SettingsRecompose", "SettingsScreen recomposed")
+                HLog.d("SettingsRecompose", "SettingsScreen recomposed")
             }
         }
         val iconPackValues by _iconPackValues
@@ -450,7 +449,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
     ) = item(key = titleId, contentType = "SwitchPreference") {
         if (BuildConfig.DEBUG) {
             SideEffect {
-                Log.d("SettingsRecompose", "switchPreference(${app.getString(titleId)}) recomposed")
+                HLog.d("SettingsRecompose", "switchPreference(${app.getString(titleId)}) recomposed")
             }
         }
         val state = rememberState()
@@ -490,7 +489,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
     ) = item(key = key, contentType = "ListPreference") {
         if (BuildConfig.DEBUG) {
             SideEffect {
-                Log.d("SettingsRecompose", "listPreference(${app.getString(titleId)}) recomposed")
+                HLog.d("SettingsRecompose", "listPreference(${app.getString(titleId)}) recomposed")
             }
         }
         val state = rememberPreferenceState(key, defaultValue)
