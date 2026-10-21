@@ -31,7 +31,7 @@ object HShell {
             shell.close()
         }
         warmupJob = scope.launch {
-            executeRoot(":")
+            execute(":")
             synchronized(this@HShell) {
                 warmupJob = null
                 if (!isActive) Shell.getCachedShell()?.close()
@@ -45,16 +45,7 @@ object HShell {
         Shell.getCachedShell()?.close()
     }
 
-    fun execute(command: String, root: Boolean): Pair<Int, String?> = if (root) {
-        executeRoot(command)
-    } else runCatching {
-        ProcessBuilder("sh").redirectErrorStream(true).start().run {
-            outputStream.use { it.write(command.toByteArray()) }
-            waitFor() to inputStream.bufferedReader().use { it.readText() }.also { destroy() }
-        }
-    }.getOrElse { 1 to it.stackTraceToString() }
-
-    private fun executeRoot(command: String): Pair<Int, String?> = synchronized(this) {
+    fun execute(command: String): Pair<Int, String?> = synchronized(this) {
         runCatching {
             Shell.getCachedShell()?.let { shell ->
                 if (!shell.isAlive) shell.close()
@@ -66,7 +57,7 @@ object HShell {
         }.getOrElse { 1 to it.stackTraceToString() }
     }
 
-    private fun execSU(command: String) = execute(command, true)
+    private fun execSU(command: String) = execute(command)
 
     val checkSU get() = execSU("whoami").second?.trim() == "root"
 

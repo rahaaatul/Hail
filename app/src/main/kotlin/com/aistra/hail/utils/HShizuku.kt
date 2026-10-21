@@ -214,7 +214,10 @@ object HShizuku {
         execute("pm install-existing --user current $packageName").first == 0
 
     fun execute(command: String, root: Boolean = isRoot): Pair<Int, String?> = runCatching {
-        IShizukuService.Stub.asInterface(Shizuku.getBinder()).newProcess(arrayOf(if (root) "su" else "sh"), null, null)
+        // `su` sits in a different place on every device, but the shell does
+        // not, so the shell is named by its full path.
+        IShizukuService.Stub.asInterface(Shizuku.getBinder())
+            .newProcess(arrayOf(if (root) "su" else "/system/bin/sh"), null, null)
             .run {
                 ParcelFileDescriptor.AutoCloseOutputStream(outputStream).use {
                     it.write(command.toByteArray())
