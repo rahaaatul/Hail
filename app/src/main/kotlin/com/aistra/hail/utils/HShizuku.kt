@@ -207,11 +207,15 @@ object HShizuku {
         false
     }
 
-    fun uninstallApp(packageName: String): Boolean =
-        execute("pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall --user current"} $packageName").first == 0
+    fun uninstallApp(packageName: String): Boolean = HPackages.shellArg(packageName)?.let {
+        execute(
+            "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall --user current"} $it"
+        ).first == 0
+    } ?: false
 
-    fun reinstallApp(packageName: String): Boolean =
-        execute("pm install-existing --user current $packageName").first == 0
+    fun reinstallApp(packageName: String): Boolean = HPackages.shellArg(packageName)?.let {
+        execute("pm install-existing --user current $it").first == 0
+    } ?: false
 
     fun execute(command: String, root: Boolean = isRoot): Pair<Int, String?> = runCatching {
         // `su` sits in a different place on every device, but the shell does

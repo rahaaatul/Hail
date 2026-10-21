@@ -7,6 +7,7 @@ import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
 import com.aistra.hail.utils.HLog
+import com.aistra.hail.utils.HPackages
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
@@ -243,16 +244,19 @@ object HailData {
             runCatching {
                 val json = JSONArray(HFiles.read(appsPath))
                 for (i in 0 until json.length()) {
-                    add(with(json.getJSONObject(i)) {
-                        AppInfo(
-                            packageName = getString(KEY_PACKAGE),
+                    val app = with(json.getJSONObject(i)) {
+                        val packageName = getString(KEY_PACKAGE)
+                        if (!HPackages.isValidPackageName(packageName)) null
+                        else AppInfo(
+                            packageName = packageName,
                             pinned = optBoolean(KEY_PINNED),
                             whitelisted = optBoolean(KEY_WHITELISTED),
                             tagIdList = optJSONArray(KEY_TAGS)?.let {
                                 MutableList(it.length()) { index -> it.getInt(index) }
                             } ?: mutableListOf(optInt(KEY_TAG))
                         )
-                    })
+                    }
+                    if (app != null) add(app)
                 }
             }
         }
@@ -267,6 +271,10 @@ object HailData {
 
     fun addCheckedApp(packageName: String, tagId: Int = 0, shouldSave: Boolean = true) {
         if (packageName == BuildConfig.APPLICATION_ID) return
+        if (!HPackages.isValidPackageName(packageName)) {
+            HLog.w("HailData", "Ignored a name that is not a package name: $packageName")
+            return
+        }
         synchronized(checkedListLock) {
             checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
         }
