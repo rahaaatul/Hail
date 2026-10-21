@@ -36,6 +36,17 @@ import com.aistra.hail.utils.*
 import com.aistra.hail.work.HWork.setAutoFreeze
 import kotlinx.coroutines.launch
 
+/**
+ * The way other apps drive this one.
+ *
+ * The activity is exported on purpose, so that an app that is set up for it
+ * can freeze, unfreeze and lock without the user touching the phone, and
+ * it is not behind the prompt of the main screen, which guards the screen
+ * of the app and nothing else. A user who wants the app to be driven by
+ * others has to accept that, and the actions it takes are the actions of
+ * the app, so they need the privilege of the app, which may be root,
+ * Shizuku, the owner of the device or a privileged system app.
+ */
 class ApiActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
