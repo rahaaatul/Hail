@@ -234,20 +234,37 @@ class PagerFragment :
 
     private fun filterActionEntries(
         entries: Array<String>, frozen: Boolean, info: AppInfo,
-        freezeStr: String, unfreezeStr: String, pinStr: String, unpinStr: String,
-        whitelistStr: String, removeWhitelistStr: String, unfreezeRemoveHomeStr: String,
-    ): List<String> = entries.filter {
-        (it != freezeStr || !frozen) && (it != unfreezeStr || frozen) && (it != pinStr || !info.pinned) &&
-            (it != unpinStr || info.pinned) && (it != whitelistStr || !info.whitelisted) &&
-            (it != removeWhitelistStr || info.whitelisted) && (it != unfreezeRemoveHomeStr || frozen)
+    ): List<String> {
+        val freezeStr = getString(R.string.action_freeze)
+        val unfreezeStr = getString(R.string.action_unfreeze)
+        val pinStr = getString(R.string.action_pin)
+        val unpinStr = getString(R.string.action_unpin)
+        val whitelistStr = getString(R.string.action_whitelist)
+        val removeWhitelistStr = getString(R.string.action_remove_whitelist)
+        val unfreezeRemoveHomeStr = getString(R.string.action_unfreeze_remove_home)
+        return entries.filter {
+            (it != freezeStr || !frozen) && (it != unfreezeStr || frozen) && (it != pinStr || !info.pinned) &&
+                (it != unpinStr || info.pinned) && (it != whitelistStr || !info.whitelisted) &&
+                (it != removeWhitelistStr || info.whitelisted) && (it != unfreezeRemoveHomeStr || frozen)
+        }
     }
 
     private fun mapActionIds(
-        entries: List<String>, launchStr: String, freezeStr: String, unfreezeStr: String,
-        deferredTaskStr: String, pinStr: String, unpinStr: String, whitelistStr: String,
-        removeWhitelistStr: String, tagSetStr: String, addPinShortcutStr: String,
-        exportClipboardStr: String, removeHomeStr: String, unfreezeRemoveHomeStr: String,
+        entries: List<String>,
     ): List<Int> {
+        val launchStr = getString(R.string.action_launch)
+        val freezeStr = getString(R.string.action_freeze)
+        val unfreezeStr = getString(R.string.action_unfreeze)
+        val deferredTaskStr = getString(R.string.action_deferred_task)
+        val pinStr = getString(R.string.action_pin)
+        val unpinStr = getString(R.string.action_unpin)
+        val whitelistStr = getString(R.string.action_whitelist)
+        val removeWhitelistStr = getString(R.string.action_remove_whitelist)
+        val tagSetStr = getString(R.string.action_tag_set)
+        val addPinShortcutStr = getString(R.string.action_add_pin_shortcut)
+        val exportClipboardStr = getString(R.string.action_export_clipboard)
+        val removeHomeStr = getString(R.string.action_remove_home)
+        val unfreezeRemoveHomeStr = getString(R.string.action_unfreeze_remove_home)
         val mapping = mapOf(
             launchStr to R.string.action_launch,
             freezeStr to R.string.action_freeze,
@@ -815,28 +832,10 @@ private fun PagerFragment.removeCheckedApp(packageName: String, saveApps: Boolea
 private fun PagerFragment.showAppActionDialog(info: AppInfo) {
     val pkg = info.packageName
     val frozen = AppManager.isAppFrozen(pkg)
-    val freezeStr = getString(R.string.action_freeze)
-    val unfreezeStr = getString(R.string.action_unfreeze)
-    val pinStr = getString(R.string.action_pin)
-    val unpinStr = getString(R.string.action_unpin)
-    val whitelistStr = getString(R.string.action_whitelist)
-    val removeWhitelistStr = getString(R.string.action_remove_whitelist)
-    val unfreezeRemoveHomeStr = getString(R.string.action_unfreeze_remove_home)
-    val launchStr = getString(R.string.action_launch)
-    val deferredTaskStr = getString(R.string.action_deferred_task)
-    val tagSetStr = getString(R.string.action_tag_set)
-    val addPinShortcutStr = getString(R.string.action_add_pin_shortcut)
-    val exportClipboardStr = getString(R.string.action_export_clipboard)
-    val removeHomeStr = getString(R.string.action_remove_home)
     val filteredEntries = filterActionEntries(
         resources.getStringArray(R.array.home_action_entries), frozen, info,
-        freezeStr, unfreezeStr, pinStr, unpinStr, whitelistStr, removeWhitelistStr, unfreezeRemoveHomeStr,
     )
-    val actionIds = mapActionIds(
-        filteredEntries, launchStr, freezeStr, unfreezeStr, deferredTaskStr, pinStr, unpinStr,
-        whitelistStr, removeWhitelistStr, tagSetStr, addPinShortcutStr, exportClipboardStr, removeHomeStr,
-        unfreezeRemoveHomeStr,
-    )
+    val actionIds = mapActionIds(filteredEntries)
     MaterialAlertDialogBuilder(activity).setTitle(info.name).setItems(filteredEntries.toTypedArray()) { _, which ->
         handleActionSelection(info, pkg, frozen, actionIds[which])
     }.setNeutralButton(R.string.action_details) { _, _ ->
