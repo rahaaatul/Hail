@@ -254,7 +254,7 @@ class ApiActivity : ComponentActivity() {
             }
         }?.let {
             HailData.tags.find { tag -> tag.first == it }?.second
-                ?: throw IllegalStateException("Tag unavailable:\n$it")
+                ?: check(false) { "Tag unavailable:\n$it" }
         } ?: throw IllegalArgumentException("Tag must not be null")
 
     private fun launchApp(pkg: String, tagId: Int? = null) {

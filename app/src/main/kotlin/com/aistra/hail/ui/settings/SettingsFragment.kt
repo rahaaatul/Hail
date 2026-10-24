@@ -759,7 +759,7 @@ class SettingsFragment :
 
             mode.startsWith(HailData.SHIZUKU) -> return runCatching {
                 when {
-                    Shizuku.isPreV11() -> throw IllegalStateException("unsupported shizuku version")
+                    Shizuku.isPreV11() -> check(!Shizuku.isPreV11()) { "unsupported shizuku version" }
 
                     Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
 

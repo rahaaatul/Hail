@@ -74,8 +74,8 @@ object HBackup {
                 // The trailing isDirectory re-check covers another process creating the parent
                 // between the check above and mkdirs().
                 val parent = outputFile.parentFile
-                if (parent != null && !parent.isDirectory && !parent.mkdirs() && !parent.isDirectory) {
-                    throw IllegalStateException("Failed to create directory: $parent")
+                if (parent != null) {
+                    check(parent.isDirectory || parent.mkdirs()) { "Failed to create directory: $parent" }
                 }
                 val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
                 try {

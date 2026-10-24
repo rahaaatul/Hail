@@ -269,7 +269,7 @@ class PagerFragment :
                 exportClipboardStr -> R.string.action_export_clipboard
                 removeHomeStr -> R.string.action_remove_home
                 unfreezeRemoveHomeStr -> R.string.action_unfreeze_remove_home
-                else -> throw IllegalStateException("Unhandled action entry: $entry")
+                else -> check(false) { "Unhandled action entry: $entry" }
             }
         }
         MaterialAlertDialogBuilder(activity).setTitle(info.name).setItems(filteredEntries.toTypedArray()) { _, which ->

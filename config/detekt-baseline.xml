@@ -99,9 +99,5 @@
     <ID>TooManyFunctions:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
     <ID>UnusedPrivateMember:PagerFragment.kt$PagerFragment$private fun MenuItem.updateIcon()</ID>
-    <ID>UseCheckOrError:ApiActivity.kt$ApiActivity$throw IllegalStateException("Tag unavailable:\n$it")</ID>
-    <ID>UseCheckOrError:HBackup.kt$HBackup$throw IllegalStateException("Failed to create directory: $parent")</ID>
-    <ID>UseCheckOrError:PagerFragment.kt$PagerFragment$throw IllegalStateException("Unhandled action entry: $entry")</ID>
-    <ID>UseCheckOrError:SettingsFragment.kt$SettingsFragment$throw IllegalStateException("unsupported shizuku version")</ID>
   </CurrentIssues>
 </SmellBaseline>
