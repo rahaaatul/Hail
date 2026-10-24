@@ -146,23 +146,21 @@ object AppIconCache : CoroutineScope {
 
     @SuppressLint("NewApi")
     suspend fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap {
-        val cachedBitmap = get(info.packageName, userId, size)
-        if (cachedBitmap != null) {
-            return cachedBitmap
-        }
-        readDisk(info, userId, size)?.also {
-            put(info.packageName, userId, size, it)
-            return it
-        }
-        var loader = appIconLoaders[size]
-        if (loader == null || shrinkNonAdaptiveIcons != HailData.synthesizeAdaptiveIcons) {
-            shrinkNonAdaptiveIcons = HailData.synthesizeAdaptiveIcons
-            loader = AppIconLoader(size, shrinkNonAdaptiveIcons, context)
-            appIconLoaders[size] = loader
-        }
-        val bitmap = IconPack.loadIcon(info.packageName) ?: loader.loadIcon(info, false)
-        put(info.packageName, userId, size, bitmap)
-        writeDisk(info, userId, size, bitmap)
+        val packageName = info.packageName
+        val bitmap = get(packageName, userId, size)
+            ?: readDisk(info, userId, size)?.also { put(packageName, userId, size, it) }
+            ?: run {
+                var loader = appIconLoaders[size]
+                if (loader == null || shrinkNonAdaptiveIcons != HailData.synthesizeAdaptiveIcons) {
+                    shrinkNonAdaptiveIcons = HailData.synthesizeAdaptiveIcons
+                    loader = AppIconLoader(size, shrinkNonAdaptiveIcons, context)
+                    appIconLoaders[size] = loader
+                }
+                val loaded = IconPack.loadIcon(packageName) ?: loader.loadIcon(info, false)
+                put(packageName, userId, size, loaded)
+                writeDisk(info, userId, size, loaded)
+                loaded
+            }
         return bitmap
     }
 

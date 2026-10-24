@@ -128,13 +128,12 @@ object HShizuku {
     }
 
     fun setAppSuspended(packageName: String, suspended: Boolean): Boolean {
-        HPackages.getApplicationInfoOrNull(packageName) ?: return false
-        if (HTarget.P) setAppRestricted(packageName, suspended)
-        if (suspended) forceStopApp(packageName)
-        return runCatching {
-            val pm = asInterface("android.content.pm.IPackageManager", "package")
-            (
-                when {
+        val result = if (HPackages.getApplicationInfoOrNull(packageName) != null) {
+            if (HTarget.P) setAppRestricted(packageName, suspended)
+            if (suspended) forceStopApp(packageName)
+            runCatching {
+                val pm = asInterface("android.content.pm.IPackageManager", "package")
+                val output = when {
                     HTarget.U -> runCatching {
                         HiddenApiBypass.invoke(
                             pm::class.java,
@@ -179,13 +178,17 @@ object HShizuku {
                         Int::class.java,
                     ).invoke(pm, arrayOf(packageName), suspended, HPackages.myUserId)
 
-                    else -> return false
-                } as Array<*>
-                ).isEmpty()
-        }.getOrElse {
-            HLog.e(it)
+                    else -> null
+                }
+                (output as? Array<*>)?.isEmpty() ?: false
+            }.getOrElse {
+                HLog.e(it)
+                false
+            }
+        } else {
             false
         }
+        return result
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)

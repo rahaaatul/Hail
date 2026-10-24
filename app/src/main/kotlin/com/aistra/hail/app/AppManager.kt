@@ -150,21 +150,24 @@ object AppManager {
         }
 
     fun uninstallApp(packageName: String): Boolean {
+        var uninstalled = false
         when {
             HailData.workingMode.startsWith(HailData.OWNER) ->
-                if (HPolicy.uninstallApp(packageName)) return true
+                uninstalled = HPolicy.uninstallApp(packageName)
 
             HailData.workingMode.startsWith(HailData.DHIZUKU) ->
-                if (HDhizuku.uninstallApp(packageName)) return true
+                uninstalled = HDhizuku.uninstallApp(packageName)
 
             HailData.workingMode.startsWith(HailData.SU) ->
-                if (HShell.uninstallApp(packageName)) return true
+                uninstalled = HShell.uninstallApp(packageName)
 
             HailData.workingMode.startsWith(HailData.SHIZUKU) ->
-                if (HShizuku.uninstallApp(packageName)) return true
+                uninstalled = HShizuku.uninstallApp(packageName)
         }
-        HUI.startActivity(Intent.ACTION_DELETE, HPackages.packageUri(packageName))
-        return false
+        if (!uninstalled) {
+            HUI.startActivity(Intent.ACTION_DELETE, HPackages.packageUri(packageName))
+        }
+        return uninstalled
     }
 
     fun reinstallApp(packageName: String): Boolean = when {

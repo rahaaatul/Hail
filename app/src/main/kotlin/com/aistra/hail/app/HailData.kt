@@ -305,17 +305,19 @@ object HailData {
         }
         val tmpFile = File("$appsPath.tmp")
         val appsFile = File(appsPath)
-        if (!HFiles.write(tmpFile.absolutePath, json)) {
+        var result = false
+        if (HFiles.write(tmpFile.absolutePath, json)) {
+            if (tmpFile.renameTo(appsFile)) {
+                result = true
+            } else {
+                HLog.e("Failed to rename ${tmpFile.absolutePath} to ${appsFile.absolutePath}")
+                tmpFile.delete()
+            }
+        } else {
             HLog.e("Failed to write apps.json to ${tmpFile.absolutePath}")
             tmpFile.delete()
-            return false
         }
-        if (!tmpFile.renameTo(appsFile)) {
-            HLog.e("Failed to rename ${tmpFile.absolutePath} to ${appsFile.absolutePath}")
-            tmpFile.delete()
-            return false
-        }
-        return true
+        return result
     }
 
     val tags: MutableList<Pair<String, Int>> by lazy {

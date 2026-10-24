@@ -13,14 +13,18 @@ object FuzzySearch {
      * @param query 输入的字符串
      */
     fun search(raw: String?, query: String?): Boolean {
-        if (query.isNullOrEmpty()) return true
-        if (raw.isNullOrEmpty()) return false
-        if (raw.contains(query, true)) return true
-        if (!HailData.fuzzySearch) return false
-        val rawUpp = raw.uppercase()
-        val queryUpp = query.uppercase()
-        val diff = levenshteinDistance.apply(rawUpp, queryUpp)
-        return diff < rawUpp.length && containsInOrder(rawUpp, queryUpp)
+        return when {
+            query.isNullOrEmpty() -> true
+            raw.isNullOrEmpty() -> false
+            raw.contains(query, true) -> true
+            !HailData.fuzzySearch -> false
+            else -> {
+                val rawUpp = raw.uppercase()
+                val queryUpp = query.uppercase()
+                val diff = levenshteinDistance.apply(rawUpp, queryUpp)
+                diff < rawUpp.length && containsInOrder(rawUpp, queryUpp)
+            }
+        }
     }
 
     /** 判断字符串A是否依次包含字符串B的每个字符 */

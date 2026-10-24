@@ -69,13 +69,14 @@ class ApiActivity : ComponentActivity() {
     }
 
     private fun handleAction(action: String?): Boolean {
+        var handled = true
         when (action) {
             Intent.ACTION_SHOW_APP_INFO -> {
                 setContent { AppTheme { RedirectBottomSheet(requirePackage) } }
-                return false
+                handled = false
             }
 
-            Intent.ACTION_VIEW -> return handleSchema(intent.data)
+            Intent.ACTION_VIEW -> handled = handleSchema(intent.data)
 
             HailApi.ACTION_LAUNCH -> launchApp(requirePackage, runCatching { requireTagId }.getOrNull())
 
@@ -90,7 +91,7 @@ class ApiActivity : ComponentActivity() {
                         finish()
                     }.onFailure(::setErrorDialog)
                 }
-                return false
+                handled = false
             }
 
             HailApi.ACTION_FREEZE -> setAppFrozen(requirePackage, true)
@@ -124,7 +125,7 @@ class ApiActivity : ComponentActivity() {
 
             else -> throw IllegalArgumentException("Unknown action:\n$action")
         }
-        return true
+        return handled
     }
 
     /**

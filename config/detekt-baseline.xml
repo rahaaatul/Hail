@@ -27,25 +27,9 @@
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
     <ID>MaxLineLength:ActionsFragment.kt$ActionsFragment$addView(searchContainer, LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply { bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN })</ID>
     <ID>MaxLineLength:ActionsFragment.kt$ActionsFragment$setPadding(PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL, PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL)</ID>
+    <ID>MaxLineLength:AutoFreezeWorker.kt$AutoFreezeWorker$val</ID>
     <ID>MaxLineLength:HPackages.kt$HPackages$(ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN</ID>
     <ID>NestedBlockDepth:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
-    <ID>ReturnCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
-    <ID>ReturnCount:AppIconCache.kt$AppIconCache$@SuppressLint("NewApi") suspend fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap</ID>
-    <ID>ReturnCount:AppManager.kt$AppManager$fun uninstallApp(packageName: String): Boolean</ID>
-    <ID>ReturnCount:AppMetaCache.kt$AppMetaCache$suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List&lt;ApplicationInfo&gt;</ID>
-    <ID>ReturnCount:AutoFreezeWorker.kt$AutoFreezeWorker$override fun doWork(): Result</ID>
-    <ID>ReturnCount:FuzzySearch.kt$FuzzySearch$fun search(raw: String?, query: String?): Boolean</ID>
-    <ID>ReturnCount:HRecyclerView.kt$HRecyclerView$override fun showContextMenuForChild(originalView: View?): Boolean</ID>
-    <ID>ReturnCount:HShizuku.kt$HShizuku$fun setAppSuspended(packageName: String, suspended: Boolean): Boolean</ID>
-    <ID>ReturnCount:HailData.kt$HailData$private fun saveAppsLocked(apps: List&lt;AppInfo&gt;): Boolean</ID>
-    <ID>ReturnCount:HailDataTest.kt$HailDataTest$private fun awaitsRest(value: String, text: String, nextLine: Int): Boolean</ID>
-    <ID>ReturnCount:PagerFragment.kt$PagerFragment$override fun onItemClick(info: AppInfo)</ID>
-    <ID>ReturnCount:PagerFragment.kt$PagerFragment$override fun onItemLongClick(info: AppInfo): Boolean</ID>
-    <ID>ReturnCount:PagerFragment.kt$PagerFragment$private fun setListFrozen( frozen: Boolean, list: List&lt;AppInfo&gt; = HailData.checkedList, updateList: Boolean = true, ): Job</ID>
-    <ID>ReturnCount:PinyinSearch.kt$PinyinSearch$fun searchPinyinAll(raw: String?, query: String?): Boolean</ID>
-    <ID>ReturnCount:PinyinSearch.kt$PinyinSearch$private fun searchAllSpell(raw: String, pinyinAll: String): Boolean</ID>
-    <ID>ReturnCount:PinyinSearch.kt$PinyinSearch$private fun searchCap(raw: String, pinyinCap: String): Boolean</ID>
-    <ID>ReturnCount:SettingsFragment.kt$SettingsFragment$fun onWorkingModeChange(rememberState: MutableState&lt;String&gt;, mode: String): Boolean</ID>
     <ID>SpreadOperator:ApiActivity.kt$ApiActivity$(frozen, *filtered.toTypedArray())</ID>
     <ID>SpreadOperator:AutoFreezeWorker.kt$AutoFreezeWorker$(true, *checkedList.toTypedArray())</ID>
     <ID>SpreadOperator:PagerFragment.kt$PagerFragment$(*initialStates)</ID>

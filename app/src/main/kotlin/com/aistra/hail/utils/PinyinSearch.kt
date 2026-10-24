@@ -14,13 +14,17 @@ object PinyinSearch {
      * @param query 输入的字符串
      */
     fun searchPinyinAll(raw: String?, query: String?): Boolean {
-        if (query.isNullOrEmpty()) return true
-        if (raw.isNullOrEmpty()) return false
-        return if (Locale.getDefault().language != Locale.CHINESE.language) {
-            false
+        val result: Boolean
+        if (query.isNullOrEmpty()) {
+            result = true
+        } else if (raw.isNullOrEmpty()) {
+            result = false
+        } else if (Locale.getDefault().language != Locale.CHINESE.language) {
+            result = false
         } else {
-            searchCap(raw, query) || searchAllSpell(raw, query)
+            result = searchCap(raw, query) || searchAllSpell(raw, query)
         }
+        return result
     }
 
     /**
@@ -28,13 +32,13 @@ object PinyinSearch {
      * 如搜索“计算器”时只需输入 "jsq"
      */
     private fun searchCap(raw: String, pinyinCap: String): Boolean {
-        if (pinyinCap.length > MAX_CAP_QUERY_LENGTH) return false // "最强多媒体播放器".length
-        for (index in getNameStringList(raw)) {
-            if (index.contains(pinyinCap, true)) {
-                return true
-            }
+        val result: Boolean
+        if (pinyinCap.length > MAX_CAP_QUERY_LENGTH) { // "最强多媒体播放器".length
+            result = false
+        } else {
+            result = getNameStringList(raw).any { it.contains(pinyinCap, true) }
         }
-        return false
+        return result
     }
 
     /**
@@ -42,13 +46,13 @@ object PinyinSearch {
      * 如搜索“计算器”时只需输入 "jisuanqi"
      */
     private fun searchAllSpell(raw: String, pinyinAll: String): Boolean {
-        if (pinyinAll.length > MAX_ALL_SPELL_LENGTH) return false // "chuang".length * 8
-        for (index in getNameStringPinyinAll(raw)) {
-            if (index.contains(pinyinAll, true)) {
-                return true
-            }
+        val result: Boolean
+        if (pinyinAll.length > MAX_ALL_SPELL_LENGTH) { // "chuang".length * 8
+            result = false
+        } else {
+            result = getNameStringPinyinAll(raw).any { it.contains(pinyinAll, true) }
         }
-        return false
+        return result
     }
 
     private fun getNameStringPinyinAll(target: String): ArrayList<String> {

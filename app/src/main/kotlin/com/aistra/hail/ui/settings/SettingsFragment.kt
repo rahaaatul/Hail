@@ -720,17 +720,17 @@ class SettingsFragment :
     fun onWorkingModeChange(rememberState: MutableState<String>, mode: String): Boolean {
         // Show/hide terminal menu.
         activity.invalidateOptionsMenu()
-        when {
+        val result: Boolean = when {
             mode.startsWith(HailData.OWNER) -> if (!HPolicy.isDeviceOwnerActive) {
                 MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
                     .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
                     .setPositiveButton(android.R.string.ok, null)
                     .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
                     .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
-                return false
-            }
+                false
+            } else true
 
-            mode.startsWith(HailData.DHIZUKU) -> return runCatching {
+            mode.startsWith(HailData.DHIZUKU) -> runCatching {
                 Dhizuku.init(app)
                 when {
                     Dhizuku.isPermissionGranted() -> true
@@ -761,10 +761,10 @@ class SettingsFragment :
 
             mode.startsWith(HailData.SU) -> if (!HShell.checkSU) {
                 HUI.showToast(R.string.permission_denied)
-                return false
-            }
+                false
+            } else true
 
-            mode.startsWith(HailData.SHIZUKU) -> return runCatching {
+            mode.startsWith(HailData.SHIZUKU) -> runCatching {
                 when {
                     Shizuku.isPreV11() -> check(!Shizuku.isPreV11()) { "unsupported shizuku version" }
 
@@ -780,8 +780,9 @@ class SettingsFragment :
                             val result = callbackFlow {
                                 val shizukuRequestCode = 0
                                 val listener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-                                    if (requestCode != shizukuRequestCode) return@OnRequestPermissionResultListener
-                                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
+                                    if (requestCode == shizukuRequestCode) {
+                                        trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
+                                    }
                                 }
                                 Shizuku.addRequestPermissionResultListener(listener)
                                 Shizuku.requestPermission(shizukuRequestCode)
@@ -800,7 +801,7 @@ class SettingsFragment :
                 false
             }
 
-            mode.startsWith(HailData.ISLAND) -> return runCatching {
+            mode.startsWith(HailData.ISLAND) -> runCatching {
                 when {
                     mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
 
@@ -836,11 +837,12 @@ class SettingsFragment :
 
             mode.startsWith(HailData.PRIVAPP) -> if (!HPackages.isPrivilegedApp(app.packageName)) {
                 HUI.showToast(R.string.permission_denied)
-                return false
-            }
-        }
+                false
+            } else true
 
-        return true
+            else -> true
+        }
+        return result
     }
 
     private suspend fun onTerminalResult(exitValue: Int, msg: String?) = withContext(Dispatchers.Main) {

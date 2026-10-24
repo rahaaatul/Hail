@@ -206,16 +206,16 @@ class HailDataTest {
      * literal that ends on a quote ends there.
      */
     private fun awaitsRest(value: String, text: String, nextLine: Int): Boolean {
-        val last = value.trimEnd().lastOrNull() ?: return true
-        if (last in UNFINISHED || leadsWithOperator(text, nextLine)) return true
-        // A line that ends on a word which cannot end an expression - `else` with its branch
-        // still to come - and a branch opened with no `else` seen yet, are the same fact.
-        if (DANGLING_KEYWORD.containsMatchIn(code(value))) return true
-        // A head with no value behind it yet: `if (x)` on its own line is a decision waiting
-        // for its branches, and only `if` is closed by an `else` - a brace-less `when`, a
-        // `try` and a `do` are closed by something else or by nothing at all, so pairing
-        // them with `else` sent the read to the end of the file.
-        return AWAITING_HEAD.containsMatchIn(code(value))
+        val last = value.trimEnd().lastOrNull()
+        var result = true
+        if (last != null && last !in UNFINISHED && !leadsWithOperator(text, nextLine)) {
+            if (DANGLING_KEYWORD.containsMatchIn(code(value))) {
+                result = true
+            } else {
+                result = AWAITING_HEAD.containsMatchIn(code(value))
+            }
+        }
+        return result
     }
 
     /**

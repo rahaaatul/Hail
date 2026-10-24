@@ -19,14 +19,18 @@ class HRecyclerView : RecyclerView {
     override fun getContextMenuInfo(): ContextMenuInfo? = contextMenuInfo
 
     override fun showContextMenuForChild(originalView: View?): Boolean {
-        if (originalView == null || adapter == null) return false
-
-        val longPressPosition = getChildAdapterPosition(originalView)
-        if (longPressPosition >= 0) {
-            contextMenuInfo = RecyclerViewContextMenuInfo(longPressPosition, getChildViewHolder(originalView))
-            return super.showContextMenuForChild(originalView)
+        val result = if (originalView != null && adapter != null) {
+            val longPressPosition = getChildAdapterPosition(originalView)
+            if (longPressPosition >= 0) {
+                contextMenuInfo = RecyclerViewContextMenuInfo(longPressPosition, getChildViewHolder(originalView))
+                super.showContextMenuForChild(originalView)
+            } else {
+                false
+            }
+        } else {
+            false
         }
-        return false
+        return result
     }
 
     class RecyclerViewContextMenuInfo(val position: Int, val viewHolder: ViewHolder) : ContextMenuInfo

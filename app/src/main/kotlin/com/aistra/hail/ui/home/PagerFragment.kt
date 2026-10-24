@@ -210,34 +210,30 @@ class PagerFragment :
     }
 
     override fun onItemClick(info: AppInfo) {
-        if (!isAdded) return
-        if (multiselect) {
-            if (info in selectedList) {
-                selectedList.remove(info)
+        if (isAdded) {
+            if (multiselect) {
+                if (info in selectedList) {
+                    selectedList.remove(info)
+                } else {
+                    selectedList.add(info)
+                }
+                updateCurrentList()
+                updateBarTitle()
+            } else if (info.applicationInfo == null) {
+                Snackbar.make(activity.fab, R.string.app_not_installed, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.action_remove_home) { removeCheckedApp(info.packageName) }.show()
             } else {
-                selectedList.add(info)
+                launchApp(info.packageName)
             }
-            updateCurrentList()
-            updateBarTitle()
-            return
         }
-        if (info.applicationInfo == null) {
-            Snackbar.make(activity.fab, R.string.app_not_installed, Snackbar.LENGTH_LONG)
-                .setAction(R.string.action_remove_home) { removeCheckedApp(info.packageName) }.show()
-            return
-        }
-        launchApp(info.packageName)
     }
 
     override fun onItemLongClick(info: AppInfo): Boolean {
         if (info.applicationInfo == null && (!multiselect || info !in selectedList)) {
             exportToClipboard(listOf(info))
-            return true
-        }
-        if (info in selectedList) {
+        } else if (info in selectedList) {
             onMultiSelect()
-            return true
-        }
+        } else {
         val pkg = info.packageName
         val frozen = AppManager.isAppFrozen(pkg)
         val freezeStr = getString(R.string.action_freeze)
@@ -366,6 +362,7 @@ class PagerFragment :
                 HPackages.packageUri(pkg),
             )
         }.setNegativeButton(android.R.string.cancel, null).show()
+        }
         return true
     }
 
@@ -621,31 +618,35 @@ class PagerFragment :
         list: List<AppInfo> = HailData.checkedList,
         updateList: Boolean = true,
     ): Job {
-        if (HailData.workingMode == HailData.MODE_DEFAULT) {
+        val earlyJob: Job? = if (HailData.workingMode == HailData.MODE_DEFAULT) {
             MaterialAlertDialogBuilder(activity).setMessage(R.string.msg_guide)
                 .setPositiveButton(android.R.string.ok, null).show()
-            return viewLifecycleOwner.lifecycleScope.launch { }
+            viewLifecycleOwner.lifecycleScope.launch { }
         } else if (HailData.workingMode == HailData.MODE_SHIZUKU_HIDE) {
+            var hideJob: Job? = null
             runCatching { HShizuku.isRoot }.onSuccess {
                 if (!it) {
                     MaterialAlertDialogBuilder(activity).setMessage(R.string.shizuku_hide_adb)
                         .setPositiveButton(android.R.string.ok, null).show()
-                    return viewLifecycleOwner.lifecycleScope.launch { }
+                    hideJob = viewLifecycleOwner.lifecycleScope.launch { }
                 }
             }
-        }
-        val filtered = list.filter { it.isInstalled && AppManager.isAppFrozen(it.packageName) != frozen }
-        return viewLifecycleOwner.lifecycleScope.launch {
-            AppActions.freezePackages(frozen, filtered.map { it.packageName }).onSuccess {
-                AppMetaCache.invalidateState(filtered.map { it.packageName })
-                if (updateList) updateCurrentList()
-                pagerAdapter.refreshVisualState()
-                HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
-                    filtered.size.toString(),
-                )
-            }.onFailure {
-                HUI.showToast(R.string.permission_denied)
+            hideJob
+        } else null
+        return earlyJob ?: run {
+            val filtered = list.filter { it.isInstalled && AppManager.isAppFrozen(it.packageName) != frozen }
+            viewLifecycleOwner.lifecycleScope.launch {
+                AppActions.freezePackages(frozen, filtered.map { it.packageName }).onSuccess {
+                    AppMetaCache.invalidateState(filtered.map { it.packageName })
+                    if (updateList) updateCurrentList()
+                    pagerAdapter.refreshVisualState()
+                    HUI.showToast(
+                        if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
+                        filtered.size.toString(),
+                    )
+                }.onFailure {
+                    HUI.showToast(R.string.permission_denied)
+                }
             }
         }
     }

@@ -13,25 +13,22 @@ import com.aistra.hail.utils.HSystem
 class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     private const val MAX_TRIES = 3
     override fun doWork(): Result {
-        if ((
-                inputData.getBoolean(HailData.ACTION_LOCK, true) &&
-                    HSystem.isInteractive(applicationContext)
-                ) ||
-            isSkipWhileCharging(applicationContext)
-        ) {
+        val result = if ((inputData.getBoolean(HailData.ACTION_LOCK, true) && HSystem.isInteractive(applicationContext)) || isSkipWhileCharging(applicationContext)) {
             // Not stopping the AutoFreezeService here. The worker will run at
             // some point. Then we'll stop the Service
-            return Result.success()
-        }
-        val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
-        repeat(MAX_TRIES) {
-            val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
-            if (result != null) {
-                app.setAutoFreezeService()
-                return Result.success()
+            Result.success()
+        } else {
+            val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
+            repeat(MAX_TRIES) {
+                val tryResult = AppManager.setListFrozen(true, *checkedList.toTypedArray())
+                if (tryResult != null) {
+                    app.setAutoFreezeService()
+                    break
+                }
             }
+            Result.success()
         }
-        return Result.success() // 3 tries failed -> stop WorkManager retries
+        return result
     }
 
     private fun isSkipWhileCharging(context: Context): Boolean =

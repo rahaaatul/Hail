@@ -105,11 +105,16 @@ object AppMetaCache {
 
     suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List<ApplicationInfo> {
         val cached = cachedApplications()
-        if (cached.isNotEmpty() && !forceRefresh) return cached
-        if (!forceRefresh && cache.isNotEmpty()) return cachedDisplayApplications()
-        val refreshed = HPackages.getInstalledApplications()
-        prefetch(refreshed)
-        return refreshed
+        val result = if (cached.isNotEmpty() && !forceRefresh) {
+            cached
+        } else if (!forceRefresh && cache.isNotEmpty()) {
+            cachedDisplayApplications()
+        } else {
+            val refreshed = HPackages.getInstalledApplications()
+            prefetch(refreshed)
+            refreshed
+        }
+        return result
     }
 
     fun prefetchPackages(packageNames: Collection<String>): Job = scope.launch {
