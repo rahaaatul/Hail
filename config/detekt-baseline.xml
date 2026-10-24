@@ -64,10 +64,6 @@
     <ID>MagicNumber:PagerFragment.kt$PagerFragment$5</ID>
     <ID>MagicNumber:PinyinSearch.kt$PinyinSearch$48</ID>
     <ID>MagicNumber:PinyinSearch.kt$PinyinSearch$8</ID>
-    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$3</ID>
-    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$4</ID>
-    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$5</ID>
-    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$6</ID>
     <ID>NestedBlockDepth:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
     <ID>ReturnCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
     <ID>ReturnCount:AppIconCache.kt$AppIconCache$@SuppressLint("NewApi") suspend fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap</ID>

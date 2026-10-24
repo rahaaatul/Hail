@@ -227,6 +227,11 @@ class SettingsFragment :
     private val _iconPackValues = mutableStateOf(listOf(HailData.ACTION_NONE))
     private val _iconPackNames = mutableStateOf(mapOf<String, String>())
 
+    private const val PIN_SHORTCUT_UNFREEZE_ALL = 3
+    private const val PIN_SHORTCUT_FREEZE_NON_WHITELISTED = 4
+    private const val PIN_SHORTCUT_LOCK = 5
+    private const val PIN_SHORTCUT_LOCK_FREEZE = 6
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
@@ -669,7 +674,7 @@ class SettingsFragment :
                         Intent(HailApi.ACTION_FREEZE_ALL),
                     )
 
-                    3 -> HShortcuts.addPinShortcut(
+                    PIN_SHORTCUT_UNFREEZE_ALL -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
                             requireContext(),
                             R.drawable.ic_round_unfrozen_shortcut,
@@ -679,7 +684,7 @@ class SettingsFragment :
                         Intent(HailApi.ACTION_UNFREEZE_ALL),
                     )
 
-                    4 -> HShortcuts.addPinShortcut(
+                    PIN_SHORTCUT_FREEZE_NON_WHITELISTED -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
                             requireContext(),
                             R.drawable.ic_round_frozen_shortcut,
@@ -689,7 +694,7 @@ class SettingsFragment :
                         Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
                     )
 
-                    5 -> HShortcuts.addPinShortcut(
+                    PIN_SHORTCUT_LOCK -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
                             requireContext(),
                             R.drawable.ic_outline_lock_shortcut,
@@ -699,7 +704,7 @@ class SettingsFragment :
                         Intent(HailApi.ACTION_LOCK),
                     )
 
-                    6 -> HShortcuts.addPinShortcut(
+                    PIN_SHORTCUT_LOCK_FREEZE -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
                             requireContext(),
                             R.drawable.ic_outline_lock_shortcut,
