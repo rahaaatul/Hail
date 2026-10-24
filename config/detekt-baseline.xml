@@ -2,10 +2,8 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>LargeClass:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$for</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
     <ID>NestedBlockDepth:HailDataTest.kt$HailDataTest$private fun initializerAfter(text: String, index: Int): String</ID>
-    <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -1,6 +1,5 @@
 package com.aistra.hail.ui.settings
 
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -20,39 +19,27 @@ import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
-import androidx.compose.material.icons.outlined.Adb
 import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material.icons.outlined.AppShortcut
-import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BatterySaver
 import androidx.compose.material.icons.outlined.CleaningServices
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.DashboardCustomize
 import androidx.compose.material.icons.outlined.DeleteSweep
-import androidx.compose.material.icons.outlined.Dialpad
 import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.FilterBAndW
-import androidx.compose.material.icons.outlined.Fingerprint
-import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.LockClock
 import androidx.compose.material.icons.outlined.ManageSearch
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.NotificationsActive
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.ScreenLockPortrait
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Shortcut
-import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -79,47 +66,31 @@ import androidx.navigation.fragment.findNavController
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
-import com.aistra.hail.app.AppManager
-import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
-import com.aistra.hail.databinding.DialogInputBinding
-import com.aistra.hail.ui.home.HomeFragment
-import com.aistra.hail.ui.home.PagerFragment
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.AppIconCache
-import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HBackup
 import com.aistra.hail.utils.HBackup.BackupOptions
-import com.aistra.hail.utils.HBackup.RestoreOptions
-import com.aistra.hail.utils.HDhizuku
+
 import com.aistra.hail.utils.HFiles
-import com.aistra.hail.utils.HIsland
+
 import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HPolicy
-import com.aistra.hail.utils.HShell
+
 import com.aistra.hail.utils.HShortcuts
 import com.aistra.hail.utils.HSystem
 import com.aistra.hail.utils.HTarget
 import com.aistra.hail.utils.HUI
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.textview.MaterialTextView
-import com.rosan.dhizuku.api.Dhizuku
-import com.rosan.dhizuku.api.DhizukuRequestPermissionListener
-import kotlinx.coroutines.CancellationException
+
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.trySendBlocking
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.zhanghai.compose.preference.Icons
 import me.zhanghai.compose.preference.ListPreference
-import me.zhanghai.compose.preference.ListPreferenceType
 import me.zhanghai.compose.preference.ProvidePreferenceLocals
 import me.zhanghai.compose.preference.SwitchPreference
 import me.zhanghai.compose.preference.listPreference
@@ -128,69 +99,18 @@ import me.zhanghai.compose.preference.preferenceCategory
 import me.zhanghai.compose.preference.rememberPreferenceState
 import me.zhanghai.compose.preference.sliderPreference
 import me.zhanghai.compose.preference.switchPreference
-import rikka.shizuku.Shizuku
+
 import java.io.File
 
 class SettingsFragment :
     MainFragment(),
     MenuProvider {
-    private var islandPermissionRequest: CompletableDeferred<Boolean>? = null
+    internal var islandPermissionRequest: CompletableDeferred<Boolean>? = null
         private set
-    private val requestPermissionLauncher =
+    internal val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             islandPermissionRequest?.complete(isGranted)
         }
-    private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
-        // Consumed on every path, including a cancelled picker: leaving it set lets a later
-        // backup reuse whatever the previous dialog checked.
-        val options = pendingBackupOptions
-        pendingBackupOptions = null
-        if (uri == null || options == null) return@registerForActivityResult
-        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
-        val ctx = context ?: return@registerForActivityResult
-        if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
-            HUI.showToast(R.string.pick_file_not_folder)
-            return@registerForActivityResult
-        }
-        lifecycleScope.launch {
-            val file = File(cacheDir, "backup-${System.currentTimeMillis()}.zip")
-            // Every string below is resolved from the application context, never from getString:
-            // by the time any of this runs the fragment can be detached - a back press, a
-            // rotation, a document provider that takes its time - and Fragment.getString throws
-            // "not attached to a context" from outside every try in the chain, so the failure
-            // path would raise it instead of the error it is reporting, and turn a failed export
-            // into a crash. runCatching catches CancellationException too, so cancelling
-            // lifecycleScope lands here rather than skipping it.
-            runCatching {
-                HBackup.backup(ctx, file, options).getOrThrow()
-                try {
-                    val outputStream = ctx.contentResolver.openOutputStream(uri)
-                        ?: throw IllegalStateException(app.getString(R.string.cannot_open_selected_file))
-                    outputStream.use { output ->
-                        file.inputStream().use { input ->
-                            HFiles.copy(input, output)
-                        }
-                    }
-                } catch (e: java.io.FileNotFoundException) {
-                    HLog.d("SettingsFragment", "Settings file not found: ${e.message}")
-                    file.delete()
-                    HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
-                    return@launch
-                }
-            }.onSuccess {
-                HUI.showToast(R.string.msg_exported, file.name)
-            }.onFailure {
-                file.delete()
-                HUI.showToast(
-                    R.string.operation_failed,
-                    it.localizedMessage ?: app.getString(R.string.error_unknown),
-                    true,
-                )
-            }
-        }
-    }
-    private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
-        if (uri == null) return@registerForActivityResult
         val cacheDir = context?.cacheDir ?: return@registerForActivityResult
         val ctx = context ?: return@registerForActivityResult
         if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
@@ -224,14 +144,9 @@ class SettingsFragment :
             }
         }
     }
-    private var pendingBackupOptions: BackupOptions? = null
     private val _iconPackValues = mutableStateOf(listOf(HailData.ACTION_NONE))
     private val _iconPackNames = mutableStateOf(mapOf<String, String>())
 
-    private const val PIN_SHORTCUT_UNFREEZE_ALL = 3
-    private const val PIN_SHORTCUT_FREEZE_NON_WHITELISTED = 4
-    private const val PIN_SHORTCUT_LOCK = 5
-    private const val PIN_SHORTCUT_LOCK_FREEZE = 6
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val menuHost = requireActivity() as MenuHost
@@ -287,502 +202,25 @@ class SettingsFragment :
         val iconPackValues by _iconPackValues
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            workingModeSection()
-            customizeSection(iconPackValues)
+            workingModeSection(::onWorkingModeChange, ::resetDynamicShortcuts)
+            customizeSection(iconPackValues) { iconPackName(it) }
             iconSettingsSection()
             searchSection()
             autoFreezeSection(autoFreezeAfterLock)
             skipOptionsSection(autoFreezeAfterLock)
-            shortcutsSection()
-            cacheSection()
-            backupSection()
+            shortcutsSection(
+                onAddPinShortcut = { addPinShortcut() },
+                onResetDynamicShortcuts = ::resetDynamicShortcuts,
+            )
+            cacheSection(
+                onConfirmRebuildCache = { confirmRebuildCache() },
+                onRequestBackgroundActivity = ::requestBackgroundActivity,
+            )
+            backupSection(
+                onShowBackupDialog = { showBackupDialog() },
+                onRestore = { restoreLauncher.launch(arrayOf("application/zip")) },
+            )
         }
-    }
-
-    @Composable
-    private fun LazyListScope.workingModeSection() {
-        listPreference(
-            key = HailData.WORKING_MODE,
-            defaultValue = HailData.MODE_DEFAULT,
-            onValueChange = ::onWorkingModeChange,
-            values = HailData.WORKING_MODE_VALUES,
-            entriesId = R.array.working_mode_entries,
-            titleId = R.string.working_mode,
-            icon = Icons.Outlined.Adb,
-            type = ListPreferenceType.ALERT_DIALOG,
-        )
-        switchPreference(
-            key = HailData.BIOMETRIC_LOGIN,
-            defaultValue = false,
-            onValueChange = { _, value ->
-                if (value) resetDynamicShortcuts()
-                true
-            },
-            titleId = R.string.action_biometric,
-            icon = Icons.Outlined.Fingerprint,
-        )
-        horizontalDivider()
-    }
-
-    @Composable
-    private fun LazyListScope.customizeSection(iconPackValues: List<String>) {
-        preferenceCategory(key = "customize", title = { Text(text = stringResource(R.string.title_customize)) })
-        listPreference(
-            key = HailData.APP_THEME,
-            defaultValue = HailData.FOLLOW_SYSTEM,
-            onValueChange = { _, value ->
-                app.setAppTheme(value)
-                true
-            },
-            values = HailData.APP_THEME_VALUES,
-            entriesId = R.array.app_theme_entries,
-            titleId = R.string.app_theme,
-            icon = Icons.Outlined.DarkMode,
-        )
-        listPreference(
-            key = HailData.ICON_PACK,
-            defaultValue = HailData.ACTION_NONE,
-            onValueChange = { _, _ ->
-                AppIconCache.clear()
-                true
-            },
-            values = iconPackValues,
-            titleId = R.string.icon_pack,
-            icon = Icons.Outlined.Palette,
-            summary = { iconPackName(it) },
-            valueToText = { iconPackName(it) },
-        )
-    }
-
-    @Composable
-    private fun LazyListScope.iconSettingsSection() {
-        switchPreference(
-            key = HailData.GRAYSCALE_ICON,
-            defaultValue = true,
-            titleId = R.string.grayscale_icon,
-            icon = Icons.Outlined.FilterBAndW,
-        )
-        switchPreference(
-            key = HailData.COMPACT_ICON,
-            defaultValue = false,
-            titleId = R.string.compact_icon,
-            icon = Icons.Outlined.Apps,
-        )
-        switchPreference(
-            key = HailData.SYNTHESIZE_ADAPTIVE_ICONS,
-            defaultValue = false,
-            titleId = R.string.synthesize_adaptive_icons,
-            icon = Icons.Outlined.Layers,
-        )
-    }
-
-    @Composable
-    private fun LazyListScope.searchSection() {
-        sliderPreference(
-            key = HailData.HOME_FONT_SIZE,
-            defaultValue = HailData.floatDefault(HailData.HOME_FONT_SIZE),
-            title = { Text(text = stringResource(R.string.home_font_size)) },
-            valueRange = HailData.floatRange(HailData.HOME_FONT_SIZE),
-            valueSteps = 4,
-            icon = { Icon(imageVector = Icons.Outlined.TextFields, contentDescription = null) },
-            valueText = { Text(text = "%.0f".format(it)) },
-        )
-        switchPreference(
-            key = HailData.FUZZY_SEARCH,
-            defaultValue = false,
-            titleId = R.string.fuzzy_search,
-            icon = Icons.AutoMirrored.Outlined.ManageSearch,
-        )
-        switchPreference(
-            key = HailData.NINE_KEY_SEARCH,
-            defaultValue = false,
-            titleId = R.string.nine_key,
-            icon = Icons.Outlined.Dialpad,
-        )
-        listPreference(
-            key = HailData.TILE_ACTION,
-            defaultValue = HailData.tileAction,
-            values = HailData.TILE_ACTION_VALUES,
-            entriesId = R.array.tile_action_entries,
-            titleId = R.string.tile_action,
-            icon = Icons.Outlined.DashboardCustomize,
-        )
-        horizontalDivider()
-    }
-
-    @Composable
-    private fun LazyListScope.autoFreezeSection(autoFreezeAfterLock: MutableState<Boolean>) {
-        preferenceCategory(key = "auto_freeze", title = { Text(text = stringResource(R.string.auto_freeze)) })
-        switchPreference(
-            rememberState = { autoFreezeAfterLock },
-            onValueChange = { _, value ->
-                app.setAutoFreezeService(value)
-                true
-            },
-            titleId = R.string.auto_freeze_after_lock,
-            icon = Icons.Outlined.ScreenLockPortrait,
-        )
-        sliderPreference(
-            key = HailData.AUTO_FREEZE_DELAY,
-            defaultValue = HailData.floatDefault(HailData.AUTO_FREEZE_DELAY),
-            title = { Text(text = stringResource(R.string.auto_freeze_delay)) },
-            valueRange = HailData.floatRange(HailData.AUTO_FREEZE_DELAY),
-            valueSteps = 29,
-            enabled = { autoFreezeAfterLock.value },
-            icon = { Icon(imageVector = Icons.Outlined.LockClock, contentDescription = null) },
-            valueText = { Text(text = "%.0f".format(it)) },
-        )
-    }
-
-    @Composable
-    private fun LazyListScope.skipOptionsSection(autoFreezeAfterLock: MutableState<Boolean>) {
-        switchPreference(
-            key = HailData.SKIP_WHILE_CHARGING,
-            defaultValue = false,
-            titleId = R.string.skip_while_charging,
-            enabled = autoFreezeAfterLock.value,
-            icon = Icons.Outlined.BatteryChargingFull,
-        )
-        switchPreference(
-            key = HailData.SKIP_FOREGROUND_APP,
-            defaultValue = false,
-            onValueChange = { _, value ->
-                if (value && !HSystem.checkOpUsageStats(requireContext())) {
-                    startActivity(
-                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
-                    false
-                } else {
-                    true
-                }
-            },
-            titleId = R.string.skip_foreground_app,
-            enabled = autoFreezeAfterLock.value,
-            icon = Icons.Outlined.Android,
-        )
-        switchPreference(
-            key = HailData.SKIP_NOTIFYING_APP,
-            defaultValue = false,
-            onValueChange = { _, value ->
-                val isGranted = NotificationManagerCompat.getEnabledListenerPackages(requireContext())
-                    .contains(requireContext().packageName)
-                if (value && !isGranted) {
-                    app.setAutoFreezeServiceEnabled(true)
-                    startActivity(
-                        Intent(
-                            Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
-                        ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
-                    false
-                } else {
-                    true
-                }
-            },
-            titleId = R.string.skip_notifying_app,
-            enabled = autoFreezeAfterLock.value,
-            icon = Icons.Outlined.NotificationsActive,
-        )
-        horizontalDivider()
-    }
-
-    @Composable
-    private fun LazyListScope.shortcutsSection() {
-        preferenceCategory(key = "shortcuts", title = { Text(text = stringResource(R.string.title_shortcuts)) })
-        preference(
-            key = "add_pin_shortcut",
-            title = { Text(text = stringResource(R.string.action_add_pin_shortcut)) },
-            icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
-            onClick = ::addPinShortcut,
-        )
-        listPreference(
-            key = HailData.DYNAMIC_SHORTCUT_ACTION,
-            defaultValue = HailData.ACTION_NONE,
-            onValueChange = { _, action ->
-                HShortcuts.removeAllDynamicShortcuts()
-                HShortcuts.addDynamicShortcutAction(action)
-                true
-            },
-            values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
-            entriesId = R.array.dynamic_shortcut_entries,
-            titleId = R.string.dynamic_shortcut_action,
-            icon = Icons.Outlined.AppShortcut,
-        )
-        preference(
-            key = "clear_dynamic_shortcuts",
-            title = { Text(text = stringResource(R.string.action_clear_dynamic_shortcuts)) },
-            icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
-            onClick = ::resetDynamicShortcuts,
-        )
-        horizontalDivider()
-    }
-
-    @Composable
-    private fun LazyListScope.cacheSection() {
-        preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
-        preference(
-            key = "rebuild_cache",
-            title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
-            summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
-            icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
-            onClick = ::confirmRebuildCache,
-        )
-        preference(
-            key = "background_activity",
-            title = { Text(text = stringResource(R.string.allow_background_activity)) },
-            summary = { Text(text = stringResource(R.string.summary_background_activity)) },
-            icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
-            onClick = ::requestBackgroundActivity,
-        )
-        horizontalDivider()
-    }
-
-    @Composable
-    private fun LazyListScope.backupSection() {
-        preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
-        preference(
-            key = "backup_preference",
-            title = { Text(text = stringResource(R.string.action_backup)) },
-            icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
-            onClick = ::showBackupDialog,
-        )
-        preference(
-            key = "restore",
-            title = { Text(text = stringResource(R.string.action_restore)) },
-            icon = { Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null) },
-            onClick = { restoreLauncher.launch(arrayOf("application/zip")) },
-        )
-    }
-
-    private fun requestBackgroundActivity() {
-        val powerManager = requireContext().getSystemService(PowerManager::class.java)
-        if (powerManager.isIgnoringBatteryOptimizations(requireContext().packageName)) return
-        startActivity(
-            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                data = Uri.parse("package:${requireContext().packageName}")
-            },
-        )
-    }
-
-    private fun confirmRebuildCache() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.action_rebuild_cache)
-            .setMessage(R.string.msg_confirm_rebuild_cache)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.action_rebuild_cache) { _, _ ->
-                AppIconCache.clear()
-                AppMetaCache.clearAndRebuild()
-            }
-            .show()
-    }
-
-    private fun LazyListScope.horizontalDivider() = item { HorizontalDivider() }
-
-    private fun LazyListScope.switchPreference(
-        rememberState: @Composable () -> MutableState<Boolean>,
-        onValueChange: (MutableState<Boolean>, Boolean) -> Boolean = { _, _ -> true },
-        @StringRes titleId: Int,
-        enabled: Boolean = true,
-        icon: ImageVector,
-    ) = item(key = titleId, contentType = "SwitchPreference") {
-        if (BuildConfig.DEBUG) {
-            SideEffect {
-                Log.d("SettingsRecompose", "switchPreference(${app.getString(titleId)}) recomposed")
-            }
-        }
-        val state = rememberState()
-        SwitchPreference(
-            value = state.value,
-            onValueChange = { if (onValueChange(state, it)) state.value = it },
-            title = { Text(text = stringResource(titleId)) },
-            enabled = enabled,
-            icon = { Icon(imageVector = icon, contentDescription = null) },
-        )
-    }
-
-    private fun LazyListScope.switchPreference(
-        key: String,
-        defaultValue: Boolean,
-        onValueChange: (MutableState<Boolean>, Boolean) -> Boolean = { _, _ -> true },
-        @StringRes titleId: Int,
-        enabled: Boolean = true,
-        icon: ImageVector,
-    ) = switchPreference(
-        rememberState = { rememberPreferenceState(key, defaultValue) },
-        onValueChange = onValueChange,
-        titleId = titleId,
-        enabled = enabled,
-        icon = icon,
-    )
-
-    private fun LazyListScope.listPreference(
-        key: String,
-        defaultValue: String,
-        onValueChange: (MutableState<String>, String) -> Boolean = { _, _ -> true },
-        values: List<String>,
-        @StringRes titleId: Int,
-        icon: ImageVector,
-        summary: @Composable (String) -> String,
-        type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
-        valueToText: (String) -> String,
-    ) = item(key = key, contentType = "ListPreference") {
-        if (BuildConfig.DEBUG) {
-            SideEffect {
-                Log.d("SettingsRecompose", "listPreference(${app.getString(titleId)}) recomposed")
-            }
-        }
-        val state = rememberPreferenceState(key, defaultValue)
-        ListPreference(
-            value = state.value,
-            onValueChange = { if (onValueChange(state, it)) state.value = it },
-            values = values,
-            title = { Text(text = stringResource(titleId)) },
-            icon = { Icon(imageVector = icon, contentDescription = null) },
-            summary = { Text(text = summary(state.value)) },
-            type = type,
-            valueToText = { AnnotatedString(valueToText(it)) },
-        )
-    }
-
-    private fun LazyListScope.listPreference(
-        key: String,
-        defaultValue: String,
-        onValueChange: (MutableState<String>, String) -> Boolean = { _, _ -> true },
-        values: List<String>,
-        @ArrayRes entriesId: Int,
-        @StringRes titleId: Int,
-        icon: ImageVector,
-        type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
-    ) = listPreference(
-        key = key,
-        defaultValue = defaultValue,
-        onValueChange = onValueChange,
-        values = values,
-        titleId = titleId,
-        icon = icon,
-        summary = { it.toEntry(values, entriesId) },
-        type = type,
-        valueToText = { it.toEntry(values, entriesId) },
-    )
-
-    private fun String.toEntry(values: List<String>, @ArrayRes entriesId: Int): String =
-        resources.getStringArray(entriesId)[values.indexOf(this)]
-
-    private fun resetDynamicShortcuts() {
-        HShortcuts.removeAllDynamicShortcuts()
-        HShortcuts.addDynamicShortcutAction(HailData.dynamicShortcutAction)
-    }
-
-    private fun iconPackName(pack: String): String = if (pack == HailData.ACTION_NONE) {
-        getString(R.string.action_none)
-    } else {
-        _iconPackNames.value[pack] ?: pack
-    }
-
-    private fun addPinShortcut() {
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_add_pin_shortcut)
-            .setItems(R.array.pin_shortcut_entries) { _, which ->
-                when (which) {
-                    0 -> showFreezeTagShortcutDialog()
-                    1 -> showUnfreezeTagShortcutDialog()
-                    2 -> pinFreezeAllShortcut()
-                    PIN_SHORTCUT_UNFREEZE_ALL -> pinUnfreezeAllShortcut()
-                    PIN_SHORTCUT_FREEZE_NON_WHITELISTED -> pinFreezeNonWhitelistedShortcut()
-                    PIN_SHORTCUT_LOCK -> pinLockShortcut()
-                    PIN_SHORTCUT_LOCK_FREEZE -> pinLockFreezeShortcut()
-                }
-            }.setNegativeButton(android.R.string.cancel, null).show()
-    }
-
-    private fun showFreezeTagShortcutDialog() {
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_freeze_tag)
-            .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                val tag = HailData.tags[index].first
-                HShortcuts.addPinShortcut(
-                    AppCompatResources.getDrawable(
-                        requireContext(),
-                        R.drawable.ic_round_frozen_shortcut,
-                    )!!,
-                    HailApi.ACTION_FREEZE_TAG + tag,
-                    tag,
-                    HailApi.getIntentForTag(HailApi.ACTION_FREEZE_TAG, tag),
-                )
-            }.setNegativeButton(android.R.string.cancel, null).show()
-    }
-
-    private fun showUnfreezeTagShortcutDialog() {
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
-            .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                val tag = HailData.tags[index].first
-                HShortcuts.addPinShortcut(
-                    AppCompatResources.getDrawable(
-                        requireContext(),
-                        R.drawable.ic_round_unfrozen_shortcut,
-                    )!!,
-                    HailApi.ACTION_UNFREEZE_TAG + tag,
-                    tag,
-                    HailApi.getIntentForTag(HailApi.ACTION_UNFREEZE_TAG, tag),
-                )
-            }.setNegativeButton(android.R.string.cancel, null).show()
-    }
-
-    private fun pinFreezeAllShortcut() {
-        HShortcuts.addPinShortcut(
-            AppCompatResources.getDrawable(
-                requireContext(),
-                R.drawable.ic_round_frozen_shortcut,
-            )!!,
-            HailApi.ACTION_FREEZE_ALL,
-            getString(R.string.action_freeze_all),
-            Intent(HailApi.ACTION_FREEZE_ALL),
-        )
-    }
-
-    private fun pinUnfreezeAllShortcut() {
-        HShortcuts.addPinShortcut(
-            AppCompatResources.getDrawable(
-                requireContext(),
-                R.drawable.ic_round_unfrozen_shortcut,
-            )!!,
-            HailApi.ACTION_UNFREEZE_ALL,
-            getString(R.string.action_unfreeze_all),
-            Intent(HailApi.ACTION_UNFREEZE_ALL),
-        )
-    }
-
-    private fun pinFreezeNonWhitelistedShortcut() {
-        HShortcuts.addPinShortcut(
-            AppCompatResources.getDrawable(
-                requireContext(),
-                R.drawable.ic_round_frozen_shortcut,
-            )!!,
-            HailApi.ACTION_FREEZE_NON_WHITELISTED,
-            getString(R.string.action_freeze_non_whitelisted),
-            Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
-        )
-    }
-
-    private fun pinLockShortcut() {
-        HShortcuts.addPinShortcut(
-            AppCompatResources.getDrawable(
-                requireContext(),
-                R.drawable.ic_outline_lock_shortcut,
-            )!!,
-            HailApi.ACTION_LOCK,
-            getString(R.string.action_lock),
-            Intent(HailApi.ACTION_LOCK),
-        )
-    }
-
-    private fun pinLockFreezeShortcut() {
-        HShortcuts.addPinShortcut(
-            AppCompatResources.getDrawable(
-                requireContext(),
-                R.drawable.ic_outline_lock_shortcut,
-            )!!,
-            HailApi.ACTION_LOCK_FREEZE,
-            getString(R.string.action_lock_freeze),
-            Intent(HailApi.ACTION_LOCK_FREEZE),
-        )
     }
 
     fun onWorkingModeChange(rememberState: MutableState<String>, mode: String): Boolean {
@@ -797,151 +235,6 @@ class SettingsFragment :
             mode.startsWith(HailData.PRIVAPP) -> handlePrivappMode()
             else -> true
         }
-    }
-
-    private fun handleOwnerMode(): Boolean {
-        return if (!HPolicy.isDeviceOwnerActive) {
-            MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
-                .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
-                .setPositiveButton(android.R.string.ok, null)
-                .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
-                .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
-            false
-        } else true
-    }
-
-    private fun handleDhizukuMode(rememberState: MutableState<String>, mode: String): Boolean {
-        return runCatching {
-            Dhizuku.init(app)
-            when {
-                Dhizuku.isPermissionGranted() -> true
-
-                else -> {
-                    lifecycleScope.launch {
-                        val result = callbackFlow {
-                            Dhizuku.requestPermission(object : DhizukuRequestPermissionListener() {
-                                override fun onRequestPermission(grantResult: Int) {
-                                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
-                                }
-                            })
-                            awaitClose()
-                        }.first()
-                        if (result) {
-                            rememberState.value = mode
-                            if (HTarget.O) HDhizuku.setDelegatedScopes()
-                        }
-                    }
-                    false
-                }
-            }
-        }.getOrElse {
-            HLog.e(it)
-            HUI.showToast(R.string.permission_denied)
-            false
-        }
-    }
-
-    private fun handleSuMode(): Boolean {
-        return if (!HShell.checkSU) {
-            HUI.showToast(R.string.permission_denied)
-            false
-        } else true
-    }
-
-    private fun handleShizukuMode(rememberState: MutableState<String>, mode: String): Boolean {
-        return runCatching {
-            when {
-                Shizuku.isPreV11() -> check(!Shizuku.isPreV11()) { "unsupported shizuku version" }
-
-                Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
-
-                Shizuku.shouldShowRequestPermissionRationale() -> {
-                    HUI.showToast(R.string.permission_denied)
-                    false
-                }
-
-                else -> {
-                    lifecycleScope.launch {
-                        val result = callbackFlow {
-                            val shizukuRequestCode = 0
-                            val listener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-                                if (requestCode == shizukuRequestCode) {
-                                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
-                                }
-                            }
-                            Shizuku.addRequestPermissionResultListener(listener)
-                            Shizuku.requestPermission(shizukuRequestCode)
-                            awaitClose {
-                                Shizuku.removeRequestPermissionResultListener(listener)
-                            }
-                        }.first()
-                        if (result) rememberState.value = mode
-                    }
-                    false
-                }
-            }
-        }.getOrElse {
-            HLog.e(it)
-            HUI.showToast(R.string.shizuku_missing)
-            false
-        }
-    }
-
-    private fun handleIslandMode(rememberState: MutableState<String>, mode: String): Boolean {
-        return runCatching {
-            when {
-                mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
-
-                mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
-
-                else -> {
-                    lifecycleScope.launch {
-                        islandPermissionRequest?.cancel(CancellationException("Superseded by new request"))
-                        islandPermissionRequest = CompletableDeferred()
-                        requestPermissionLauncher.launch(
-                            if (mode == HailData.MODE_ISLAND_HIDE) {
-                                HIsland.PERMISSION_FREEZE_PACKAGE
-                            } else {
-                                HIsland.PERMISSION_SUSPEND_PACKAGE
-                            },
-                        )
-                        if (islandPermissionRequest?.await() == true) {
-                            rememberState.value = mode
-                        }
-                    }
-                    false
-                }
-            }
-        }.getOrElse {
-            HLog.e(it)
-            HUI.showToast(R.string.permission_denied)
-            false
-        }.also {
-            if (it) HIsland.checkOwnerApp()
-        }
-    }
-
-    private fun handlePrivappMode(): Boolean {
-        return if (!HPackages.isPrivilegedApp(app.packageName)) {
-            HUI.showToast(R.string.permission_denied)
-            false
-        } else true
-    }
-
-    private suspend fun onTerminalResult(exitValue: Int, msg: String?) = withContext(Dispatchers.Main) {
-        if (exitValue == 0 && msg.isNullOrBlank()) return@withContext
-        MaterialAlertDialogBuilder(requireActivity()).apply {
-            if (!msg.isNullOrBlank()) {
-                if (exitValue != 0) {
-                    setTitle(getString(R.string.operation_failed, exitValue.toString()))
-                }
-                setMessage(msg)
-                setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(msg) }
-            } else if (exitValue != 0) {
-                setMessage(getString(R.string.operation_failed, exitValue.toString()))
-            }
-        }.setPositiveButton(android.R.string.ok, null).show().findViewById<MaterialTextView>(android.R.id.message)
-            ?.setTextIsSelectable(true)
     }
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
@@ -969,99 +262,48 @@ class SettingsFragment :
         }
     }
 
-    private fun showBackupDialog() {
-        val checkedItems = booleanArrayOf(true, true, true, true)
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_backup)
-            .setMultiChoiceItems(
-                arrayOf(
-                    getString(R.string.backup_apps),
-                    getString(R.string.backup_whitelist),
-                    getString(R.string.backup_actions),
-                    getString(R.string.backup_settings),
-                ),
-                checkedItems,
-            ) { _, _, _ -> }
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val options = BackupOptions(
-                    apps = checkedItems[0],
-                    whitelist = checkedItems[1],
-                    actions = checkedItems[2],
-                val nothingSelected =
-                    listOf(options.apps, options.whitelist, options.actions, options.settings).none { it }
-                if (nothingSelected) {
-                    HUI.showToast(R.string.msg_no_items_to_select)
-                    return@setPositiveButton
-                }
-                pendingBackupOptions = options
-                backupLauncher.launch("hail-backup-${System.currentTimeMillis()}.zip")
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    private fun resetDynamicShortcuts() {
+        HShortcuts.removeAllDynamicShortcuts()
+        HShortcuts.addDynamicShortcutAction(HailData.dynamicShortcutAction)
     }
 
-    private fun showRestoreDialog(file: File) {
-        var restoreStarted = false
-        val checkedItems = booleanArrayOf(true, true, true, true)
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_restore)
-            .setMultiChoiceItems(
-                arrayOf(
-                    getString(R.string.backup_apps),
-                    getString(R.string.backup_whitelist),
-                    getString(R.string.backup_actions),
-                    getString(R.string.backup_settings),
-                ),
-                checkedItems,
-            ) { _, _, _ -> }
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                val options = buildRestoreOptions(checkedItems)
-                if (options.nothingSelected()) {
-                    HUI.showToast(R.string.msg_no_items_to_select)
-                    return@setPositiveButton
-                }
-                // The flag marks the restore as handed off so the dismiss listener keeps the file.
-                restoreStarted = true
-                launchRestore(file, options)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .setOnDismissListener(buildRestoreDismissListener(file) { restoreStarted })
-            .show()
-    }
-
-    private fun buildRestoreOptions(checkedItems: BooleanArray): RestoreOptions =
-        RestoreOptions(
-            apps = checkedItems[0],
-            whitelist = checkedItems[1],
-            actions = checkedItems[2],
-            settings = checkedItems[3],
+    private fun requestBackgroundActivity() {
+        val powerManager = requireContext().getSystemService(PowerManager::class.java)
+        if (powerManager.isIgnoringBatteryOptimizations(requireContext().packageName)) return
+        startActivity(
+            Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${requireContext().packageName}")
+            },
         )
+    }
 
-    private fun RestoreOptions.nothingSelected(): Boolean =
-        !apps && !whitelist && !actions && !settings
-
-    private fun launchRestore(file: File, options: RestoreOptions) {
+    private var restoreLauncher = registerForActivityResult(OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val cacheDir = context?.cacheDir ?: return@registerForActivityResult
+        val ctx = context ?: return@registerForActivityResult
+        if (DocumentsContract.isDocumentUri(ctx, uri) && DocumentFile.fromSingleUri(ctx, uri)?.isDirectory == true) {
+            HUI.showToast(R.string.pick_file_not_folder)
+            return@registerForActivityResult
+        }
         lifecycleScope.launch {
-            val dialog = MaterialAlertDialogBuilder(
-                requireActivity(),
-            ).setView(R.layout.dialog_progress).setCancelable(false).show()
-            val result = HBackup.restore(requireContext(), file, options)
-            dialog.dismiss()
-            result.onSuccess {
-                if (options.apps) {
-                    parentFragmentManager.fragments.forEach { fragment ->
-                        if (fragment is HomeFragment) {
-                            fragment.childFragmentManager.fragments.forEach { pager ->
-                                if (pager is PagerFragment) {
-                                    pager.updateCurrentList()
-                                }
-                            }
+            val file = File(cacheDir, "restore-${System.currentTimeMillis()}.zip")
+            runCatching {
+                try {
+                    ctx.contentResolver.openInputStream(uri)?.use { input ->
+                        file.outputStream().use { output ->
+                            HFiles.copy(input, output)
                         }
                     }
+                } catch (e: java.io.FileNotFoundException) {
+                    HLog.d("SettingsFragment", "Settings file not found: ${e.message}")
+                    file.delete()
+                    HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
+                    return@launch
                 }
-                if (options.settings) {
-                    activity.invalidateOptionsMenu()
-                }
-                HUI.showToast(R.string.msg_imported)
+            }.onSuccess {
+                showRestoreDialog(file)
             }.onFailure {
+                file.delete()
                 HUI.showToast(
                     R.string.operation_failed,
                     it.localizedMessage ?: app.getString(R.string.error_unknown),
@@ -1071,25 +313,5 @@ class SettingsFragment :
         }
     }
 
-    private fun buildRestoreDismissListener(
-        file: File,
-        isRestoreStarted: () -> Boolean,
-    ): DialogInterface.OnDismissListener =
-        DialogInterface.OnDismissListener { if (!isRestoreStarted()) file.delete() }
 
-    private fun showTerminalDialog() {
-        val binding = DialogInputBinding.inflate(layoutInflater)
-        binding.inputLayout.setHint(R.string.command)
-        binding.editText.run {
-            setSingleLine()
-            filters = arrayOf()
-        }
-        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_terminal).setView(binding.root)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                lifecycleScope.launch {
-                    val result = AppManager.execute(binding.editText.text.toString())
-                    onTerminalResult(result.first, result.second)
-                }
-            }.setNegativeButton(android.R.string.cancel, null).show()
-    }
 }
