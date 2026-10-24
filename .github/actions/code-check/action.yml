@@ -92,6 +92,24 @@ runs:
           -PspotlessRatchetFrom="$RATCHET_FROM" \
           $GRADLE_ARGS
 
+    - name: Verify the detekt baseline does not grow
+      if: ${{ inputs.run-detekt == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Regenerate the baseline from the current code and compare it with the
+        # committed one. Detekt already fails on issues not in the baseline, but
+        # nothing stops someone from regenerating the baseline to hide new
+        # issues. This step makes the baseline immutable: CI fails if it would
+        # grow.
+        cp config/detekt-baseline.xml /tmp/detekt-baseline-before.xml
+        ./gradlew detektBaseline --no-daemon
+        if ! diff -q config/detekt-baseline.xml /tmp/detekt-baseline-before.xml >/dev/null; then
+          echo "::error::The detekt baseline grew - new detekt issues were introduced without fixing them"
+          diff config/detekt-baseline.xml /tmp/detekt-baseline-before.xml || true
+          exit 1
+        fi
+
     - name: Run the unit tests and verify the coverage
       if: ${{ inputs.run-kover == 'true' }}
       shell: bash
