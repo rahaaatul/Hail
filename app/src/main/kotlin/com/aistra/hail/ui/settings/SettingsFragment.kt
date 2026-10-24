@@ -171,6 +171,7 @@ class SettingsFragment :
                         }
                     }
                 } catch (e: java.io.FileNotFoundException) {
+                    HLog.d("SettingsFragment", "Settings file not found: ${e.message}")
                     file.delete()
                     HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
                     return@launch
@@ -205,6 +206,7 @@ class SettingsFragment :
                         }
                     }
                 } catch (e: java.io.FileNotFoundException) {
+                    HLog.d("SettingsFragment", "Settings file not found: ${e.message}")
                     file.delete()
                     HUI.showToast(R.string.operation_failed, app.getString(R.string.file_not_found), true)
                     return@launch

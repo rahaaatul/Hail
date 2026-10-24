@@ -767,17 +767,6 @@ class PagerFragment :
         if (saveApps) updateCurrentList()
     }
 
-    private fun MenuItem.updateIcon() = icon?.setTint(
-        MaterialColors.getColor(
-            activity.findViewById(R.id.toolbar),
-            if (multiselect) {
-                androidx.appcompat.R.attr.colorPrimary
-            } else {
-                com.google.android.material.R.attr.colorOnSurface
-            },
-        ),
-    )
-
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_freeze_current -> setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted })

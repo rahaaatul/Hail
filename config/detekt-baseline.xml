@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ComplexCondition:HBackup.kt$HBackup$parent != null &amp;&amp; !parent.isDirectory &amp;&amp; !parent.mkdirs() &amp;&amp; !parent.isDirectory</ID>
     <ID>ComplexCondition:SettingsFragment.kt$SettingsFragment$!options.apps &amp;&amp; !options.whitelist &amp;&amp; !options.actions &amp;&amp; !options.settings</ID>
     <ID>CyclomaticComplexMethod:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
     <ID>CyclomaticComplexMethod:AppManager.kt$AppManager$fun setAppFrozen(packageName: String, frozen: Boolean): Boolean</ID>
@@ -90,14 +89,9 @@
     <ID>SpreadOperator:ApiActivity.kt$ApiActivity$(frozen, *filtered.toTypedArray())</ID>
     <ID>SpreadOperator:AutoFreezeWorker.kt$AutoFreezeWorker$(true, *checkedList.toTypedArray())</ID>
     <ID>SpreadOperator:PagerFragment.kt$PagerFragment$(*initialStates)</ID>
-    <ID>SwallowedException:AppIconCache.kt$AppIconCache$e: CancellationException</ID>
-    <ID>SwallowedException:AppIconCache.kt$AppIconCache$e: Throwable</ID>
-    <ID>SwallowedException:SettingsFragment.kt$SettingsFragment$e: java.io.FileNotFoundException</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$PagerFragment$IllegalArgumentException()</ID>
     <ID>ThrowsCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
-    <ID>TooGenericExceptionCaught:AppIconCache.kt$AppIconCache$e: Throwable</ID>
     <ID>TooManyFunctions:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
-    <ID>UnusedPrivateMember:PagerFragment.kt$PagerFragment$private fun MenuItem.updateIcon()</ID>
   </CurrentIssues>
 </SmellBaseline>

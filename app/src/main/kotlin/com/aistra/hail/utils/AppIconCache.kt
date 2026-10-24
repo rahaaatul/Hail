@@ -11,7 +11,7 @@ import android.widget.ImageView
 import androidx.collection.LruCache
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
-import kotlinx.coroutines.CancellationException
+import com.aistra.hail.utils.HLog
 import kotlinx.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -192,10 +192,8 @@ object AppIconCache : CoroutineScope {
                 withContext(dispatcher) {
                     getOrLoadBitmap(context, info, userId, size)
                 }
-            } catch (e: CancellationException) {
-                // do nothing if canceled
-                return@launch
-            } catch (e: Throwable) {
+            } catch (e: IOException) {
+                HLog.e("AppIconCache", "Failed to load icon", e)
                 null
             }
 
