@@ -94,38 +94,40 @@ class ApiActivity : ComponentActivity() {
                 handled = false
             }
 
+            HailApi.ACTION_FREEZE, HailApi.ACTION_UNFREEZE, HailApi.ACTION_FREEZE_TAG, HailApi.ACTION_UNFREEZE_TAG, HailApi.ACTION_FREEZE_ALL, HailApi.ACTION_UNFREEZE_ALL, HailApi.ACTION_FREEZE_NON_WHITELISTED, HailApi.ACTION_FREEZE_AUTO -> handleFreezeAction(action)
+
+            HailApi.ACTION_LOCK, HailApi.ACTION_LOCK_FREEZE -> handleLockAction(action)
+
+            else -> throw IllegalArgumentException("Unknown action:\n$action")
+        }
+        return handled
+    }
+
+    private fun handleFreezeAction(action: String?) {
+        when (action) {
             HailApi.ACTION_FREEZE -> setAppFrozen(requirePackage, true)
-
             HailApi.ACTION_UNFREEZE -> setAppFrozen(requirePackage, false)
-
             HailApi.ACTION_FREEZE_TAG -> setListFrozen(
                 true,
                 HailData.checkedList.filter { requireTagId in it.tagIdList },
                 true,
             )
-
             HailApi.ACTION_UNFREEZE_TAG -> setListFrozen(
                 false,
-                HailData.checkedList.filter {
-                    requireTagId in it.tagIdList
-                },
+                HailData.checkedList.filter { requireTagId in it.tagIdList },
             )
-
             HailApi.ACTION_FREEZE_ALL -> setListFrozen(true)
-
             HailApi.ACTION_UNFREEZE_ALL -> setListFrozen(false)
-
             HailApi.ACTION_FREEZE_NON_WHITELISTED -> setListFrozen(true, skipWhitelisted = true)
-
             HailApi.ACTION_FREEZE_AUTO -> setAutoFreeze(false)
-
-            HailApi.ACTION_LOCK -> lockScreen(false)
-
-            HailApi.ACTION_LOCK_FREEZE -> lockScreen(true)
-
-            else -> throw IllegalArgumentException("Unknown action:\n$action")
         }
-        return handled
+    }
+
+    private fun handleLockAction(action: String?) {
+        when (action) {
+            HailApi.ACTION_LOCK -> lockScreen(false)
+            HailApi.ACTION_LOCK_FREEZE -> lockScreen(true)
+        }
     }
 
     /**

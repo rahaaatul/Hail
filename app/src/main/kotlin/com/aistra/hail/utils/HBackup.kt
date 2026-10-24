@@ -1,6 +1,7 @@
 package com.aistra.hail.utils
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp.Companion.app
@@ -249,162 +250,131 @@ object HBackup {
         val bufferedStream = BufferedInputStream(zipInputStream, BUFFER_SIZE)
         val jsonObject = JSONObject(readJsonString(bufferedStream))
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
-        // A numeric preference cannot be recognized from the JSON alone: JSONObject has no
-        // Float, and it shaves the "." off a whole number, so a Float of 15.0f written as a
-        // bare number parses back as an Integer. Three things can say what a key is, in
-        // increasing order of authority:
-        //
-        //   1. the spelling writeSettingsJson gives a Float, which is a fixed point;
-        //   2. the key itself, for the two keys the app declares as a Float;
-        //   3. the type already recorded in SharedPreferences.
-        //
-        // The order matters, and (3) is deliberately last. A Float key that an earlier broken
-        // restore stored as an Int is the state every #91 reporter is in today: the recorded
-        // Int is not a fact about the preference, it is the damage, so a rule that dispatches
-        // on it first believes the damage and reproduces it on every later restore. A repair
-        // keyed off the recorded type can therefore never bootstrap - the evidence it would
-        // have to trust is the very thing it has to repair. (3) still earns its place, because
-        // a bare untagged whole number really is ambiguous between an Int and a Float, and for
-        // a key that is neither declared a Float nor already recorded as one it is the only
-        // thing left to consult.
         val recordedValues = sp.all
         sp.edit {
             val keys = jsonObject.keys()
             while (keys.hasNext()) {
                 val key = keys.next()
                 val value = jsonObject.get(key)
-                val recorded = recordedValues[key]
-                val floatTag = (value as? String)?.toFloatTagOrNull()
-                val declaredFloat = recorded is Float || key in FLOAT_PREFERENCE_KEYS
-                val number = if (recorded is Number && !declaredFloat) value.toNumberOrNull() else null
-                when {
-                    // A Float, and deliberately reached ahead of the recorded-type lookup below.
-                    // The recorded type is evidence, not authority: where it and the file
-                    // disagree in a way a consistent writer could not have produced, the file
-                    // wins, because the spelling is the only part of this that cannot be
-                    // damage. The one recorded type that outranks the file is a String, which
-                    // keeps its own type even when its content happens to be spelled like a
-                    // Float - a genuine String preference is reported as itself by the very
-                    // act of being one, and this build would have written the same text for
-                    // it. That exception stops at a declared Float key: nothing in the app can
-                    // store a String under one, so there it is damage too, and the pre-fix
-                    // reader created exactly that by claiming the tag with putString.
-                    declaredFloat || (floatTag != null && recorded !is String) -> {
-                        val asFloat = floatTag ?: value.toNumberOrNull()?.toFloat()
-                        val range = FLOAT_PREFERENCES[key]?.range
-                        when {
-                            asFloat == null || !asFloat.isFinite() ->
-                                warnNotStorable(key, value, "Float")
-
-                            // The magnitude guard, and only on the lossy route. A floatTag is
-                            // a fixed point of Float.toString: the text and the Float are the
-                            // same number by construction and no parser rounded anything
-                            // getting there, so there is nothing for this check to catch and
-                            // running it anyway would refuse a value the writer emitted
-                            // verbatim. A number or a string that is not a fixed point did
-                            // come through a parser, so there it decides between a Float that
-                            // still names its digits and one that does not. Being a declared
-                            // Float key fixes the type, not the value: without this,
-                            // 1.2345678E22f is stored under a slider whose range is
-                            // 11f..16f, and the identical digits under an undeclared key are
-                            // refused. isFinite() alone does not catch it, because a Float of
-                            // that magnitude is perfectly finite - it just names no number
-                            // the user could have chosen.
-                            floatTag == null && isMagnitudeTooWide(asFloat.toDouble()) ->
-                                warnNotStorable(key, value, "Float")
-
-                            // A value outside the range its own slider could have produced
-                            // is damage of the same kind as the wrong type, and this
-                            // branch is what made it reachable: before the reader was
-                            // fixed the same file left an Int under this key, which
-                            // getFloat reported as absent, so an out-of-range value was
-                            // inert. Restoring it as a Float is exactly the case a skipped
-                            // key is for - leaving the stored value alone cannot invent a
-                            // preference the user never chose.
-                            range != null && asFloat !in range ->
-                                warnNotStorable(key, value, "Float in ${range.start}..${range.endInclusive}")
-
-                            else -> putFloat(key, asFloat)
-                        }
-                    }
-
-                    // An untagged number for a key whose type the install already states. One
-                    // range check for both numeric targets, rather than letting toInt()/toLong()
-                    // decide: those saturate at the type's limits and truncate toward zero, so
-                    // a value no preference can hold would be stored as a different but
-                    // plausible looking one, with nothing logged. A skipped key leaves the
-                    // stored value alone, which is the only outcome that cannot invent a
-                    // preference the user never chose.
-                    number != null -> {
-                        val asLong = number.toExactLongOrNull()
-                        when {
-                            recorded is Int && asLong != null && asLong in INT_AS_LONG_RANGE ->
-                                putInt(key, asLong.toInt())
-
-                            recorded is Int -> warnNotStorable(key, value, "Int")
-
-                            asLong != null -> putLong(key, asLong)
-
-                            else -> warnNotStorable(key, value, "Long")
-                        }
-                    }
-
-                    // Nothing recorded, and the value is not a Float, so the shape of the JSON
-                    // value has to decide. A String this build wrote for a Float is a fixed
-                    // point and was claimed above; a String keeps its own content here, and a
-                    // bare "15" or "1e20" is a number JSONObject should have parsed, not a Float
-                    // this build wrote.
-                    value is String -> putString(key, value)
-
-                    value is Boolean -> putBoolean(key, value)
-
-                    value is JSONArray -> {
-                        val stringSet = mutableSetOf<String>()
-                        for (i in 0 until value.length()) {
-                            stringSet.add(value.getString(i))
-                        }
-                        putStringSet(key, stringSet)
-                    }
-
-                    // JSONObject hands back no Float, but keep these arms in step with
-                    // writeSettingsJson so the two stay mirrored and a type is never dropped.
-                    value is Float -> putFloat(key, value)
-
-                    value is Int -> putInt(key, value)
-
-                    value is Long -> putLong(key, value)
-
-                    // A number for a key nothing is known about, so the file's own claim has
-                    // to be taken at face value. Which Java class org.json hands back for a
-                    // given literal differs between the two implementations this project can
-                    // load - see isTooWideInteger - so nothing here may branch on the class.
-                    // The outcomes are decided by what the number still is instead: an
-                    // integer no preference can hold is skipped and logged rather than stored
-                    // as a Float of the right order but the wrong digits, the same goes for
-                    // a fraction no Double can name, and what is left is stored as a Long or
-                    // a Float by whether the file wrote a whole number - the only thing a
-                    // Float preference ever wrote decimal notation for.
-                    value is Number -> {
-                        val asLong = value.toExactLongOrNull()
-                        val asFloat = value.toFloat()
-                        when {
-                            value.isTooWideInteger() && asLong == null ->
-                                warnNotStorable(key, value, "Long")
-
-                            asLong != null -> putLong(key, asLong)
-
-                            asFloat.isFinite() -> putFloat(key, asFloat)
-
-                            else -> warnNotStorable(key, value, "Float")
-                        }
-                    }
-
-                    else -> HLog.w(
-                        "HBackup",
-                        "Unsupported preference type for key '$key': ${value.javaClass.simpleName}",
-                    )
-                }
+                restorePreference(this, key, value, recordedValues)
             }
+        }
+    }
+
+    private fun restorePreference(
+        editor: SharedPreferences.Editor,
+        key: String,
+        value: Any?,
+        recordedValues: Map<String, Any?>,
+    ) {
+        val recorded = recordedValues[key]
+        val floatTag = (value as? String)?.toFloatTagOrNull()
+        val declaredFloat = recorded is Float || key in FLOAT_PREFERENCE_KEYS
+        val number = if (recorded is Number && !declaredFloat) value.toNumberOrNull() else null
+        if (declaredFloat || (floatTag != null && recorded !is String)) {
+            restoreAsFloat(editor, key, value, floatTag)
+        } else if (number != null) {
+            restoreAsRecordedNumber(editor, key, value, number, recorded)
+        } else {
+            restoreByType(editor, key, value)
+        }
+    }
+
+    private fun restoreAsFloat(
+        editor: SharedPreferences.Editor,
+        key: String,
+        value: Any?,
+        floatTag: Float?,
+    ) {
+        val asFloat = floatTag ?: value.toNumberOrNull()?.toFloat()
+        val range = FLOAT_PREFERENCES[key]?.range
+        when {
+            asFloat == null || !asFloat.isFinite() -> warnNotStorable(key, value, "Float")
+
+            floatTag == null && isMagnitudeTooWide(asFloat.toDouble()) ->
+                warnNotStorable(key, value, "Float")
+
+            range != null && asFloat !in range ->
+                warnNotStorable(key, value, "Float in ${range.start}..${range.endInclusive}")
+
+            else -> editor.putFloat(key, asFloat)
+        }
+    }
+
+    private fun restoreAsRecordedNumber(
+        editor: SharedPreferences.Editor,
+        key: String,
+        value: Any?,
+        number: Number,
+        recorded: Any?,
+    ) {
+        val asLong = number.toExactLongOrNull()
+        when {
+            recorded is Int && asLong != null && asLong in INT_AS_LONG_RANGE ->
+                editor.putInt(key, asLong.toInt())
+
+            recorded is Int -> warnNotStorable(key, value, "Int")
+
+            asLong != null -> editor.putLong(key, asLong)
+
+            else -> warnNotStorable(key, value, "Long")
+        }
+    }
+
+    private fun restoreByType(
+        editor: SharedPreferences.Editor,
+        key: String,
+        value: Any?,
+    ) {
+        when (value) {
+            is String -> editor.putString(key, value)
+
+            is Boolean -> editor.putBoolean(key, value)
+
+            is JSONArray -> restoreStringSet(editor, key, value)
+
+            is Float -> editor.putFloat(key, value)
+
+            is Int -> editor.putInt(key, value)
+
+            is Long -> editor.putLong(key, value)
+
+            is Number -> restoreAsUnknownNumber(editor, key, value)
+
+            else -> HLog.w(
+                "HBackup",
+                "Unsupported preference type for key '$key': ${value.javaClass.simpleName}",
+            )
+        }
+    }
+
+    private fun restoreStringSet(
+        editor: SharedPreferences.Editor,
+        key: String,
+        value: JSONArray,
+    ) {
+        val stringSet = mutableSetOf<String>()
+        for (i in 0 until value.length()) {
+            stringSet.add(value.getString(i))
+        }
+        editor.putStringSet(key, stringSet)
+    }
+
+    private fun restoreAsUnknownNumber(
+        editor: SharedPreferences.Editor,
+        key: String,
+        value: Number,
+    ) {
+        val asLong = value.toExactLongOrNull()
+        val asFloat = value.toFloat()
+        when {
+            value.isTooWideInteger() && asLong == null -> warnNotStorable(key, value, "Long")
+
+            asLong != null -> editor.putLong(key, asLong)
+
+            asFloat.isFinite() -> editor.putFloat(key, asFloat)
+
+            else -> warnNotStorable(key, value, "Float")
         }
     }
 

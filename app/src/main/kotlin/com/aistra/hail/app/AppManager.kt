@@ -101,53 +101,55 @@ object AppManager {
     }
 
     fun setAppFrozen(packageName: String, frozen: Boolean): Boolean =
-        packageName != BuildConfig.APPLICATION_ID && when (HailData.workingMode) {
-            HailData.MODE_OWNER_HIDE -> HPolicy.setAppHidden(packageName, frozen)
-
-            HailData.MODE_OWNER_SUSPEND -> HPolicy.setAppSuspended(packageName, frozen)
-
-            HailData.MODE_DHIZUKU_HIDE -> HDhizuku.setAppHidden(packageName, frozen)
-
-            HailData.MODE_DHIZUKU_SUSPEND -> HDhizuku.setAppSuspended(packageName, frozen)
-
-            HailData.MODE_SU_STOP -> if (frozen) HShell.forceStopApp(packageName) else clearStopState(packageName)
-
-            HailData.MODE_SU_DISABLE -> HShell.setAppDisabled(packageName, frozen)
-
-            HailData.MODE_SU_HIDE -> HShell.setAppHidden(packageName, frozen)
-
-            HailData.MODE_SU_SUSPEND -> HShell.setAppSuspended(packageName, frozen)
-
-            HailData.MODE_SHIZUKU_STOP -> if (frozen) {
-                HShizuku.forceStopApp(
-                    packageName,
-                )
-            } else {
-                clearStopState(packageName)
-            }
-
-            HailData.MODE_SHIZUKU_DISABLE -> HShizuku.setAppDisabled(packageName, frozen)
-
-            HailData.MODE_SHIZUKU_HIDE -> HShizuku.setAppHidden(packageName, frozen)
-
-            HailData.MODE_SHIZUKU_SUSPEND -> HShizuku.setAppSuspended(packageName, frozen)
-
-            HailData.MODE_ISLAND_HIDE -> HIsland.setAppHidden(packageName, frozen)
-
-            HailData.MODE_ISLAND_SUSPEND -> HIsland.setAppSuspended(packageName, frozen)
-
-            HailData.MODE_PRIVAPP_STOP -> if (frozen) {
-                HPackages.forceStopApp(
-                    packageName,
-                )
-            } else {
-                clearStopState(packageName)
-            }
-
-            HailData.MODE_PRIVAPP_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
-
+        packageName != BuildConfig.APPLICATION_ID && when {
+            HailData.workingMode.startsWith(HailData.OWNER) -> handleOwnerFrozen(packageName, frozen)
+            HailData.workingMode.startsWith(HailData.DHIZUKU) -> handleDhizukuFrozen(packageName, frozen)
+            HailData.workingMode.startsWith(HailData.SU) -> handleSuFrozen(packageName, frozen)
+            HailData.workingMode.startsWith(HailData.SHIZUKU) -> handleShizukuFrozen(packageName, frozen)
+            HailData.workingMode.startsWith(HailData.ISLAND) -> handleIslandFrozen(packageName, frozen)
+            HailData.workingMode.startsWith(HailData.PRIVAPP) -> handlePrivappFrozen(packageName, frozen)
             else -> false
         }
+
+    private fun handleOwnerFrozen(packageName: String, frozen: Boolean): Boolean = when (HailData.workingMode) {
+        HailData.MODE_OWNER_HIDE -> HPolicy.setAppHidden(packageName, frozen)
+        HailData.MODE_OWNER_SUSPEND -> HPolicy.setAppSuspended(packageName, frozen)
+        else -> false
+    }
+
+    private fun handleDhizukuFrozen(packageName: String, frozen: Boolean): Boolean = when (HailData.workingMode) {
+        HailData.MODE_DHIZUKU_HIDE -> HDhizuku.setAppHidden(packageName, frozen)
+        HailData.MODE_DHIZUKU_SUSPEND -> HDhizuku.setAppSuspended(packageName, frozen)
+        else -> false
+    }
+
+    private fun handleSuFrozen(packageName: String, frozen: Boolean): Boolean = when (HailData.workingMode) {
+        HailData.MODE_SU_STOP -> if (frozen) HShell.forceStopApp(packageName) else clearStopState(packageName)
+        HailData.MODE_SU_DISABLE -> HShell.setAppDisabled(packageName, frozen)
+        HailData.MODE_SU_HIDE -> HShell.setAppHidden(packageName, frozen)
+        HailData.MODE_SU_SUSPEND -> HShell.setAppSuspended(packageName, frozen)
+        else -> false
+    }
+
+    private fun handleShizukuFrozen(packageName: String, frozen: Boolean): Boolean = when (HailData.workingMode) {
+        HailData.MODE_SHIZUKU_STOP -> if (frozen) HShizuku.forceStopApp(packageName) else clearStopState(packageName)
+        HailData.MODE_SHIZUKU_DISABLE -> HShizuku.setAppDisabled(packageName, frozen)
+        HailData.MODE_SHIZUKU_HIDE -> HShizuku.setAppHidden(packageName, frozen)
+        HailData.MODE_SHIZUKU_SUSPEND -> HShizuku.setAppSuspended(packageName, frozen)
+        else -> false
+    }
+
+    private fun handleIslandFrozen(packageName: String, frozen: Boolean): Boolean = when (HailData.workingMode) {
+        HailData.MODE_ISLAND_HIDE -> HIsland.setAppHidden(packageName, frozen)
+        HailData.MODE_ISLAND_SUSPEND -> HIsland.setAppSuspended(packageName, frozen)
+        else -> false
+    }
+
+    private fun handlePrivappFrozen(packageName: String, frozen: Boolean): Boolean = when (HailData.workingMode) {
+        HailData.MODE_PRIVAPP_STOP -> if (frozen) HPackages.forceStopApp(packageName) else clearStopState(packageName)
+        HailData.MODE_PRIVAPP_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
+        else -> false
+    }
 
     fun uninstallApp(packageName: String): Boolean {
         var uninstalled = false

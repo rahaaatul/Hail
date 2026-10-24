@@ -3,39 +3,31 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>ComplexCondition:SettingsFragment.kt$SettingsFragment$!options.apps &amp;&amp; !options.whitelist &amp;&amp; !options.actions &amp;&amp; !options.settings</ID>
-    <ID>CyclomaticComplexMethod:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
-    <ID>CyclomaticComplexMethod:AppManager.kt$AppManager$fun setAppFrozen(packageName: String, frozen: Boolean): Boolean</ID>
-    <ID>CyclomaticComplexMethod:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
-    <ID>CyclomaticComplexMethod:AppsViewModel.kt$AppsViewModel$private suspend fun filterList(appList: List&lt;ApplicationInfo&gt;, query: String?): List&lt;ApplicationInfo&gt;</ID>
-    <ID>CyclomaticComplexMethod:HBackup.kt$HBackup$private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream)</ID>
-    <ID>CyclomaticComplexMethod:HShortcuts.kt$HShortcuts$fun addDynamicShortcutAction(action: String)</ID>
-    <ID>CyclomaticComplexMethod:PagerAdapter.kt$PagerAdapter$override fun onBindViewHolder(holder: ViewHolder, position: Int)</ID>
-    <ID>CyclomaticComplexMethod:PagerFragment.kt$PagerFragment$override fun onItemLongClick(info: AppInfo): Boolean</ID>
-    <ID>CyclomaticComplexMethod:PagerFragment.kt$PagerFragment$private fun showTagDialog(list: List&lt;AppInfo&gt;? = null)</ID>
-    <ID>CyclomaticComplexMethod:SettingsFragment.kt$SettingsFragment$fun onWorkingModeChange(rememberState: MutableState&lt;String&gt;, mode: String): Boolean</ID>
     <ID>ExplicitItLambdaParameter:PagerFragment.kt$PagerFragment${ i, it -&gt; entries[i] = resources.getQuantityString(R.plurals.deferred_task_entry, it, it) }</ID>
-    <ID>LargeClass:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
     <ID>LargeClass:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
     <ID>LongMethod:AboutFragment.kt$AboutFragment$@Composable private fun AboutScreen(installTime: Long)</ID>
-    <ID>LongMethod:HBackup.kt$HBackup$private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream)</ID>
-    <ID>LongMethod:PagerFragment.kt$PagerFragment$override fun onItemLongClick(info: AppInfo): Boolean</ID>
     <ID>LongMethod:SettingsFragment.kt$SettingsFragment$@Composable private fun SettingsScreen()</ID>
-    <ID>LongMethod:SettingsFragment.kt$SettingsFragment$fun onWorkingModeChange(rememberState: MutableState&lt;String&gt;, mode: String): Boolean</ID>
     <ID>LongMethod:SettingsFragment.kt$SettingsFragment$private fun addPinShortcut()</ID>
     <ID>LongMethod:SettingsFragment.kt$SettingsFragment$private fun showRestoreDialog(file: File)</ID>
+    <ID>LongParameterList:PagerFragment.kt$( entries: Array&lt;String&gt;, frozen: Boolean, info: AppInfo, freezeStr: String, unfreezeStr: String, pinStr: String, unpinStr: String, whitelistStr: String, removeWhitelistStr: String, unfreezeRemoveHomeStr: String, )</ID>
+    <ID>LongParameterList:PagerFragment.kt$( entries: List&lt;String&gt;, launchStr: String, freezeStr: String, unfreezeStr: String, deferredTaskStr: String, pinStr: String, unpinStr: String, whitelistStr: String, removeWhitelistStr: String, tagSetStr: String, addPinShortcutStr: String, exportClipboardStr: String, removeHomeStr: String, unfreezeRemoveHomeStr: String, )</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$for</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
     <ID>MaxLineLength:ActionsFragment.kt$ActionsFragment$addView(searchContainer, LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply { bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN })</ID>
     <ID>MaxLineLength:ActionsFragment.kt$ActionsFragment$setPadding(PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL, PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL)</ID>
+    <ID>MaxLineLength:ApiActivity.kt$ApiActivity$HailApi.ACTION_FREEZE, HailApi.ACTION_UNFREEZE, HailApi.ACTION_FREEZE_TAG, HailApi.ACTION_UNFREEZE_TAG, HailApi.ACTION_FREEZE_ALL, HailApi.ACTION_UNFREEZE_ALL, HailApi.ACTION_FREEZE_NON_WHITELISTED, HailApi.ACTION_FREEZE_AUTO -&gt; handleFreezeAction(action)</ID>
     <ID>MaxLineLength:AutoFreezeWorker.kt$AutoFreezeWorker$val</ID>
     <ID>MaxLineLength:HPackages.kt$HPackages$(ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN</ID>
-    <ID>NestedBlockDepth:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
+    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg))</ID>
+    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first))</ID>
+    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$resources.getQuantityString(R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name)</ID>
     <ID>SpreadOperator:ApiActivity.kt$ApiActivity$(frozen, *filtered.toTypedArray())</ID>
     <ID>SpreadOperator:AutoFreezeWorker.kt$AutoFreezeWorker$(true, *checkedList.toTypedArray())</ID>
-    <ID>SpreadOperator:PagerFragment.kt$PagerFragment$(*initialStates)</ID>
-    <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$PagerFragment$IllegalArgumentException()</ID>
+    <ID>SpreadOperator:PagerFragment.kt$(*initialStates)</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$IllegalArgumentException()</ID>
     <ID>ThrowsCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
-    <ID>TooManyFunctions:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
+    <ID>TooManyFunctions:HBackup.kt$HBackup</ID>
+    <ID>TooManyFunctions:PagerFragment.kt$com.aistra.hail.ui.home.PagerFragment.kt</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
     <ID>TopLevelPropertyNaming:PagerAdapter.kt$private const val SELECTED_FLAG_BIT = 3</ID>
     <ID>TopLevelPropertyNaming:PagerAdapter.kt$private const val WHITELISTED_FLAG_BIT = 4</ID>

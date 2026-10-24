@@ -720,129 +720,144 @@ class SettingsFragment :
     fun onWorkingModeChange(rememberState: MutableState<String>, mode: String): Boolean {
         // Show/hide terminal menu.
         activity.invalidateOptionsMenu()
-        val result: Boolean = when {
-            mode.startsWith(HailData.OWNER) -> if (!HPolicy.isDeviceOwnerActive) {
-                MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
-                    .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
-                    .setPositiveButton(android.R.string.ok, null)
-                    .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
-                    .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
-                false
-            } else true
-
-            mode.startsWith(HailData.DHIZUKU) -> runCatching {
-                Dhizuku.init(app)
-                when {
-                    Dhizuku.isPermissionGranted() -> true
-
-                    else -> {
-                        lifecycleScope.launch {
-                            val result = callbackFlow {
-                                Dhizuku.requestPermission(object : DhizukuRequestPermissionListener() {
-                                    override fun onRequestPermission(grantResult: Int) {
-                                        trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
-                                    }
-                                })
-                                awaitClose()
-                            }.first()
-                            if (result) {
-                                rememberState.value = mode
-                                if (HTarget.O) HDhizuku.setDelegatedScopes()
-                            }
-                        }
-                        false
-                    }
-                }
-            }.getOrElse {
-                HLog.e(it)
-                HUI.showToast(R.string.permission_denied)
-                false
-            }
-
-            mode.startsWith(HailData.SU) -> if (!HShell.checkSU) {
-                HUI.showToast(R.string.permission_denied)
-                false
-            } else true
-
-            mode.startsWith(HailData.SHIZUKU) -> runCatching {
-                when {
-                    Shizuku.isPreV11() -> check(!Shizuku.isPreV11()) { "unsupported shizuku version" }
-
-                    Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
-
-                    Shizuku.shouldShowRequestPermissionRationale() -> {
-                        HUI.showToast(R.string.permission_denied)
-                        false
-                    }
-
-                    else -> {
-                        lifecycleScope.launch {
-                            val result = callbackFlow {
-                                val shizukuRequestCode = 0
-                                val listener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-                                    if (requestCode == shizukuRequestCode) {
-                                        trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
-                                    }
-                                }
-                                Shizuku.addRequestPermissionResultListener(listener)
-                                Shizuku.requestPermission(shizukuRequestCode)
-                                awaitClose {
-                                    Shizuku.removeRequestPermissionResultListener(listener)
-                                }
-                            }.first()
-                            if (result) rememberState.value = mode
-                        }
-                        false
-                    }
-                }
-            }.getOrElse {
-                HLog.e(it)
-                HUI.showToast(R.string.shizuku_missing)
-                false
-            }
-
-            mode.startsWith(HailData.ISLAND) -> runCatching {
-                when {
-                    mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
-
-                    mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
-
-                    else -> {
-                        lifecycleScope.launch {
-                            islandPermissionRequest?.cancel(CancellationException("Superseded by new request"))
-                            islandPermissionRequest = CompletableDeferred()
-                            requestPermissionLauncher.launch(
-                                if (mode == HailData.MODE_ISLAND_HIDE) {
-                                    HIsland.PERMISSION_FREEZE_PACKAGE
-                                } else {
-                                    HIsland.PERMISSION_SUSPEND_PACKAGE
-                                },
-                            )
-                            if (islandPermissionRequest?.await() == true) {
-                                rememberState.value = mode
-                            }
-                        }
-                        false
-                    }
-                }
-            }.getOrElse {
-                HLog.e(it)
-                HUI.showToast(R.string.permission_denied)
-                false
-            }.also {
-                if (it) {
-                    HIsland.checkOwnerApp()
-                }
-            }
-
-            mode.startsWith(HailData.PRIVAPP) -> if (!HPackages.isPrivilegedApp(app.packageName)) {
-                HUI.showToast(R.string.permission_denied)
-                false
-            } else true
-
+        return when {
+            mode.startsWith(HailData.OWNER) -> handleOwnerMode()
+            mode.startsWith(HailData.DHIZUKU) -> handleDhizukuMode(rememberState, mode)
+            mode.startsWith(HailData.SU) -> handleSuMode()
+            mode.startsWith(HailData.SHIZUKU) -> handleShizukuMode(rememberState, mode)
+            mode.startsWith(HailData.ISLAND) -> handleIslandMode(rememberState, mode)
+            mode.startsWith(HailData.PRIVAPP) -> handlePrivappMode()
             else -> true
         }
-        return result
+    }
+
+    private fun handleOwnerMode(): Boolean {
+        return if (!HPolicy.isDeviceOwnerActive) {
+            MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.title_set_owner)
+                .setMessage(getString(R.string.msg_set_owner, HPolicy.ADB_COMMAND))
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(android.R.string.copy) { _, _ -> HUI.copyText(HPolicy.ADB_COMMAND) }.show()
+                .findViewById<MaterialTextView>(android.R.id.message)?.setTextIsSelectable(true)
+            false
+        } else true
+    }
+
+    private fun handleDhizukuMode(rememberState: MutableState<String>, mode: String): Boolean {
+        return runCatching {
+            Dhizuku.init(app)
+            when {
+                Dhizuku.isPermissionGranted() -> true
+
+                else -> {
+                    lifecycleScope.launch {
+                        val result = callbackFlow {
+                            Dhizuku.requestPermission(object : DhizukuRequestPermissionListener() {
+                                override fun onRequestPermission(grantResult: Int) {
+                                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
+                                }
+                            })
+                            awaitClose()
+                        }.first()
+                        if (result) {
+                            rememberState.value = mode
+                            if (HTarget.O) HDhizuku.setDelegatedScopes()
+                        }
+                    }
+                    false
+                }
+            }
+        }.getOrElse {
+            HLog.e(it)
+            HUI.showToast(R.string.permission_denied)
+            false
+        }
+    }
+
+    private fun handleSuMode(): Boolean {
+        return if (!HShell.checkSU) {
+            HUI.showToast(R.string.permission_denied)
+            false
+        } else true
+    }
+
+    private fun handleShizukuMode(rememberState: MutableState<String>, mode: String): Boolean {
+        return runCatching {
+            when {
+                Shizuku.isPreV11() -> check(!Shizuku.isPreV11()) { "unsupported shizuku version" }
+
+                Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
+
+                Shizuku.shouldShowRequestPermissionRationale() -> {
+                    HUI.showToast(R.string.permission_denied)
+                    false
+                }
+
+                else -> {
+                    lifecycleScope.launch {
+                        val result = callbackFlow {
+                            val shizukuRequestCode = 0
+                            val listener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+                                if (requestCode == shizukuRequestCode) {
+                                    trySendBlocking(grantResult == PackageManager.PERMISSION_GRANTED)
+                                }
+                            }
+                            Shizuku.addRequestPermissionResultListener(listener)
+                            Shizuku.requestPermission(shizukuRequestCode)
+                            awaitClose {
+                                Shizuku.removeRequestPermissionResultListener(listener)
+                            }
+                        }.first()
+                        if (result) rememberState.value = mode
+                    }
+                    false
+                }
+            }
+        }.getOrElse {
+            HLog.e(it)
+            HUI.showToast(R.string.shizuku_missing)
+            false
+        }
+    }
+
+    private fun handleIslandMode(rememberState: MutableState<String>, mode: String): Boolean {
+        return runCatching {
+            when {
+                mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
+
+                mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
+
+                else -> {
+                    lifecycleScope.launch {
+                        islandPermissionRequest?.cancel(CancellationException("Superseded by new request"))
+                        islandPermissionRequest = CompletableDeferred()
+                        requestPermissionLauncher.launch(
+                            if (mode == HailData.MODE_ISLAND_HIDE) {
+                                HIsland.PERMISSION_FREEZE_PACKAGE
+                            } else {
+                                HIsland.PERMISSION_SUSPEND_PACKAGE
+                            },
+                        )
+                        if (islandPermissionRequest?.await() == true) {
+                            rememberState.value = mode
+                        }
+                    }
+                    false
+                }
+            }
+        }.getOrElse {
+            HLog.e(it)
+            HUI.showToast(R.string.permission_denied)
+            false
+        }.also {
+            if (it) HIsland.checkOwnerApp()
+        }
+    }
+
+    private fun handlePrivappMode(): Boolean {
+        return if (!HPackages.isPrivilegedApp(app.packageName)) {
+            HUI.showToast(R.string.permission_denied)
+            false
+        } else true
     }
 
     private suspend fun onTerminalResult(exitValue: Int, msg: String?) = withContext(Dispatchers.Main) {

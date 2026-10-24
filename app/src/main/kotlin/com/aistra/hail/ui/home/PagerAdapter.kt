@@ -38,40 +38,46 @@ class PagerAdapter(
         holder.itemView.run {
             setOnClickListener { onItemClickListener.onItemClick(info) }
             setOnLongClickListener { onItemLongClickListener.onItemLongClick(info) }
-            findViewById<ImageView>(R.id.app_icon).run {
-                info.applicationInfo?.let {
-                    loadIconJob = AppIconCache.loadIconBitmapAsync(
-                        context,
-                        it,
-                        myUserId,
-                        this,
-                        HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
-                    )
-                } ?: run {
-                    setImageDrawable(context.packageManager.defaultActivityIcon)
-                    colorFilter = null
-                }
-            }
-            findViewById<TextView>(R.id.app_name).run {
-                text = buildString {
-                    if (!HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN) append("\u2744\uFE0F")
-                    if (info.whitelisted) append("\uD83D\uDD12")
-                    append(info.name)
-                }
-                isEnabled = !HailData.grayscaleIcon || info.state != AppInfo.State.FROZEN
-                when {
-                    info in selectedList -> setTextColor(
-                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary),
-                    )
+            bindIcon(this, info)
+            bindName(this, info)
+        }
+    }
 
-                    info.state == AppInfo.State.NOT_FOUND -> setTextColor(
-                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError),
-                    )
-
-                    else -> setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
-                }
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, HailData.homeFontSize)
+    private fun bindIcon(itemView: View, info: AppInfo) {
+        itemView.findViewById<ImageView>(R.id.app_icon).run {
+            info.applicationInfo?.let {
+                loadIconJob = AppIconCache.loadIconBitmapAsync(
+                    itemView.context,
+                    it,
+                    myUserId,
+                    this,
+                    HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
+                )
+            } ?: run {
+                setImageDrawable(itemView.context.packageManager.defaultActivityIcon)
+                colorFilter = null
             }
+        }
+    }
+
+    private fun bindName(itemView: View, info: AppInfo) {
+        itemView.findViewById<TextView>(R.id.app_name).run {
+            text = buildString {
+                if (!HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN) append("\u2744\uFE0F")
+                if (info.whitelisted) append("\uD83D\uDD12")
+                append(info.name)
+            }
+            isEnabled = !HailData.grayscaleIcon || info.state != AppInfo.State.FROZEN
+            when {
+                info in selectedList -> setTextColor(
+                    MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary),
+                )
+                info.state == AppInfo.State.NOT_FOUND -> setTextColor(
+                    MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError),
+                )
+                else -> setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+            }
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, HailData.homeFontSize)
         }
     }
 

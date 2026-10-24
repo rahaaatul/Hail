@@ -135,44 +135,52 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun filterList(appList: List<ApplicationInfo>, query: String?): List<ApplicationInfo> {
         return withContext(Dispatchers.Default) {
-            return@withContext appList.filter {
-                val metadata = AppMetaCache.get(it.packageName)
-                val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
-                val name = metadata?.name ?: it.packageName
-                val frozen = metadata?.state == AppInfo.State.FROZEN
-                (
-                    HailData.filterAllApps ||
-                        (HailData.filterUserApps && !isSystemApp) ||
-                        (HailData.filterSystemApps && isSystemApp)
-                    ) &&
+            return@withContext sortApps(appList.filter { shouldDisplayApp(it, query) })
+        }
+    }
 
-                    (
-                        (HailData.filterFrozenApps && frozen) ||
-                            (HailData.filterUnfrozenApps && !frozen)
-                        ) &&
-                    // Search apps
-                    (
-                        (
-                            HailData.nineKeySearch &&
-                                (NineKeySearch.search(query, it.packageName, name))
-                            ) ||
-                            FuzzySearch.search(it.packageName, query) ||
-                            FuzzySearch.search(name, query) ||
-                            PinyinSearch.searchPinyinAll(name, query)
-                        )
-            }.run {
-                when (HailData.sortBy) {
-                    HailData.SORT_INSTALL -> sortedBy {
-                        AppMetaCache.get(it.packageName)?.firstInstallTime ?: 0
-                    }
+    private fun shouldDisplayApp(app: ApplicationInfo, query: String?): Boolean {
+        val metadata = AppMetaCache.get(app.packageName)
+        val isSystemApp = metadata?.isSystemApp ?: app.isSystemApp
+        val name = metadata?.name ?: app.packageName
+        val frozen = metadata?.state == AppInfo.State.FROZEN
+        return matchesAppFilter(isSystemApp, frozen) && matchesSearchQuery(app, name, query)
+    }
 
-                    HailData.SORT_UPDATE -> sortedByDescending {
-                        AppMetaCache.get(it.packageName)?.lastUpdateTime ?: 0
-                    }
+    private fun matchesAppFilter(isSystemApp: Boolean, frozen: Boolean): Boolean {
+        return matchesUserOrSystemFilter(isSystemApp) && matchesFrozenFilter(frozen)
+    }
 
-                    else -> sortedWith(NameComparator)
-                }
+    private fun matchesUserOrSystemFilter(isSystemApp: Boolean): Boolean {
+        return HailData.filterAllApps ||
+            (HailData.filterUserApps && !isSystemApp) ||
+            (HailData.filterSystemApps && isSystemApp)
+    }
+
+    private fun matchesFrozenFilter(frozen: Boolean): Boolean {
+        return (HailData.filterFrozenApps && frozen) ||
+            (HailData.filterUnfrozenApps && !frozen)
+    }
+
+    private fun matchesSearchQuery(app: ApplicationInfo, name: String, query: String?): Boolean {
+        return (
+            HailData.nineKeySearch && NineKeySearch.search(query, app.packageName, name)
+        ) || FuzzySearch.search(app.packageName, query) ||
+            FuzzySearch.search(name, query) ||
+            PinyinSearch.searchPinyinAll(name, query)
+    }
+
+    private fun sortApps(apps: List<ApplicationInfo>): List<ApplicationInfo> {
+        return when (HailData.sortBy) {
+            HailData.SORT_INSTALL -> apps.sortedBy {
+                AppMetaCache.get(it.packageName)?.firstInstallTime ?: 0
             }
+
+            HailData.SORT_UPDATE -> apps.sortedByDescending {
+                AppMetaCache.get(it.packageName)?.lastUpdateTime ?: 0
+            }
+
+            else -> apps.sortedWith(NameComparator)
         }
     }
 }

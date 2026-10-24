@@ -274,30 +274,7 @@ class AppsFragment :
     override fun onMenuItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_select_all -> {
-                val displayedApps = model.displayApps.value.orEmpty()
-                val selfPkg = BuildConfig.APPLICATION_ID
-                val allChecked =
-                    displayedApps.isNotEmpty() &&
-                        displayedApps.all { it.packageName == selfPkg || HailData.isChecked(it.packageName) }
-                if (allChecked) {
-                    displayedApps.forEach {
-                        if (it.packageName !=
-                            selfPkg
-                        ) {
-                            HailData.removeCheckedApp(it.packageName, false)
-                        }
-                    }
-                } else {
-                    displayedApps.forEach {
-                        if (it.packageName !=
-                            selfPkg
-                        ) {
-                            HailData.addCheckedApp(it.packageName, 0, false)
-                        }
-                    }
-                }
-                HailData.saveApps()
-                appsAdapter.notifyDataSetChanged()
+                toggleSelectAllApps()
                 return true
             }
 
@@ -318,6 +295,29 @@ class AppsFragment :
             R.id.filter_unfrozen_apps -> changeAppsFilter(HailData.FILTER_UNFROZEN_APPS, item)
         }
         return false
+    }
+
+    private fun toggleSelectAllApps() {
+        val displayedApps = model.displayApps.value.orEmpty()
+        val selfPkg = BuildConfig.APPLICATION_ID
+        val allChecked =
+            displayedApps.isNotEmpty() &&
+                displayedApps.all { it.packageName == selfPkg || HailData.isChecked(it.packageName) }
+        if (allChecked) {
+            displayedApps.forEach {
+                if (it.packageName != selfPkg) {
+                    HailData.removeCheckedApp(it.packageName, false)
+                }
+            }
+        } else {
+            displayedApps.forEach {
+                if (it.packageName != selfPkg) {
+                    HailData.addCheckedApp(it.packageName, 0, false)
+                }
+            }
+        }
+        HailData.saveApps()
+        appsAdapter.notifyDataSetChanged()
     }
 
     private fun changeAppsSort(sort: String, item: MenuItem) {
