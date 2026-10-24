@@ -6,7 +6,6 @@
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$for</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
     <ID>NestedBlockDepth:HailDataTest.kt$HailDataTest$private fun initializerAfter(text: String, index: Int): String</ID>
-    <ID>TooManyFunctions:PagerFragment.kt$com.aistra.hail.ui.home.PagerFragment.kt</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
   </CurrentIssues>
 </SmellBaseline>
