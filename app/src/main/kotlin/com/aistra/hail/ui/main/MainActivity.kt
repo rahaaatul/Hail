@@ -62,6 +62,13 @@ class MainActivity :
                     finishAndRemoveTask()
                 }
 
+                // The prompt guards the screen of the app and nothing else. It
+                // carries no key, because there is no key to carry, and the
+                // API of the app is open on purpose, so it is not behind this
+                // prompt. The alert the analyzer raised about it was put
+                // aside for that reason, and a comment of the shape the
+                // analyzer reads cannot put it aside here, because it reads
+                // such a comment in Java only.
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     binding.root.isVisible = true
@@ -116,6 +123,9 @@ class MainActivity :
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
+    // The prompt is asked for once, when the app opens. It is not asked for
+    // again when the app goes away and comes back, so an unlock lasts until
+    // the app is closed.
     /* override fun onStop() {
         super.onStop()
         if (HailData.biometricLogin) finishAndRemoveTask()

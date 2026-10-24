@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <!-- Nothing of the app is sent to the cloud. -->
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <!-- A transfer to a new device carries the apps, their tags, the actions
+         and the settings, so that they are not lost when the phone is
+         replaced. The icons are a cache and are left behind. -->
+    <device-transfer>
+        <include domain="file" path="v1/apps.json" />
+        <include domain="file" path="v1/tags.json" />
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

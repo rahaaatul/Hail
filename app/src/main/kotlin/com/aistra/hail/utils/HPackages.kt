@@ -13,6 +13,21 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 object HPackages {
     val myUserId get() = android.os.Process.myUserHandle().hashCode()
 
+    private val PACKAGE_NAME = Regex("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+")
+
+    /**
+     * A package name is part of a command line that may run as root, so only
+     * the characters a package name is made of are let through.
+     */
+    fun isValidPackageName(packageName: String): Boolean = PACKAGE_NAME.matches(packageName)
+
+    /**
+     * The package name as a word for a shell, or nothing when the name is not
+     * a package name.
+     */
+    fun shellArg(packageName: String): String? =
+        packageName.takeIf { isValidPackageName(it) }?.let { "'$it'" }
+
     fun packageUri(packageName: String) = "package:$packageName"
 
     @RequiresApi(Build.VERSION_CODES.N)
