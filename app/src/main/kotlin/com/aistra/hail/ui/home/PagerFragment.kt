@@ -536,7 +536,7 @@ private fun PagerFragment.showAppActionDialog(info: AppInfo) {
                 else -> ToggleableState.Indeterminate
             }
         }
-        val states = mutableStateListOf(*initialStates)
+        val states = initialStates.toMutableList()
         MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setView(
             ComposeView(activity).apply {
                 setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)

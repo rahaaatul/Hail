@@ -16,9 +16,6 @@
     <ID>MaxLineLength:PagerFragment.kt$PagerFragment$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first))</ID>
     <ID>MaxLineLength:PagerFragment.kt$PagerFragment$resources.getQuantityString(R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name)</ID>
     <ID>MaxLineLength:SettingsFragment.kt$SettingsFragment$private</ID>
-    <ID>SpreadOperator:ApiActivity.kt$ApiActivity$(frozen, *filtered.toTypedArray())</ID>
-    <ID>SpreadOperator:AutoFreezeWorker.kt$AutoFreezeWorker$(true, *checkedList.toTypedArray())</ID>
-    <ID>SpreadOperator:PagerFragment.kt$(*initialStates)</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$IllegalArgumentException()</ID>
     <ID>TooManyFunctions:HBackup.kt$HBackup</ID>
     <ID>TooManyFunctions:PagerFragment.kt$com.aistra.hail.ui.home.PagerFragment.kt</ID>

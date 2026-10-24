@@ -298,7 +298,7 @@ class ApiActivity : ComponentActivity() {
     ) {
         val filtered =
             list.filter { AppManager.isAppFrozen(it.packageName) != frozen && !(skipWhitelisted && it.whitelisted) }
-        when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
+        when (val result = AppManager.setListFrozen(frozen, filtered)) {
             null -> throw IllegalStateException(getString(R.string.permission_denied))
 
             else -> {

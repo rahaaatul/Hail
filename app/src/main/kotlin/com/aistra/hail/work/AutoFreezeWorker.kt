@@ -20,7 +20,7 @@ class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(cont
         } else {
             val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
             repeat(MAX_TRIES) {
-                val tryResult = AppManager.setListFrozen(true, *checkedList.toTypedArray())
+                val tryResult = AppManager.setListFrozen(true, checkedList)
                 if (tryResult != null) {
                     app.setAutoFreezeService()
                     break

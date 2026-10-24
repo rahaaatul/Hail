@@ -69,7 +69,7 @@ object AppManager {
             launchToClearStop(packageName)
         }
 
-    fun setListFrozen(frozen: Boolean, vararg appInfo: AppInfo): String? {
+    fun setListFrozen(frozen: Boolean, appInfo: List<AppInfo>): String? {
         val excludeMe = appInfo.filter { it.packageName != BuildConfig.APPLICATION_ID }
         var i = 0
         var denied = false
