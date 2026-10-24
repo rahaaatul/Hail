@@ -22,6 +22,9 @@ on:
       - 'app/src/main/jni/**'
       - 'app/src/main/aidl/**'
       - 'app/src/main/rs/**'
+      - '.editorconfig'
+      - 'config/detekt.yml'
+      - 'config/detekt-baseline.xml'
       - '**.md'
       - '**.txt'
       - 'LICENSE'
@@ -46,7 +49,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           gradle-cache: 'true'
-      - name: Build APKs (with metadata, tests, and Detekt)
+      - name: Code check (Detekt, Spotless, Kover)
+        uses: ./.github/actions/code-check
+      - name: Build APKs
         id: build
         uses: ./.github/actions/build-apk
       - name: Upload release APK as artifact
