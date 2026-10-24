@@ -180,15 +180,18 @@ class HailDataTest {
 
                     ')', ']', '}' -> depth--
 
-                    '\n' -> if (depth <= 0 && !awaitsRest(text.substring(index, end), text, end + 1)) {
-                        result = text.substring(index, end)
-                    }
+                '\n' -> if (shouldEndValue(text, index, end, depth)) {
+                    result = text.substring(index, end)
+                }
                 }
                 end++
             }
         }
         return result ?: text.substring(index)
     }
+
+    private fun shouldEndValue(text: String, index: Int, end: Int, depth: Int): Boolean =
+        depth <= 0 && !awaitsRest(text.substring(index, end), text, end + 1)
 
     /**
      * Whether the value read so far is finished, which is three ways of not being finished:
