@@ -93,16 +93,17 @@ jobs:
           # so the token must not be left in the local git configuration.
           persist-credentials: 'false'
 
+      - name: Code check (Detekt, Spotless, Kover)
+        uses: ./.github/actions/code-check
+        with:
+          # CodeQL must observe the compiler actually running, so nothing in
+          # this job may be restored from the build cache.
+          gradle-args: '--no-build-cache'
+
       - name: Build APKs for CodeQL analysis
         uses: ./.github/actions/build-apk
         with:
           gradle-args: '--no-build-cache'
-          # Unit tests and Detekt contribute no CodeQL findings: the test
-          # execution runs no compiler, and Detekt only parses sources. The
-          # release variant is compiled and traced, which is what the
-          # database needs.
-          run-tests: 'false'
-          run-detekt: 'false'
           variants: 'assembleRelease'
 
       - name: Perform CodeQL Analysis

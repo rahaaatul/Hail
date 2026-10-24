@@ -1,16 +1,19 @@
 # Build APK Action
 
-This action extracts metadata, runs unit tests and Detekt code quality checks, then builds both release and debug APKs for an Android project.
+This action extracts metadata, then builds both release and debug APKs for an Android project.
+
+The code checks - Detekt, the Spotless formatting check and the Kover coverage
+gate - are not part of this action. They run in the
+[code-check](../code-check/README.md) action, which the workflows call before
+this one, so that a failing check stops the build before an APK is produced.
 
 ## Features
 
 - Extracts version and app name from build.gradle.kts and AndroidManifest.xml
-- Runs unit tests (`./gradlew test`)
-- Runs Detekt code quality checks (`./gradlew detekt`)
 - Builds both release and debug APKs in parallel using Gradle's `--parallel` flag
-- Automatically named APKs (configured in `build.gradle.kts`)
-  - Format: `{appName}-v{versionName}-{buildType}.apk`
-  - Example: `MyApp-v1.2.3-release.apk`
+- Automatically named APKs (configured in `app/build.gradle.kts`)
+  - Format: `{app_name}-v{version_name}-{build_variant}.apk`
+  - Example: `hail-v1.11.4-release.apk`
 
 ## Usage
 
@@ -50,18 +53,20 @@ jobs:
 ## How it works
 
 1. **Metadata Extraction**: Reads version from `build.gradle.kts` and app name from `AndroidManifest.xml`
-2. **Quality Checks**: Runs unit tests first (fast feedback), then Detekt - if either fails, APKs won't be built
-3. **Parallel Build**: Uses `./gradlew assembleRelease assembleDebug --no-daemon --parallel` to build both APKs simultaneously
-4. **Automatic Naming**: The APK naming is handled by `applicationVariants.all` in `build.gradle.kts`:
+2. **Parallel Build**: Uses `./gradlew assembleRelease assembleDebug --no-daemon --parallel` to build both APKs simultaneously
+3. **Automatic Naming**: The APK naming is handled by `androidComponents` in `app/build.gradle.kts`:
    ```kotlin
-   applicationVariants.all { variant ->
-       val appName = rootProject.findProperty("appName") as String?
-       val versionName = variant.versionName
-       if (appName != null && versionName != null) {
-           variant.outputs.forEach { output ->
-               if (output instanceof com.android.build.VariantOutput) {
-                   val buildType = variant.buildType.name
-                   output.outputFileName = "${appName}-v${versionName}-${buildType}.apk"
+   androidComponents {
+       onVariants { variant ->
+           val buildTypeName = variant.buildType
+           val appName = (rootProject.findProperty("appName") as String?)?.lowercase()
+           if (buildTypeName != null && appName != null) {
+               val suffix = android.buildTypes.getByName(buildTypeName).versionNameSuffix
+               variant.outputs.forEach { output ->
+                   val versionName = output.versionName.orNull?.removeSuffix(suffix.orEmpty())
+                   if (versionName != null) {
+                       output.outputFileName.set("$appName-v$versionName-$buildTypeName.apk")
+                   }
                }
            }
        }

@@ -1,22 +1,10 @@
 name: Build APK
-description: Extract metadata, run unit tests and Detekt code quality checks, then build both release and debug APKs (APKs are automatically named by build.gradle.kts)
+description: Extract metadata, then build both release and debug APKs (APKs are automatically named by app/build.gradle.kts)
 inputs:
   gradle-args:
     description: 'Extra arguments appended to every Gradle invocation (e.g. --no-build-cache for CodeQL)'
     required: false
     default: ''
-  run-tests:
-    description: 'Run the unit test task. The test sources are compiled into the CodeQL database, but the test execution itself contributes no findings.'
-    required: false
-    default: 'true'
-  run-detekt:
-    description: >-
-      Run Detekt static analysis. Detekt parses sources without compiling them,
-      so it contributes no CodeQL findings. Off by default until the Detekt
-      plugin is committed alongside the app module; set to 'true' once the
-      io.gitlab.arturbosch.detekt plugin is applied in app/build.gradle.kts.
-    required: false
-    default: 'false'
   variants:
     description: 'Gradle assemble targets to build'
     required: false
@@ -44,20 +32,6 @@ runs:
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "appName=$APP_NAME" >> "$GITHUB_OUTPUT"
         echo "versionCode=$VERSION_CODE" >> "$GITHUB_OUTPUT"
-
-    - name: Run unit tests
-      if: ${{ inputs.run-tests == 'true' }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        ./gradlew test --no-daemon ${{ inputs.gradle-args }}
-
-    - name: Run Detekt code quality checks
-      if: ${{ inputs.run-detekt == 'true' }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        ./gradlew detekt --no-daemon ${{ inputs.gradle-args }}
 
     - name: Build APKs (parallel)
       id: build_parallel

@@ -17,71 +17,46 @@ To recover missing attestations, run the **Recover Release Attestations**
 workflow and provide the existing release tag. It downloads the APKs from that
 release, generates provenance bundles, and uploads them back to the same tag.
 
-### 1. Read Metadata (`read-metadata`)
-Extracts version and application name from project files.
+### 1. Code Check (`code-check`)
+Runs the code checks of the project before the APKs are built: the Detekt
+static analysis, the Spotless formatting check and the Kover coverage gate. A
+failing check stops the build, so an APK is only produced from code that passed
+the checks.
 
-**Inputs:** None
-
-**Outputs:**
-- `version`: Version string from `build.gradle.kts`
-- `appName`: Application name from `AndroidManifest.xml`
+**Inputs:**
+- `gradle-args` (optional): extra arguments appended to every Gradle invocation
+- `ratchet-base` (optional): the git ref that the Spotless ratchet compares against
+- `run-detekt` (optional): run the Detekt static analysis, defaults to `true`
+- `run-spotless` (optional): run the Spotless formatting check, defaults to `true`
+- `run-kover` (optional): run the tests under the coverage agent, defaults to `true`
 
 **Usage:**
 ```yaml
-- name: Read metadata
-  uses: .github/actions/read-metadata
-  id: metadata
-- name: Use version
-  run: echo "Version is ${{ steps.metadata.outputs.version }}"
-- name: Use app name
-  run: echo "App name is ${{ steps.metadata.outputs.appName }}"
+- name: Code check (Detekt, Spotless, Kover)
+  uses: ./.github/actions/code-check
 ```
 
 ### 2. Build APK (`build-apk`)
-Builds the Android APK for a specified build type using Gradle.
+Extracts the metadata and builds the Android APKs with Gradle.
 
 **Inputs:**
-- `buildType` (required): Type of build (`release` or `debug`), defaults to `debug`
+- `gradle-args` (optional): extra arguments appended to every Gradle invocation
+- `variants` (optional): the Gradle assemble targets, defaults to `assembleRelease assembleDebug`
 
 **Outputs:**
-- `apkPath`: Path to the built APK file
+- `releaseApkPath`: Path to the built release APK
+- `debugApkPath`: Path to the built debug APK
 
 **Usage:**
 ```yaml
-- name: Build APK
-  uses: .github/actions/build-apk
+- name: Build both APKs
+  uses: ./.github/actions/build-apk
   id: build
   with:
-    buildType: 'release'
-- name: Use APK path
-  run: echo "APK built at ${{ steps.build.outputs.apkPath }}"
+    variants: 'assembleRelease assembleDebug'
 ```
 
-### 3. Rename APK (`rename-apk`)
-Renames the built APK to include application name and version.
-
-**Inputs:**
-- `apkPath` (required): Path to the APK to rename
-- `version` (required): Version string to include in filename
-- `appName` (required): Application name to include in filename
-
-**Outputs:**
-- `renamedApkPath`: Path to the renamed APK file
-
-**Usage:**
-```yaml
-- name: Rename APK
-  uses: .github/actions/rename-apk
-  id: rename
-  with:
-    apkPath: ${{ steps.build.outputs.apkPath }}
-    version: '1.0.0'
-    appName: 'MyApplication'
-- name: Use renamed APK
-  run: echo "Renamed APK at ${{ steps.rename.outputs.renamedApkPath }}"
-```
-
-### 4. Setup Java and Gradle (`setup-java-gradle`)
+### 3. Setup Java and Gradle (`setup-java-gradle`)
 Sets up Java environment, checks out code, and configures Gradle with performance optimizations.
 
 **Inputs:**
@@ -92,7 +67,7 @@ Sets up Java environment, checks out code, and configures Gradle with performanc
 **Usage:**
 ```yaml
 - name: Setup Java and Gradle
-  uses: .github/actions/setup-java-gradle
+  uses: ./.github/actions/setup-java-gradle
   with:
     java-version: '21'
     distribution: 'temurin'
@@ -109,31 +84,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Setup environment
-      - uses: .github/actions/setup-java-gradle
-      
-      # Read project metadata
-      - uses: .github/actions/read-metadata
-        id: metadata
-      
-      # Build the APK
-      - uses: .github/actions/build-apk
+      - uses: ./.github/actions/setup-java-gradle
+
+      # Check the code before it is built
+      - uses: ./.github/actions/code-check
+
+      # Build the APKs
+      - uses: ./.github/actions/build-apk
         id: build
-        with:
-          buildType: 'release'
-      
-      # Rename the APK with version info
-      - uses: .github/actions/rename-apk
-        id: rename
-        with:
-          apkPath: ${{ steps.build.outputs.apkPath }}
-          version: ${{ steps.metadata.outputs.version }}
-          appName: ${{ steps.metadata.outputs.appName }}
-      
-      # Use the renamed APK (e.g., upload to release)
+
+      # Use the built APKs (e.g., upload to release)
       - uses: actions/upload-release-asset@v1
         with:
-          asset_path: ${{ steps.rename.outputs.renamedApkPath }}
-          asset_name: ${{ steps.rename.outputs.renamedApkPath }}
+          asset_path: ${{ steps.build.outputs.releaseApkPath }}
+          asset_name: ${{ steps.build.outputs.releaseApkPath }}
+          asset_content_type: application/vnd.android.package-archive
 ```
 
 ## Action Design Principles
