@@ -595,7 +595,8 @@ class HailDataTest {
         // comes next and reporting a span that has nothing to do with it.
         private val EAGER_PROPERTY =
             Regex(
-                "^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)",
+                "^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) " +
+                    "\\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)",
                 RegexOption.MULTILINE,
             )
         private val GETTER = Regex("\\bget\\s*\\(")

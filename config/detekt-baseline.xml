@@ -69,10 +69,6 @@
     <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$4</ID>
     <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$5</ID>
     <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$6</ID>
-    <ID>MaxLineLength:AppMetaCache.kt$AppMetaCache.&lt;no name provided&gt;$"CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, ordering INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)"</ID>
-    <ID>MaxLineLength:HBackupTest.kt$HBackupTest$"""{"a_string":"hello","an_int":7,"a_long":4294967296,"a_bool":true,"a_set":["x","y"],"a_float":"15.0","a_whole_number_string":"15","an_exponent_string":"1e20"}"""</ID>
-    <ID>MaxLineLength:HailDataTest.kt$HailDataTest.Companion$"^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)"</ID>
-    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$// Use snapshot to avoid ConcurrentModificationException since tagIdList is shared mutable state.</ID>
     <ID>NestedBlockDepth:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
     <ID>ReturnCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
     <ID>ReturnCount:AppIconCache.kt$AppIconCache$@SuppressLint("NewApi") suspend fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap</ID>

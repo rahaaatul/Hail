@@ -373,7 +373,11 @@ class HBackupTest {
         // point, so "15" and "1e20" stay the Strings they are.
         val editor = mockPreferences()
         val zipFile = zipWithSettings(
-            """{"a_string":"hello","an_int":7,"a_long":4294967296,"a_bool":true,"a_set":["x","y"],"a_float":"15.0","a_whole_number_string":"15","an_exponent_string":"1e20"}""",
+            """
+                {"a_string":"hello","an_int":7,"a_long":4294967296,"a_bool":true,
+                 "a_set":["x","y"],"a_float":"15.0","a_whole_number_string":"15",
+                 "an_exponent_string":"1e20"}
+            """.trimIndent(),
         )
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
