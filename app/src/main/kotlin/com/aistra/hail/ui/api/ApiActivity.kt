@@ -143,7 +143,7 @@ class ApiActivity : ComponentActivity() {
      * hail://lock_freeze
      */
     private fun handleSchema(uri: Uri?): Boolean {
-        if (uri?.scheme != "hail") throw IllegalArgumentException("Unknown scheme:\n${uri?.scheme}")
+        require(uri?.scheme == "hail") { "Unknown scheme:\n${uri?.scheme}" }
         return handleAction(
             when (uri.host) {
                 "launch" -> HailApi.ACTION_LAUNCH

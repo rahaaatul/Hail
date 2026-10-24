@@ -107,6 +107,5 @@
     <ID>UseCheckOrError:HBackup.kt$HBackup$throw IllegalStateException("Failed to create directory: $parent")</ID>
     <ID>UseCheckOrError:PagerFragment.kt$PagerFragment$throw IllegalStateException("Unhandled action entry: $entry")</ID>
     <ID>UseCheckOrError:SettingsFragment.kt$SettingsFragment$throw IllegalStateException("unsupported shizuku version")</ID>
-    <ID>UseRequire:ApiActivity.kt$ApiActivity$throw IllegalArgumentException("Unknown scheme:\n${uri?.scheme}")</ID>
   </CurrentIssues>
 </SmellBaseline>
