@@ -83,9 +83,9 @@ class ApiActivity : ComponentActivity() {
             HailApi.ACTION_LAUNCH_ACTION -> {
                 lifecycleScope.launch {
                     val actionId = intent.getStringExtra(HailApi.EXTRA_ACTION_ID)
-                        ?: throw IllegalArgumentException(getString(R.string.action_unavailable))
+                        ?: return@launch
                     val action = ActionsRepository.loadById(actionId)
-                        ?: throw IllegalArgumentException(getString(R.string.action_unavailable))
+                        ?: return@launch
                     ActionExecutor.prepare(action).onSuccess {
                         startActivity(it)
                         finish()
@@ -98,7 +98,7 @@ class ApiActivity : ComponentActivity() {
 
             HailApi.ACTION_LOCK, HailApi.ACTION_LOCK_FREEZE -> handleLockAction(action)
 
-            else -> throw IllegalArgumentException("Unknown action:\n$action")
+            else -> handled = false
         }
         return handled
     }
