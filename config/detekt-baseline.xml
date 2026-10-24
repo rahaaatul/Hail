@@ -3,7 +3,6 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>ComplexCondition:SettingsFragment.kt$SettingsFragment$!options.apps &amp;&amp; !options.whitelist &amp;&amp; !options.actions &amp;&amp; !options.settings</ID>
-    <ID>ExplicitItLambdaParameter:PagerFragment.kt$PagerFragment${ i, it -&gt; entries[i] = resources.getQuantityString(R.plurals.deferred_task_entry, it, it) }</ID>
     <ID>LargeClass:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
     <ID>LongParameterList:PagerFragment.kt$( entries: Array&lt;String&gt;, frozen: Boolean, info: AppInfo, freezeStr: String, unfreezeStr: String, pinStr: String, unpinStr: String, whitelistStr: String, removeWhitelistStr: String, unfreezeRemoveHomeStr: String, )</ID>
     <ID>LongParameterList:PagerFragment.kt$( entries: List&lt;String&gt;, launchStr: String, freezeStr: String, unfreezeStr: String, deferredTaskStr: String, pinStr: String, unpinStr: String, whitelistStr: String, removeWhitelistStr: String, tagSetStr: String, addPinShortcutStr: String, exportClipboardStr: String, removeHomeStr: String, unfreezeRemoveHomeStr: String, )</ID>

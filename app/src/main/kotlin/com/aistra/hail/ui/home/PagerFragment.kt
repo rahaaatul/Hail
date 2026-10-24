@@ -300,8 +300,8 @@ private fun PagerFragment.showAppActionDialog(info: AppInfo) {
     private fun PagerFragment.showDeferredTaskDialog(info: AppInfo, pkg: String, frozen: Boolean) {
         val values = resources.getIntArray(R.array.deferred_task_values)
         val entries = arrayOfNulls<String>(values.size)
-        values.forEachIndexed { i, it ->
-            entries[i] = resources.getQuantityString(R.plurals.deferred_task_entry, it, it)
+        values.forEachIndexed { i, value ->
+            entries[i] = resources.getQuantityString(R.plurals.deferred_task_entry, value, value)
         }
         MaterialAlertDialogBuilder(activity).setTitle(R.string.action_deferred_task)
             .setItems(entries) { _, i ->
