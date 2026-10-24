@@ -170,6 +170,11 @@ rename or just delete it.
 
 ## API
 
+The API is open to every app on the device. It is not behind the biometric
+login of Hail, which guards the screen of Hail itself and nothing else, so
+an app on the device can freeze, unfreeze and lock through it whether the
+biometric login is on or not.
+
 ```shell
 adb shell am start -a action -e key value
 ```
