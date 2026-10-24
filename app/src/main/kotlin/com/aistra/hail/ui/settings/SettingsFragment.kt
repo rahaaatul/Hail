@@ -8,12 +8,15 @@ import android.os.PowerManager
 import android.provider.DocumentsContract
 import android.provider.Settings
 import android.util.Log
-import android.view.*
-import androidx.documentfile.provider.DocumentFile
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
-import androidx.compose.runtime.SideEffect
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -23,12 +26,38 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Adb
+import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.AppShortcut
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.BatterySaver
+import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.DashboardCustomize
+import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.Dialpad
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FilterBAndW
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Layers
+import androidx.compose.material.icons.outlined.List
+import androidx.compose.material.icons.outlined.LockClock
+import androidx.compose.material.icons.outlined.ManageSearch
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.ScreenLockPortrait
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shortcut
+import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,13 +69,14 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.core.app.NotificationManagerCompat
-import androidx.navigation.fragment.findNavController
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import com.aistra.hail.HailApp.Companion.app
+import androidx.navigation.fragment.findNavController
 import com.aistra.hail.BuildConfig
+import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
@@ -57,33 +87,58 @@ import com.aistra.hail.ui.home.PagerFragment
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.AppIconCache
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HBackup
 import com.aistra.hail.utils.HBackup.BackupOptions
 import com.aistra.hail.utils.HBackup.RestoreOptions
+import com.aistra.hail.utils.HDhizuku
+import com.aistra.hail.utils.HFiles
+import com.aistra.hail.utils.HIsland
+import com.aistra.hail.utils.HLog
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HPolicy
+import com.aistra.hail.utils.HShell
+import com.aistra.hail.utils.HShortcuts
+import com.aistra.hail.utils.HSystem
+import com.aistra.hail.utils.HTarget
+import com.aistra.hail.utils.HUI
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textview.MaterialTextView
 import com.rosan.dhizuku.api.Dhizuku
 import com.rosan.dhizuku.api.DhizukuRequestPermissionListener
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.zhanghai.compose.preference.*
+import me.zhanghai.compose.preference.Icons
+import me.zhanghai.compose.preference.ListPreference
+import me.zhanghai.compose.preference.ListPreferenceType
+import me.zhanghai.compose.preference.ProvidePreferenceLocals
+import me.zhanghai.compose.preference.SwitchPreference
+import me.zhanghai.compose.preference.listPreference
+import me.zhanghai.compose.preference.preference
+import me.zhanghai.compose.preference.preferenceCategory
+import me.zhanghai.compose.preference.rememberPreferenceState
+import me.zhanghai.compose.preference.sliderPreference
+import me.zhanghai.compose.preference.switchPreference
 import rikka.shizuku.Shizuku
 import java.io.File
 
-class SettingsFragment : MainFragment(), MenuProvider {
+class SettingsFragment :
+    MainFragment(),
+    MenuProvider {
     private var islandPermissionRequest: CompletableDeferred<Boolean>? = null
         private set
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        islandPermissionRequest?.complete(isGranted)
-    }
+    private val requestPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            islandPermissionRequest?.complete(isGranted)
+        }
     private var backupLauncher = registerForActivityResult(CreateDocument("application/zip")) { uri ->
         // Consumed on every path, including a cancelled picker: leaving it set lets a later
         // backup reuse whatever the previous dialog checked.
@@ -124,7 +179,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 HUI.showToast(R.string.msg_exported, file.name)
             }.onFailure {
                 file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
+                HUI.showToast(
+                    R.string.operation_failed,
+                    it.localizedMessage ?: app.getString(R.string.error_unknown),
+                    true,
+                )
             }
         }
     }
@@ -154,7 +213,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 showRestoreDialog(file)
             }.onFailure {
                 file.delete()
-                HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
+                HUI.showToast(
+                    R.string.operation_failed,
+                    it.localizedMessage ?: app.getString(R.string.error_unknown),
+                    true,
+                )
             }
         }
     }
@@ -168,15 +231,25 @@ class SettingsFragment : MainFragment(), MenuProvider {
         if (_iconPackValues.value.size == 1) {
             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                 val values = mutableListOf(HailData.ACTION_NONE).apply {
-                    addAll(Intent(Intent.ACTION_MAIN).addCategory("com.anddoes.launcher.THEME").let {
-                        if (HTarget.T) app.packageManager.queryIntentActivities(
-                            it, PackageManager.ResolveInfoFlags.of(0)
-                        ) else app.packageManager.queryIntentActivities(it, 0)
-                    }.map { it.activityInfo.packageName })
+                    addAll(
+                        Intent(Intent.ACTION_MAIN).addCategory("com.anddoes.launcher.THEME").let {
+                            if (HTarget.T) {
+                                app.packageManager.queryIntentActivities(
+                                    it,
+                                    PackageManager.ResolveInfoFlags.of(0),
+                                )
+                            } else {
+                                app.packageManager.queryIntentActivities(it, 0)
+                            }
+                        }.map { it.activityInfo.packageName },
+                    )
                 }
                 val names = values.associateWith { pack ->
-                    if (pack == HailData.ACTION_NONE) app.getString(R.string.action_none)
-                    else HPackages.getApplicationInfoOrNull(pack)?.loadLabel(app.packageManager)?.toString() ?: pack
+                    if (pack == HailData.ACTION_NONE) {
+                        app.getString(R.string.action_none)
+                    } else {
+                        HPackages.getApplicationInfoOrNull(pack)?.loadLabel(app.packageManager)?.toString() ?: pack
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     _iconPackValues.value = values
@@ -214,7 +287,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 entriesId = R.array.working_mode_entries,
                 titleId = R.string.working_mode,
                 icon = Icons.Outlined.Adb,
-                type = ListPreferenceType.ALERT_DIALOG
+                type = ListPreferenceType.ALERT_DIALOG,
             )
             switchPreference(
                 key = HailData.BIOMETRIC_LOGIN,
@@ -224,7 +297,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     true
                 },
                 titleId = R.string.action_biometric,
-                icon = Icons.Outlined.Fingerprint
+                icon = Icons.Outlined.Fingerprint,
             )
             horizontalDivider()
             preferenceCategory(key = "customize", title = { Text(text = stringResource(R.string.title_customize)) })
@@ -238,7 +311,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.APP_THEME_VALUES,
                 entriesId = R.array.app_theme_entries,
                 titleId = R.string.app_theme,
-                icon = Icons.Outlined.DarkMode
+                icon = Icons.Outlined.DarkMode,
             )
             listPreference(
                 key = HailData.ICON_PACK,
@@ -251,25 +324,25 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 titleId = R.string.icon_pack,
                 icon = Icons.Outlined.Palette,
                 summary = { iconPackName(it) },
-                valueToText = { iconPackName(it) }
+                valueToText = { iconPackName(it) },
             )
             switchPreference(
                 key = HailData.GRAYSCALE_ICON,
                 defaultValue = true,
                 titleId = R.string.grayscale_icon,
-                icon = Icons.Outlined.FilterBAndW
+                icon = Icons.Outlined.FilterBAndW,
             )
             switchPreference(
                 key = HailData.COMPACT_ICON,
                 defaultValue = false,
                 titleId = R.string.compact_icon,
-                icon = Icons.Outlined.Apps
+                icon = Icons.Outlined.Apps,
             )
             switchPreference(
                 key = HailData.SYNTHESIZE_ADAPTIVE_ICONS,
                 defaultValue = false,
                 titleId = R.string.synthesize_adaptive_icons,
-                icon = Icons.Outlined.Layers
+                icon = Icons.Outlined.Layers,
             )
             sliderPreference(
                 key = HailData.HOME_FONT_SIZE,
@@ -284,13 +357,13 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 key = HailData.FUZZY_SEARCH,
                 defaultValue = false,
                 titleId = R.string.fuzzy_search,
-                icon = Icons.AutoMirrored.Outlined.ManageSearch
+                icon = Icons.AutoMirrored.Outlined.ManageSearch,
             )
             switchPreference(
                 key = HailData.NINE_KEY_SEARCH,
                 defaultValue = false,
                 titleId = R.string.nine_key,
-                icon = Icons.Outlined.Dialpad
+                icon = Icons.Outlined.Dialpad,
             )
             listPreference(
                 key = HailData.TILE_ACTION,
@@ -298,7 +371,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.TILE_ACTION_VALUES,
                 entriesId = R.array.tile_action_entries,
                 titleId = R.string.tile_action,
-                icon = Icons.Outlined.DashboardCustomize
+                icon = Icons.Outlined.DashboardCustomize,
             )
             horizontalDivider()
             preferenceCategory(key = "auto_freeze", title = { Text(text = stringResource(R.string.auto_freeze)) })
@@ -309,7 +382,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     true
                 },
                 titleId = R.string.auto_freeze_after_lock,
-                icon = Icons.Outlined.ScreenLockPortrait
+                icon = Icons.Outlined.ScreenLockPortrait,
             )
             sliderPreference(
                 key = HailData.AUTO_FREEZE_DELAY,
@@ -326,20 +399,24 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 defaultValue = false,
                 titleId = R.string.skip_while_charging,
                 enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.BatteryChargingFull
+                icon = Icons.Outlined.BatteryChargingFull,
             )
             switchPreference(
                 key = HailData.SKIP_FOREGROUND_APP,
                 defaultValue = false,
                 onValueChange = { _, value ->
                     if (value && !HSystem.checkOpUsageStats(requireContext())) {
-                        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        startActivity(
+                            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
                         false
-                    } else true
+                    } else {
+                        true
+                    }
                 },
                 titleId = R.string.skip_foreground_app,
                 enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.Android
+                icon = Icons.Outlined.Android,
             )
             switchPreference(
                 key = HailData.SKIP_NOTIFYING_APP,
@@ -349,13 +426,19 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         .contains(requireContext().packageName)
                     if (value && !isGranted) {
                         app.setAutoFreezeServiceEnabled(true)
-                        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        startActivity(
+                            Intent(
+                                Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
+                            ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
                         false
-                    } else true
+                    } else {
+                        true
+                    }
                 },
                 titleId = R.string.skip_notifying_app,
                 enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.NotificationsActive
+                icon = Icons.Outlined.NotificationsActive,
             )
             horizontalDivider()
             preferenceCategory(key = "shortcuts", title = { Text(text = stringResource(R.string.title_shortcuts)) })
@@ -363,7 +446,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 key = "add_pin_shortcut",
                 title = { Text(text = stringResource(R.string.action_add_pin_shortcut)) },
                 icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
-                onClick = ::addPinShortcut
+                onClick = ::addPinShortcut,
             )
             listPreference(
                 key = HailData.DYNAMIC_SHORTCUT_ACTION,
@@ -376,13 +459,13 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
                 entriesId = R.array.dynamic_shortcut_entries,
                 titleId = R.string.dynamic_shortcut_action,
-                icon = Icons.Outlined.AppShortcut
+                icon = Icons.Outlined.AppShortcut,
             )
             preference(
                 key = "clear_dynamic_shortcuts",
                 title = { Text(text = stringResource(R.string.action_clear_dynamic_shortcuts)) },
                 icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
-                onClick = ::resetDynamicShortcuts
+                onClick = ::resetDynamicShortcuts,
             )
             horizontalDivider()
             preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
@@ -391,14 +474,14 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
                 summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
                 icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
-                onClick = ::confirmRebuildCache
+                onClick = ::confirmRebuildCache,
             )
             preference(
                 key = "background_activity",
                 title = { Text(text = stringResource(R.string.allow_background_activity)) },
                 summary = { Text(text = stringResource(R.string.summary_background_activity)) },
                 icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
-                onClick = ::requestBackgroundActivity
+                onClick = ::requestBackgroundActivity,
             )
             horizontalDivider()
             preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
@@ -406,13 +489,13 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 key = "backup_preference",
                 title = { Text(text = stringResource(R.string.action_backup)) },
                 icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
-                onClick = ::showBackupDialog
+                onClick = ::showBackupDialog,
             )
             preference(
                 key = "restore",
                 title = { Text(text = stringResource(R.string.action_restore)) },
                 icon = { Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null) },
-                onClick = { restoreLauncher.launch(arrayOf("application/zip")) }
+                onClick = { restoreLauncher.launch(arrayOf("application/zip")) },
             )
         }
     }
@@ -423,7 +506,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         startActivity(
             Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                 data = Uri.parse("package:${requireContext().packageName}")
-            }
+            },
         )
     }
 
@@ -459,7 +542,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
             onValueChange = { if (onValueChange(state, it)) state.value = it },
             title = { Text(text = stringResource(titleId)) },
             enabled = enabled,
-            icon = { Icon(imageVector = icon, contentDescription = null) })
+            icon = { Icon(imageVector = icon, contentDescription = null) },
+        )
     }
 
     private fun LazyListScope.switchPreference(
@@ -474,7 +558,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         onValueChange = onValueChange,
         titleId = titleId,
         enabled = enabled,
-        icon = icon
+        icon = icon,
     )
 
     private fun LazyListScope.listPreference(
@@ -486,7 +570,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         icon: ImageVector,
         summary: @Composable (String) -> String,
         type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
-        valueToText: (String) -> String
+        valueToText: (String) -> String,
     ) = item(key = key, contentType = "ListPreference") {
         if (BuildConfig.DEBUG) {
             SideEffect {
@@ -502,7 +586,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
             icon = { Icon(imageVector = icon, contentDescription = null) },
             summary = { Text(text = summary(state.value)) },
             type = type,
-            valueToText = { AnnotatedString(valueToText(it)) })
+            valueToText = { AnnotatedString(valueToText(it)) },
+        )
     }
 
     private fun LazyListScope.listPreference(
@@ -513,7 +598,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
         @ArrayRes entriesId: Int,
         @StringRes titleId: Int,
         icon: ImageVector,
-        type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU
+        type: ListPreferenceType = ListPreferenceType.DROPDOWN_MENU,
     ) = listPreference(
         key = key,
         defaultValue = defaultValue,
@@ -523,7 +608,8 @@ class SettingsFragment : MainFragment(), MenuProvider {
         icon = icon,
         summary = { it.toEntry(values, entriesId) },
         type = type,
-        valueToText = { it.toEntry(values, entriesId) })
+        valueToText = { it.toEntry(values, entriesId) },
+    )
 
     private fun String.toEntry(values: List<String>, @ArrayRes entriesId: Int): String =
         resources.getStringArray(entriesId)[values.indexOf(this)]
@@ -533,8 +619,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
         HShortcuts.addDynamicShortcutAction(HailData.dynamicShortcutAction)
     }
 
-    private fun iconPackName(pack: String): String = if (pack == HailData.ACTION_NONE) getString(R.string.action_none)
-    else _iconPackNames.value[pack] ?: pack
+    private fun iconPackName(pack: String): String = if (pack == HailData.ACTION_NONE) {
+        getString(R.string.action_none)
+    } else {
+        _iconPackNames.value[pack] ?: pack
+    }
 
     private fun addPinShortcut() {
         MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_add_pin_shortcut)
@@ -545,11 +634,12 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             val tag = HailData.tags[index].first
                             HShortcuts.addPinShortcut(
                                 AppCompatResources.getDrawable(
-                                    requireContext(), R.drawable.ic_round_frozen_shortcut
+                                    requireContext(),
+                                    R.drawable.ic_round_frozen_shortcut,
                                 )!!,
                                 HailApi.ACTION_FREEZE_TAG + tag,
                                 tag,
-                                HailApi.getIntentForTag(HailApi.ACTION_FREEZE_TAG, tag)
+                                HailApi.getIntentForTag(HailApi.ACTION_FREEZE_TAG, tag),
                             )
                         }.setNegativeButton(android.R.string.cancel, null).show()
 
@@ -558,54 +648,63 @@ class SettingsFragment : MainFragment(), MenuProvider {
                             val tag = HailData.tags[index].first
                             HShortcuts.addPinShortcut(
                                 AppCompatResources.getDrawable(
-                                    requireContext(), R.drawable.ic_round_unfrozen_shortcut
+                                    requireContext(),
+                                    R.drawable.ic_round_unfrozen_shortcut,
                                 )!!,
                                 HailApi.ACTION_UNFREEZE_TAG + tag,
                                 tag,
-                                HailApi.getIntentForTag(HailApi.ACTION_UNFREEZE_TAG, tag)
+                                HailApi.getIntentForTag(HailApi.ACTION_UNFREEZE_TAG, tag),
                             )
                         }.setNegativeButton(android.R.string.cancel, null).show()
 
                     2 -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_round_frozen_shortcut
+                            requireContext(),
+                            R.drawable.ic_round_frozen_shortcut,
                         )!!,
                         HailApi.ACTION_FREEZE_ALL,
                         getString(R.string.action_freeze_all),
-                        Intent(HailApi.ACTION_FREEZE_ALL)
+                        Intent(HailApi.ACTION_FREEZE_ALL),
                     )
 
                     3 -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_round_unfrozen_shortcut
+                            requireContext(),
+                            R.drawable.ic_round_unfrozen_shortcut,
                         )!!,
                         HailApi.ACTION_UNFREEZE_ALL,
                         getString(R.string.action_unfreeze_all),
-                        Intent(HailApi.ACTION_UNFREEZE_ALL)
+                        Intent(HailApi.ACTION_UNFREEZE_ALL),
                     )
 
                     4 -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_round_frozen_shortcut
+                            requireContext(),
+                            R.drawable.ic_round_frozen_shortcut,
                         )!!,
                         HailApi.ACTION_FREEZE_NON_WHITELISTED,
                         getString(R.string.action_freeze_non_whitelisted),
-                        Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED)
+                        Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
                     )
 
                     5 -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_outline_lock_shortcut
-                        )!!, HailApi.ACTION_LOCK, getString(R.string.action_lock), Intent(HailApi.ACTION_LOCK)
+                            requireContext(),
+                            R.drawable.ic_outline_lock_shortcut,
+                        )!!,
+                        HailApi.ACTION_LOCK,
+                        getString(R.string.action_lock),
+                        Intent(HailApi.ACTION_LOCK),
                     )
 
                     6 -> HShortcuts.addPinShortcut(
                         AppCompatResources.getDrawable(
-                            requireContext(), R.drawable.ic_outline_lock_shortcut
+                            requireContext(),
+                            R.drawable.ic_outline_lock_shortcut,
                         )!!,
                         HailApi.ACTION_LOCK_FREEZE,
                         getString(R.string.action_lock_freeze),
-                        Intent(HailApi.ACTION_LOCK_FREEZE)
+                        Intent(HailApi.ACTION_LOCK_FREEZE),
                     )
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()
@@ -628,6 +727,7 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 Dhizuku.init(app)
                 when {
                     Dhizuku.isPermissionGranted() -> true
+
                     else -> {
                         lifecycleScope.launch {
                             val result = callbackFlow {
@@ -660,7 +760,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
             mode.startsWith(HailData.SHIZUKU) -> return runCatching {
                 when {
                     Shizuku.isPreV11() -> throw IllegalStateException("unsupported shizuku version")
+
                     Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> true
+
                     Shizuku.shouldShowRequestPermissionRationale() -> {
                         HUI.showToast(R.string.permission_denied)
                         false
@@ -694,14 +796,19 @@ class SettingsFragment : MainFragment(), MenuProvider {
             mode.startsWith(HailData.ISLAND) -> return runCatching {
                 when {
                     mode == HailData.MODE_ISLAND_HIDE && HIsland.freezePermissionGranted() -> true
+
                     mode == HailData.MODE_ISLAND_SUSPEND && HIsland.suspendPermissionGranted() -> true
+
                     else -> {
                         lifecycleScope.launch {
                             islandPermissionRequest?.cancel(CancellationException("Superseded by new request"))
                             islandPermissionRequest = CompletableDeferred()
                             requestPermissionLauncher.launch(
-                                if (mode == HailData.MODE_ISLAND_HIDE) HIsland.PERMISSION_FREEZE_PACKAGE
-                                else HIsland.PERMISSION_SUSPEND_PACKAGE
+                                if (mode == HailData.MODE_ISLAND_HIDE) {
+                                    HIsland.PERMISSION_FREEZE_PACKAGE
+                                } else {
+                                    HIsland.PERMISSION_SUSPEND_PACKAGE
+                                },
                             )
                             if (islandPermissionRequest?.await() == true) {
                                 rememberState.value = mode
@@ -761,10 +868,13 @@ class SettingsFragment : MainFragment(), MenuProvider {
     override fun onPrepareMenu(menu: Menu) {
         super.onPrepareMenu(menu)
         if (HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(
-                HailData.SHIZUKU
+                HailData.SHIZUKU,
             )
-        ) menu.findItem(R.id.action_terminal).isVisible = true
-        else if (HPolicy.isDeviceOwnerActive) menu.findItem(R.id.action_remove_owner).isVisible = true
+        ) {
+            menu.findItem(R.id.action_terminal).isVisible = true
+        } else if (HPolicy.isDeviceOwnerActive) {
+            menu.findItem(R.id.action_remove_owner).isVisible = true
+        }
     }
 
     private fun showBackupDialog() {
@@ -775,16 +885,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     getString(R.string.backup_apps),
                     getString(R.string.backup_whitelist),
                     getString(R.string.backup_actions),
-                    getString(R.string.backup_settings)
+                    getString(R.string.backup_settings),
                 ),
-                checkedItems
+                checkedItems,
             ) { _, _, _ -> }
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val options = BackupOptions(
                     apps = checkedItems[0],
                     whitelist = checkedItems[1],
                     actions = checkedItems[2],
-                    settings = checkedItems[3]
+                    settings = checkedItems[3],
                 )
                 if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
                     HUI.showToast(R.string.msg_no_items_to_select)
@@ -806,16 +916,16 @@ class SettingsFragment : MainFragment(), MenuProvider {
                     getString(R.string.backup_apps),
                     getString(R.string.backup_whitelist),
                     getString(R.string.backup_actions),
-                    getString(R.string.backup_settings)
+                    getString(R.string.backup_settings),
                 ),
-                checkedItems
+                checkedItems,
             ) { _, _, _ -> }
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val options = RestoreOptions(
                     apps = checkedItems[0],
                     whitelist = checkedItems[1],
                     actions = checkedItems[2],
-                    settings = checkedItems[3]
+                    settings = checkedItems[3],
                 )
                 if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
                     HUI.showToast(R.string.msg_no_items_to_select)
@@ -824,7 +934,9 @@ class SettingsFragment : MainFragment(), MenuProvider {
                 // The flag marks the restore as handed off so the dismiss listener keeps the file.
                 restoreStarted = true
                 lifecycleScope.launch {
-                    val dialog = MaterialAlertDialogBuilder(requireActivity()).setView(R.layout.dialog_progress).setCancelable(false).show()
+                    val dialog = MaterialAlertDialogBuilder(
+                        requireActivity(),
+                    ).setView(R.layout.dialog_progress).setCancelable(false).show()
                     val result = HBackup.restore(requireContext(), file, options)
                     dialog.dismiss()
                     result.onSuccess {
@@ -844,7 +956,11 @@ class SettingsFragment : MainFragment(), MenuProvider {
                         }
                         HUI.showToast(R.string.msg_imported)
                     }.onFailure {
-                        HUI.showToast(R.string.operation_failed, it.localizedMessage ?: app.getString(R.string.error_unknown), true)
+                        HUI.showToast(
+                            R.string.operation_failed,
+                            it.localizedMessage ?: app.getString(R.string.error_unknown),
+                            true,
+                        )
                     }
                 }
             }

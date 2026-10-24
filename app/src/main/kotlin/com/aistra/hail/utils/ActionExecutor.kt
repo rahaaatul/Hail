@@ -18,13 +18,13 @@ object ActionExecutor {
             action.unfreezePackages.forEach { packageName ->
                 AppActions.ensureUnfrozen(packageName).onFailure {
                     return@withContext Result.failure(
-                        IllegalStateException(app.getString(R.string.action_unfreeze_failed, packageName))
+                        IllegalStateException(app.getString(R.string.action_unfreeze_failed, packageName)),
                     )
                 }
             }
             AppActions.ensureUnfrozen(action.launchPackage).onFailure {
                 return@withContext Result.failure(
-                    IllegalStateException(app.getString(R.string.action_unfreeze_failed, action.launchPackage))
+                    IllegalStateException(app.getString(R.string.action_unfreeze_failed, action.launchPackage)),
                 )
             }
             AppActions.getLaunchIntent(action.launchPackage)

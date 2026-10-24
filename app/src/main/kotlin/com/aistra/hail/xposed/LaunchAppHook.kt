@@ -28,23 +28,30 @@ class LaunchAppHook : XposedModule() {
     private fun hookLauncherApp() {
         hook(
             Activity::class.java.getMethod(
-                "startActivityForResult", Intent::class.java, Int::class.java, Bundle::class.java
-            )
+                "startActivityForResult",
+                Intent::class.java,
+                Int::class.java,
+                Bundle::class.java,
+            ),
         ).intercept { unsuspendBeforeLaunch(it) }
         hook(
             TileService::class.java.getMethod(
-                "startActivityAndCollapse", Intent::class.java
-            )
+                "startActivityAndCollapse",
+                Intent::class.java,
+            ),
         ).intercept { unsuspendBeforeLaunch(it) }
         hook(
             ContextWrapper::class.java.getMethod(
-                "startActivity", Intent::class.java
-            )
+                "startActivity",
+                Intent::class.java,
+            ),
         ).intercept { unsuspendBeforeLaunch(it) }
         hook(
             ContextWrapper::class.java.getMethod(
-                "startActivity", Intent::class.java, Bundle::class.java
-            )
+                "startActivity",
+                Intent::class.java,
+                Bundle::class.java,
+            ),
         ).intercept { unsuspendBeforeLaunch(it) }
     }
 
@@ -57,7 +64,9 @@ class LaunchAppHook : XposedModule() {
                 packageName = component.packageName
             }
             val context = param.thisObject as Context
-            if (packageName != null && packageName != context.packageName && packageName != BuildConfig.APPLICATION_ID) {
+            if (packageName != null && packageName != context.packageName &&
+                packageName != BuildConfig.APPLICATION_ID
+            ) {
                 unsuspendApp(context, packageName)
             }
         }
@@ -70,7 +79,7 @@ class LaunchAppHook : XposedModule() {
         if (method.invoke(packageManager, packageName) as Boolean) {
             context.startActivity(HailApi.getIntentForPackage(HailApi.ACTION_UNFREEZE, packageName))
 
-            /**
+            /*
              * It took about 500 milliseconds from [Context.startActivity]
              * to start [com.aistra.hail.ui.api.ApiActivity] and successfully unfreeze.
              * We lack communication between applications, we can only wait.

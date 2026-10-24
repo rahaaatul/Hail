@@ -9,12 +9,16 @@ import com.aistra.hail.utils.HTarget
 
 class UnsuspendedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == ACTION_PACKAGE_UNSUSPENDED_MANUALLY) runCatching {
-            if (HTarget.P) setAppRestricted(
-                intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME)!!,
-                false
-            )
-            app.setAutoFreezeService()
+        if (intent.action == ACTION_PACKAGE_UNSUSPENDED_MANUALLY) {
+            runCatching {
+                if (HTarget.P) {
+                    setAppRestricted(
+                        intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME)!!,
+                        false,
+                    )
+                }
+                app.setAutoFreezeService()
+            }
         }
     }
 

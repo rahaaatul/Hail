@@ -15,7 +15,7 @@ object AppActions {
     suspend fun ensureUnfrozen(packageName: String): Result<Unit> = withContext(Dispatchers.IO) {
         if (HPackages.getApplicationInfoOrNull(packageName) == null) {
             return@withContext Result.failure(
-                IllegalArgumentException(app().getString(R.string.action_app_unavailable, packageName))
+                IllegalArgumentException(app().getString(R.string.action_app_unavailable, packageName)),
             )
         }
         if (AppManager.isAppFrozen(packageName)) {
@@ -38,7 +38,7 @@ object AppActions {
         }
         val launchIntent = app().packageManager.getLaunchIntentForPackage(packageName)
             ?: return@withContext Result.failure(
-                ActivityNotFoundException(app().getString(R.string.activity_not_found))
+                ActivityNotFoundException(app().getString(R.string.activity_not_found)),
             )
         app().setAutoFreezeService()
         Result.success(launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -48,13 +48,17 @@ object AppActions {
         packages.forEach { packageName ->
             if (HPackages.getApplicationInfoOrNull(packageName) == null) {
                 return@withContext Result.failure(
-                    IllegalArgumentException(app().getString(R.string.action_app_unavailable, packageName))
+                    IllegalArgumentException(app().getString(R.string.action_app_unavailable, packageName)),
                 )
             }
             if (!AppManager.setAppFrozen(packageName, frozen)) {
                 val errorMsg = when {
-                    !frozen && HailData.workingMode.endsWith(HailData.STOP) -> app().getString(R.string.action_unfreeze_stop_failed, packageName)
+                    !frozen && HailData.workingMode.endsWith(
+                        HailData.STOP,
+                    ) -> app().getString(R.string.action_unfreeze_stop_failed, packageName)
+
                     !frozen -> app().getString(R.string.action_unfreeze_failed, packageName)
+
                     else -> app().getString(R.string.action_freeze_failed, packageName)
                 }
                 return@withContext Result.failure(IllegalStateException(errorMsg))

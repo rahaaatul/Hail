@@ -7,9 +7,28 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
-import com.aistra.hail.utils.*
-import kotlinx.coroutines.*
+import com.aistra.hail.utils.AppIconCache
+import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.FuzzySearch
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.NameComparator
+import com.aistra.hail.utils.NineKeySearch
+import com.aistra.hail.utils.PinyinSearch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.State
+import kotlinx.coroutines.all
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.filter
+import kotlinx.coroutines.first
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.from
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.map
+import kotlinx.coroutines.toSet
+import kotlinx.coroutines.withContext
 
 class AppsViewModel(application: Application) : AndroidViewModel(application) {
     val apps = MutableLiveData<List<ApplicationInfo>>()
@@ -47,9 +66,9 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
 
     fun postQuery(text: String, delayTime: Long = 300L) {
         refreshJob?.cancel()
-        if (delayTime == 0L)
+        if (delayTime == 0L) {
             query.postValue(text)
-        else {
+        } else {
             refreshJob = viewModelScope.launch {
                 delay(delayTime)
                 query.postValue(text)
@@ -110,32 +129,36 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     private val ApplicationInfo.isSystemApp: Boolean
         get() = flags and ApplicationInfo.FLAG_SYSTEM == ApplicationInfo.FLAG_SYSTEM
 
-    private suspend fun filterList(
-        appList: List<ApplicationInfo>,
-        query: String?
-    ): List<ApplicationInfo> {
+    private suspend fun filterList(appList: List<ApplicationInfo>, query: String?): List<ApplicationInfo> {
         return withContext(Dispatchers.Default) {
             return@withContext appList.filter {
                 val metadata = AppMetaCache.get(it.packageName)
                 val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
                 val name = metadata?.name ?: it.packageName
                 val frozen = metadata?.state == AppInfo.State.FROZEN
-                (HailData.filterAllApps
-                        || (HailData.filterUserApps && !isSystemApp)
-                        || (HailData.filterSystemApps && isSystemApp))
+                (
+                    HailData.filterAllApps ||
+                        (HailData.filterUserApps && !isSystemApp) ||
+                        (HailData.filterSystemApps && isSystemApp)
+                    ) &&
 
-                        && ((HailData.filterFrozenApps && frozen)
-                        || (HailData.filterUnfrozenApps && !frozen))
-                        // Search apps
-                        && ((HailData.nineKeySearch
-                        && (NineKeySearch.search(query, it.packageName, name)))
-                        || FuzzySearch.search(it.packageName, query)
-                        || FuzzySearch.search(name, query)
-                        || PinyinSearch.searchPinyinAll(name, query))
+                    (
+                        (HailData.filterFrozenApps && frozen) ||
+                            (HailData.filterUnfrozenApps && !frozen)
+                        ) &&
+                    // Search apps
+                    (
+                        (
+                            HailData.nineKeySearch &&
+                                (NineKeySearch.search(query, it.packageName, name))
+                            ) ||
+                            FuzzySearch.search(it.packageName, query) ||
+                            FuzzySearch.search(name, query) ||
+                            PinyinSearch.searchPinyinAll(name, query)
+                        )
             }.run {
                 when (HailData.sortBy) {
                     HailData.SORT_INSTALL -> sortedBy {

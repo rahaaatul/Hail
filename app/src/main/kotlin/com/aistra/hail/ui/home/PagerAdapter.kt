@@ -19,14 +19,14 @@ import kotlinx.coroutines.Job
 
 class PagerAdapter(
     private val selectedList: List<AppInfo>,
-    private val flags: MutableMap<String, Int> = mutableMapOf()
+    private val flags: MutableMap<String, Int> = mutableMapOf(),
 ) : ListAdapter<AppInfo, PagerAdapter.ViewHolder>(HomeDiff(selectedList, flags)) {
     private var loadIconJob: Job? = null
     lateinit var onItemClickListener: OnItemClickListener
     lateinit var onItemLongClickListener: OnItemLongClickListener
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
-        LayoutInflater.from(parent.context).inflate(R.layout.item_home, parent, false)
+        LayoutInflater.from(parent.context).inflate(R.layout.item_home, parent, false),
     )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -42,7 +42,7 @@ class PagerAdapter(
                         it,
                         myUserId,
                         this,
-                        HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN
+                        HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
                     )
                 } ?: run {
                     setImageDrawable(context.packageManager.defaultActivityIcon)
@@ -58,11 +58,11 @@ class PagerAdapter(
                 isEnabled = !HailData.grayscaleIcon || info.state != AppInfo.State.FROZEN
                 when {
                     info in selectedList -> setTextColor(
-                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary)
+                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary),
                     )
 
                     info.state == AppInfo.State.NOT_FOUND -> setTextColor(
-                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError)
+                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError),
                     )
 
                     else -> setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
@@ -80,9 +80,8 @@ class PagerAdapter(
         notifyItemRangeChanged(0, itemCount)
     }
 
-    private class HomeDiff(
-        private val selectedList: List<AppInfo>, private val flags: Map<String, Int>
-    ) : DiffUtil.ItemCallback<AppInfo>() {
+    private class HomeDiff(private val selectedList: List<AppInfo>, private val flags: Map<String, Int>) :
+        DiffUtil.ItemCallback<AppInfo>() {
         override fun areItemsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean = oldItem == newItem
 
         override fun areContentsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean =

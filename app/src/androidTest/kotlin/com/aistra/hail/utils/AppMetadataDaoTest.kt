@@ -21,7 +21,7 @@ class AppMetadataDaoTest {
     fun setup() {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            AppMetadataDatabase::class.java
+            AppMetadataDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = database.appMetadataDao()
     }
@@ -35,7 +35,7 @@ class AppMetadataDaoTest {
     fun insertAndLoadEntries() = runBlocking {
         val entries = listOf(
             AppMetadataEntity(packageName = "com.example.app1", name = "App 1"),
-            AppMetadataEntity(packageName = "com.example.app2", name = "App 2")
+            AppMetadataEntity(packageName = "com.example.app2", name = "App 2"),
         )
         dao.upsertAll(entries)
 
@@ -59,8 +59,8 @@ class AppMetadataDaoTest {
         dao.upsertAll(
             listOf(
                 AppMetadataEntity(packageName = "com.example.app1", name = "App 1"),
-                AppMetadataEntity(packageName = "com.example.app2", name = "App 2")
-            )
+                AppMetadataEntity(packageName = "com.example.app2", name = "App 2"),
+            ),
         )
         dao.deleteAll()
 
@@ -73,8 +73,8 @@ class AppMetadataDaoTest {
         dao.upsertAll(
             listOf(
                 AppMetadataEntity(packageName = "com.example.app1", name = "App 1", installed = true),
-                AppMetadataEntity(packageName = "com.example.app2", name = "App 2", installed = true)
-            )
+                AppMetadataEntity(packageName = "com.example.app2", name = "App 2", installed = true),
+            ),
         )
         dao.markAllUninstalled()
 
@@ -85,12 +85,12 @@ class AppMetadataDaoTest {
     @Test
     fun replaceAllTransaction() = runBlocking {
         dao.upsertAll(
-            listOf(AppMetadataEntity(packageName = "com.example.old", name = "Old App"))
+            listOf(AppMetadataEntity(packageName = "com.example.old", name = "Old App")),
         )
 
         val newEntries = listOf(
             AppMetadataEntity(packageName = "com.example.new1", name = "New App 1"),
-            AppMetadataEntity(packageName = "com.example.new2", name = "New App 2")
+            AppMetadataEntity(packageName = "com.example.new2", name = "New App 2"),
         )
         dao.replaceAll(newEntries)
 

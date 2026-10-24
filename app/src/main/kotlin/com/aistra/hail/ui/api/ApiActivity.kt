@@ -8,7 +8,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.StringRes
-import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,13 +17,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Launch
 import androidx.compose.material.icons.rounded.AcUnit
 import androidx.compose.material.icons.rounded.BrightnessLow
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Icons
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.not
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.lifecycleScope
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
@@ -32,7 +39,13 @@ import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.ActionExecutor
+import com.aistra.hail.utils.ActionsRepository
+import com.aistra.hail.utils.HIsland
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HShortcuts
+import com.aistra.hail.utils.HTarget
+import com.aistra.hail.utils.HUI
 import com.aistra.hail.work.HWork.setAutoFreeze
 import kotlinx.coroutines.launch
 
@@ -54,6 +67,7 @@ class ApiActivity : ComponentActivity() {
             Intent.ACTION_VIEW -> return handleSchema(intent.data)
 
             HailApi.ACTION_LAUNCH -> launchApp(requirePackage, runCatching { requireTagId }.getOrNull())
+
             HailApi.ACTION_LAUNCH_ACTION -> {
                 lifecycleScope.launch {
                     val actionId = intent.getStringExtra(HailApi.EXTRA_ACTION_ID)
@@ -67,21 +81,36 @@ class ApiActivity : ComponentActivity() {
                 }
                 return false
             }
+
             HailApi.ACTION_FREEZE -> setAppFrozen(requirePackage, true)
+
             HailApi.ACTION_UNFREEZE -> setAppFrozen(requirePackage, false)
+
             HailApi.ACTION_FREEZE_TAG -> setListFrozen(
-                true, HailData.checkedList.filter { requireTagId in it.tagIdList }, true
+                true,
+                HailData.checkedList.filter { requireTagId in it.tagIdList },
+                true,
             )
 
             HailApi.ACTION_UNFREEZE_TAG -> setListFrozen(
-                false, HailData.checkedList.filter { requireTagId in it.tagIdList })
+                false,
+                HailData.checkedList.filter {
+                    requireTagId in it.tagIdList
+                },
+            )
 
             HailApi.ACTION_FREEZE_ALL -> setListFrozen(true)
+
             HailApi.ACTION_UNFREEZE_ALL -> setListFrozen(false)
+
             HailApi.ACTION_FREEZE_NON_WHITELISTED -> setListFrozen(true, skipWhitelisted = true)
+
             HailApi.ACTION_FREEZE_AUTO -> setAutoFreeze(false)
+
             HailApi.ACTION_LOCK -> lockScreen(false)
+
             HailApi.ACTION_LOCK_FREEZE -> lockScreen(true)
+
             else -> throw IllegalArgumentException("Unknown action:\n$action")
         }
         return true
@@ -118,7 +147,7 @@ class ApiActivity : ComponentActivity() {
                 "lock" -> HailApi.ACTION_LOCK
                 "lock_freeze" -> HailApi.ACTION_LOCK_FREEZE
                 else -> throw IllegalArgumentException("Unknown host:\n${uri.host}")
-            }
+            },
         )
     }
 
@@ -127,28 +156,32 @@ class ApiActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun RedirectBottomSheet(pkg: String) = ModalBottomSheet(
-        onDismissRequest = ::finish, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        onDismissRequest = ::finish,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
         Column {
             Text(
                 text = HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(packageManager)?.toString() ?: pkg,
                 modifier = Modifier.padding(
                     horizontal = dimensionResource(R.dimen.padding_medium),
-                    vertical = dimensionResource(R.dimen.padding_small)
+                    vertical = dimensionResource(R.dimen.padding_small),
                 ),
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
             )
             ClickableItem(
-                icon = Icons.AutoMirrored.Outlined.Launch, title = R.string.action_launch
+                icon = Icons.AutoMirrored.Outlined.Launch,
+                title = R.string.action_launch,
             ) { launchApp(pkg) }
             ClickableItem(
-                icon = Icons.Rounded.AcUnit, title = R.string.action_freeze
+                icon = Icons.Rounded.AcUnit,
+                title = R.string.action_freeze,
             ) {
                 if (!HailData.isChecked(pkg)) HailData.addCheckedApp(pkg)
                 setAppFrozen(pkg, true)
             }
             ClickableItem(
-                icon = Icons.Rounded.BrightnessLow, title = R.string.action_unfreeze
+                icon = Icons.Rounded.BrightnessLow,
+                title = R.string.action_unfreeze,
             ) { setAppFrozen(pkg, false) }
         }
     }
@@ -160,12 +193,13 @@ class ApiActivity : ComponentActivity() {
                 onClick()
                 finish()
             }.onFailure(::setErrorDialog)
-        }), verticalAlignment = Alignment.CenterVertically
+        }),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium))
+            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
         )
         Text(text = stringResource(title), style = MaterialTheme.typography.bodyLarge)
     }
@@ -178,24 +212,35 @@ class ApiActivity : ComponentActivity() {
             TextButton(onClick = ::finish) {
                 Text(text = stringResource(android.R.string.ok))
             }
-        })
+        },
+    )
 
     private val requirePackage: String
         get() = intent.run {
-            if (action == Intent.ACTION_VIEW) data?.getQueryParameter(HailData.KEY_PACKAGE)
-            else getStringExtra(
-                if (action != Intent.ACTION_SHOW_APP_INFO) HailData.KEY_PACKAGE
-                else if (HTarget.N) Intent.EXTRA_PACKAGE_NAME
-                else "android.intent.extra.PACKAGE_NAME"
-            )
+            if (action == Intent.ACTION_VIEW) {
+                data?.getQueryParameter(HailData.KEY_PACKAGE)
+            } else {
+                getStringExtra(
+                    if (action != Intent.ACTION_SHOW_APP_INFO) {
+                        HailData.KEY_PACKAGE
+                    } else if (HTarget.N) {
+                        Intent.EXTRA_PACKAGE_NAME
+                    } else {
+                        "android.intent.extra.PACKAGE_NAME"
+                    },
+                )
+            }
         }?.also {
             HPackages.getApplicationInfoOrNull(it) ?: throw NameNotFoundException(getString(R.string.app_not_installed))
         } ?: throw IllegalArgumentException("Package must not be null")
 
     private val requireTagId: Int
         get() = intent.run {
-            if (action == Intent.ACTION_VIEW) data?.getQueryParameter(HailData.KEY_TAG)
-            else getStringExtra(HailData.KEY_TAG)
+            if (action == Intent.ACTION_VIEW) {
+                data?.getQueryParameter(HailData.KEY_TAG)
+            } else {
+                getStringExtra(HailData.KEY_TAG)
+            }
         }?.let {
             HailData.tags.find { tag -> tag.first == it }?.second
                 ?: throw IllegalStateException("Tag unavailable:\n$it")
@@ -217,29 +262,35 @@ class ApiActivity : ComponentActivity() {
 
     private fun setAppFrozen(pkg: String, frozen: Boolean) = when {
         frozen && !HailData.isChecked(pkg) -> throw SecurityException("Package not checked")
+
         AppManager.isAppFrozen(pkg) != frozen && !AppManager.setAppFrozen(
-            pkg, frozen
+            pkg,
+            frozen,
         ) -> throw IllegalStateException(getString(R.string.permission_denied))
 
         else -> {
             HUI.showToast(
                 if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
-                HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(packageManager) ?: pkg
+                HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(packageManager) ?: pkg,
             )
             app.setAutoFreezeService()
         }
     }
 
     private fun setListFrozen(
-        frozen: Boolean, list: List<AppInfo> = HailData.checkedList, skipWhitelisted: Boolean = false
+        frozen: Boolean,
+        list: List<AppInfo> = HailData.checkedList,
+        skipWhitelisted: Boolean = false,
     ) {
         val filtered =
             list.filter { AppManager.isAppFrozen(it.packageName) != frozen && !(skipWhitelisted && it.whitelisted) }
         when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
             null -> throw IllegalStateException(getString(R.string.permission_denied))
+
             else -> {
                 HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, result
+                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
+                    result,
                 )
                 app.setAutoFreezeService()
             }

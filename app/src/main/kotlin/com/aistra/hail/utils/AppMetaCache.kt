@@ -33,7 +33,7 @@ object AppMetaCache {
         val enabled: Boolean,
         val installed: Boolean,
         val state: AppInfo.State,
-        val sourceSignature: String
+        val sourceSignature: String,
     )
 
     private val cache = ConcurrentHashMap<String, Entry>()
@@ -159,7 +159,7 @@ object AppMetaCache {
             val sourceSignature = listOf(
                 info?.sourceDir,
                 info?.sourceDir?.let { File(it).lastModified() },
-                packageInfo?.lastUpdateTime
+                packageInfo?.lastUpdateTime,
             ).joinToString(":")
             val current = cache[packageName]
             if (info != null && current?.sourceSignature == sourceSignature) {
@@ -180,7 +180,7 @@ object AppMetaCache {
                     enabled = info.enabled,
                     installed = true,
                     state = readState(packageName),
-                    sourceSignature = sourceSignature
+                    sourceSignature = sourceSignature,
                 )
             }
             if (entry == null) cache.remove(packageName) else cache[packageName] = entry
@@ -216,7 +216,7 @@ object AppMetaCache {
         enabled = enabled,
         installed = installed,
         state = if (frozen) AppInfo.State.FROZEN else AppInfo.State.UNFROZEN,
-        sourceSignature = sourceSignature
+        sourceSignature = sourceSignature,
     )
 
     private fun Entry.toEntity() = AppMetadataEntity(
@@ -229,7 +229,7 @@ object AppMetaCache {
         enabled = enabled,
         installed = installed,
         frozen = state == AppInfo.State.FROZEN,
-        sourceSignature = sourceSignature
+        sourceSignature = sourceSignature,
     )
 
     private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -241,10 +241,10 @@ object AppMetaCache {
     private val MIGRATION_2_3 = object : Migration(2, 3) {
         override suspend fun migrate(connection: SQLiteConnection) {
             connection.execSQL(
-                "CREATE TABLE IF NOT EXISTS actions (id TEXT NOT NULL, launchPackage TEXT NOT NULL, PRIMARY KEY(id))"
+                "CREATE TABLE IF NOT EXISTS actions (id TEXT NOT NULL, launchPackage TEXT NOT NULL, PRIMARY KEY(id))",
             )
             connection.execSQL(
-                "CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, ordering INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                "CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, ordering INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)",
             )
         }
     }
@@ -275,13 +275,13 @@ object AppMetaCache {
                     "installed INTEGER NOT NULL, " +
                     "frozen INTEGER NOT NULL DEFAULT 0, " +
                     "sourceSignature TEXT NOT NULL, " +
-                    "PRIMARY KEY(packageName))"
+                    "PRIMARY KEY(packageName))",
             )
             connection.execSQL(
                 "INSERT INTO app_metadata_new " +
                     "SELECT packageName, COALESCE(name, ''), systemApp, firstInstallTime, " +
                     "lastUpdateTime, flags, enabled, installed, frozen, sourceSignature " +
-                    "FROM app_metadata"
+                    "FROM app_metadata",
             )
             connection.execSQL("DROP TABLE app_metadata")
             connection.execSQL("ALTER TABLE app_metadata_new RENAME TO app_metadata")

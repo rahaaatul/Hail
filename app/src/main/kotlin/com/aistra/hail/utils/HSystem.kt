@@ -31,15 +31,15 @@ object HSystem {
         return result == AppOpsManager.MODE_ALLOWED
     }
 
-    fun checkOpUsageStats(context: Context): Boolean =
-        checkOp(context, AppOpsManager.OPSTR_GET_USAGE_STATS)
+    fun checkOpUsageStats(context: Context): Boolean = checkOp(context, AppOpsManager.OPSTR_GET_USAGE_STATS)
 
     fun isForegroundApp(context: Context, packageName: String): Boolean {
         val usageStatsManager = context.getSystemService<UsageStatsManager>()!!
         val now = System.currentTimeMillis()
         val stats = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_BEST,
-            now - 1000 * 60 * (HailData.autoFreezeDelay + 1), now  // to ensure that we can get the last app used
+            now - 1000 * 60 * (HailData.autoFreezeDelay + 1),
+            now, // to ensure that we can get the last app used
         )?.sortedBy { it.lastTimeUsed }
         val foregroundPackageName = stats?.let {
             if (it.isEmpty()) return@let null

@@ -23,8 +23,9 @@ object HDhizuku {
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun setDelegatedScopes() {
-        if (!Dhizuku.getDelegatedScopes().contains(DevicePolicyManager.DELEGATION_PACKAGE_ACCESS))
+        if (!Dhizuku.getDelegatedScopes().contains(DevicePolicyManager.DELEGATION_PACKAGE_ACCESS)) {
             Dhizuku.setDelegatedScopes(arrayOf(DevicePolicyManager.DELEGATION_PACKAGE_ACCESS))
+        }
     }
 
     val lockScreen: Boolean
@@ -38,17 +39,19 @@ object HDhizuku {
             "setApplicationHidden",
             ComponentName::class.java,
             String::class.java,
-            Boolean::class.java
+            Boolean::class.java,
         ).invoke(dpm, null, packageName, hidden) as Boolean
     }.getOrDefault(false)
 
     fun setAppSuspended(packageName: String, suspended: Boolean): Boolean = runCatching {
-        HTarget.O && (dpm::class.java.getMethod(
-            "setPackagesSuspended",
-            ComponentName::class.java,
-            Array<String>::class.java,
-            Boolean::class.java
-        ).invoke(dpm, null, arrayOf(packageName), suspended) as Array<*>).isEmpty()
+        HTarget.O && (
+            dpm::class.java.getMethod(
+                "setPackagesSuspended",
+                ComponentName::class.java,
+                Array<String>::class.java,
+                Boolean::class.java,
+            ).invoke(dpm, null, arrayOf(packageName), suspended) as Array<*>
+            ).isEmpty()
     }.getOrDefault(false)
 
     @SuppressLint("PrivateApi")
@@ -67,8 +70,8 @@ object HDhizuku {
                 .invoke(
                     null,
                     Dhizuku.binderWrapper(
-                        origin::class.java.getMethod("asBinder").invoke(origin) as IBinder
-                    )
+                        origin::class.java.getMethod("asBinder").invoke(origin) as IBinder,
+                    ),
                 )
             mInstaller.set(installer, proxy)
         }
@@ -78,8 +81,8 @@ object HDhizuku {
                 app,
                 0,
                 Intent(),
-                PendingIntent.FLAG_IMMUTABLE
-            ).intentSender
+                PendingIntent.FLAG_IMMUTABLE,
+            ).intentSender,
         )
         true
     }.getOrDefault(false)

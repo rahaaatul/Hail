@@ -29,7 +29,7 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "action-1",
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.missing")
+            unfreezePackages = listOf("com.example.missing"),
         )
         every { HPackages.getApplicationInfoOrNull("com.example.missing") } returns null
 
@@ -42,7 +42,7 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "action-1",
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep")
+            unfreezePackages = listOf("com.example.dep"),
         )
         every { HPackages.getApplicationInfoOrNull("com.example.dep") } returns mockk()
         every { AppManager.isAppFrozen("com.example.dep") } returns false
@@ -58,7 +58,7 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "action-1",
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep")
+            unfreezePackages = listOf("com.example.dep"),
         )
         every { HPackages.getApplicationInfoOrNull("com.example.dep") } returns mockk()
         every { AppManager.isAppFrozen("com.example.dep") } returns true
@@ -73,7 +73,7 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "action-1",
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep")
+            unfreezePackages = listOf("com.example.dep"),
         )
         every { HPackages.getApplicationInfoOrNull("com.example.dep") } returns mockk()
         every { AppManager.isAppFrozen("com.example.dep") } returns true
@@ -90,7 +90,7 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "action-1",
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep1", "com.example.dep2")
+            unfreezePackages = listOf("com.example.dep1", "com.example.dep2"),
         )
         every { HPackages.getApplicationInfoOrNull(any()) } returns mockk()
         every { AppManager.isAppFrozen(any()) } answers {

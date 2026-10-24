@@ -3,7 +3,13 @@ package com.aistra.hail.ui.apps
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
-import android.view.*
+import android.view.ContextMenu
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
@@ -20,7 +26,12 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.FragmentAppsBinding
-import com.aistra.hail.extensions.*
+import com.aistra.hail.extensions.applyDefaultInsetter
+import com.aistra.hail.extensions.exportFileName
+import com.aistra.hail.extensions.isLandscape
+import com.aistra.hail.extensions.isRtl
+import com.aistra.hail.extensions.marginRelative
+import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HFiles
@@ -34,7 +45,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.FileInputStream
 
-class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapter.OnItemCheckedChangeListener,
+class AppsFragment :
+    MainFragment(),
+    AppsAdapter.OnItemClickListener,
+    AppsAdapter.OnItemCheckedChangeListener,
     MenuProvider {
 
     private val model: AppsViewModel by viewModels()
@@ -49,7 +63,6 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
     private val isAppsChanged get() = model.apps.value.hashCode() != lastAppsHash
     private val isQueryChanged get() = model.query.value != lastQuery
     private var contextMenuInfo: ContextMenu.ContextMenuInfo? = null
-
 
     private var exportApkPkg: String? = null
     private val exportApk =
@@ -79,9 +92,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             }
         }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
         _binding = FragmentAppsBinding.inflate(inflater, container, false)
@@ -134,9 +145,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
 //        buttonView.toggle()
     }
 
-    override fun onCreateContextMenu(
-        menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo?
-    ) {
+    override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo?) {
         contextMenuInfo = menuInfo
         val viewHolder = ((menuInfo as HRecyclerView.RecyclerViewContextMenuInfo).viewHolder as AppsAdapter.ViewHolder)
         val pkg = viewHolder.info.packageName
@@ -153,7 +162,8 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
         val pkg = info.packageName
         when (item.itemId) {
             R.id.action_details -> HUI.startActivity(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS, HPackages.packageUri(pkg)
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                HPackages.packageUri(pkg),
             )
 
             R.id.action_export_clipboard -> {
@@ -162,10 +172,15 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             }
 
             R.id.action_extract_apk -> extractApk(pkg)
+
             R.id.action_uninstall -> uninstallApp(name, pkg)
+
             R.id.action_reinstall -> {
-                if (AppManager.reinstallApp(pkg)) updateAppList(true)
-                else HUI.showToast(R.string.operation_failed, name)
+                if (AppManager.reinstallApp(pkg)) {
+                    updateAppList(true)
+                } else {
+                    HUI.showToast(R.string.operation_failed, name)
+                }
             }
 
             else -> return super.onContextItemSelected(item)
@@ -192,6 +207,7 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             }
 
             HailData.workingMode == HailData.MODE_DEFAULT -> AppManager.uninstallApp(pkg)
+
             else -> showUninstallDialog(name, pkg)
         }
     }
@@ -203,11 +219,12 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
-    override fun onItemCheckedChange(
-        buttonView: CompoundButton, isChecked: Boolean, packageName: String
-    ) {
-        if (isChecked) HailData.addCheckedApp(packageName)
-        else HailData.removeCheckedApp(packageName)
+    override fun onItemCheckedChange(buttonView: CompoundButton, isChecked: Boolean, packageName: String) {
+        if (isChecked) {
+            HailData.addCheckedApp(packageName)
+        } else {
+            HailData.removeCheckedApp(packageName)
+        }
         buttonView.isChecked = HailData.isChecked(packageName)
     }
 
@@ -238,12 +255,16 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
                 HailData.SORT_INSTALL -> R.id.sort_by_install
                 HailData.SORT_UPDATE -> R.id.sort_by_update
                 else -> R.id.sort_by_name
-            }
+            },
         ).isChecked = true
         menu.findItem(
-            if (HailData.filterAllApps) R.id.filter_all_apps
-            else if (HailData.filterSystemApps) R.id.filter_system_apps
-            else R.id.filter_user_apps
+            if (HailData.filterAllApps) {
+                R.id.filter_all_apps
+            } else if (HailData.filterSystemApps) {
+                R.id.filter_system_apps
+            } else {
+                R.id.filter_user_apps
+            },
         ).isChecked = true
         menu.findItem(R.id.filter_frozen_apps).isChecked = HailData.filterFrozenApps
         menu.findItem(R.id.filter_unfrozen_apps).isChecked = HailData.filterUnfrozenApps
@@ -254,24 +275,45 @@ class AppsFragment : MainFragment(), AppsAdapter.OnItemClickListener, AppsAdapte
             R.id.action_select_all -> {
                 val displayedApps = model.displayApps.value.orEmpty()
                 val selfPkg = BuildConfig.APPLICATION_ID
-                val allChecked = displayedApps.isNotEmpty() && displayedApps.all { it.packageName == selfPkg || HailData.isChecked(it.packageName) }
+                val allChecked =
+                    displayedApps.isNotEmpty() &&
+                        displayedApps.all { it.packageName == selfPkg || HailData.isChecked(it.packageName) }
                 if (allChecked) {
-                    displayedApps.forEach { if (it.packageName != selfPkg) HailData.removeCheckedApp(it.packageName, false) }
+                    displayedApps.forEach {
+                        if (it.packageName !=
+                            selfPkg
+                        ) {
+                            HailData.removeCheckedApp(it.packageName, false)
+                        }
+                    }
                 } else {
-                    displayedApps.forEach { if (it.packageName != selfPkg) HailData.addCheckedApp(it.packageName, 0, false) }
+                    displayedApps.forEach {
+                        if (it.packageName !=
+                            selfPkg
+                        ) {
+                            HailData.addCheckedApp(it.packageName, 0, false)
+                        }
+                    }
                 }
                 HailData.saveApps()
                 appsAdapter.notifyDataSetChanged()
                 return true
             }
+
             R.id.sort_by_name -> changeAppsSort(HailData.SORT_NAME, item)
+
             R.id.sort_by_install -> changeAppsSort(HailData.SORT_INSTALL, item)
+
             R.id.sort_by_update -> changeAppsSort(HailData.SORT_UPDATE, item)
+
             R.id.filter_user_apps -> changeAppsFilter(HailData.FILTER_USER_APPS, item)
+
             R.id.filter_system_apps -> changeAppsFilter(HailData.FILTER_SYSTEM_APPS, item)
+
             R.id.filter_all_apps -> changeAppsFilter(HailData.FILTER_ALL_APPS, item)
 
             R.id.filter_frozen_apps -> changeAppsFilter(HailData.FILTER_FROZEN_APPS, item)
+
             R.id.filter_unfrozen_apps -> changeAppsFilter(HailData.FILTER_UNFROZEN_APPS, item)
         }
         return false

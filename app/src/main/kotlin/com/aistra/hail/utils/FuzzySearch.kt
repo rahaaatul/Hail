@@ -25,7 +25,7 @@ object FuzzySearch {
 
     /** 判断字符串A是否依次包含字符串B的每个字符 */
     private fun containsInOrder(strA: String, strB: String): Boolean {
-        var indexA = 0  // 用于跟踪字符串A中的位置
+        var indexA = 0 // 用于跟踪字符串A中的位置
         for (charB in strB) {
             // 在字符串A的当前位置之后查找字符charB
             val foundIndex = strA.indexOf(charB, indexA)

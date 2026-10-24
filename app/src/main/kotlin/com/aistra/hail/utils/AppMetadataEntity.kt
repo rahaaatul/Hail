@@ -15,5 +15,5 @@ data class AppMetadataEntity(
     val enabled: Boolean = false,
     val installed: Boolean = false,
     @ColumnInfo(defaultValue = "0") val frozen: Boolean = false,
-    val sourceSignature: String = ""
+    val sourceSignature: String = "",
 )

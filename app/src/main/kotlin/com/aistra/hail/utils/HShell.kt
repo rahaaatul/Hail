@@ -47,12 +47,14 @@ object HShell {
 
     fun execute(command: String, root: Boolean): Pair<Int, String?> = if (root) {
         executeRoot(command)
-    } else runCatching {
-        ProcessBuilder("sh").redirectErrorStream(true).start().run {
-            outputStream.use { it.write(command.toByteArray()) }
-            waitFor() to inputStream.bufferedReader().use { it.readText() }.also { destroy() }
-        }
-    }.getOrElse { 1 to it.stackTraceToString() }
+    } else {
+        runCatching {
+            ProcessBuilder("sh").redirectErrorStream(true).start().run {
+                outputStream.use { it.write(command.toByteArray()) }
+                waitFor() to inputStream.bufferedReader().use { it.readText() }.also { destroy() }
+            }
+        }.getOrElse { 1 to it.stackTraceToString() }
+    }
 
     private fun executeRoot(command: String): Pair<Int, String?> = synchronized(this) {
         runCatching {
@@ -84,13 +86,13 @@ object HShell {
         execSU("pm ${if (suspended) "suspend" else "unsuspend"} $userArg $packageName").first == 0
 
     fun uninstallApp(packageName: String) = execSU(
-        "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName"
+        "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName",
     ).first == 0
 
     fun reinstallApp(packageName: String) = execSU("pm install-existing $userArg $packageName").first == 0
 
     @RequiresApi(Build.VERSION_CODES.P)
     fun setAppRestricted(packageName: String, restricted: Boolean) = execSU(
-        "appops set $userArg $packageName RUN_ANY_IN_BACKGROUND ${if (restricted) "ignore" else "allow"}"
+        "appops set $userArg $packageName RUN_ANY_IN_BACKGROUND ${if (restricted) "ignore" else "allow"}",
     ).first == 0
 }
