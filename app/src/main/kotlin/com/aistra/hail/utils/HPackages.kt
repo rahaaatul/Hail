@@ -25,8 +25,7 @@ object HPackages {
      * The package name as a word for a shell, or nothing when the name is not
      * a package name.
      */
-    fun shellArg(packageName: String): String? =
-        packageName.takeIf { isValidPackageName(it) }?.let { "'$it'" }
+    fun shellArg(packageName: String): String? = packageName.takeIf { isValidPackageName(it) }?.let { "'$it'" }
 
     fun packageUri(packageName: String) = "package:$packageName"
 

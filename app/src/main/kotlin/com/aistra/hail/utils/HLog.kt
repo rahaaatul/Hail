@@ -32,6 +32,5 @@ object HLog {
     fun d(string: String) = Log.d(TAG, HLogSanitizer.sanitize(string))
     fun d(tag: String, string: String) = Log.d(tag, HLogSanitizer.sanitize(string))
     fun w(tag: String, string: String) = Log.w(tag, HLogSanitizer.sanitize(string))
-    fun e(string: String, t: Throwable) =
-        Log.e(TAG, HLogSanitizer.sanitize(string) + "\n" + sanitizeTrace(t))
+    fun e(string: String, t: Throwable) = Log.e(TAG, HLogSanitizer.sanitize(string) + "\n" + sanitizeTrace(t))
 }
