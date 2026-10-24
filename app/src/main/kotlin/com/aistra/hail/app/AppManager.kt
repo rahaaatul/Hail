@@ -55,7 +55,9 @@ object AppManager {
         } catch (e: ActivityNotFoundException) {
             HLog.e("launchToClearStop failed for $packageName: ActivityNotFoundException", e)
             false
-        } catch (e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            // startActivity() only throws SecurityException and ActivityNotFoundException,
+            // both caught above. This is for genuinely unexpected errors.
             HLog.e("launchToClearStop failed for $packageName: unexpected", e)
             false
         }
