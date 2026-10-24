@@ -55,9 +55,6 @@ object AppManager {
         } catch (e: ActivityNotFoundException) {
             HLog.e("launchToClearStop failed for $packageName: ActivityNotFoundException", e)
             false
-        } catch (e: Exception) {
-            HLog.e("launchToClearStop failed for $packageName: unexpected", e)
-            false
         }
     }
 

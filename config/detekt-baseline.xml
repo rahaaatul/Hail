@@ -100,7 +100,6 @@
     <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$PagerFragment$IllegalArgumentException()</ID>
     <ID>ThrowsCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
     <ID>TooGenericExceptionCaught:AppIconCache.kt$AppIconCache$e: Throwable</ID>
-    <ID>TooGenericExceptionCaught:AppManager.kt$AppManager$e: Exception</ID>
     <ID>TooManyFunctions:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
     <ID>UnusedPrivateMember:PagerFragment.kt$PagerFragment$private fun MenuItem.updateIcon()</ID>
