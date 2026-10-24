@@ -39,10 +39,14 @@ import kotlin.coroutines.CoroutineContext
  */
 object AppIconCache : CoroutineScope {
 
+    private const val BYTES_PER_KIB = 1024
+    private const val CACHE_SIZE_DIVISOR = 4
+    private const val PNG_COMPRESS_QUALITY = 100
+
     private class AppIconLruCache constructor(maxSize: Int) :
         LruCache<Triple<String, Int, Int>, Bitmap>(maxSize) {
 
-        override fun sizeOf(key: Triple<String, Int, Int>, value: Bitmap): Int = value.byteCount / 1024
+        override fun sizeOf(key: Triple<String, Int, Int>, value: Bitmap): Int = value.byteCount / BYTES_PER_KIB
     }
 
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main
@@ -63,8 +67,8 @@ object AppIconCache : CoroutineScope {
 
     init {
         // Initialize app icon lru cache
-        val maxMemory = Runtime.getRuntime().maxMemory() / 1024
-        val availableCacheSize = (maxMemory / 4).toInt()
+        val maxMemory = Runtime.getRuntime().maxMemory() / BYTES_PER_KIB
+        val availableCacheSize = (maxMemory / CACHE_SIZE_DIVISOR).toInt()
         lruCache = AppIconLruCache(availableCacheSize)
 
         // Initialize load icon scheduler
@@ -118,7 +122,7 @@ object AppIconCache : CoroutineScope {
             val target = diskFile(info, userId, size)
             val temporary = File(target.path + ".tmp")
             temporary.outputStream().use { output ->
-                check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
+                check(bitmap.compress(Bitmap.CompressFormat.PNG, PNG_COMPRESS_QUALITY, output))
             }
             check(temporary.renameTo(target))
         }

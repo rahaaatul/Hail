@@ -92,6 +92,9 @@ import java.text.SimpleDateFormat
 
 class AboutFragment : MainFragment() {
 
+    private const val DONATE_LIBERAPAY = 3
+    private const val DONATE_PAYPAL = 4
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -270,9 +273,9 @@ class AboutFragment : MainFragment() {
 
                     2 -> HUI.openLink(HailData.URL_KOFI)
 
-                    3 -> HUI.openLink(HailData.URL_LIBERAPAY)
+                    DONATE_LIBERAPAY -> HUI.openLink(HailData.URL_LIBERAPAY)
 
-                    4 -> HUI.openLink(HailData.URL_PAYPAL)
+                    DONATE_PAYPAL -> HUI.openLink(HailData.URL_PAYPAL)
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()
     }
