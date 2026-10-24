@@ -986,9 +986,9 @@ class SettingsFragment :
                     apps = checkedItems[0],
                     whitelist = checkedItems[1],
                     actions = checkedItems[2],
-                    settings = checkedItems[3],
-                )
-                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
+                val nothingSelected =
+                    listOf(options.apps, options.whitelist, options.actions, options.settings).none { it }
+                if (nothingSelected) {
                     HUI.showToast(R.string.msg_no_items_to_select)
                     return@setPositiveButton
                 }
