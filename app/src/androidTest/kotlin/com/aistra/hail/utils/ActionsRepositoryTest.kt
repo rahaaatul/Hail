@@ -21,7 +21,7 @@ class ActionsRepositoryTest {
     fun setup() {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            AppMetadataDatabase::class.java
+            AppMetadataDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = database.actionDao()
     }
@@ -35,7 +35,7 @@ class ActionsRepositoryTest {
     fun saveWithDuplicateUnfreezePackages() = runBlocking {
         val action = ActionsRepository.save(
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep", "com.example.dep")
+            unfreezePackages = listOf("com.example.dep", "com.example.dep"),
         )
 
         assertEquals(1, action.unfreezePackages.size)
@@ -46,7 +46,7 @@ class ActionsRepositoryTest {
     fun saveRemovesLaunchFromUnfreeze() = runBlocking {
         val action = ActionsRepository.save(
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep", "com.example.target")
+            unfreezePackages = listOf("com.example.dep", "com.example.target"),
         )
 
         assertTrue(!action.unfreezePackages.contains("com.example.target"))
@@ -57,7 +57,7 @@ class ActionsRepositoryTest {
     fun savePreservesOrder() = runBlocking {
         val action = ActionsRepository.save(
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep1", "com.example.dep2", "com.example.dep3")
+            unfreezePackages = listOf("com.example.dep1", "com.example.dep2", "com.example.dep3"),
         )
 
         assertEquals(3, action.unfreezePackages.size)
@@ -79,7 +79,7 @@ class ActionsRepositoryTest {
     fun deleteRemovesAction() = runBlocking {
         val action = ActionsRepository.save(
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep")
+            unfreezePackages = listOf("com.example.dep"),
         )
         ActionsRepository.delete(action.id)
 
@@ -91,7 +91,7 @@ class ActionsRepositoryTest {
     fun duplicateCreatesNewAction() = runBlocking {
         val original = ActionsRepository.save(
             launchPackage = "com.example.target",
-            unfreezePackages = listOf("com.example.dep")
+            unfreezePackages = listOf("com.example.dep"),
         )
         val duplicate = ActionsRepository.duplicate(original)
 

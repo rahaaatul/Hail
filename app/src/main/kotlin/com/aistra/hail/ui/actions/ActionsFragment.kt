@@ -20,7 +20,12 @@ import com.aistra.hail.extensions.isLandscape
 import com.aistra.hail.extensions.isRtl
 import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.ui.main.MainFragment
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.ActionExecutor
+import com.aistra.hail.utils.ActionsRepository
+import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.HShortcuts
+import com.aistra.hail.utils.HUI
+import com.aistra.hail.utils.LaunchAction
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
@@ -62,16 +67,19 @@ class ActionsFragment : MainFragment() {
                 getString(R.string.action_edit_action),
                 getString(R.string.action_create_shortcut),
                 getString(R.string.action_duplicate),
-                getString(R.string.action_delete)
-            )
+                getString(R.string.action_delete),
+            ),
         ) { _, which ->
             when (which) {
                 0 -> showEditor(action)
+
                 1 -> HShortcuts.addActionShortcut(action)
+
                 2 -> viewLifecycleOwner.lifecycleScope.launch {
                     ActionsRepository.duplicate(action)
                     loadActions()
                 }
+
                 3 -> confirmDelete(action)
             }
         }.show()
@@ -139,7 +147,11 @@ class ActionsFragment : MainFragment() {
                     return@setOnClickListener
                 }
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val savedAction = ActionsRepository.save(existing?.id ?: java.util.UUID.randomUUID().toString(), selectedLaunch!!, finalDependencies)
+                    val savedAction = ActionsRepository.save(
+                        existing?.id ?: java.util.UUID.randomUUID().toString(),
+                        selectedLaunch!!,
+                        finalDependencies,
+                    )
                     HShortcuts.updateActionShortcut(savedAction)
                     dialog.dismiss()
                     loadActions()
@@ -186,8 +198,12 @@ class ActionsFragment : MainFragment() {
         var visibleApps: List<ApplicationInfo> = emptyList()
         var labelMap: Map<String, String> = emptyMap()
         fun updateFilter(query: String) {
-            visibleApps = if (query.isBlank()) allApps else allApps.filter {
-                labelMap[it.packageName]?.contains(query, true) == true || it.packageName.contains(query, true)
+            visibleApps = if (query.isBlank()) {
+                allApps
+            } else {
+                allApps.filter {
+                    labelMap[it.packageName]?.contains(query, true) == true || it.packageName.contains(query, true)
+                }
             }
             adapter.submitList(visibleApps)
         }
@@ -200,7 +216,8 @@ class ActionsFragment : MainFragment() {
             }.create()
         search.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = updateFilter(s.toString())
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) =
+                updateFilter(s.toString())
             override fun afterTextChanged(s: android.text.Editable?) = Unit
         })
         pickerDialog.show()

@@ -17,16 +17,15 @@ object IconPack {
             val resources = app.packageManager.getResourcesForApplication(HailData.iconPack)
             getResourceName(resources, HailData.iconPack, packageName)?.let {
                 BitmapFactory.decodeResource(
-                    resources, resources.getIdentifier(it, "drawable", HailData.iconPack)
+                    resources,
+                    resources.getIdentifier(it, "drawable", HailData.iconPack),
                 )
             }
         }.getOrNull()
     }
 
     @SuppressLint("DiscouragedApi")
-    private fun getResourceName(
-        resources: Resources, resPackage: String, componentName: String
-    ): String? {
+    private fun getResourceName(resources: Resources, resPackage: String, componentName: String): String? {
         val parser = resources.getXml(resources.getIdentifier("appfilter", "xml", resPackage))
         while (parser.eventType != XmlResourceParser.END_DOCUMENT) {
             runCatching {

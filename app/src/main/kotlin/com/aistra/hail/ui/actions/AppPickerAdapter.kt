@@ -11,7 +11,7 @@ import com.aistra.hail.utils.HPackages
 class AppPickerAdapter(
     private val multi: Boolean,
     private val selected: MutableSet<String>,
-    private val onSelected: (String) -> Unit
+    private val onSelected: (String) -> Unit,
 ) : RecyclerView.Adapter<AppPickerAdapter.ViewHolder>() {
     private var applications: List<android.content.pm.ApplicationInfo> = emptyList()
 
@@ -21,7 +21,7 @@ class AppPickerAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ViewHolder(
-        ItemActionPickerBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        ItemActionPickerBinding.inflate(LayoutInflater.from(parent.context), parent, false),
     )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) = holder.bind(applications[position])

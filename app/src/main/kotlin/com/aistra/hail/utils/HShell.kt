@@ -31,7 +31,7 @@ object HShell {
             shell.close()
         }
         warmupJob = scope.launch {
-            execute(":")
+            executeRoot(":")
             synchronized(this@HShell) {
                 warmupJob = null
                 if (!isActive) Shell.getCachedShell()?.close()
@@ -45,7 +45,18 @@ object HShell {
         Shell.getCachedShell()?.close()
     }
 
-    fun execute(command: String): Pair<Int, String?> = synchronized(this) {
+    fun execute(command: String, root: Boolean): Pair<Int, String?> = if (root) {
+        executeRoot(command)
+    } else {
+        runCatching {
+            ProcessBuilder("sh").redirectErrorStream(true).start().run {
+                outputStream.use { it.write(command.toByteArray()) }
+                waitFor() to inputStream.bufferedReader().use { it.readText() }.also { destroy() }
+            }
+        }.getOrElse { 1 to it.stackTraceToString() }
+    }
+
+    private fun executeRoot(command: String): Pair<Int, String?> = synchronized(this) {
         runCatching {
             Shell.getCachedShell()?.let { shell ->
                 if (!shell.isAlive) shell.close()
@@ -57,41 +68,31 @@ object HShell {
         }.getOrElse { 1 to it.stackTraceToString() }
     }
 
-    private fun execSU(command: String) = execute(command)
+    private fun execSU(command: String) = execute(command, true)
 
     val checkSU get() = execSU("whoami").second?.trim() == "root"
 
     val lockScreen get() = execSU("input keyevent KEYCODE_POWER").first == 0
 
-    fun forceStopApp(packageName: String): Boolean =
-        HPackages.shellArg(packageName)?.let { execSU("am force-stop $userArg $it").first == 0 } ?: false
+    fun forceStopApp(packageName: String): Boolean = execSU("am force-stop $userArg $packageName").first == 0
 
     fun setAppDisabled(packageName: String, disabled: Boolean): Boolean =
-        HPackages.shellArg(packageName)
-            ?.let { execSU("pm ${if (disabled) "disable" else "enable"} $userArg $it").first == 0 } ?: false
+        execSU("pm ${if (disabled) "disable" else "enable"} $userArg $packageName").first == 0
 
     fun setAppHidden(packageName: String, hidden: Boolean): Boolean =
-        HPackages.shellArg(packageName)
-            ?.let { execSU("pm ${if (hidden) "hide" else "unhide"} $userArg $it").first == 0 } ?: false
+        execSU("pm ${if (hidden) "hide" else "unhide"} $userArg $packageName").first == 0
 
     fun setAppSuspended(packageName: String, suspended: Boolean): Boolean =
-        HPackages.shellArg(packageName)
-            ?.let { execSU("pm ${if (suspended) "suspend" else "unsuspend"} $userArg $it").first == 0 } ?: false
+        execSU("pm ${if (suspended) "suspend" else "unsuspend"} $userArg $packageName").first == 0
 
-    fun uninstallApp(packageName: String) = HPackages.shellArg(packageName)?.let {
-        execSU(
-            "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $it"
-        ).first == 0
-    } ?: false
+    fun uninstallApp(packageName: String) = execSU(
+        "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName",
+    ).first == 0
 
-    fun reinstallApp(packageName: String) = HPackages.shellArg(packageName)?.let {
-        execSU("pm install-existing $userArg $it").first == 0
-    } ?: false
+    fun reinstallApp(packageName: String) = execSU("pm install-existing $userArg $packageName").first == 0
 
     @RequiresApi(Build.VERSION_CODES.P)
-    fun setAppRestricted(packageName: String, restricted: Boolean) = HPackages.shellArg(packageName)?.let {
-        execSU(
-            "appops set $userArg $it RUN_ANY_IN_BACKGROUND ${if (restricted) "ignore" else "allow"}"
-        ).first == 0
-    } ?: false
+    fun setAppRestricted(packageName: String, restricted: Boolean) = execSU(
+        "appops set $userArg $packageName RUN_ANY_IN_BACKGROUND ${if (restricted) "ignore" else "allow"}",
+    ).first == 0
 }

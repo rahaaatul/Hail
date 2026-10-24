@@ -11,14 +11,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedInputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.nio.charset.Charset
 import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 object HBackup {
 
@@ -26,14 +26,14 @@ object HBackup {
         val apps: Boolean = false,
         val whitelist: Boolean = false,
         val actions: Boolean = false,
-        val settings: Boolean = false
+        val settings: Boolean = false,
     )
 
     data class RestoreOptions(
         val apps: Boolean = false,
         val whitelist: Boolean = false,
         val actions: Boolean = false,
-        val settings: Boolean = false
+        val settings: Boolean = false,
     )
 
     private const val FILE_APPS = "apps.json"
@@ -66,66 +66,60 @@ object HBackup {
 
     private val FLOAT_PREFERENCE_KEYS = FLOAT_PREFERENCES.keys
 
-    suspend fun backup(
-        context: Context,
-        outputFile: File,
-        options: BackupOptions
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            // File.mkdirs() returns false when the directory already exists, so only
-            // treat a path that is neither an existing directory nor creatable as a failure.
-            // The trailing isDirectory re-check covers another process creating the parent
-            // between the check above and mkdirs().
-            val parent = outputFile.parentFile
-            if (parent != null && !parent.isDirectory && !parent.mkdirs() && !parent.isDirectory) {
-                throw IllegalStateException("Failed to create directory: $parent")
-            }
-            val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
-            try {
-                if (options.apps) {
-                    writeAppsJson(zipOutputStream)
+    suspend fun backup(context: Context, outputFile: File, options: BackupOptions): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                // File.mkdirs() returns false when the directory already exists, so only
+                // treat a path that is neither an existing directory nor creatable as a failure.
+                // The trailing isDirectory re-check covers another process creating the parent
+                // between the check above and mkdirs().
+                val parent = outputFile.parentFile
+                if (parent != null && !parent.isDirectory && !parent.mkdirs() && !parent.isDirectory) {
+                    throw IllegalStateException("Failed to create directory: $parent")
                 }
-                if (options.whitelist) {
-                    writeWhitelistJson(zipOutputStream)
-                }
-                if (options.actions) {
-                    val actions = ActionsRepository.loadAll()
-                    writeActionsJson(zipOutputStream, actions)
-                }
-                if (options.settings) {
-                    writeSettingsJson(context, zipOutputStream)
-                }
-            } finally {
-                zipOutputStream.close()
-            }
-        }
-    }
-
-    suspend fun restore(
-        context: Context,
-        inputFile: File,
-        options: RestoreOptions
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
-            val zipInputStream = ZipInputStream(FileInputStream(inputFile))
-            try {
-                var entry = zipInputStream.nextEntry
-                while (entry != null) {
-                    val name = entry.name
-                    when (name) {
-                        FILE_APPS -> if (options.apps) readAppsJson(zipInputStream)
-                        FILE_WHITELIST -> if (options.whitelist) readWhitelistJson(zipInputStream)
-                        FILE_ACTIONS -> if (options.actions) readActionsJson(zipInputStream)
-                        FILE_SETTINGS -> if (options.settings) readSettingsJson(context, zipInputStream)
+                val zipOutputStream = ZipOutputStream(FileOutputStream(outputFile))
+                try {
+                    if (options.apps) {
+                        writeAppsJson(zipOutputStream)
                     }
-                    zipInputStream.closeEntry()
-                    entry = zipInputStream.nextEntry
+                    if (options.whitelist) {
+                        writeWhitelistJson(zipOutputStream)
+                    }
+                    if (options.actions) {
+                        val actions = ActionsRepository.loadAll()
+                        writeActionsJson(zipOutputStream, actions)
+                    }
+                    if (options.settings) {
+                        writeSettingsJson(context, zipOutputStream)
+                    }
+                } finally {
+                    zipOutputStream.close()
                 }
-            } finally {
-                zipInputStream.close()
             }
         }
-    }
+
+    suspend fun restore(context: Context, inputFile: File, options: RestoreOptions): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val zipInputStream = ZipInputStream(FileInputStream(inputFile))
+                try {
+                    var entry = zipInputStream.nextEntry
+                    while (entry != null) {
+                        val name = entry.name
+                        when (name) {
+                            FILE_APPS -> if (options.apps) readAppsJson(zipInputStream)
+                            FILE_WHITELIST -> if (options.whitelist) readWhitelistJson(zipInputStream)
+                            FILE_ACTIONS -> if (options.actions) readActionsJson(zipInputStream)
+                            FILE_SETTINGS -> if (options.settings) readSettingsJson(context, zipInputStream)
+                        }
+                        zipInputStream.closeEntry()
+                        entry = zipInputStream.nextEntry
+                    }
+                } finally {
+                    zipInputStream.close()
+                }
+            }
+        }
 
     private fun writeAppsJson(zipOutputStream: ZipOutputStream) {
         val jsonArray = JSONArray()
@@ -152,7 +146,7 @@ object HBackup {
                 JSONObject()
                     .put("id", action.id)
                     .put("launchPackage", action.launchPackage)
-                    .put("unfreezePackages", JSONArray(action.unfreezePackages))
+                    .put("unfreezePackages", JSONArray(action.unfreezePackages)),
             )
         }
         writeEntry(zipOutputStream, FILE_ACTIONS, jsonArray.toString())
@@ -164,8 +158,11 @@ object HBackup {
         sp.all.forEach { (key, value) ->
             when (value) {
                 is String -> jsonObject.put(key, value)
+
                 is Int -> jsonObject.put(key, value)
+
                 is Long -> jsonObject.put(key, value)
+
                 // JSONObject.numberToString shaves trailing zeros and then a trailing decimal
                 // point, so 14.0f is written as 14 and comes back as an Integer. The decimal
                 // string keeps the "." that marks the value as a Float, and it is the whole of
@@ -178,9 +175,15 @@ object HBackup {
                 // format for a file no third party reads, and it would still not remove the
                 // untagged branch, which every backup written before it has to keep parsing.
                 is Float -> jsonObject.put(key, value.toString())
+
                 is Boolean -> jsonObject.put(key, value)
+
                 is Set<*> -> jsonObject.put(key, JSONArray(value.map { it.toString() }))
-                else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}, skipping")
+
+                else -> HLog.w(
+                    "HBackup",
+                    "Unsupported preference type for key '$key': ${value?.javaClass?.simpleName}, skipping",
+                )
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
@@ -291,6 +294,7 @@ object HBackup {
                         when {
                             asFloat == null || !asFloat.isFinite() ->
                                 warnNotStorable(key, value, "Float")
+
                             // The magnitude guard, and only on the lossy route. A floatTag is
                             // a fixed point of Float.toString: the text and the Float are the
                             // same number by construction and no parser rounded anything
@@ -307,6 +311,7 @@ object HBackup {
                             // the user could have chosen.
                             floatTag == null && isMagnitudeTooWide(asFloat.toDouble()) ->
                                 warnNotStorable(key, value, "Float")
+
                             // A value outside the range its own slider could have produced
                             // is damage of the same kind as the wrong type, and this
                             // branch is what made it reachable: before the reader was
@@ -317,6 +322,7 @@ object HBackup {
                             // preference the user never chose.
                             range != null && asFloat !in range ->
                                 warnNotStorable(key, value, "Float in ${range.start}..${range.endInclusive}")
+
                             else -> putFloat(key, asFloat)
                         }
                     }
@@ -333,8 +339,11 @@ object HBackup {
                         when {
                             recorded is Int && asLong != null && asLong in INT_AS_LONG_RANGE ->
                                 putInt(key, asLong.toInt())
+
                             recorded is Int -> warnNotStorable(key, value, "Int")
+
                             asLong != null -> putLong(key, asLong)
+
                             else -> warnNotStorable(key, value, "Long")
                         }
                     }
@@ -345,7 +354,9 @@ object HBackup {
                     // bare "15" or "1e20" is a number JSONObject should have parsed, not a Float
                     // this build wrote.
                     value is String -> putString(key, value)
+
                     value is Boolean -> putBoolean(key, value)
+
                     value is JSONArray -> {
                         val stringSet = mutableSetOf<String>()
                         for (i in 0 until value.length()) {
@@ -353,11 +364,15 @@ object HBackup {
                         }
                         putStringSet(key, stringSet)
                     }
+
                     // JSONObject hands back no Float, but keep these arms in step with
                     // writeSettingsJson so the two stay mirrored and a type is never dropped.
                     value is Float -> putFloat(key, value)
+
                     value is Int -> putInt(key, value)
+
                     value is Long -> putLong(key, value)
+
                     // A number for a key nothing is known about, so the file's own claim has
                     // to be taken at face value. Which Java class org.json hands back for a
                     // given literal differs between the two implementations this project can
@@ -374,13 +389,19 @@ object HBackup {
                         when {
                             value.isTooWideInteger() && asLong == null ->
                                 warnNotStorable(key, value, "Long")
+
                             asLong != null -> putLong(key, asLong)
+
                             asFloat.isFinite() -> putFloat(key, asFloat)
+
                             else -> warnNotStorable(key, value, "Float")
                         }
                     }
 
-                    else -> HLog.w("HBackup", "Unsupported preference type for key '$key': ${value.javaClass.simpleName}")
+                    else -> HLog.w(
+                        "HBackup",
+                        "Unsupported preference type for key '$key': ${value.javaClass.simpleName}",
+                    )
                 }
             }
         }
@@ -401,8 +422,7 @@ object HBackup {
      * never writes for a Float, because a Float of 15.0f prints as "15.0" and 1.0E20f
      * prints as "1.0E20".
      */
-    private fun String.toFloatTagOrNull(): Float? =
-        toFloatOrNull()?.takeIf { it.toString() == this && it.isFinite() }
+    private fun String.toFloatTagOrNull(): Float? = toFloatOrNull()?.takeIf { it.toString() == this && it.isFinite() }
 
     /**
      * This number as an exact [Long], or null when it is not one: a fraction, a NaN, an
@@ -430,6 +450,7 @@ object HBackup {
         // to 2^63 as a Double, which is one past the end, so the value was rejected as too
         // wide after the round trip that was supposed to confirm it.
         is Long -> this
+
         is Int, is Short, is Byte -> toLong()
 
         // A Double is the one numeric type that can be in range and still be the wrong
@@ -444,7 +465,9 @@ object HBackup {
             val asDouble = toDouble()
             when {
                 !asDouble.isFinite() -> null
+
                 asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT || asDouble >= DOUBLE_EXACT_INTEGER_LIMIT -> null
+
                 // Below 2^53 every Double is a Long exactly, so the Long range needs no check
                 // of its own and the round trip is left to reject the fractions.
                 else -> asDouble.toLong().takeIf { it.toDouble() == asDouble }
@@ -477,10 +500,9 @@ object HBackup {
      * [Number.isTooWideInteger], so on the unit test classpath that answer is reachable
      * only by calling this.
      */
-    internal fun isMagnitudeTooWide(asDouble: Double): Boolean =
-        !asDouble.isFinite() ||
-            asDouble >= DOUBLE_EXACT_INTEGER_LIMIT ||
-            asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT
+    internal fun isMagnitudeTooWide(asDouble: Double): Boolean = !asDouble.isFinite() ||
+        asDouble >= DOUBLE_EXACT_INTEGER_LIMIT ||
+        asDouble <= -DOUBLE_EXACT_INTEGER_LIMIT
 
     /**
      * Whether this number is an integer too wide for any preference type, decided from its
@@ -532,6 +554,7 @@ object HBackup {
      */
     private fun Number.isTooWideInteger(): Boolean = when (this) {
         is BigInteger -> true
+
         is BigDecimal -> {
             val magnitude = abs()
             val asDouble = magnitude.toDouble()
@@ -544,6 +567,7 @@ object HBackup {
                 // equals, because 1.0E20 and 1E20 are the same number spelled differently.
                 BigDecimal(asDouble.toString()).compareTo(magnitude) != 0
         }
+
         else -> isMagnitudeTooWide(toDouble())
     }
 

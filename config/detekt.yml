@@ -1,0 +1,112 @@
+# Detekt configuration for Hail.
+#
+# The rules that are not mentioned here keep the values detekt ships with, so
+# this file only records the decisions that belong to this project.
+#
+# The findings that exist today are recorded in detekt-baseline.xml. Detekt
+# ignores the findings in that file, so a build only fails when a change
+# introduces a finding that is not in the baseline. The baseline is
+# regenerated with ./gradlew detektBaseline.
+
+complexity:
+  # A Composable takes many parameters, and most of them have a default.
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 8
+    ignoreDefaultParameters: true
+  # A screen holds a Composable per state, so a file with many of them is
+  # normal here.
+  TooManyFunctions:
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+    thresholdInInterfaces: 20
+    thresholdInObjects: 20
+    thresholdInEnums: 20
+    # A preview function exists only to be looked at.
+    ignoreAnnotatedFunctions: ['Preview']
+  # The code reads the XML layouts of the app, which need a cast to be
+  # turned into a view.
+  ComplexCondition:
+    active: true
+
+coroutines:
+  GlobalCoroutineUsage:
+    active: true
+
+exceptions:
+  # A worker that is stopped by the system is expected to end quietly.
+  SwallowedException:
+    ignoredExceptionTypes:
+      - 'InterruptedException'
+      - 'MalformedURLException'
+      - 'NumberFormatException'
+      - 'ParseException'
+      - 'SecurityException'
+  TooGenericExceptionCaught:
+    # These carry no information about what went wrong, and an app that
+    # cannot name the failure has nothing useful to report.
+    exceptionNames:
+      - 'ArrayIndexOutOfBoundsException'
+      - 'Error'
+      - 'Exception'
+      - 'IllegalMonitorException'
+      - 'IndexOutOfBoundsException'
+      - 'NullPointerException'
+      - 'RuntimeException'
+      - 'Throwable'
+
+naming:
+  # A Composable is named in PascalCase, and a Composable that returns Unit
+  # is named like a type.
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+  # A top level constant of a Compose theme is named in PascalCase.
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9]*'
+    propertyPattern: '[A-Za-z][_A-Za-z0-9]*'
+    privatePropertyPattern: '_?[A-Za-z][_A-Za-z0-9]*'
+
+performance:
+  # The rule is off by default. A list that is built once and then read is
+  # not a problem here.
+  SpreadOperator:
+    active: true
+
+potential-bugs:
+  # The app is a device owner app, and it reads the state of the system
+  # through the API, so a platform type is expected.
+  UnsafeCallOnNullableType:
+    active: true
+
+style:
+  # A colour, a size and a duration are written as the number they are, and
+  # a theme file is nothing but those numbers.
+  MagicNumber:
+    ignoreNumbers: ['-1', '0', '1', '2']
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: false
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+    ignoreEnums: false
+    ignoreRanges: false
+    ignoreExtensionFunctions: true
+  # A file that is longer than this is a file that should have been split.
+  MaxLineLength:
+    maxLineLength: 120
+    excludePackageStatements: true
+    excludeImportStatements: true
+    excludeCommentStatements: false
+    excludeRawStrings: true
+  # A preview function exists only to be looked at.
+  UnusedPrivateMember:
+    allowedNames: '_|ignored|expected|serialVersionUID'
+  # The name of the argument says what the value is.
+  ForbiddenComment:
+    active: true
+    comments:
+      - 'FIXME:'
+      - 'STOPSHIP:'
+      - 'TODO:REMOVE:'

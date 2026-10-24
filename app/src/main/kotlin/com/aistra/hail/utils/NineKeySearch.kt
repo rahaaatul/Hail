@@ -3,20 +3,22 @@ package com.aistra.hail.utils
 import net.sourceforge.pinyin4j.PinyinHelper
 
 object NineKeySearch {
-    fun search(query: String?, vararg strings: String?): Boolean =
-        query.isNullOrEmpty() || strings.any {
-            !it.isNullOrEmpty() && FuzzySearch.search(
-                toNineKey(toPinyin(it)),
-                query
-            )
-        }
+    fun search(query: String?, vararg strings: String?): Boolean = query.isNullOrEmpty() || strings.any {
+        !it.isNullOrEmpty() && FuzzySearch.search(
+            toNineKey(toPinyin(it)),
+            query,
+        )
+    }
 
     private fun toPinyin(raw: String): String = buildString {
         raw.map {
             when (it) {
                 in '0'..'9' -> append(it)
+
                 in 'a'..'z' -> append(it)
+
                 in 'A'..'Z' -> append(it)
+
                 else -> PinyinHelper.toHanyuPinyinStringArray(it)?.let { strings ->
                     for (str in strings) append(str)
                 }

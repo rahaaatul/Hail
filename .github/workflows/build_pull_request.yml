@@ -23,6 +23,9 @@ on:
       - 'app/src/main/jni/**'
       - 'app/src/main/aidl/**'
       - 'app/src/main/rs/**'
+      - '.editorconfig'
+      - 'config/detekt.yml'
+      - 'config/detekt-baseline.xml'
       - '!**.md'
       - '!**.txt'
       - '!LICENSE'
@@ -49,6 +52,9 @@ on:
       - 'app/src/main/jni/**'
       - 'app/src/main/aidl/**'
       - 'app/src/main/rs/**'
+      - '.editorconfig'
+      - 'config/detekt.yml'
+      - 'config/detekt-baseline.xml'
       - '!**.md'
       - '!**.txt'
       - '!LICENSE'
@@ -72,6 +78,8 @@ jobs:
       - uses: ./.github/actions/commitlint
         with:
           config-file: './commitlint.config.js'
+      - name: Lint the workflow files
+        uses: ./.github/actions/lint-workflows
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
         with:
@@ -82,7 +90,9 @@ jobs:
           keystore-password: '${{ secrets.KEYSTORE_PASSWORD }}'
           key-alias: '${{ secrets.KEYSTORE_ALIAS }}'
           key-password: '${{ secrets.KEYSTORE_ALIAS_PASSWORD }}'
-      - name: Build both APKs (with metadata, tests, and Detekt)
+      - name: Code check (Detekt, Spotless, Kover)
+        uses: ./.github/actions/code-check
+      - name: Build both APKs
         uses: ./.github/actions/build-apk
         id: build
       - name: Upload release APK as artifact

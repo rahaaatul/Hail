@@ -4,11 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
-data class LaunchAction(
-    val id: String,
-    val launchPackage: String,
-    val unfreezePackages: List<String>
-)
+data class LaunchAction(val id: String, val launchPackage: String, val unfreezePackages: List<String>)
 
 object ActionsRepository {
     suspend fun loadAll(): List<LaunchAction> = withContext(Dispatchers.IO) {
@@ -18,7 +14,7 @@ object ActionsRepository {
                 id = entity.id,
                 launchPackage = entity.launchPackage,
                 unfreezePackages = dao.loadDependencies(entity.id).sortedBy { it.ordering }
-                    .map { it.packageName }
+                    .map { it.packageName },
             )
         }
     }
@@ -30,7 +26,7 @@ object ActionsRepository {
                 id = entity.id,
                 launchPackage = entity.launchPackage,
                 unfreezePackages = dao.loadDependencies(entity.id).sortedBy { it.ordering }
-                    .map { it.packageName }
+                    .map { it.packageName },
             )
         }
     }
@@ -38,7 +34,7 @@ object ActionsRepository {
     suspend fun save(
         id: String = UUID.randomUUID().toString(),
         launchPackage: String,
-        unfreezePackages: List<String>
+        unfreezePackages: List<String>,
     ): LaunchAction = withContext(Dispatchers.IO) {
         val filteredUnfreeze = if (launchPackage.isNullOrBlank()) {
             unfreezePackages.distinct()
@@ -48,12 +44,18 @@ object ActionsRepository {
         val action = LaunchAction(
             id = id,
             launchPackage = launchPackage,
-            unfreezePackages = filteredUnfreeze
+            unfreezePackages = filteredUnfreeze,
         )
         val dao = AppMetaCache.database().actionDao()
-        dao.saveAction(ActionEntity(id = action.id, launchPackage = action.launchPackage), action.unfreezePackages.mapIndexed { position, packageName ->
+        dao.saveAction(
+            ActionEntity(id = action.id, launchPackage = action.launchPackage),
+            action.unfreezePackages.mapIndexed {
+                    position,
+                    packageName,
+                ->
                 ActionDependencyEntity(actionId = action.id, packageName = packageName, ordering = position)
-            })
+            },
+        )
         action
     }
 
@@ -63,6 +65,6 @@ object ActionsRepository {
 
     suspend fun duplicate(action: LaunchAction): LaunchAction = save(
         launchPackage = action.launchPackage,
-        unfreezePackages = action.unfreezePackages
+        unfreezePackages = action.unfreezePackages,
     )
 }

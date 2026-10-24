@@ -8,8 +8,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.aistra.hail.BuildConfig
-import com.aistra.hail.app.HailData
 import com.aistra.hail.app.AppInfo
+import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ItemAppsBinding
 import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.AppMetaCache
@@ -21,9 +21,8 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
 
     companion object {
         val DIFF = object : DiffUtil.ItemCallback<ApplicationInfo>() {
-            override fun areItemsTheSame(
-                oldItem: ApplicationInfo, newItem: ApplicationInfo
-            ): Boolean = oldItem.packageName == newItem.packageName
+            override fun areItemsTheSame(oldItem: ApplicationInfo, newItem: ApplicationInfo): Boolean =
+                oldItem.packageName == newItem.packageName
 
             override fun areContentsTheSame(oldItem: ApplicationInfo, newItem: ApplicationInfo): Boolean =
                 oldItem.flags and ApplicationInfo.FLAG_INSTALLED == newItem.flags and ApplicationInfo.FLAG_INSTALLED
@@ -35,7 +34,7 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
     private var loadIconJob: Job? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
-        ItemAppsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        ItemAppsBinding.inflate(LayoutInflater.from(parent.context), parent, false),
     )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -75,19 +74,27 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
 
             binding.appIcon.apply {
                 loadIconJob = AppIconCache.loadIconBitmapAsync(
-                    context, info, HPackages.myUserId, this, HailData.grayscaleIcon && frozen
+                    context,
+                    info,
+                    HPackages.myUserId,
+                    this,
+                    HailData.grayscaleIcon && frozen,
                 )
             }
             binding.appName.apply {
                 val name = metadata?.name ?: pkg
                 text = if (!HailData.grayscaleIcon && frozen) "❄️$name" else name
                 isEnabled = !HailData.grayscaleIcon || !frozen
-                if (HPackages.isAppUninstalled(pkg)) setTextColor(
-                    MaterialColors.getColor(
-                        this, androidx.appcompat.R.attr.colorError
+                if (HPackages.isAppUninstalled(pkg)) {
+                    setTextColor(
+                        MaterialColors.getColor(
+                            this,
+                            androidx.appcompat.R.attr.colorError,
+                        ),
                     )
-                )
-                else setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+                } else {
+                    setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+                }
             }
             binding.appDesc.apply {
                 text = pkg

@@ -11,7 +11,20 @@ import android.widget.ImageView
 import androidx.collection.LruCache
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cache
+import kotlinx.coroutines.catch
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.map
+import kotlinx.coroutines.withContext
 import me.zhanghai.android.appiconloader.AppIconLoader
 import java.io.File
 import java.security.MessageDigest
@@ -29,9 +42,7 @@ object AppIconCache : CoroutineScope {
     private class AppIconLruCache constructor(maxSize: Int) :
         LruCache<Triple<String, Int, Int>, Bitmap>(maxSize) {
 
-        override fun sizeOf(key: Triple<String, Int, Int>, value: Bitmap): Int {
-            return value.byteCount / 1024
-        }
+        override fun sizeOf(key: Triple<String, Int, Int>, value: Bitmap): Int = value.byteCount / 1024
     }
 
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main
@@ -68,9 +79,7 @@ object AppIconCache : CoroutineScope {
         shrinkNonAdaptiveIcons = HailData.synthesizeAdaptiveIcons
     }
 
-    private fun get(packageName: String, userId: Int, size: Int): Bitmap? {
-        return lruCache[Triple(packageName, userId, size)]
-    }
+    private fun get(packageName: String, userId: Int, size: Int): Bitmap? = lruCache[Triple(packageName, userId, size)]
 
     private fun put(packageName: String, userId: Int, size: Int, bitmap: Bitmap) {
         if (get(packageName, userId, size) == null) {
@@ -88,7 +97,7 @@ object AppIconCache : CoroutineScope {
             size,
             sourceSignature,
             HailData.iconPack,
-            HailData.synthesizeAdaptiveIcons
+            HailData.synthesizeAdaptiveIcons,
         ).joinToString("|")
         return MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
             .joinToString("") { "%02x".format(it) }
@@ -159,7 +168,7 @@ object AppIconCache : CoroutineScope {
         info: ApplicationInfo,
         userId: Int,
         view: ImageView,
-        setColorFilter: Boolean = false
+        setColorFilter: Boolean = false,
     ): Job {
         return launch {
             view.setTag(info.packageName)

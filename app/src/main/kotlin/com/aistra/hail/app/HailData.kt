@@ -7,10 +7,9 @@ import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.utils.HFiles
 import com.aistra.hail.utils.HLog
-import com.aistra.hail.utils.HPackages
-import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 
 object HailData {
     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
@@ -88,7 +87,7 @@ object HailData {
         MODE_ISLAND_HIDE,
         MODE_ISLAND_SUSPEND,
         MODE_PRIVAPP_STOP,
-        MODE_PRIVAPP_DISABLE
+        MODE_PRIVAPP_DISABLE,
     )
     const val BIOMETRIC_LOGIN = "biometric_login"
     const val APP_THEME = "app_theme"
@@ -117,7 +116,7 @@ object HailData {
             ACTION_UNFREEZE_ALL,
             ACTION_FREEZE_NON_WHITELISTED,
             ACTION_LOCK,
-            ACTION_LOCK_FREEZE
+            ACTION_LOCK_FREEZE,
         )
     const val AUTO_FREEZE_AFTER_LOCK = "auto_freeze_after_lock"
     const val AUTO_FREEZE_DELAY = "auto_freeze_delay_f"
@@ -162,9 +161,8 @@ object HailData {
     )
 
     /** The Float preference [key] names, or a loud failure when it is not a declared one. */
-    fun floatPreference(key: String): FloatPreference =
-        FLOAT_PREFERENCES[key]
-            ?: error("'$key' is not a declared Float preference; add it to FLOAT_PREFERENCES")
+    fun floatPreference(key: String): FloatPreference = FLOAT_PREFERENCES[key]
+        ?: error("'$key' is not a declared Float preference; add it to FLOAT_PREFERENCES")
 
     /** The slider range for a Float preference declared in [FLOAT_PREFERENCES]. */
     fun floatRange(key: String): ClosedFloatingPointRange<Float> = floatPreference(key).range
@@ -194,7 +192,7 @@ object HailData {
         ACTION_UNFREEZE_ALL,
         ACTION_FREEZE_NON_WHITELISTED,
         ACTION_LOCK,
-        ACTION_LOCK_FREEZE
+        ACTION_LOCK_FREEZE,
     )
 
     private val sp by lazy { PreferenceManager.getDefaultSharedPreferences(app) }
@@ -244,19 +242,18 @@ object HailData {
             runCatching {
                 val json = JSONArray(HFiles.read(appsPath))
                 for (i in 0 until json.length()) {
-                    val app = with(json.getJSONObject(i)) {
-                        val packageName = getString(KEY_PACKAGE)
-                        if (!HPackages.isValidPackageName(packageName)) null
-                        else AppInfo(
-                            packageName = packageName,
-                            pinned = optBoolean(KEY_PINNED),
-                            whitelisted = optBoolean(KEY_WHITELISTED),
-                            tagIdList = optJSONArray(KEY_TAGS)?.let {
-                                MutableList(it.length()) { index -> it.getInt(index) }
-                            } ?: mutableListOf(optInt(KEY_TAG))
-                        )
-                    }
-                    if (app != null) add(app)
+                    add(
+                        with(json.getJSONObject(i)) {
+                            AppInfo(
+                                packageName = getString(KEY_PACKAGE),
+                                pinned = optBoolean(KEY_PINNED),
+                                whitelisted = optBoolean(KEY_WHITELISTED),
+                                tagIdList = optJSONArray(KEY_TAGS)?.let {
+                                    MutableList(it.length()) { index -> it.getInt(index) }
+                                } ?: mutableListOf(optInt(KEY_TAG)),
+                            )
+                        },
+                    )
                 }
             }
         }
@@ -271,10 +268,6 @@ object HailData {
 
     fun addCheckedApp(packageName: String, tagId: Int = 0, shouldSave: Boolean = true) {
         if (packageName == BuildConfig.APPLICATION_ID) return
-        if (!HPackages.isValidPackageName(packageName)) {
-            HLog.w("HailData", "Ignored a name that is not a package name: $packageName")
-            return
-        }
         synchronized(checkedListLock) {
             checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
         }
@@ -305,7 +298,7 @@ object HailData {
                         .put(KEY_PACKAGE, it.packageName)
                         .put(KEY_PINNED, it.pinned)
                         .put(KEY_WHITELISTED, it.whitelisted)
-                        .put(KEY_TAGS, JSONArray(it.tagIdList))
+                        .put(KEY_TAGS, JSONArray(it.tagIdList)),
                 )
             }
             toString()
@@ -340,12 +333,15 @@ object HailData {
 
     fun saveTags() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(tagsPath, JSONArray().run {
-            tags.forEach {
-                put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
-            }
-            toString()
-        })
+        HFiles.write(
+            tagsPath,
+            JSONArray().run {
+                tags.forEach {
+                    put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
+                }
+                toString()
+            },
+        )
     }
 
     fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }

@@ -8,6 +8,10 @@ biometricCompose = "1.4.0-alpha07"
 commonsText = "1.15.0"
 composeBom = "2026.09.00"
 composePreference = "2.2.0"
+detekt = "1.23.8"
+kover = "0.9.11"
+ktlint = "1.8.0"
+spotless = "8.10.4"
 constraintlayout = "2.2.2"
 coreKtx = "1.19.1"
 dhizukuApi = "2.6.0"
@@ -73,4 +77,7 @@ androidx-biometric-compose = { module = "androidx.biometric:biometric-compose", 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

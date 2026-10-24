@@ -14,9 +14,15 @@ buildscript {
     }
 }
 
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import kotlinx.kover.gradle.plugin.dsl.GroupingEntityType
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
     alias(libs.plugins.ksp)
 }
 
@@ -64,19 +70,6 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-Debug"
-        }
-        create("pr") {
-            // Each PR installs as its own app: com.aistra.hail.pr.<n>.
-            // versionName and versionCode are fully overridden by the workflow,
-            // so there is deliberately no versionNameSuffix here.
-            // ".pr<n>" with no dot: aapt2 rejects a package segment that starts
-            // with a digit, so "com.aistra.hail.pr.79" cannot link. Every
-            // segment must begin with a letter.
-            applicationIdSuffix =
-                providers.gradleProperty("prNumber").orNull?.let { ".pr$it" } ?: ".pr"
-            // Signed with the debug key so the artifact stays installable when
-            // no release key is available.
-            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = true
@@ -129,29 +122,6 @@ android {
              // zipAlignEnabled = false
       }
 
-     // Temporarily disable applicationVariants block for debugging
-     /*
-     // Automatically rename APK outputs to include app name, version, and build type
-     val androidApp = project.extensions.getByName("android")
-     androidApp.compileSdk
-     androidApp.defaultConfig
-     androidApp.buildTypes
-     val variants = androidApp.applicationVariants
-     // variants.all { variant ->
-     //     // variant.outputs.all { output ->
-     //     //     val appName = rootProject.findProperty("appName") as String?
-     //     //     val versionName = variant.versionName.get()
-     //     //     if (appName != null && versionName != null) {
-     //     //         val buildType = variant.buildType.get().name
-     //     //         if (output.outputFileName != null) {
-     //     //             output.outputFileName.set("${appName}-v${versionName}-${buildType}.apk")
-     //     //         }
-     //     //     }
-     //     // }
-     // }
-     // variants.size
-     // variants.getAt(0)
-     */
 
     java {
         toolchain {
@@ -160,6 +130,105 @@ android {
     }
     kotlin {
         jvmToolchain(21)
+    }
+}
+
+// The APK is named after the app, the version and the build variant, so that
+// a downloaded build says which one it is: {app_name}-v{version_name}-{build_variant}.apk
+// The legacy android.applicationVariants API that used to do this is gone in
+// AGP 9.
+androidComponents {
+    onVariants { variant ->
+        val buildTypeName = variant.buildType
+        val appName = (rootProject.findProperty("appName") as String?)?.lowercase()
+        if (buildTypeName != null && appName != null) {
+            // A build type can carry a suffix of its own on the version name,
+            // and the debug build type does. The suffix is dropped here,
+            // because the build variant is already in the name of the file.
+            val suffix = android.buildTypes.getByName(buildTypeName).versionNameSuffix
+            variant.outputs.forEach { output ->
+                val versionName = output.versionName.orNull?.removeSuffix(suffix.orEmpty())
+                if (versionName != null) {
+                    output.outputFileName.set("$appName-v$versionName-$buildTypeName.apk")
+                }
+            }
+        }
+    }
+}
+
+detekt {
+    // detekt 1.x only registers its per-variant tasks when the kotlin-android
+    // plugin is applied. AGP 9's built-in Kotlin never applies it, so only the
+    // plain "detekt" task is created, and that task touches no AGP variant
+    // API - the legacy android.applicationVariants is gone in AGP 9.
+    toolVersion = libs.versions.detekt.get()
+    // Layer config/detekt.yml on top of detekt's defaults instead of replacing
+    // them, so the project config only has to carry the exceptions.
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.files("config/detekt.yml"))
+    // The baseline records every finding that exists today, so the build only
+    // fails on findings a change introduces. Regenerate it with
+    // ./gradlew detektBaseline.
+    baseline = rootProject.file("config/detekt-baseline.xml")
+    // Report paths are relative to this directory.
+    basePath = rootProject.projectDir.absolutePath
+    source.setFrom(
+        files(
+            "src/main/java",
+            "src/main/kotlin",
+            "src/test/java",
+            "src/test/kotlin",
+            "src/androidTest/java",
+            "src/androidTest/kotlin",
+        ),
+    )
+    parallel = true
+}
+
+kover {
+    currentProject {
+        // A report variant that holds the classes the unit tests reach. The
+        // total variant holds every class, and the percentage of that is
+        // low enough that a bound on it would say nothing.
+        createVariant("tested") {
+            add("debug")
+            add("release")
+        }
+    }
+    reports {
+        // The full report is published as a CI artifact.
+        total {
+            xml {
+                onCheck = false
+            }
+            html {
+                onCheck = false
+            }
+        }
+        // The gate. It only looks at the classes that have a test suite, so
+        // the bound says "the tests of this class still run and still cover
+        // it" instead of "the whole app is at least N percent covered", which
+        // falls every time a feature is added.
+        variant("tested") {
+            filters {
+                includes {
+                    classes("com.aistra.hail.utils.HBackup*")
+                    classes("com.aistra.hail.utils.AppActions*")
+                    classes("com.aistra.hail.utils.ActionExecutor*")
+                    classes("com.aistra.hail.app.HailData*")
+                }
+            }
+            verify {
+                rule {
+                    groupBy = GroupingEntityType.CLASS
+                    bound {
+                        minValue = 25
+                        coverageUnits = CoverageUnit.LINE
+                        aggregationForGroup = AggregationType.COVERED_PERCENTAGE
+                    }
+                }
+            }
+        }
     }
 }
 
