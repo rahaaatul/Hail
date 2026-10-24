@@ -64,8 +64,9 @@ naming:
   VariableNaming:
     privateVariablePattern: '^((_)?[a-z][A-Za-z0-9]*|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*)$'
   # A top level constant of a Compose theme is named in PascalCase.
+  # Project constants use UPPER_SNAKE_CASE (Kotlin standard).
   TopLevelPropertyNaming:
-    constantPattern: '[A-Z][A-Za-z0-9]*'
+    constantPattern: '[A-Z][A-Za-z0-9]*|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*'
     propertyPattern: '[A-Za-z][_A-Za-z0-9]*'
     privatePropertyPattern: '_?[A-Za-z][_A-Za-z0-9]*'
 

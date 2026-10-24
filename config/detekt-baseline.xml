@@ -12,8 +12,5 @@
     <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$IllegalArgumentException()</ID>
     <ID>TooManyFunctions:PagerFragment.kt$com.aistra.hail.ui.home.PagerFragment.kt</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
-    <ID>TopLevelPropertyNaming:HBackup.kt$private const val BUFFER_SIZE = 8192</ID>
-    <ID>TopLevelPropertyNaming:PagerAdapter.kt$private const val SELECTED_FLAG_BIT = 3</ID>
-    <ID>TopLevelPropertyNaming:PagerAdapter.kt$private const val WHITELISTED_FLAG_BIT = 4</ID>
   </CurrentIssues>
 </SmellBaseline>
