@@ -566,7 +566,7 @@ class PagerFragment :
 
 
     private fun importFromClipboard() = runCatching {
-        val str = HUI.pasteText() ?: throw IllegalArgumentException()
+        val str = HUI.pasteText() ?: throw IllegalArgumentException("No text on clipboard")
         val json = if (str.contains('[')) {
             JSONArray(
                 str.substring(
