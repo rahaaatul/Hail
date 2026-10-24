@@ -97,16 +97,19 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        # Regenerate the baseline from the current code and compare it with the
-        # committed one. Detekt already fails on issues not in the baseline, but
-        # nothing stops someone from regenerating the baseline to hide new
-        # issues. This step makes the baseline immutable: CI fails if it would
-        # grow.
+        # Detekt already fails on issues not in the baseline, but nothing stops
+        # someone from regenerating the baseline to hide new issues. This step
+        # makes the baseline immutable in one direction: CI fails if it would
+        # grow (new issues introduced), but allows it to shrink (existing issues
+        # fixed).
+        committed_ids=$(sed -n 's/.*<ID>\(.*\)<\/ID>.*/\1/p' config/detekt-baseline.xml | sort)
         cp config/detekt-baseline.xml /tmp/detekt-baseline-before.xml
         ./gradlew detektBaseline --no-daemon
-        if ! diff -q config/detekt-baseline.xml /tmp/detekt-baseline-before.xml >/dev/null; then
-          echo "::error::The detekt baseline grew - new detekt issues were introduced without fixing them"
-          diff config/detekt-baseline.xml /tmp/detekt-baseline-before.xml || true
+        regenerated_ids=$(sed -n 's/.*<ID>\(.*\)<\/ID>.*/\1/p' config/detekt-baseline.xml | sort)
+        new_ids=$(comm -13 <(echo "$committed_ids") <(echo "$regenerated_ids"))
+        if [ -n "$new_ids" ]; then
+          echo "::error::The detekt baseline grew - new detekt issues were introduced without fixing them:"
+          echo "$new_ids"
           exit 1
         fi
 
