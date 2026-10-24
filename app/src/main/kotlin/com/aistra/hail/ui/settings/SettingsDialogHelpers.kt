@@ -1,6 +1,11 @@
 package com.aistra.hail.ui.settings
 
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.lifecycleScope
 import com.aistra.hail.HailApp.Companion.app
@@ -12,6 +17,7 @@ import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HShell
+import com.aistra.hail.utils.HShortcuts
 import com.aistra.hail.utils.HTarget
 import com.aistra.hail.utils.HUI
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -154,3 +160,25 @@ internal fun SettingsFragment.handlePrivappMode(): Boolean {
         false
     } else true
 }
+
+internal fun resetDynamicShortcuts() {
+    HShortcuts.removeAllDynamicShortcuts()
+    HShortcuts.addDynamicShortcutAction(HailData.dynamicShortcutAction)
+}
+
+internal fun requestBackgroundActivity(context: Context) {
+    val powerManager = context.getSystemService(PowerManager::class.java)
+    if (powerManager.isIgnoringBatteryOptimizations(context.packageName)) return
+    context.startActivity(
+        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+            data = Uri.parse("package:${context.packageName}")
+        },
+    )
+}
+
+internal fun iconPackName(pack: String, context: Context, iconPackNames: Map<String, String>): String =
+    if (pack == HailData.ACTION_NONE) {
+        context.getString(R.string.action_none)
+    } else {
+        iconPackNames[pack] ?: pack
+    }

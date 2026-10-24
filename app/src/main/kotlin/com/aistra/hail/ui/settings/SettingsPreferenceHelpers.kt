@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.runtime.LocalContext
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import com.aistra.hail.BuildConfig
@@ -27,7 +27,6 @@ import com.aistra.hail.utils.HSystem
 import me.zhanghai.compose.preference.preference
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
 import com.aistra.hail.app.HailData
-import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.AppIconCache
 import me.zhanghai.compose.preference.ListPreference
 import me.zhanghai.compose.preference.ListPreferenceType
