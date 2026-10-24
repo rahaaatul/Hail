@@ -27,6 +27,7 @@ import com.aistra.hail.utils.HShortcuts
 import com.aistra.hail.utils.HUI
 import com.aistra.hail.utils.LaunchAction
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -176,39 +177,9 @@ class ActionsFragment : MainFragment() {
 
     private fun showAppPicker(multi: Boolean, selected: Set<String>, onSelected: (Set<String>) -> Unit) {
         val selectedPackages = selected.toMutableSet()
-        val search = EditText(activity).apply {
-            hint = getString(R.string.action_search_apps)
-            setSingleLine(true)
-            background = null
-            minHeight = PICKER_SEARCH_MIN_HEIGHT
-            setPadding(0, 0, 0, 0)
-        }
-        val list = RecyclerView(activity).apply {
-            layoutManager = GridLayoutManager(activity, APP_PICKER_GRID_SPAN_COUNT)
-            layoutParams = LinearLayout.LayoutParams(-1, PICKER_LIST_HEIGHT)
-        }
-        val container = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(
-                PICKER_CONTAINER_PADDING_HORIZONTAL,
-                PICKER_CONTAINER_PADDING_VERTICAL,
-                PICKER_CONTAINER_PADDING_HORIZONTAL,
-                PICKER_CONTAINER_PADDING_VERTICAL,
-            )
-            val searchContainer = com.google.android.material.card.MaterialCardView(activity).apply {
-                radius = PICKER_CARD_RADIUS
-                cardElevation = 0f
-                setContentPadding(PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0, PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0)
-                addView(search, LinearLayout.LayoutParams(-1, PICKER_SEARCH_MIN_HEIGHT))
-            }
-            addView(
-                searchContainer,
-                LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply {
-                    bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN
-                },
-            )
-            addView(list)
-        }
+        val search = buildSearchEditText()
+        val list = buildAppRecyclerView()
+        val container = buildContainer(buildSearchCard(search), list)
         lateinit var pickerDialog: AlertDialog
         val adapter = AppPickerAdapter(multi, selectedPackages) { packageName ->
             if (!multi) {
@@ -261,6 +232,51 @@ class ActionsFragment : MainFragment() {
             allApps = sortedApps
             labelMap = labels
             updateFilter(search.text.toString())
+        }
+    }
+
+    private fun buildSearchEditText(): EditText {
+        return EditText(activity).apply {
+            hint = getString(R.string.action_search_apps)
+            setSingleLine(true)
+            background = null
+            minHeight = PICKER_SEARCH_MIN_HEIGHT
+            setPadding(0, 0, 0, 0)
+        }
+    }
+
+    private fun buildAppRecyclerView(): RecyclerView {
+        return RecyclerView(activity).apply {
+            layoutManager = GridLayoutManager(activity, APP_PICKER_GRID_SPAN_COUNT)
+            layoutParams = LinearLayout.LayoutParams(-1, PICKER_LIST_HEIGHT)
+        }
+    }
+
+    private fun buildSearchCard(search: EditText): MaterialCardView {
+        return MaterialCardView(activity).apply {
+            radius = PICKER_CARD_RADIUS
+            cardElevation = 0f
+            setContentPadding(PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0, PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0)
+            addView(search, LinearLayout.LayoutParams(-1, PICKER_SEARCH_MIN_HEIGHT))
+        }
+    }
+
+    private fun buildContainer(searchContainer: View, list: View): LinearLayout {
+        return LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(
+                PICKER_CONTAINER_PADDING_HORIZONTAL,
+                PICKER_CONTAINER_PADDING_VERTICAL,
+                PICKER_CONTAINER_PADDING_HORIZONTAL,
+                PICKER_CONTAINER_PADDING_VERTICAL,
+            )
+            addView(
+                searchContainer,
+                LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply {
+                    bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN
+                },
+            )
+            addView(list)
         }
     }
 

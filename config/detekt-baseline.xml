@@ -3,7 +3,6 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>LargeClass:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
-    <ID>LongMethod:ActionsFragment.kt$ActionsFragment$private fun showAppPicker(multi: Boolean, selected: Set&lt;String&gt;, onSelected: (Set&lt;String&gt;) -&gt; Unit)</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$for</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
     <ID>NestedBlockDepth:HailDataTest.kt$HailDataTest$private fun initializerAfter(text: String, index: Int): String</ID>
