@@ -1,5 +1,6 @@
 package com.aistra.hail.ui.settings
 
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -286,225 +287,270 @@ class SettingsFragment :
         val iconPackValues by _iconPackValues
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            listPreference(
-                key = HailData.WORKING_MODE,
-                defaultValue = HailData.MODE_DEFAULT,
-                onValueChange = ::onWorkingModeChange,
-                values = HailData.WORKING_MODE_VALUES,
-                entriesId = R.array.working_mode_entries,
-                titleId = R.string.working_mode,
-                icon = Icons.Outlined.Adb,
-                type = ListPreferenceType.ALERT_DIALOG,
-            )
-            switchPreference(
-                key = HailData.BIOMETRIC_LOGIN,
-                defaultValue = false,
-                onValueChange = { _, value ->
-                    if (value) resetDynamicShortcuts()
-                    true
-                },
-                titleId = R.string.action_biometric,
-                icon = Icons.Outlined.Fingerprint,
-            )
-            horizontalDivider()
-            preferenceCategory(key = "customize", title = { Text(text = stringResource(R.string.title_customize)) })
-            listPreference(
-                key = HailData.APP_THEME,
-                defaultValue = HailData.FOLLOW_SYSTEM,
-                onValueChange = { _, value ->
-                    app.setAppTheme(value)
-                    true
-                },
-                values = HailData.APP_THEME_VALUES,
-                entriesId = R.array.app_theme_entries,
-                titleId = R.string.app_theme,
-                icon = Icons.Outlined.DarkMode,
-            )
-            listPreference(
-                key = HailData.ICON_PACK,
-                defaultValue = HailData.ACTION_NONE,
-                onValueChange = { _, _ ->
-                    AppIconCache.clear()
-                    true
-                },
-                values = iconPackValues,
-                titleId = R.string.icon_pack,
-                icon = Icons.Outlined.Palette,
-                summary = { iconPackName(it) },
-                valueToText = { iconPackName(it) },
-            )
-            switchPreference(
-                key = HailData.GRAYSCALE_ICON,
-                defaultValue = true,
-                titleId = R.string.grayscale_icon,
-                icon = Icons.Outlined.FilterBAndW,
-            )
-            switchPreference(
-                key = HailData.COMPACT_ICON,
-                defaultValue = false,
-                titleId = R.string.compact_icon,
-                icon = Icons.Outlined.Apps,
-            )
-            switchPreference(
-                key = HailData.SYNTHESIZE_ADAPTIVE_ICONS,
-                defaultValue = false,
-                titleId = R.string.synthesize_adaptive_icons,
-                icon = Icons.Outlined.Layers,
-            )
-            sliderPreference(
-                key = HailData.HOME_FONT_SIZE,
-                defaultValue = HailData.floatDefault(HailData.HOME_FONT_SIZE),
-                title = { Text(text = stringResource(R.string.home_font_size)) },
-                valueRange = HailData.floatRange(HailData.HOME_FONT_SIZE),
-                valueSteps = 4,
-                icon = { Icon(imageVector = Icons.Outlined.TextFields, contentDescription = null) },
-                valueText = { Text(text = "%.0f".format(it)) },
-            )
-            switchPreference(
-                key = HailData.FUZZY_SEARCH,
-                defaultValue = false,
-                titleId = R.string.fuzzy_search,
-                icon = Icons.AutoMirrored.Outlined.ManageSearch,
-            )
-            switchPreference(
-                key = HailData.NINE_KEY_SEARCH,
-                defaultValue = false,
-                titleId = R.string.nine_key,
-                icon = Icons.Outlined.Dialpad,
-            )
-            listPreference(
-                key = HailData.TILE_ACTION,
-                defaultValue = HailData.tileAction,
-                values = HailData.TILE_ACTION_VALUES,
-                entriesId = R.array.tile_action_entries,
-                titleId = R.string.tile_action,
-                icon = Icons.Outlined.DashboardCustomize,
-            )
-            horizontalDivider()
-            preferenceCategory(key = "auto_freeze", title = { Text(text = stringResource(R.string.auto_freeze)) })
-            switchPreference(
-                rememberState = { autoFreezeAfterLock },
-                onValueChange = { _, value ->
-                    app.setAutoFreezeService(value)
-                    true
-                },
-                titleId = R.string.auto_freeze_after_lock,
-                icon = Icons.Outlined.ScreenLockPortrait,
-            )
-            sliderPreference(
-                key = HailData.AUTO_FREEZE_DELAY,
-                defaultValue = HailData.floatDefault(HailData.AUTO_FREEZE_DELAY),
-                title = { Text(text = stringResource(R.string.auto_freeze_delay)) },
-                valueRange = HailData.floatRange(HailData.AUTO_FREEZE_DELAY),
-                valueSteps = 29,
-                enabled = { autoFreezeAfterLock.value },
-                icon = { Icon(imageVector = Icons.Outlined.LockClock, contentDescription = null) },
-                valueText = { Text(text = "%.0f".format(it)) },
-            )
-            switchPreference(
-                key = HailData.SKIP_WHILE_CHARGING,
-                defaultValue = false,
-                titleId = R.string.skip_while_charging,
-                enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.BatteryChargingFull,
-            )
-            switchPreference(
-                key = HailData.SKIP_FOREGROUND_APP,
-                defaultValue = false,
-                onValueChange = { _, value ->
-                    if (value && !HSystem.checkOpUsageStats(requireContext())) {
-                        startActivity(
-                            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                        false
-                    } else {
-                        true
-                    }
-                },
-                titleId = R.string.skip_foreground_app,
-                enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.Android,
-            )
-            switchPreference(
-                key = HailData.SKIP_NOTIFYING_APP,
-                defaultValue = false,
-                onValueChange = { _, value ->
-                    val isGranted = NotificationManagerCompat.getEnabledListenerPackages(requireContext())
-                        .contains(requireContext().packageName)
-                    if (value && !isGranted) {
-                        app.setAutoFreezeServiceEnabled(true)
-                        startActivity(
-                            Intent(
-                                Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
-                            ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                        false
-                    } else {
-                        true
-                    }
-                },
-                titleId = R.string.skip_notifying_app,
-                enabled = autoFreezeAfterLock.value,
-                icon = Icons.Outlined.NotificationsActive,
-            )
-            horizontalDivider()
-            preferenceCategory(key = "shortcuts", title = { Text(text = stringResource(R.string.title_shortcuts)) })
-            preference(
-                key = "add_pin_shortcut",
-                title = { Text(text = stringResource(R.string.action_add_pin_shortcut)) },
-                icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
-                onClick = ::addPinShortcut,
-            )
-            listPreference(
-                key = HailData.DYNAMIC_SHORTCUT_ACTION,
-                defaultValue = HailData.ACTION_NONE,
-                onValueChange = { _, action ->
-                    HShortcuts.removeAllDynamicShortcuts()
-                    HShortcuts.addDynamicShortcutAction(action)
-                    true
-                },
-                values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
-                entriesId = R.array.dynamic_shortcut_entries,
-                titleId = R.string.dynamic_shortcut_action,
-                icon = Icons.Outlined.AppShortcut,
-            )
-            preference(
-                key = "clear_dynamic_shortcuts",
-                title = { Text(text = stringResource(R.string.action_clear_dynamic_shortcuts)) },
-                icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
-                onClick = ::resetDynamicShortcuts,
-            )
-            horizontalDivider()
-            preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
-            preference(
-                key = "rebuild_cache",
-                title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
-                summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
-                icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
-                onClick = ::confirmRebuildCache,
-            )
-            preference(
-                key = "background_activity",
-                title = { Text(text = stringResource(R.string.allow_background_activity)) },
-                summary = { Text(text = stringResource(R.string.summary_background_activity)) },
-                icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
-                onClick = ::requestBackgroundActivity,
-            )
-            horizontalDivider()
-            preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
-            preference(
-                key = "backup_preference",
-                title = { Text(text = stringResource(R.string.action_backup)) },
-                icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
-                onClick = ::showBackupDialog,
-            )
-            preference(
-                key = "restore",
-                title = { Text(text = stringResource(R.string.action_restore)) },
-                icon = { Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null) },
-                onClick = { restoreLauncher.launch(arrayOf("application/zip")) },
-            )
+            workingModeSection()
+            customizeSection(iconPackValues)
+            iconSettingsSection()
+            searchSection()
+            autoFreezeSection(autoFreezeAfterLock)
+            skipOptionsSection(autoFreezeAfterLock)
+            shortcutsSection()
+            cacheSection()
+            backupSection()
         }
+    }
+
+    @Composable
+    private fun LazyListScope.workingModeSection() {
+        listPreference(
+            key = HailData.WORKING_MODE,
+            defaultValue = HailData.MODE_DEFAULT,
+            onValueChange = ::onWorkingModeChange,
+            values = HailData.WORKING_MODE_VALUES,
+            entriesId = R.array.working_mode_entries,
+            titleId = R.string.working_mode,
+            icon = Icons.Outlined.Adb,
+            type = ListPreferenceType.ALERT_DIALOG,
+        )
+        switchPreference(
+            key = HailData.BIOMETRIC_LOGIN,
+            defaultValue = false,
+            onValueChange = { _, value ->
+                if (value) resetDynamicShortcuts()
+                true
+            },
+            titleId = R.string.action_biometric,
+            icon = Icons.Outlined.Fingerprint,
+        )
+        horizontalDivider()
+    }
+
+    @Composable
+    private fun LazyListScope.customizeSection(iconPackValues: List<String>) {
+        preferenceCategory(key = "customize", title = { Text(text = stringResource(R.string.title_customize)) })
+        listPreference(
+            key = HailData.APP_THEME,
+            defaultValue = HailData.FOLLOW_SYSTEM,
+            onValueChange = { _, value ->
+                app.setAppTheme(value)
+                true
+            },
+            values = HailData.APP_THEME_VALUES,
+            entriesId = R.array.app_theme_entries,
+            titleId = R.string.app_theme,
+            icon = Icons.Outlined.DarkMode,
+        )
+        listPreference(
+            key = HailData.ICON_PACK,
+            defaultValue = HailData.ACTION_NONE,
+            onValueChange = { _, _ ->
+                AppIconCache.clear()
+                true
+            },
+            values = iconPackValues,
+            titleId = R.string.icon_pack,
+            icon = Icons.Outlined.Palette,
+            summary = { iconPackName(it) },
+            valueToText = { iconPackName(it) },
+        )
+    }
+
+    @Composable
+    private fun LazyListScope.iconSettingsSection() {
+        switchPreference(
+            key = HailData.GRAYSCALE_ICON,
+            defaultValue = true,
+            titleId = R.string.grayscale_icon,
+            icon = Icons.Outlined.FilterBAndW,
+        )
+        switchPreference(
+            key = HailData.COMPACT_ICON,
+            defaultValue = false,
+            titleId = R.string.compact_icon,
+            icon = Icons.Outlined.Apps,
+        )
+        switchPreference(
+            key = HailData.SYNTHESIZE_ADAPTIVE_ICONS,
+            defaultValue = false,
+            titleId = R.string.synthesize_adaptive_icons,
+            icon = Icons.Outlined.Layers,
+        )
+    }
+
+    @Composable
+    private fun LazyListScope.searchSection() {
+        sliderPreference(
+            key = HailData.HOME_FONT_SIZE,
+            defaultValue = HailData.floatDefault(HailData.HOME_FONT_SIZE),
+            title = { Text(text = stringResource(R.string.home_font_size)) },
+            valueRange = HailData.floatRange(HailData.HOME_FONT_SIZE),
+            valueSteps = 4,
+            icon = { Icon(imageVector = Icons.Outlined.TextFields, contentDescription = null) },
+            valueText = { Text(text = "%.0f".format(it)) },
+        )
+        switchPreference(
+            key = HailData.FUZZY_SEARCH,
+            defaultValue = false,
+            titleId = R.string.fuzzy_search,
+            icon = Icons.AutoMirrored.Outlined.ManageSearch,
+        )
+        switchPreference(
+            key = HailData.NINE_KEY_SEARCH,
+            defaultValue = false,
+            titleId = R.string.nine_key,
+            icon = Icons.Outlined.Dialpad,
+        )
+        listPreference(
+            key = HailData.TILE_ACTION,
+            defaultValue = HailData.tileAction,
+            values = HailData.TILE_ACTION_VALUES,
+            entriesId = R.array.tile_action_entries,
+            titleId = R.string.tile_action,
+            icon = Icons.Outlined.DashboardCustomize,
+        )
+        horizontalDivider()
+    }
+
+    @Composable
+    private fun LazyListScope.autoFreezeSection(autoFreezeAfterLock: MutableState<Boolean>) {
+        preferenceCategory(key = "auto_freeze", title = { Text(text = stringResource(R.string.auto_freeze)) })
+        switchPreference(
+            rememberState = { autoFreezeAfterLock },
+            onValueChange = { _, value ->
+                app.setAutoFreezeService(value)
+                true
+            },
+            titleId = R.string.auto_freeze_after_lock,
+            icon = Icons.Outlined.ScreenLockPortrait,
+        )
+        sliderPreference(
+            key = HailData.AUTO_FREEZE_DELAY,
+            defaultValue = HailData.floatDefault(HailData.AUTO_FREEZE_DELAY),
+            title = { Text(text = stringResource(R.string.auto_freeze_delay)) },
+            valueRange = HailData.floatRange(HailData.AUTO_FREEZE_DELAY),
+            valueSteps = 29,
+            enabled = { autoFreezeAfterLock.value },
+            icon = { Icon(imageVector = Icons.Outlined.LockClock, contentDescription = null) },
+            valueText = { Text(text = "%.0f".format(it)) },
+        )
+    }
+
+    @Composable
+    private fun LazyListScope.skipOptionsSection(autoFreezeAfterLock: MutableState<Boolean>) {
+        switchPreference(
+            key = HailData.SKIP_WHILE_CHARGING,
+            defaultValue = false,
+            titleId = R.string.skip_while_charging,
+            enabled = autoFreezeAfterLock.value,
+            icon = Icons.Outlined.BatteryChargingFull,
+        )
+        switchPreference(
+            key = HailData.SKIP_FOREGROUND_APP,
+            defaultValue = false,
+            onValueChange = { _, value ->
+                if (value && !HSystem.checkOpUsageStats(requireContext())) {
+                    startActivity(
+                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                    false
+                } else {
+                    true
+                }
+            },
+            titleId = R.string.skip_foreground_app,
+            enabled = autoFreezeAfterLock.value,
+            icon = Icons.Outlined.Android,
+        )
+        switchPreference(
+            key = HailData.SKIP_NOTIFYING_APP,
+            defaultValue = false,
+            onValueChange = { _, value ->
+                val isGranted = NotificationManagerCompat.getEnabledListenerPackages(requireContext())
+                    .contains(requireContext().packageName)
+                if (value && !isGranted) {
+                    app.setAutoFreezeServiceEnabled(true)
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
+                        ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                    false
+                } else {
+                    true
+                }
+            },
+            titleId = R.string.skip_notifying_app,
+            enabled = autoFreezeAfterLock.value,
+            icon = Icons.Outlined.NotificationsActive,
+        )
+        horizontalDivider()
+    }
+
+    @Composable
+    private fun LazyListScope.shortcutsSection() {
+        preferenceCategory(key = "shortcuts", title = { Text(text = stringResource(R.string.title_shortcuts)) })
+        preference(
+            key = "add_pin_shortcut",
+            title = { Text(text = stringResource(R.string.action_add_pin_shortcut)) },
+            icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
+            onClick = ::addPinShortcut,
+        )
+        listPreference(
+            key = HailData.DYNAMIC_SHORTCUT_ACTION,
+            defaultValue = HailData.ACTION_NONE,
+            onValueChange = { _, action ->
+                HShortcuts.removeAllDynamicShortcuts()
+                HShortcuts.addDynamicShortcutAction(action)
+                true
+            },
+            values = HailData.DYNAMIC_SHORTCUT_ACTIONS,
+            entriesId = R.array.dynamic_shortcut_entries,
+            titleId = R.string.dynamic_shortcut_action,
+            icon = Icons.Outlined.AppShortcut,
+        )
+        preference(
+            key = "clear_dynamic_shortcuts",
+            title = { Text(text = stringResource(R.string.action_clear_dynamic_shortcuts)) },
+            icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
+            onClick = ::resetDynamicShortcuts,
+        )
+        horizontalDivider()
+    }
+
+    @Composable
+    private fun LazyListScope.cacheSection() {
+        preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
+        preference(
+            key = "rebuild_cache",
+            title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
+            summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
+            icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
+            onClick = ::confirmRebuildCache,
+        )
+        preference(
+            key = "background_activity",
+            title = { Text(text = stringResource(R.string.allow_background_activity)) },
+            summary = { Text(text = stringResource(R.string.summary_background_activity)) },
+            icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
+            onClick = ::requestBackgroundActivity,
+        )
+        horizontalDivider()
+    }
+
+    @Composable
+    private fun LazyListScope.backupSection() {
+        preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
+        preference(
+            key = "backup_preference",
+            title = { Text(text = stringResource(R.string.action_backup)) },
+            icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
+            onClick = ::showBackupDialog,
+        )
+        preference(
+            key = "restore",
+            title = { Text(text = stringResource(R.string.action_restore)) },
+            icon = { Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null) },
+            onClick = { restoreLauncher.launch(arrayOf("application/zip")) },
+        )
     }
 
     private fun requestBackgroundActivity() {
@@ -636,85 +682,107 @@ class SettingsFragment :
         MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_add_pin_shortcut)
             .setItems(R.array.pin_shortcut_entries) { _, which ->
                 when (which) {
-                    0 -> MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_freeze_tag)
-                        .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                            val tag = HailData.tags[index].first
-                            HShortcuts.addPinShortcut(
-                                AppCompatResources.getDrawable(
-                                    requireContext(),
-                                    R.drawable.ic_round_frozen_shortcut,
-                                )!!,
-                                HailApi.ACTION_FREEZE_TAG + tag,
-                                tag,
-                                HailApi.getIntentForTag(HailApi.ACTION_FREEZE_TAG, tag),
-                            )
-                        }.setNegativeButton(android.R.string.cancel, null).show()
-
-                    1 -> MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
-                        .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                            val tag = HailData.tags[index].first
-                            HShortcuts.addPinShortcut(
-                                AppCompatResources.getDrawable(
-                                    requireContext(),
-                                    R.drawable.ic_round_unfrozen_shortcut,
-                                )!!,
-                                HailApi.ACTION_UNFREEZE_TAG + tag,
-                                tag,
-                                HailApi.getIntentForTag(HailApi.ACTION_UNFREEZE_TAG, tag),
-                            )
-                        }.setNegativeButton(android.R.string.cancel, null).show()
-
-                    2 -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(),
-                            R.drawable.ic_round_frozen_shortcut,
-                        )!!,
-                        HailApi.ACTION_FREEZE_ALL,
-                        getString(R.string.action_freeze_all),
-                        Intent(HailApi.ACTION_FREEZE_ALL),
-                    )
-
-                    PIN_SHORTCUT_UNFREEZE_ALL -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(),
-                            R.drawable.ic_round_unfrozen_shortcut,
-                        )!!,
-                        HailApi.ACTION_UNFREEZE_ALL,
-                        getString(R.string.action_unfreeze_all),
-                        Intent(HailApi.ACTION_UNFREEZE_ALL),
-                    )
-
-                    PIN_SHORTCUT_FREEZE_NON_WHITELISTED -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(),
-                            R.drawable.ic_round_frozen_shortcut,
-                        )!!,
-                        HailApi.ACTION_FREEZE_NON_WHITELISTED,
-                        getString(R.string.action_freeze_non_whitelisted),
-                        Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
-                    )
-
-                    PIN_SHORTCUT_LOCK -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(),
-                            R.drawable.ic_outline_lock_shortcut,
-                        )!!,
-                        HailApi.ACTION_LOCK,
-                        getString(R.string.action_lock),
-                        Intent(HailApi.ACTION_LOCK),
-                    )
-
-                    PIN_SHORTCUT_LOCK_FREEZE -> HShortcuts.addPinShortcut(
-                        AppCompatResources.getDrawable(
-                            requireContext(),
-                            R.drawable.ic_outline_lock_shortcut,
-                        )!!,
-                        HailApi.ACTION_LOCK_FREEZE,
-                        getString(R.string.action_lock_freeze),
-                        Intent(HailApi.ACTION_LOCK_FREEZE),
-                    )
+                    0 -> showFreezeTagShortcutDialog()
+                    1 -> showUnfreezeTagShortcutDialog()
+                    2 -> pinFreezeAllShortcut()
+                    PIN_SHORTCUT_UNFREEZE_ALL -> pinUnfreezeAllShortcut()
+                    PIN_SHORTCUT_FREEZE_NON_WHITELISTED -> pinFreezeNonWhitelistedShortcut()
+                    PIN_SHORTCUT_LOCK -> pinLockShortcut()
+                    PIN_SHORTCUT_LOCK_FREEZE -> pinLockFreezeShortcut()
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun showFreezeTagShortcutDialog() {
+        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_freeze_tag)
+            .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
+                val tag = HailData.tags[index].first
+                HShortcuts.addPinShortcut(
+                    AppCompatResources.getDrawable(
+                        requireContext(),
+                        R.drawable.ic_round_frozen_shortcut,
+                    )!!,
+                    HailApi.ACTION_FREEZE_TAG + tag,
+                    tag,
+                    HailApi.getIntentForTag(HailApi.ACTION_FREEZE_TAG, tag),
+                )
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun showUnfreezeTagShortcutDialog() {
+        MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
+            .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
+                val tag = HailData.tags[index].first
+                HShortcuts.addPinShortcut(
+                    AppCompatResources.getDrawable(
+                        requireContext(),
+                        R.drawable.ic_round_unfrozen_shortcut,
+                    )!!,
+                    HailApi.ACTION_UNFREEZE_TAG + tag,
+                    tag,
+                    HailApi.getIntentForTag(HailApi.ACTION_UNFREEZE_TAG, tag),
+                )
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun pinFreezeAllShortcut() {
+        HShortcuts.addPinShortcut(
+            AppCompatResources.getDrawable(
+                requireContext(),
+                R.drawable.ic_round_frozen_shortcut,
+            )!!,
+            HailApi.ACTION_FREEZE_ALL,
+            getString(R.string.action_freeze_all),
+            Intent(HailApi.ACTION_FREEZE_ALL),
+        )
+    }
+
+    private fun pinUnfreezeAllShortcut() {
+        HShortcuts.addPinShortcut(
+            AppCompatResources.getDrawable(
+                requireContext(),
+                R.drawable.ic_round_unfrozen_shortcut,
+            )!!,
+            HailApi.ACTION_UNFREEZE_ALL,
+            getString(R.string.action_unfreeze_all),
+            Intent(HailApi.ACTION_UNFREEZE_ALL),
+        )
+    }
+
+    private fun pinFreezeNonWhitelistedShortcut() {
+        HShortcuts.addPinShortcut(
+            AppCompatResources.getDrawable(
+                requireContext(),
+                R.drawable.ic_round_frozen_shortcut,
+            )!!,
+            HailApi.ACTION_FREEZE_NON_WHITELISTED,
+            getString(R.string.action_freeze_non_whitelisted),
+            Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
+        )
+    }
+
+    private fun pinLockShortcut() {
+        HShortcuts.addPinShortcut(
+            AppCompatResources.getDrawable(
+                requireContext(),
+                R.drawable.ic_outline_lock_shortcut,
+            )!!,
+            HailApi.ACTION_LOCK,
+            getString(R.string.action_lock),
+            Intent(HailApi.ACTION_LOCK),
+        )
+    }
+
+    private fun pinLockFreezeShortcut() {
+        HShortcuts.addPinShortcut(
+            AppCompatResources.getDrawable(
+                requireContext(),
+                R.drawable.ic_outline_lock_shortcut,
+            )!!,
+            HailApi.ACTION_LOCK_FREEZE,
+            getString(R.string.action_lock_freeze),
+            Intent(HailApi.ACTION_LOCK_FREEZE),
+        )
     }
 
     fun onWorkingModeChange(rememberState: MutableState<String>, mode: String): Boolean {
@@ -945,55 +1013,66 @@ class SettingsFragment :
                 checkedItems,
             ) { _, _, _ -> }
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                val options = RestoreOptions(
-                    apps = checkedItems[0],
-                    whitelist = checkedItems[1],
-                    actions = checkedItems[2],
-                    settings = checkedItems[3],
-                )
-                if (!options.apps && !options.whitelist && !options.actions && !options.settings) {
+                val options = buildRestoreOptions(checkedItems)
+                if (options.nothingSelected()) {
                     HUI.showToast(R.string.msg_no_items_to_select)
                     return@setPositiveButton
                 }
                 // The flag marks the restore as handed off so the dismiss listener keeps the file.
                 restoreStarted = true
-                lifecycleScope.launch {
-                    val dialog = MaterialAlertDialogBuilder(
-                        requireActivity(),
-                    ).setView(R.layout.dialog_progress).setCancelable(false).show()
-                    val result = HBackup.restore(requireContext(), file, options)
-                    dialog.dismiss()
-                    result.onSuccess {
-                        if (options.apps) {
-                            parentFragmentManager.fragments.forEach { fragment ->
-                                if (fragment is HomeFragment) {
-                                    fragment.childFragmentManager.fragments.forEach { pager ->
-                                        if (pager is PagerFragment) {
-                                            pager.updateCurrentList()
-                                        }
-                                    }
+                launchRestore(file, options)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .setOnDismissListener(buildRestoreDismissListener(file) { restoreStarted })
+            .show()
+    }
+
+    private fun buildRestoreOptions(checkedItems: BooleanArray): RestoreOptions =
+        RestoreOptions(
+            apps = checkedItems[0],
+            whitelist = checkedItems[1],
+            actions = checkedItems[2],
+            settings = checkedItems[3],
+        )
+
+    private fun RestoreOptions.nothingSelected(): Boolean =
+        !apps && !whitelist && !actions && !settings
+
+    private fun launchRestore(file: File, options: RestoreOptions) {
+        lifecycleScope.launch {
+            val dialog = MaterialAlertDialogBuilder(
+                requireActivity(),
+            ).setView(R.layout.dialog_progress).setCancelable(false).show()
+            val result = HBackup.restore(requireContext(), file, options)
+            dialog.dismiss()
+            result.onSuccess {
+                if (options.apps) {
+                    parentFragmentManager.fragments.forEach { fragment ->
+                        if (fragment is HomeFragment) {
+                            fragment.childFragmentManager.fragments.forEach { pager ->
+                                if (pager is PagerFragment) {
+                                    pager.updateCurrentList()
                                 }
                             }
                         }
-                        if (options.settings) {
-                            activity.invalidateOptionsMenu()
-                        }
-                        HUI.showToast(R.string.msg_imported)
-                    }.onFailure {
-                        HUI.showToast(
-                            R.string.operation_failed,
-                            it.localizedMessage ?: app.getString(R.string.error_unknown),
-                            true,
-                        )
                     }
                 }
+                if (options.settings) {
+                    activity.invalidateOptionsMenu()
+                }
+                HUI.showToast(R.string.msg_imported)
+            }.onFailure {
+                HUI.showToast(
+                    R.string.operation_failed,
+                    it.localizedMessage ?: app.getString(R.string.error_unknown),
+                    true,
+                )
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .setOnDismissListener {
-                if (!restoreStarted) file.delete()
-            }
-            .show()
+        }
     }
+
+    private fun buildRestoreDismissListener(file: File, isRestoreStarted: () -> Boolean): DialogInterface.OnDismissListener =
+        DialogInterface.OnDismissListener { if (!isRestoreStarted()) file.delete() }
 
     private fun showTerminalDialog() {
         val binding = DialogInputBinding.inflate(layoutInflater)

@@ -117,84 +117,104 @@ class AboutFragment : MainFragment() {
             modifier = Modifier.verticalScroll(state = rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            Card(
-                onClick = { HUI.openLink(HailData.URL_WHY_FREE_SOFTWARE) },
-                modifier = Modifier.height(dimensionResource(R.dimen.header_height))
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+            AboutHeader()
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+            AboutVersionCard(installTime)
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+            AboutContactCard()
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+            AboutMiscCard { openLicenseDialog = true }
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+        }
+    }
+
+    @Composable
+    private fun AboutHeader() {
+        Card(
+            onClick = { HUI.openLink(HailData.URL_WHY_FREE_SOFTWARE) },
+            modifier = Modifier.height(dimensionResource(R.dimen.header_height))
+                .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(
+                    dimensionResource(R.dimen.padding_extra_small),
+                    Alignment.CenterVertically,
+                ),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.padding_extra_small),
-                        Alignment.CenterVertically,
-                    ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        modifier = Modifier.size(72.dp).background(Color.White, CircleShape),
-                        contentScale = ContentScale.None,
-                    )
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = stringResource(R.string.app_slogan),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
-                ClickableItem(
-                    icon = Icons.Outlined.Update,
-                    title = R.string.label_version,
-                    desc = HailData.VERSION,
-                ) { HUI.openLink(HailData.URL_RELEASES) }
-                ClickableItem(
-                    icon = Icons.Outlined.InstallMobile,
-                    title = R.string.label_time,
-                    desc = SimpleDateFormat.getDateInstance().format(installTime),
-                ) { HUI.showToast("\uD83E\uDD76\uD83D\uDCA8\uD83D\uDC09") }
-            }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
-                ClickableItem(
-                    icon = Icons.AutoMirrored.Filled.Send,
-                    title = R.string.action_telegram,
-                ) { HUI.openLink(HailData.URL_TELEGRAM) }
-                ClickableItem(
-                    icon = Icons.Outlined.Group,
-                    title = R.string.action_qq,
-                ) { HUI.openLink(HailData.URL_QQ) }
-                ClickableItem(
-                    icon = Icons.Outlined.LocalMall,
-                    title = R.string.action_fdroid,
-                ) { HUI.openLink(HailData.URL_FDROID) }
-                ClickableItem(
-                    icon = Icons.Outlined.Coffee,
-                    title = R.string.action_donate,
-                    onClick = ::openDonateDialog,
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.size(72.dp).background(Color.White, CircleShape),
+                    contentScale = ContentScale.None,
+                )
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = stringResource(R.string.app_slogan),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
-                ClickableItem(
-                    icon = Icons.Outlined.Code,
-                    title = R.string.action_github,
-                ) { HUI.openLink(HailData.URL_GITHUB) }
-                ClickableItem(
-                    icon = Icons.Outlined.Translate,
-                    title = R.string.action_translate,
-                ) { HUI.openLink(HailData.URL_TRANSLATE) }
-                ClickableItem(
-                    icon = Icons.Outlined.Description,
-                    title = R.string.action_licenses,
-                ) { openLicenseDialog = true }
-            }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+        }
+    }
+
+    @Composable
+    private fun AboutVersionCard(installTime: Long) {
+        OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
+            ClickableItem(
+                icon = Icons.Outlined.Update,
+                title = R.string.label_version,
+                desc = HailData.VERSION,
+            ) { HUI.openLink(HailData.URL_RELEASES) }
+            ClickableItem(
+                icon = Icons.Outlined.InstallMobile,
+                title = R.string.label_time,
+                desc = SimpleDateFormat.getDateInstance().format(installTime),
+            ) { HUI.showToast("\uD83E\uDD76\uD83D\uDCA8\uD83D\uDC09") }
+        }
+    }
+
+    @Composable
+    private fun AboutContactCard() {
+        OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
+            ClickableItem(
+                icon = Icons.AutoMirrored.Filled.Send,
+                title = R.string.action_telegram,
+            ) { HUI.openLink(HailData.URL_TELEGRAM) }
+            ClickableItem(
+                icon = Icons.Outlined.Group,
+                title = R.string.action_qq,
+            ) { HUI.openLink(HailData.URL_QQ) }
+            ClickableItem(
+                icon = Icons.Outlined.LocalMall,
+                title = R.string.action_fdroid,
+            ) { HUI.openLink(HailData.URL_FDROID) }
+            ClickableItem(
+                icon = Icons.Outlined.Coffee,
+                title = R.string.action_donate,
+                onClick = ::openDonateDialog,
+            )
+        }
+    }
+
+    @Composable
+    private fun AboutMiscCard(onLicensesClick: () -> Unit) {
+        OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
+            ClickableItem(
+                icon = Icons.Outlined.Code,
+                title = R.string.action_github,
+            ) { HUI.openLink(HailData.URL_GITHUB) }
+            ClickableItem(
+                icon = Icons.Outlined.Translate,
+                title = R.string.action_translate,
+            ) { HUI.openLink(HailData.URL_TRANSLATE) }
+            ClickableItem(
+                icon = Icons.Outlined.Description,
+                title = R.string.action_licenses,
+            ) { onLicensesClick() }
         }
     }
 
