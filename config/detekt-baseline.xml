@@ -36,10 +36,6 @@
     <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$64</ID>
     <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$72</ID>
     <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$8</ID>
-    <ID>MagicNumber:AppIconCache.kt$AppIconCache$100</ID>
-    <ID>MagicNumber:AppIconCache.kt$AppIconCache$1024</ID>
-    <ID>MagicNumber:AppIconCache.kt$AppIconCache$4</ID>
-    <ID>MagicNumber:AppIconCache.kt$AppIconCache.AppIconLruCache$1024</ID>
     <ID>MagicNumber:AppPickerAdapter.kt$AppPickerAdapter.ViewHolder$0.55f</ID>
     <ID>MagicNumber:AppsFragment.kt$AppsFragment.&lt;no name provided&gt;$300L</ID>
     <ID>MagicNumber:AppsViewModel.kt$AppsViewModel$1000</ID>
@@ -87,5 +83,11 @@
     <ID>ThrowsCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
     <ID>TooManyFunctions:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
+    <ID>VariableNaming:AboutFragment.kt$AboutFragment$private const val DONATE_LIBERAPAY = 3</ID>
+    <ID>VariableNaming:AboutFragment.kt$AboutFragment$private const val DONATE_PAYPAL = 4</ID>
+    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_FREEZE_NON_WHITELISTED = 4</ID>
+    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_LOCK = 5</ID>
+    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_LOCK_FREEZE = 6</ID>
+    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_UNFREEZE_ALL = 3</ID>
   </CurrentIssues>
 </SmellBaseline>
