@@ -12,43 +12,15 @@
     <ID>MaxLineLength:ApiActivity.kt$ApiActivity$HailApi.ACTION_FREEZE, HailApi.ACTION_UNFREEZE, HailApi.ACTION_FREEZE_TAG, HailApi.ACTION_UNFREEZE_TAG, HailApi.ACTION_FREEZE_ALL, HailApi.ACTION_UNFREEZE_ALL, HailApi.ACTION_FREEZE_NON_WHITELISTED, HailApi.ACTION_FREEZE_AUTO -&gt; handleFreezeAction(action)</ID>
     <ID>MaxLineLength:AutoFreezeWorker.kt$AutoFreezeWorker$val</ID>
     <ID>MaxLineLength:HPackages.kt$HPackages$(ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN</ID>
-    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg))</ID>
-    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first))</ID>
-    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$resources.getQuantityString(R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name)</ID>
+    <ID>MaxLineLength:PagerFragment.kt$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first))</ID>
+    <ID>MaxLineLength:PagerFragment.kt$resources.getQuantityString(R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name)</ID>
     <ID>MaxLineLength:SettingsFragment.kt$SettingsFragment$private</ID>
+    <ID>NestedBlockDepth:HailDataTest.kt$HailDataTest$private fun initializerAfter(text: String, index: Int): String</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$IllegalArgumentException()</ID>
-    <ID>TooManyFunctions:HBackup.kt$HBackup</ID>
     <ID>TooManyFunctions:PagerFragment.kt$com.aistra.hail.ui.home.PagerFragment.kt</ID>
     <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
+    <ID>TopLevelPropertyNaming:HBackup.kt$private const val BUFFER_SIZE = 8192</ID>
     <ID>TopLevelPropertyNaming:PagerAdapter.kt$private const val SELECTED_FLAG_BIT = 3</ID>
     <ID>TopLevelPropertyNaming:PagerAdapter.kt$private const val WHITELISTED_FLAG_BIT = 4</ID>
-    <ID>VariableNaming:AboutFragment.kt$AboutFragment$private const val DONATE_LIBERAPAY = 3</ID>
-    <ID>VariableNaming:AboutFragment.kt$AboutFragment$private const val DONATE_PAYPAL = 4</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val ACTION_MENU_DELETE = 3</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val APP_PICKER_GRID_SPAN_COUNT = 4</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val EDITOR_PADDING_HORIZONTAL = 32</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_CARD_CONTENT_PADDING_HORIZONTAL = 20</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_CARD_RADIUS = 48f</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_CONTAINER_PADDING_HORIZONTAL = 24</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_CONTAINER_PADDING_VERTICAL = 8</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_LIST_HEIGHT = 176</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN = 16</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_SEARCH_CONTAINER_HEIGHT = 72</ID>
-    <ID>VariableNaming:ActionsFragment.kt$ActionsFragment$private const val PICKER_SEARCH_MIN_HEIGHT = 64</ID>
-    <ID>VariableNaming:AppPickerAdapter.kt$AppPickerAdapter$private const val SELECTED_ICON_ALPHA = 0.55f</ID>
-    <ID>VariableNaming:AppsFragment.kt$AppsFragment$private const val QUERY_DEBOUNCE_DELAY_MILLIS = 300L</ID>
-    <ID>VariableNaming:AppsViewModel.kt$AppsViewModel$private const val APP_LIST_REFRESH_INTERVAL_MILLIS = 1000</ID>
-    <ID>VariableNaming:AutoFreezeService.kt$AutoFreezeService$private const val START_FOREGROUND_ID = 100</ID>
-    <ID>VariableNaming:AutoFreezeWorker.kt$AutoFreezeWorker$private const val MAX_TRIES = 3</ID>
-    <ID>VariableNaming:LaunchAppHook.kt$LaunchAppHook$private const val RETRY_SLEEP_MILLIS = 75</ID>
-    <ID>VariableNaming:LaunchAppHook.kt$LaunchAppHook$private const val THREAD_SLEEP_MILLIS = 300</ID>
-    <ID>VariableNaming:LaunchAppHook.kt$LaunchAppHook$private const val UNSUSPEND_RETRIES = 6</ID>
-    <ID>VariableNaming:PagerFragment.kt$PagerFragment$private const val INDEX_EXPORT_CLIPBOARD = 3</ID>
-    <ID>VariableNaming:PagerFragment.kt$PagerFragment$private const val INDEX_REMOVE_HOME = 4</ID>
-    <ID>VariableNaming:PagerFragment.kt$PagerFragment$private const val INDEX_UNFREEZE_REMOVE_HOME = 5</ID>
-    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_FREEZE_NON_WHITELISTED = 4</ID>
-    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_LOCK = 5</ID>
-    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_LOCK_FREEZE = 6</ID>
-    <ID>VariableNaming:SettingsFragment.kt$SettingsFragment$private const val PIN_SHORTCUT_UNFREEZE_ALL = 3</ID>
   </CurrentIssues>
 </SmellBaseline>

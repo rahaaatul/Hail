@@ -60,6 +60,9 @@ naming:
   # is named like a type.
   FunctionNaming:
     ignoreAnnotated: ['Composable']
+  # Project constants use UPPER_SNAKE_CASE (Kotlin standard), private vars use camelCase.
+  VariableNaming:
+    privateVariablePattern: '^((_)?[a-z][A-Za-z0-9]*|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*)$'
   # A top level constant of a Compose theme is named in PascalCase.
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][A-Za-z0-9]*'

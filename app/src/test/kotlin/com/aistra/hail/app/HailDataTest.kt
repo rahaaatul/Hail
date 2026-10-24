@@ -169,29 +169,25 @@ class HailDataTest {
     private fun initializerAfter(text: String, index: Int): String {
         var depth = 0
         var end = index
-        while (end < text.length) {
-            // A literal is stepped over as a unit, because a raw string spans lines and its
-            // interior newlines are not the end of anything.
+        var result: String? = null
+        while (end < text.length && result == null) {
             val literal = literalEndingAt(text, end)
             if (literal >= 0) {
                 end = literal
-                continue
-            }
-            when (text[end]) {
-                '(', '[', '{' -> depth++
+            } else {
+                when (text[end]) {
+                    '(', '[', '{' -> depth++
 
-                ')', ']', '}' -> depth--
+                    ')', ']', '}' -> depth--
 
-                // A line ends the value unless the value is still open, has not started, or
-                // the next line leads with an operator - which is this codebase's other way of
-                // writing a long value, and the one a trailing-character rule cannot see.
-                '\n' -> if (depth <= 0 && !awaitsRest(text.substring(index, end), text, end + 1)) {
-                    return text.substring(index, end)
+                    '\n' -> if (depth <= 0 && !awaitsRest(text.substring(index, end), text, end + 1)) {
+                        result = text.substring(index, end)
+                    }
                 }
+                end++
             }
-            end++
         }
-        return text.substring(index)
+        return result ?: text.substring(index)
     }
 
     /**

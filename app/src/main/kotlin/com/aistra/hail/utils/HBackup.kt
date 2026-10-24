@@ -21,6 +21,36 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
+private const val BUFFER_SIZE = 8192
+
+private fun writeEntry(zipOutputStream: ZipOutputStream, name: String, content: String) {
+    zipOutputStream.putNextEntry(ZipEntry(name))
+    zipOutputStream.write(content.toByteArray())
+    zipOutputStream.closeEntry()
+}
+
+private fun readJsonString(bufferedStream: BufferedInputStream): String {
+    val stringBuilder = StringBuilder()
+    val buffer = ByteArray(BUFFER_SIZE)
+    var bytesRead: Int
+    while (bufferedStream.read(buffer).also { bytesRead = it } != -1) {
+        stringBuilder.append(String(buffer, 0, bytesRead, Charset.forName("UTF-8")))
+    }
+    return stringBuilder.toString()
+}
+
+private fun warnNotStorable(key: String, value: Any?, target: String) {
+    HLog.w("HBackup", "Value '$value' for key '$key' cannot be stored as $target, skipping")
+}
+
+private fun Any?.toNumberOrNull(): Number? = when (this) {
+    is Number -> this
+    is String -> toDoubleOrNull()
+    else -> null
+}
+
+private fun String.toFloatTagOrNull(): Float? = toFloatOrNull()?.takeIf { it.toString() == this && it.isFinite() }
+
 object HBackup {
 
     data class BackupOptions(
@@ -41,7 +71,6 @@ object HBackup {
     private const val FILE_WHITELIST = "whitelist.json"
     private const val FILE_ACTIONS = "actions.json"
     private const val FILE_SETTINGS = "settings.json"
-    private const val BUFFER_SIZE = 8192
 
     private val INT_AS_LONG_RANGE = Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()
 
@@ -189,22 +218,6 @@ object HBackup {
             }
         }
         writeEntry(zipOutputStream, FILE_SETTINGS, jsonObject.toString())
-    }
-
-    private fun writeEntry(zipOutputStream: ZipOutputStream, name: String, content: String) {
-        zipOutputStream.putNextEntry(ZipEntry(name))
-        zipOutputStream.write(content.toByteArray())
-        zipOutputStream.closeEntry()
-    }
-
-    private fun readJsonString(bufferedStream: BufferedInputStream): String {
-        val stringBuilder = StringBuilder()
-        val buffer = ByteArray(BUFFER_SIZE)
-        var bytesRead: Int
-        while (bufferedStream.read(buffer).also { bytesRead = it } != -1) {
-            stringBuilder.append(String(buffer, 0, bytesRead, Charset.forName("UTF-8")))
-        }
-        return stringBuilder.toString()
     }
 
     private fun readAppsJson(zipInputStream: ZipInputStream) {
@@ -378,23 +391,6 @@ object HBackup {
         }
     }
 
-    private fun Any?.toNumberOrNull(): Number? = when (this) {
-        is Number -> this
-        is String -> toDoubleOrNull()
-        else -> null
-    }
-
-    /**
-     * This string as the [Float] it spells, or null when it does not spell one. Only
-     * writeSettingsJson produces a number as a String, and it produces it as
-     * [Float.toString], whose spelling is a fixed point: parsing it and printing it again
-     * gives the same text. A String preference keeps its own content instead, so a value
-     * that fails the round trip is a String, as is "15" and "1e20" - spellings this build
-     * never writes for a Float, because a Float of 15.0f prints as "15.0" and 1.0E20f
-     * prints as "1.0E20".
-     */
-    private fun String.toFloatTagOrNull(): Float? = toFloatOrNull()?.takeIf { it.toString() == this && it.isFinite() }
-
     /**
      * This number as an exact [Long], or null when it is not one: a fraction, a NaN, an
      * infinity, or a magnitude a Long cannot hold. [Number.toLong] is unusable for the job
@@ -540,9 +536,5 @@ object HBackup {
         }
 
         else -> isMagnitudeTooWide(toDouble())
-    }
-
-    private fun warnNotStorable(key: String, value: Any?, target: String) {
-        HLog.w("HBackup", "Value '$value' for key '$key' cannot be stored as $target, skipping")
     }
 }
