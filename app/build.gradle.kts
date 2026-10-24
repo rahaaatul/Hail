@@ -70,7 +70,7 @@ android {
             // signing config above.
             signingConfigs.findByName("release")?.let { signingConfig = it }
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "r8-rules.pro"
             )
             // Additional optimization settings
             // Enable strict shrinking to remove more unused code

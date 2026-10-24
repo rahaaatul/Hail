@@ -12,7 +12,7 @@ on:
     paths:
       - 'app/src/**'
       - 'app/build.gradle.kts'
-      - 'app/proguard-rules.pro'
+      - 'app/r8-rules.pro'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
@@ -27,7 +27,7 @@ on:
     paths:
       - 'app/src/**'
       - 'app/build.gradle.kts'
-      - 'app/proguard-rules.pro'
+      - 'app/r8-rules.pro'
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'

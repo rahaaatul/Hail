@@ -8,7 +8,7 @@ on:
     paths:
       - 'app/src/**'
       - 'app/build.gradle.kts'
-      - 'app/proguard-rules.pro'
+      - 'app/r8-rules.pro'
       - 'gradle/**'
       - '**.kt'
       - '**.java'
@@ -37,7 +37,7 @@ on:
     paths:
       - 'app/src/**'
       - 'app/build.gradle.kts'
-      - 'app/proguard-rules.pro'
+      - 'app/r8-rules.pro'
       - 'gradle/**'
       - '**.kt'
       - '**.java'
