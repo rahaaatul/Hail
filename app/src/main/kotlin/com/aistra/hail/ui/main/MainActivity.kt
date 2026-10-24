@@ -17,18 +17,24 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.aistra.hail.R
 import com.aistra.hail.HailApp
+import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.ActivityMainBinding
-import com.aistra.hail.extensions.*
+import com.aistra.hail.extensions.applyDefaultInsetter
+import com.aistra.hail.extensions.isLandscape
+import com.aistra.hail.extensions.isRtl
+import com.aistra.hail.extensions.marginRelative
+import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
-class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedListener {
+class MainActivity :
+    AppCompatActivity(),
+    NavController.OnDestinationChangedListener {
     lateinit var fab: ExtendedFloatingActionButton
     lateinit var appbar: AppBarLayout
     private lateinit var binding: ActivityMainBinding
@@ -42,7 +48,9 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         HailApp.app.syncRootShell()
         if (!HailData.biometricLogin || BiometricManager.from(this)
                 .canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS
-        ) return
+        ) {
+            return
+        }
         binding.root.isVisible = false
         val biometricPrompt = BiometricPrompt(
             this,
@@ -58,7 +66,8 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                     super.onAuthenticationSucceeded(result)
                     binding.root.isVisible = true
                 }
-            })
+            },
+        )
         val promptInfo = BiometricPrompt.PromptInfo.Builder().setTitle(getString(R.string.action_biometric))
             .setSubtitle(getString(R.string.msg_biometric)).setNegativeButtonText(getString(android.R.string.cancel))
             .build()
@@ -76,7 +85,9 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         navController = navHostFragment.navController
         navController.addOnDestinationChangedListener(this@MainActivity)
         appBarConfiguration = AppBarConfiguration.Builder(
-            R.id.nav_home, R.id.nav_actions, R.id.nav_settings
+            R.id.nav_home,
+            R.id.nav_actions,
+            R.id.nav_settings,
         ).build()
         setupActionBarWithNavController(navController, appBarConfiguration)
         bottomNav?.setupWithNavController(navController)
@@ -110,12 +121,9 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
         if (HailData.biometricLogin) finishAndRemoveTask()
     } */
 
-    override fun onSupportNavigateUp(): Boolean =
-        navController.navigateUp() || super.onSupportNavigateUp()
+    override fun onSupportNavigateUp(): Boolean = navController.navigateUp() || super.onSupportNavigateUp()
 
-    override fun onDestinationChanged(
-        controller: NavController, destination: NavDestination, arguments: Bundle?
-    ) {
+    override fun onDestinationChanged(controller: NavController, destination: NavDestination, arguments: Bundle?) {
         fab.setOnClickListener(null)
         fab.tag = destination.id == R.id.nav_home || destination.id == R.id.nav_actions
         fab.setIconResource(R.drawable.ic_round_add)
@@ -127,6 +135,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                 fab.setOnClickListener { controller.navigate(R.id.nav_apps) }
                 fab.show()
             }
+
             R.id.nav_actions -> {
                 fab.setText(R.string.action_add_action)
                 fab.setExtended(isLandscape)
@@ -139,6 +148,7 @@ class MainActivity : AppCompatActivity(), NavController.OnDestinationChangedList
                 }
                 fab.show()
             }
+
             else -> {
                 fab.setText("")
                 fab.contentDescription = ""

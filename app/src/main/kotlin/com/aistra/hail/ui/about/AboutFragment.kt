@@ -5,15 +5,62 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Arrangement
+import androidx.compose.foundation.CircleShape
+import androidx.compose.foundation.Column
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.Row
+import androidx.compose.foundation.SelectionContainer
+import androidx.compose.foundation.Spacer
+import androidx.compose.foundation.apply
+import androidx.compose.foundation.background
+import androidx.compose.foundation.fillMaxSize
+import androidx.compose.foundation.fillMaxWidth
+import androidx.compose.foundation.forEach
+import androidx.compose.foundation.height
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.state
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Coffee
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.InstallMobile
+import androidx.compose.material.icons.outlined.LocalMall
+import androidx.compose.material.icons.outlined.Preview
+import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material.icons.outlined.Shortcut
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Arrangement
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Icons
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.not
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Group
+import androidx.compose.runtime.Long
+import androidx.compose.runtime.forEach
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,7 +71,12 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.*
+import androidx.compose.ui.text.CircleShape
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.HailApp.Companion.app
@@ -59,69 +111,84 @@ class AboutFragment : MainFragment() {
         var openLicenseDialog by remember { mutableStateOf(false) }
         if (openLicenseDialog) LicenseDialog { openLicenseDialog = false }
         Column(
-            modifier = Modifier.verticalScroll(state = rememberScrollState())
+            modifier = Modifier.verticalScroll(state = rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
             Card(
                 onClick = { HUI.openLink(HailData.URL_WHY_FREE_SOFTWARE) },
                 modifier = Modifier.height(dimensionResource(R.dimen.header_height))
-                    .padding(horizontal = dimensionResource(R.dimen.padding_medium))
+                    .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(
-                        dimensionResource(R.dimen.padding_extra_small), Alignment.CenterVertically
-                    ), horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(
+                        dimensionResource(R.dimen.padding_extra_small),
+                        Alignment.CenterVertically,
+                    ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Image(
                         painter = painterResource(R.drawable.ic_launcher_foreground),
                         contentDescription = null,
                         modifier = Modifier.size(72.dp).background(Color.White, CircleShape),
-                        contentScale = ContentScale.None
+                        contentScale = ContentScale.None,
                     )
                     Text(
-                        text = stringResource(R.string.app_name), style = MaterialTheme.typography.bodyLarge
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                     Text(
-                        text = stringResource(R.string.app_slogan), style = MaterialTheme.typography.bodyMedium
+                        text = stringResource(R.string.app_slogan),
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
             OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
                 ClickableItem(
-                    icon = Icons.Outlined.Update, title = R.string.label_version, desc = HailData.VERSION
+                    icon = Icons.Outlined.Update,
+                    title = R.string.label_version,
+                    desc = HailData.VERSION,
                 ) { HUI.openLink(HailData.URL_RELEASES) }
                 ClickableItem(
                     icon = Icons.Outlined.InstallMobile,
                     title = R.string.label_time,
-                    desc = SimpleDateFormat.getDateInstance().format(installTime)
+                    desc = SimpleDateFormat.getDateInstance().format(installTime),
                 ) { HUI.showToast("\uD83E\uDD76\uD83D\uDCA8\uD83D\uDC09") }
             }
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
             OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
                 ClickableItem(
-                    icon = Icons.AutoMirrored.Filled.Send, title = R.string.action_telegram
+                    icon = Icons.AutoMirrored.Filled.Send,
+                    title = R.string.action_telegram,
                 ) { HUI.openLink(HailData.URL_TELEGRAM) }
                 ClickableItem(
-                    icon = Icons.Outlined.Group, title = R.string.action_qq
+                    icon = Icons.Outlined.Group,
+                    title = R.string.action_qq,
                 ) { HUI.openLink(HailData.URL_QQ) }
                 ClickableItem(
-                    icon = Icons.Outlined.LocalMall, title = R.string.action_fdroid
+                    icon = Icons.Outlined.LocalMall,
+                    title = R.string.action_fdroid,
                 ) { HUI.openLink(HailData.URL_FDROID) }
                 ClickableItem(
-                    icon = Icons.Outlined.Coffee, title = R.string.action_donate, onClick = ::openDonateDialog
+                    icon = Icons.Outlined.Coffee,
+                    title = R.string.action_donate,
+                    onClick = ::openDonateDialog,
                 )
             }
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
             OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
                 ClickableItem(
-                    icon = Icons.Outlined.Code, title = R.string.action_github
+                    icon = Icons.Outlined.Code,
+                    title = R.string.action_github,
                 ) { HUI.openLink(HailData.URL_GITHUB) }
                 ClickableItem(
-                    icon = Icons.Outlined.Translate, title = R.string.action_translate
+                    icon = Icons.Outlined.Translate,
+                    title = R.string.action_translate,
                 ) { HUI.openLink(HailData.URL_TRANSLATE) }
                 ClickableItem(
-                    icon = Icons.Outlined.Description, title = R.string.action_licenses
+                    icon = Icons.Outlined.Description,
+                    title = R.string.action_licenses,
                 ) { openLicenseDialog = true }
             }
             Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
@@ -129,23 +196,24 @@ class AboutFragment : MainFragment() {
     }
 
     @Composable
-    private fun ClickableItem(
-        icon: ImageVector, @StringRes title: Int, desc: String? = null, onClick: () -> Unit
-    ) = Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon, contentDescription = null, modifier = Modifier.padding(
-                horizontal = dimensionResource(R.dimen.padding_medium),
-                vertical = dimensionResource(if (desc == null) R.dimen.padding_medium else R.dimen.padding_large)
+    private fun ClickableItem(icon: ImageVector, @StringRes title: Int, desc: String? = null, onClick: () -> Unit) =
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.padding(
+                    horizontal = dimensionResource(R.dimen.padding_medium),
+                    vertical = dimensionResource(if (desc == null) R.dimen.padding_medium else R.dimen.padding_large),
+                ),
             )
-        )
-        Column {
-            Text(text = stringResource(title), style = MaterialTheme.typography.bodyLarge)
-            if (desc != null) Text(text = desc, style = MaterialTheme.typography.bodyMedium)
+            Column {
+                Text(text = stringResource(title), style = MaterialTheme.typography.bodyLarge)
+                if (desc != null) Text(text = desc, style = MaterialTheme.typography.bodyMedium)
+            }
         }
-    }
 
     @Composable
     private fun LicenseDialog(onDismiss: () -> Unit) = AlertDialog(
@@ -156,22 +224,26 @@ class AboutFragment : MainFragment() {
                     text = buildAnnotatedString {
                         val lines = resources.openRawResource(R.raw.licenses).bufferedReader().readLines()
                         lines.forEach {
-                            if (it.isNotBlank()) withLink(
-                                LinkAnnotation.Url(
-                                    it.substringAfter(": "),
-                                    TextLinkStyles(style = SpanStyle(color = MaterialTheme.colorScheme.primary))
-                                )
-                            ) {
-                                append(it.substringBefore(": "))
+                            if (it.isNotBlank()) {
+                                withLink(
+                                    LinkAnnotation.Url(
+                                        it.substringAfter(": "),
+                                        TextLinkStyles(style = SpanStyle(color = MaterialTheme.colorScheme.primary)),
+                                    ),
+                                ) {
+                                    append(it.substringBefore(": "))
+                                }
                             }
                             if (it != lines.last()) append("\n\n")
                         }
-                    }, modifier = Modifier.verticalScroll(state = rememberScrollState())
+                    },
+                    modifier = Modifier.verticalScroll(state = rememberScrollState()),
                 )
             }
         },
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text(text = stringResource(android.R.string.ok)) } })
+        confirmButton = { TextButton(onClick = onDismiss) { Text(text = stringResource(android.R.string.ok)) } },
+    )
 
     private fun openDonateDialog() {
         MaterialAlertDialogBuilder(activity).setTitle(R.string.title_donate)
@@ -183,11 +255,13 @@ class AboutFragment : MainFragment() {
                     }
 
                     1 -> MaterialAlertDialogBuilder(activity).setTitle(R.string.title_donate)
-                        .setView(ShapeableImageView(activity).apply {
-                            val padding = resources.getDimensionPixelOffset(R.dimen.padding_large)
-                            setPadding(0, padding, 0, padding)
-                            setImageResource(R.mipmap.qr_wechat)
-                        }).setPositiveButton(R.string.donate_wechat_scan) { _, _ ->
+                        .setView(
+                            ShapeableImageView(activity).apply {
+                                val padding = resources.getDimensionPixelOffset(R.dimen.padding_large)
+                                setPadding(0, padding, 0, padding)
+                                setImageResource(R.mipmap.qr_wechat)
+                            },
+                        ).setPositiveButton(R.string.donate_wechat_scan) { _, _ ->
                             app.packageManager.getLaunchIntentForPackage("com.tencent.mm")?.let {
                                 it.putExtra("LauncherUI.From.Scaner.Shortcut", true)
                                 startActivity(it)
@@ -195,7 +269,9 @@ class AboutFragment : MainFragment() {
                         }.setNegativeButton(android.R.string.cancel, null).show()
 
                     2 -> HUI.openLink(HailData.URL_KOFI)
+
                     3 -> HUI.openLink(HailData.URL_LIBERAPAY)
+
                     4 -> HUI.openLink(HailData.URL_PAYPAL)
                 }
             }.setNegativeButton(android.R.string.cancel, null).show()

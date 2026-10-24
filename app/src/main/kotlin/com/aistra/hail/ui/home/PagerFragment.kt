@@ -3,13 +3,25 @@ package com.aistra.hail.ui.home
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CheckboxDefaults
@@ -29,8 +41,8 @@ import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aistra.hail.HailApp.Companion.app
@@ -42,10 +54,23 @@ import com.aistra.hail.app.HailApi.addTag
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
 import com.aistra.hail.databinding.FragmentPagerBinding
-import com.aistra.hail.extensions.*
+import com.aistra.hail.extensions.applyDefaultInsetter
+import com.aistra.hail.extensions.isLandscape
+import com.aistra.hail.extensions.isRtl
+import com.aistra.hail.extensions.marginRelative
+import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.AppActions
+import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.FuzzySearch
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HShizuku
+import com.aistra.hail.utils.HShortcuts
+import com.aistra.hail.utils.HUI
+import com.aistra.hail.utils.NameComparator
+import com.aistra.hail.utils.NineKeySearch
+import com.aistra.hail.utils.PinyinSearch
 import com.aistra.hail.work.HWork
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -57,7 +82,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 
-class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAdapter.OnItemLongClickListener,
+class PagerFragment :
+    MainFragment(),
+    PagerAdapter.OnItemClickListener,
+    PagerAdapter.OnItemLongClickListener,
     MenuProvider {
     private var query: String = String()
     private var _binding: FragmentPagerBinding? = null
@@ -77,20 +105,21 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
-        requireActivity().onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (multiselect) {
-                    deselect()
-                } else {
-                    isEnabled = false
-                    requireActivity().onBackPressedDispatcher.onBackPressed()
+        requireActivity().onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (multiselect) {
+                        deselect()
+                    } else {
+                        isEnabled = false
+                        requireActivity().onBackPressedDispatcher.onBackPressed()
+                    }
                 }
-            }
-        })
+            },
+        )
     }
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
         _binding = FragmentPagerBinding.inflate(inflater, container, false)
@@ -100,13 +129,13 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
         binding.recyclerView.run {
             layoutManager = GridLayoutManager(
-                activity, resources.getInteger(
-                    if (HailData.compactIcon) R.integer.home_span_compact else R.integer.home_span
-                )
+                activity,
+                resources.getInteger(
+                    if (HailData.compactIcon) R.integer.home_span_compact else R.integer.home_span,
+                ),
             )
             adapter = pagerAdapter
             applyDefaultInsetter { paddingRelative(isRtl, bottom = isLandscape) }
-
         }
 
         binding.refresh.apply {
@@ -143,12 +172,22 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     internal fun updateCurrentList() {
         val binding = _binding ?: return
         HailData.checkedList.filter { it.isInstalled }.filter {
-            if (query.isEmpty()) tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
-            else ((HailData.nineKeySearch && NineKeySearch.search(
-                query, it.packageName, it.name
-            )) || FuzzySearch.search(it.packageName, query) || FuzzySearch.search(
-                it.name, query
-            ) || PinyinSearch.searchPinyinAll(it.name, query))
+            if (query.isEmpty()) {
+                tag?.second?.let { tagId -> tagId in it.tagIdList } ?: false
+            } else {
+                (
+                    (
+                        HailData.nineKeySearch && NineKeySearch.search(
+                            query,
+                            it.packageName,
+                            it.name,
+                        )
+                        ) || FuzzySearch.search(it.packageName, query) || FuzzySearch.search(
+                        it.name,
+                        query,
+                    ) || PinyinSearch.searchPinyinAll(it.name, query)
+                    )
+            }
         }.sortedWith(NameComparator).let {
             binding.empty.isVisible = it.isEmpty()
             pagerAdapter.submitList(it)
@@ -159,15 +198,21 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private fun updateBarTitle() {
         if (!isAdded) return
         activity.supportActionBar?.title =
-            if (multiselect) getString(R.string.msg_selected, selectedList.size.toString())
-            else getString(R.string.app_name)
+            if (multiselect) {
+                getString(R.string.msg_selected, selectedList.size.toString())
+            } else {
+                getString(R.string.app_name)
+            }
     }
 
     override fun onItemClick(info: AppInfo) {
         if (!isAdded) return
         if (multiselect) {
-            if (info in selectedList) selectedList.remove(info)
-            else selectedList.add(info)
+            if (info in selectedList) {
+                selectedList.remove(info)
+            } else {
+                selectedList.add(info)
+            }
             updateCurrentList()
             updateBarTitle()
             return
@@ -230,7 +275,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         MaterialAlertDialogBuilder(activity).setTitle(info.name).setItems(filteredEntries.toTypedArray()) { _, which ->
             when (actionIds[which]) {
                 R.string.action_launch -> launchApp(pkg)
+
                 R.string.action_freeze, R.string.action_unfreeze -> setListFrozen(!frozen, listOf(info))
+
                 R.string.action_deferred_task -> {
                     val values = resources.getIntArray(R.array.deferred_task_values)
                     val entries = arrayOfNulls<String>(values.size)
@@ -240,11 +287,18 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                     MaterialAlertDialogBuilder(activity).setTitle(R.string.action_deferred_task)
                         .setItems(entries) { _, i ->
                             HWork.setDeferredFrozen(pkg, !frozen, values[i].toLong())
-                            val deferredAction = getString(if (!frozen) R.string.action_freeze else R.string.action_unfreeze)
+                            val deferredAction =
+                                getString(if (!frozen) R.string.action_freeze else R.string.action_unfreeze)
                             Snackbar.make(
-                                activity.fab, resources.getQuantityString(
-                                    R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name
-                                ), Snackbar.LENGTH_INDEFINITE
+                                activity.fab,
+                                resources.getQuantityString(
+                                    R.plurals.msg_deferred_task,
+                                    values[i],
+                                    values[i],
+                                    deferredAction,
+                                    info.name,
+                                ),
+                                Snackbar.LENGTH_INDEFINITE,
                             ).setAction(R.string.action_undo) { HWork.cancelWork(pkg) }.show()
                         }.setNegativeButton(android.R.string.cancel, null).show()
                 }
@@ -270,19 +324,30 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                                 info,
                                 pkg,
                                 info.name,
-                                HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first)
+                                HailApi.getIntentForPackage(
+                                    HailApi.ACTION_LAUNCH,
+                                    pkg,
+                                ).addTag(HailData.tags[index].first),
                             )
                         }.setPositiveButton(R.string.action_skip) { _, _ ->
                             HShortcuts.addPinShortcut(
-                                info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg)
+                                info,
+                                pkg,
+                                info.name,
+                                HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg),
                             )
                         }.setNegativeButton(android.R.string.cancel, null).show()
                 } ?: HShortcuts.addPinShortcut(
-                    info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg)
+                    info,
+                    pkg,
+                    info.name,
+                    HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg),
                 )
 
                 R.string.action_export_clipboard -> exportToClipboard(listOf(info))
+
                 R.string.action_remove_home -> removeCheckedApp(pkg)
+
                 R.string.action_unfreeze_remove_home -> {
                     val job = setListFrozen(false, listOf(info), false)
                     lifecycleScope.launch {
@@ -293,7 +358,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
         }.setNeutralButton(R.string.action_details) { _, _ ->
             HUI.startActivity(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS, HPackages.packageUri(pkg)
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                HPackages.packageUri(pkg),
             )
         }.setNegativeButton(android.R.string.cancel, null).show()
         return true
@@ -304,7 +370,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             HailData.tags[index].second in info.tagIdList
         }
         MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setMultiChoiceItems(
-            HailData.tags.map { it.first }.toTypedArray(), checkedItems
+            HailData.tags.map { it.first }.toTypedArray(),
+            checkedItems,
         ) { _, index, isChecked ->
             checkedItems[index] = isChecked
         }.setPositiveButton(android.R.string.ok) { _, _ ->
@@ -349,7 +416,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         }
 
         val allSelected = selectedList.size == currentList.size &&
-                currentList.all { it in selectedList }
+            currentList.all { it in selectedList }
 
         if (!multiselect || !allSelected) {
             multiselect = true
@@ -368,15 +435,25 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         val multiselectItem = menu.findItem(R.id.action_multiselect)
         val button = multiselectItem?.actionView?.findViewById<ImageView>(R.id.multiselect_button)
         button?.let {
-            it.setImageResource(if (multiselect) R.drawable.ic_outline_check
-            else R.drawable.ic_outline_select_all)
-            val colorAttr = if (multiselect) androidx.appcompat.R.attr.colorPrimary
-            else com.google.android.material.R.attr.colorOnSurface
+            it.setImageResource(
+                if (multiselect) {
+                    R.drawable.ic_outline_check
+                } else {
+                    R.drawable.ic_outline_select_all
+                },
+            )
+            val colorAttr = if (multiselect) {
+                androidx.appcompat.R.attr.colorPrimary
+            } else {
+                com.google.android.material.R.attr.colorOnSurface
+            }
             val color = MaterialColors.getColor(activity.findViewById(R.id.toolbar), colorAttr)
             it.setColorFilter(color)
-            it.contentDescription = if (multiselect)
+            it.contentDescription = if (multiselect) {
                 getString(R.string.msg_selected, selectedList.size.toString())
-            else getString(R.string.tap_to_select)
+            } else {
+                getString(R.string.tap_to_select)
+            }
         }
     }
 
@@ -384,8 +461,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         if (!isAdded) return
         MaterialAlertDialogBuilder(activity).setTitle(
             getString(
-                R.string.msg_selected, selectedList.size.toString()
-            )
+                R.string.msg_selected,
+                selectedList.size.toString(),
+            ),
         ).setItems(
             intArrayOf(
                 R.string.action_freeze,
@@ -393,8 +471,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 R.string.action_tag_set,
                 R.string.action_export_clipboard,
                 R.string.action_remove_home,
-                R.string.action_unfreeze_remove_home
-            ).map { getString(it) }.toTypedArray()
+                R.string.action_unfreeze_remove_home,
+            ).map { getString(it) }.toTypedArray(),
         ) { _, which ->
             when (which) {
                 0 -> {
@@ -453,10 +531,12 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
         }
         val states = mutableStateListOf(*initialStates)
-        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setView(ComposeView(activity).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent { AppTheme { TriStateTagList(initialStates, states) } }
-        }).setPositiveButton(android.R.string.ok) { _, _ ->
+        MaterialAlertDialogBuilder(activity).setTitle(R.string.action_tag_set).setView(
+            ComposeView(activity).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setContent { AppTheme { TriStateTagList(initialStates, states) } }
+            },
+        ).setPositiveButton(android.R.string.ok) { _, _ ->
             selectedList.forEach {
                 states.forEachIndexed { index, state ->
                     val tagId = HailData.tags[index].second
@@ -466,6 +546,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                         }
 
                         ToggleableState.Off -> it.tagIdList.remove(tagId)
+
                         ToggleableState.Indeterminate -> {}
                     }
                 }
@@ -480,29 +561,36 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     @Composable
     private fun TriStateTagList(initialStates: Array<ToggleableState>, states: MutableList<ToggleableState>) = Column(
-        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     ) {
         Spacer(modifier = Modifier.height(16.dp))
         HailData.tags.forEachIndexed { index, tag ->
-            Row(modifier = Modifier.fillMaxWidth().clickable {
-                states[index] = if (initialStates[index] == ToggleableState.Indeterminate) when (states[index]) {
-                    ToggleableState.On -> ToggleableState.Off
-                    ToggleableState.Off -> ToggleableState.Indeterminate
-                    ToggleableState.Indeterminate -> ToggleableState.On
-                }
-                else if (states[index] == ToggleableState.On) ToggleableState.Off
-                else ToggleableState.On
-            }.padding(horizontal = 24.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable {
+                    states[index] = if (initialStates[index] == ToggleableState.Indeterminate) {
+                        when (states[index]) {
+                            ToggleableState.On -> ToggleableState.Off
+                            ToggleableState.Off -> ToggleableState.Indeterminate
+                            ToggleableState.Indeterminate -> ToggleableState.On
+                        }
+                    } else if (states[index] == ToggleableState.On) {
+                        ToggleableState.Off
+                    } else {
+                        ToggleableState.On
+                    }
+                }.padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 TriStateCheckbox(
                     state = states[index],
                     onClick = null,
-                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.secondary)
+                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.secondary),
                 )
                 Spacer(modifier = Modifier.width(24.dp))
                 Text(
                     text = tag.first,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         }
@@ -525,7 +613,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun setListFrozen(
-        frozen: Boolean, list: List<AppInfo> = HailData.checkedList, updateList: Boolean = true
+        frozen: Boolean,
+        list: List<AppInfo> = HailData.checkedList,
+        updateList: Boolean = true,
     ): Job {
         if (HailData.workingMode == HailData.MODE_DEFAULT) {
             MaterialAlertDialogBuilder(activity).setMessage(R.string.msg_guide)
@@ -547,7 +637,8 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                 if (updateList) updateCurrentList()
                 pagerAdapter.refreshVisualState()
                 HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze, filtered.size.toString()
+                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
+                    filtered.size.toString(),
                 )
             }.onFailure {
                 HUI.showToast(R.string.permission_denied)
@@ -556,13 +647,21 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     }
 
     private fun showTagDialog(list: List<AppInfo>? = null) {
-        val tabLayout = tabs ?: return  // The view has been destroyed; return directly.
+        val tabLayout = tabs ?: return // The view has been destroyed; return directly.
         val homeAdapter = adapter ?: return
 
         val binding = DialogInputBinding.inflate(layoutInflater)
         binding.inputLayout.setHint(R.string.tag)
         list ?: binding.editText.setText(tag?.first ?: "")
-        MaterialAlertDialogBuilder(activity).setTitle(if (list != null) R.string.action_tag_add else R.string.action_tag_set)
+        MaterialAlertDialogBuilder(activity).setTitle(
+            if (list !=
+                null
+            ) {
+                R.string.action_tag_add
+            } else {
+                R.string.action_tag_set
+            },
+        )
             .setView(binding.root).setPositiveButton(android.R.string.ok) { _, _ ->
                 val tagName = binding.editText.text.toString()
                 val tagId = tagName.hashCode()
@@ -613,23 +712,33 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
 
     private fun exportToClipboard(list: List<AppInfo>) {
         if (list.isEmpty()) return
-        HUI.copyText(if (list.size > 1) JSONArray().run {
-            list.forEach { put(it.packageName) }
-            toString()
-        } else list[0].packageName)
+        HUI.copyText(
+            if (list.size > 1) {
+                JSONArray().run {
+                    list.forEach { put(it.packageName) }
+                    toString()
+                }
+            } else {
+                list[0].packageName
+            },
+        )
         HUI.showToast(
-            R.string.msg_exported, if (list.size > 1) list.size.toString() else list[0].name
+            R.string.msg_exported,
+            if (list.size > 1) list.size.toString() else list[0].name,
         )
     }
 
     private fun importFromClipboard() = runCatching {
         val str = HUI.pasteText() ?: throw IllegalArgumentException()
-        val json = if (str.contains('[')) JSONArray(
-            str.substring(
-                str.indexOf('[')..str.indexOf(']', str.indexOf('['))
+        val json = if (str.contains('[')) {
+            JSONArray(
+                str.substring(
+                    str.indexOf('[')..str.indexOf(']', str.indexOf('[')),
+                ),
             )
-        )
-        else JSONArray().put(str)
+        } else {
+            JSONArray().put(str)
+        }
         var i = 0
         for (index in 0 until json.length()) {
             val pkg = json.getString(index)
@@ -659,8 +768,12 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
     private fun MenuItem.updateIcon() = icon?.setTint(
         MaterialColors.getColor(
             activity.findViewById(R.id.toolbar),
-            if (multiselect) androidx.appcompat.R.attr.colorPrimary else com.google.android.material.R.attr.colorOnSurface
-        )
+            if (multiselect) {
+                androidx.appcompat.R.attr.colorPrimary
+            } else {
+                com.google.android.material.R.attr.colorOnSurface
+            },
+        ),
     )
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
@@ -668,11 +781,15 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             R.id.action_freeze_current -> setListFrozen(true, pagerAdapter.currentList.filterNot { it.whitelisted })
 
             R.id.action_unfreeze_current -> setListFrozen(false, pagerAdapter.currentList)
+
             R.id.action_freeze_all -> setListFrozen(true)
+
             R.id.action_unfreeze_all -> setListFrozen(false)
+
             R.id.action_freeze_non_whitelisted -> setListFrozen(true, HailData.checkedList.filterNot { it.whitelisted })
 
             R.id.action_import_clipboard -> importFromClipboard()
+
             R.id.action_import_frozen -> lifecycleScope.launch {
                 val size = importFrozenApp()
                 if (size > 0) {
@@ -683,6 +800,7 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
             }
 
             R.id.action_export_current -> exportToClipboard(pagerAdapter.currentList)
+
             R.id.action_export_all -> exportToClipboard(HailData.checkedList)
         }
         return false
@@ -705,7 +823,9 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
                         isVisible = query.isEmpty() && tabCount > 1
                     }
                     updateCurrentList()
-                } else inited = true
+                } else {
+                    inited = true
+                }
                 return true
             }
 
@@ -717,7 +837,10 @@ class PagerFragment : MainFragment(), PagerAdapter.OnItemClickListener, PagerAda
         val button = actionView?.findViewById<ImageView>(R.id.multiselect_button)
 
         button?.setOnClickListener { onMultiselectClick() }
-        button?.setOnLongClickListener { onMultiselectLongClick(); true }
+        button?.setOnLongClickListener {
+            onMultiselectLongClick()
+            true
+        }
 
         updateMultiselectButton()
     }

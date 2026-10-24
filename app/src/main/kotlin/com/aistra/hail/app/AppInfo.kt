@@ -8,7 +8,7 @@ class AppInfo(
     val packageName: String,
     var pinned: Boolean = false,
     var whitelisted: Boolean = false,
-    val tagIdList: MutableList<Int> = mutableListOf(0)
+    val tagIdList: MutableList<Int> = mutableListOf(0),
 ) {
     enum class State { NOT_FOUND, UNFROZEN, FROZEN }
 

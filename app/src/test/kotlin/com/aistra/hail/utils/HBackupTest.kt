@@ -2,8 +2,8 @@ package com.aistra.hail.utils
 
 import android.content.SharedPreferences
 import com.aistra.hail.HailApp
-import com.aistra.hail.app.HailData
 import com.aistra.hail.app.AppInfo
+import com.aistra.hail.app.HailData
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -333,7 +333,7 @@ class HBackupTest {
         // stored as an Int under a Float key.
         val editor = mockPreferences(HailData.HOME_FONT_SIZE to 15f, HailData.AUTO_FREEZE_DELAY to 10f)
         val zipFile = zipWithSettings(
-            """{"${HailData.HOME_FONT_SIZE}":15,"${HailData.AUTO_FREEZE_DELAY}":10}"""
+            """{"${HailData.HOME_FONT_SIZE}":15,"${HailData.AUTO_FREEZE_DELAY}":10}""",
         )
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
@@ -373,7 +373,7 @@ class HBackupTest {
         // point, so "15" and "1e20" stay the Strings they are.
         val editor = mockPreferences()
         val zipFile = zipWithSettings(
-            """{"a_string":"hello","an_int":7,"a_long":4294967296,"a_bool":true,"a_set":["x","y"],"a_float":"15.0","a_whole_number_string":"15","an_exponent_string":"1e20"}"""
+            """{"a_string":"hello","an_int":7,"a_long":4294967296,"a_bool":true,"a_set":["x","y"],"a_float":"15.0","a_whole_number_string":"15","an_exponent_string":"1e20"}""",
         )
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
@@ -398,7 +398,8 @@ class HBackupTest {
         // absent - getFloat is "v is Float ? v : defValue" - and the user would silently get
         // the default font size, which is the whole of #91.
         val editor = mockPreferences()
-        val zipFile = zipWithSettings("""{"${HailData.HOME_FONT_SIZE}":"15.0","${HailData.AUTO_FREEZE_DELAY}":"10.0"}""")
+        val zipFile =
+            zipWithSettings("""{"${HailData.HOME_FONT_SIZE}":"15.0","${HailData.AUTO_FREEZE_DELAY}":"10.0"}""")
         val options = HBackup.RestoreOptions(apps = false, whitelist = false, actions = false, settings = true)
 
         val result = HBackup.restore(HailApp.app, zipFile, options)
@@ -886,7 +887,7 @@ class HBackupTest {
         for ((key, preference) in HailData.FLOAT_PREFERENCES) {
             assertTrue(
                 "$key default ${preference.default} is outside ${preference.range}",
-                preference.default in preference.range
+                preference.default in preference.range,
             )
         }
     }
@@ -905,11 +906,11 @@ class HBackupTest {
         val undeclared = "a_key_nobody_declared"
         assertTrue(
             "expected a missing range to fail loudly",
-            runCatching { HailData.floatRange(undeclared) }.exceptionOrNull() is IllegalStateException
+            runCatching { HailData.floatRange(undeclared) }.exceptionOrNull() is IllegalStateException,
         )
         assertTrue(
             "expected a missing default to fail loudly",
-            runCatching { HailData.floatDefault(undeclared) }.exceptionOrNull() is IllegalStateException
+            runCatching { HailData.floatDefault(undeclared) }.exceptionOrNull() is IllegalStateException,
         )
     }
 }

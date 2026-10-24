@@ -21,7 +21,7 @@ class ActionDaoTest {
     fun setup() {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            AppMetadataDatabase::class.java
+            AppMetadataDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = database.actionDao()
     }
@@ -49,8 +49,8 @@ class ActionDaoTest {
         dao.upsertDependencies(
             listOf(
                 ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep1", ordering = 0),
-                ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep2", ordering = 1)
-            )
+                ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep2", ordering = 1),
+            ),
         )
 
         val deps = dao.loadDependencies("action-1")
@@ -95,8 +95,8 @@ class ActionDaoTest {
         dao.upsertDependencies(
             listOf(
                 ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep1", ordering = 0),
-                ActionDependencyEntity(actionId = "action-2", packageName = "com.example.dep2", ordering = 0)
-            )
+                ActionDependencyEntity(actionId = "action-2", packageName = "com.example.dep2", ordering = 0),
+            ),
         )
 
         dao.deleteDependencies("action-1")
@@ -110,7 +110,7 @@ class ActionDaoTest {
         val action = ActionEntity(id = "action-1", launchPackage = "com.example.target")
         val deps = listOf(
             ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep1", ordering = 0),
-            ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep2", ordering = 1)
+            ActionDependencyEntity(actionId = "action-1", packageName = "com.example.dep2", ordering = 1),
         )
 
         dao.saveAction(action, deps)
@@ -124,13 +124,13 @@ class ActionDaoTest {
     fun saveActionReplacesOldDependencies() = runBlocking {
         val action = ActionEntity(id = "action-1", launchPackage = "com.example.target")
         val oldDeps = listOf(
-            ActionDependencyEntity(actionId = "action-1", packageName = "com.example.old", ordering = 0)
+            ActionDependencyEntity(actionId = "action-1", packageName = "com.example.old", ordering = 0),
         )
         dao.saveAction(action, oldDeps)
 
         val newDeps = listOf(
             ActionDependencyEntity(actionId = "action-1", packageName = "com.example.new1", ordering = 0),
-            ActionDependencyEntity(actionId = "action-1", packageName = "com.example.new2", ordering = 1)
+            ActionDependencyEntity(actionId = "action-1", packageName = "com.example.new2", ordering = 1),
         )
         dao.saveAction(action, newDeps)
 

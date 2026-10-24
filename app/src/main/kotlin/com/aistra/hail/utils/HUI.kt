@@ -18,7 +18,9 @@ object HUI {
     val INSETS_TYPE_DEFAULT = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
 
     fun showToast(text: CharSequence, isLengthLong: Boolean = false) = Toast.makeText(
-        app, text, if (isLengthLong) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+        app,
+        text,
+        if (isLengthLong) Toast.LENGTH_LONG else Toast.LENGTH_SHORT,
     ).show()
 
     fun showToast(resId: Int, isLengthLong: Boolean = false) = showToast(app.getString(resId), isLengthLong)
@@ -28,7 +30,7 @@ object HUI {
 
     fun startActivity(action: String = Intent.ACTION_VIEW, uri: String): Boolean = runCatching {
         app.startActivity(
-            Intent(action, Uri.parse(uri)).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Intent(action, Uri.parse(uri)).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
         true
     }.getOrDefault(false)

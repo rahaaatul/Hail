@@ -10,8 +10,7 @@ import com.aistra.hail.app.HailData
 import java.util.concurrent.TimeUnit
 
 object HWork {
-    fun cancelWork(name: String) =
-        WorkManager.getInstance(app).cancelUniqueWork(name)
+    fun cancelWork(name: String) = WorkManager.getInstance(app).cancelUniqueWork(name)
 
     fun setDeferredFrozen(packageName: String, frozen: Boolean = true, minutes: Long) {
         WorkManager.getInstance(app).enqueueUniqueWork(
@@ -21,21 +20,21 @@ object HWork {
                 workDataOf(
                     HailData.KEY_PACKAGE to packageName,
                     HailData.KEY_FROZEN to frozen,
-                    HailData.WORKING_MODE to HailData.workingMode
-                )
-            ).setInitialDelay(minutes, TimeUnit.MINUTES).build()
+                    HailData.WORKING_MODE to HailData.workingMode,
+                ),
+            ).setInitialDelay(minutes, TimeUnit.MINUTES).build(),
         )
     }
 
     fun setAutoFreeze(screenOff: Boolean) {
         WorkManager.getInstance(app).enqueueUniqueWork(
             HailApi.ACTION_FREEZE_ALL,
-            ExistingWorkPolicy.REPLACE,  // in case the old task has not been executed...
+            ExistingWorkPolicy.REPLACE, // in case the old task has not been executed...
             OneTimeWorkRequestBuilder<AutoFreezeWorker>().run {
                 if (screenOff) setInitialDelay(HailData.autoFreezeDelay, TimeUnit.MINUTES)
                 setInputData(workDataOf(HailData.ACTION_LOCK to screenOff))
                 build()
-            }
+            },
         )
     }
 }

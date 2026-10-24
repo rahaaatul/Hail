@@ -23,7 +23,7 @@ fun InsetterApplyTypeDsl.paddingRelative(
         bottom = bottom,
         horizontal = horizontal,
         vertical = vertical,
-        animated = animated
+        animated = animated,
     )
 }
 
@@ -44,7 +44,7 @@ fun InsetterApplyTypeDsl.marginRelative(
         bottom = bottom,
         horizontal = horizontal,
         vertical = vertical,
-        animated = animated
+        animated = animated,
     )
 }
 

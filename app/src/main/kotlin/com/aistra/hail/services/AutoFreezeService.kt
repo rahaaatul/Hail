@@ -6,7 +6,6 @@ import android.content.IntentFilter
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationChannelCompat
-import java.util.concurrent.ConcurrentHashMap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -14,6 +13,7 @@ import com.aistra.hail.R
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.receiver.ScreenOffReceiver
+import java.util.concurrent.ConcurrentHashMap
 
 class AutoFreezeService : NotificationListenerService() {
     private val channelID = javaClass.simpleName
@@ -23,7 +23,10 @@ class AutoFreezeService : NotificationListenerService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
         val freezeAuto = PendingIntent.getActivity(
-            applicationContext, 0, Intent(HailApi.ACTION_FREEZE_AUTO), PendingIntent.FLAG_IMMUTABLE
+            applicationContext,
+            0,
+            Intent(HailApi.ACTION_FREEZE_AUTO),
+            PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(this, channelID)
             .setContentTitle(getString(R.string.auto_freeze_notification_title))
@@ -34,12 +37,12 @@ class AutoFreezeService : NotificationListenerService() {
                 applicationContext,
                 0,
                 Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
-                PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_IMMUTABLE,
             )
             notification.addAction(
                 R.drawable.ic_round_frozen,
                 getString(R.string.action_freeze_non_whitelisted),
-                freezeNonWhitelisted
+                freezeNonWhitelisted,
             )
         }
         startForeground(100, notification.build())

@@ -13,9 +13,14 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
-import kotlinx.coroutines.*
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.zhanghai.android.appiconloader.AppIconLoader
+import kotlin.coroutines.CoroutineContext
 
 object HShortcuts : CoroutineScope {
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main
@@ -24,7 +29,7 @@ object HShortcuts : CoroutineScope {
         AppIconLoader(
             app.resources.getDimensionPixelSize(R.dimen.app_icon_size),
             HailData.synthesizeAdaptiveIcons,
-            app
+            app,
         )
     }
 
@@ -56,7 +61,7 @@ object HShortcuts : CoroutineScope {
                 AppInfo(action.launchPackage),
                 "action_${action.id}",
                 label,
-                Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id)
+                Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id),
             )
         }
     }
@@ -85,9 +90,12 @@ object HShortcuts : CoroutineScope {
                 ShortcutInfoCompat.Builder(app, id).setIcon(icon).setShortLabel(label)
                     .setIntent(intent).build()
             ShortcutManagerCompat.requestPinShortcut(app, shortcut, null)
-        } else HUI.showToast(
-            R.string.operation_failed, app.getString(R.string.action_add_pin_shortcut)
-        )
+        } else {
+            HUI.showToast(
+                R.string.operation_failed,
+                app.getString(R.string.action_add_pin_shortcut),
+            )
+        }
     }
 
     fun addDynamicShortcut(packageName: String) {
@@ -96,14 +104,18 @@ object HShortcuts : CoroutineScope {
         launch {
             val shortcut =
                 ShortcutInfoCompat.Builder(app, packageName.hashCode().toString())
-                    .setIcon(IconCompat.createWithBitmap(applicationInfo?.let {
-                        withContext(Dispatchers.IO) {
-                            IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
-                        }
-                    } ?: getBitmapFromDrawable(
-                        app.packageManager.defaultActivityIcon
-                    ))).setShortLabel(
-                        applicationInfo?.loadLabel(app.packageManager) ?: packageName
+                    .setIcon(
+                        IconCompat.createWithBitmap(
+                            applicationInfo?.let {
+                                withContext(Dispatchers.IO) {
+                                    IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+                                }
+                            } ?: getBitmapFromDrawable(
+                                app.packageManager.defaultActivityIcon,
+                            ),
+                        ),
+                    ).setShortLabel(
+                        applicationInfo?.loadLabel(app.packageManager) ?: packageName,
                     ).setIntent(HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, packageName)).build()
             ShortcutManagerCompat.pushDynamicShortcut(app, shortcut)
             addDynamicShortcutAction(HailData.dynamicShortcutAction)
@@ -135,9 +147,10 @@ object HShortcuts : CoroutineScope {
             val shortcut = ShortcutInfoCompat.Builder(app, id).setIcon(
                 getDrawableIcon(
                     AppCompatResources.getDrawable(
-                        app, icon
-                    )!!
-                )
+                        app,
+                        icon,
+                    )!!,
+                ),
             ).setShortLabel(app.getString(label)).setIntent(Intent(id)).build()
             ShortcutManagerCompat.pushDynamicShortcut(app, shortcut)
         }
@@ -152,7 +165,9 @@ object HShortcuts : CoroutineScope {
 
     private suspend fun getBitmapFromDrawable(drawable: Drawable): Bitmap = withContext(Dispatchers.IO) {
         Bitmap.createBitmap(
-            drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888
+            drawable.intrinsicWidth,
+            drawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888,
         ).also {
             with(Canvas(it)) {
                 drawable.setBounds(0, 0, width, height)

@@ -35,7 +35,7 @@ class HailApp : Application() {
                 StrictMode.ThreadPolicy.Builder()
                     .detectAll()
                     .penaltyLog()
-                    .build()
+                    .build(),
             )
         }
         AppMetaCache.warmUp()
@@ -54,7 +54,8 @@ class HailApp : Application() {
 
     fun setAutoFreezeService(autoFreezeAfterLock: Boolean = HailData.autoFreezeAfterLock, context: Context = app) {
         val start = autoFreezeAfterLock && HailData.checkedList.any {
-            it.packageName != packageName && it.applicationInfo != null && !AppManager.isAppFrozen(it.packageName) && !it.whitelisted
+            it.packageName != packageName && it.applicationInfo != null && !AppManager.isAppFrozen(it.packageName) &&
+                !it.whitelisted
         }
         val intent = Intent(app, AutoFreezeService::class.java)
         if (start) {
@@ -67,30 +68,38 @@ class HailApp : Application() {
     }
 
     fun setAutoFreezeServiceEnabled(enabled: Boolean) {
+        val state =
+            if (enabled) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
         packageManager.setComponentEnabledSetting(
             ComponentName(app, AutoFreezeService::class.java),
-            if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP
+            state,
+            PackageManager.DONT_KILL_APP,
         )
     }
 
     fun setAppTheme(theme: String) {
-        if (HTarget.S) getSystemService<UiModeManager>()!!.setApplicationNightMode(
-            when (theme) {
-                HailData.THEME_LIGHT -> UiModeManager.MODE_NIGHT_NO
-                HailData.THEME_DARK -> UiModeManager.MODE_NIGHT_YES
-                else -> UiModeManager.MODE_NIGHT_AUTO
-            }
-        )
-        else AppCompatDelegate.setDefaultNightMode(
-            when (theme) {
-                HailData.THEME_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
-                HailData.THEME_DARK -> AppCompatDelegate.MODE_NIGHT_YES
-                else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            }
-        )
+        if (HTarget.S) {
+            getSystemService<UiModeManager>()!!.setApplicationNightMode(
+                when (theme) {
+                    HailData.THEME_LIGHT -> UiModeManager.MODE_NIGHT_NO
+                    HailData.THEME_DARK -> UiModeManager.MODE_NIGHT_YES
+                    else -> UiModeManager.MODE_NIGHT_AUTO
+                },
+            )
+        } else {
+            AppCompatDelegate.setDefaultNightMode(
+                when (theme) {
+                    HailData.THEME_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                    HailData.THEME_DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                    else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                },
+            )
+        }
     }
-
 
     companion object {
         lateinit var app: HailApp private set

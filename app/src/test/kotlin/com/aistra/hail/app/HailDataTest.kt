@@ -1,10 +1,10 @@
 package com.aistra.hail.app
 
-import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class HailDataTest {
 
@@ -49,20 +49,20 @@ class HailDataTest {
             "these SharedPreferences Float reads bypass HailData.declaredFloat, so their " +
                 "default can come from somewhere other than the declaration: $reads",
             1,
-            reads.size
+            reads.size,
         )
         val read = reads.single()
         assertEquals(
             "the one SharedPreferences Float read belongs in HailData.kt: ${read.location}",
             HAIL_DATA_FILE_NAME,
-            read.file.name
+            read.file.name,
         )
         val defaults = callsIn(read.arguments, FLOAT_DEFAULT)
         assertEquals(
             "the one SharedPreferences Float read must ask the declaration for its default, " +
                 "once: ${read.location}",
             1,
-            defaults.size
+            defaults.size,
         )
         val readKey = firstArgumentOf(read.arguments)
         val defaultKey = firstArgumentOf(defaults.single())
@@ -71,7 +71,7 @@ class HailDataTest {
         assertEquals(
             "a Float read must take its default from the declaration of the same key: ${read.location}",
             readKey,
-            defaultKey
+            defaultKey,
         )
     }
 
@@ -91,13 +91,13 @@ class HailDataTest {
             assertTrue(
                 "no const val in $HAIL_DATA_FILE_NAME declares the string '$key', so this " +
                     "test cannot tell whether the preference behind it is still read",
-                identifier != null
+                identifier != null,
             )
             assertTrue(
                 "'$key' is declared a Float preference but nothing reads it through " +
                     "declaredFloat($identifier), so the range the reader enforces bounds no " +
                     "setting the app has: $accessorArguments",
-                identifier in accessorArguments
+                identifier in accessorArguments,
             )
         }
     }
@@ -145,16 +145,18 @@ class HailDataTest {
             // is neither, so it takes both a strings-blanked and a strings-kept reading to
             // tell `"${'$'}{app.filesDir.path}/v1"` from "the app is frozen".
             val reference = APPLICATION.containsMatchIn(code(initializer)) ||
-                    TEMPLATE_REFERENCE.containsMatchIn(initializer)
+                TEMPLATE_REFERENCE.containsMatchIn(initializer)
             if (reference) {
                 "${source.name}:${lineOf(declared, declaration.range.first)} " +
                     "${declaration.value.trim()} ${initializer.trim()}"
-            } else null
+            } else {
+                null
+            }
         }.toList()
         assertTrue(
             "these values capture the application while HailData initializes, so they keep " +
                 "whatever was installed at that moment for every later test in the JVM: $eager",
-            eager.isEmpty()
+            eager.isEmpty(),
         )
     }
 
@@ -177,7 +179,9 @@ class HailDataTest {
             }
             when (text[end]) {
                 '(', '[', '{' -> depth++
+
                 ')', ']', '}' -> depth--
+
                 // A line ends the value unless the value is still open, has not started, or
                 // the next line leads with an operator - which is this codebase's other way of
                 // writing a long value, and the one a trailing-character rule cannot see.
@@ -264,6 +268,7 @@ class HailDataTest {
         for (index in open until text.length) {
             when (text[index]) {
                 text[open] -> depth++
+
                 close -> {
                     depth--
                     if (depth == 0) return index
@@ -284,6 +289,7 @@ class HailDataTest {
                     opening.addLast(index)
                     depth++
                 }
+
                 ')', ']' -> {
                     opening.removeLastOrNull()
                     depth--
@@ -340,24 +346,23 @@ class HailDataTest {
             assertTrue(
                 "$location must take its bounds from the declaration, not a literal: it has " +
                     "${slider.valueOf("valueRange")}",
-                slider.takes("valueRange", "HailData.floatRange(HailData.$key)")
+                slider.takes("valueRange", "HailData.floatRange(HailData.$key)"),
             )
             assertTrue(
                 "$location must take its default from the declaration, not a literal: it has " +
                     "${slider.valueOf("defaultValue")}",
-                slider.takes("defaultValue", "HailData.floatDefault(HailData.$key)")
+                slider.takes("defaultValue", "HailData.floatDefault(HailData.$key)"),
             )
         }
     }
 
     /** One call to [needle] in the app's Kotlin sources, with its argument text and where it is. */
-    private fun callArguments(needle: String): List<Call> =
-        kotlinSources().flatMap { file ->
-            val text = file.readText()
-            argumentTexts(code(text), text, needle).map { (start, arguments) ->
-                Call(file, text.take(start).count { it == '\n' } + 1, arguments)
-            }
+    private fun callArguments(needle: String): List<Call> = kotlinSources().flatMap { file ->
+        val text = file.readText()
+        argumentTexts(code(text), text, needle).map { (start, arguments) ->
+            Call(file, text.take(start).count { it == '\n' } + 1, arguments)
         }
+    }
 
     /** The argument text of every call to [needle] inside [text], for a call nested in another. */
     private fun callsIn(text: String, needle: String): List<String> =
@@ -401,8 +406,7 @@ class HailDataTest {
      * accessor is supposed to be reading, so it fails here with the location rather than
      * quietly comparing two expressions that happen to differ or match.
      */
-    private fun firstArgumentOf(arguments: String): String? =
-        FIRST_ARGUMENT.find(code(arguments))?.groupValues?.get(1)
+    private fun firstArgumentOf(arguments: String): String? = FIRST_ARGUMENT.find(code(arguments))?.groupValues?.get(1)
 
     /**
      * The constant a named argument names, if the argument is `name = HailData.CONSTANT`.
@@ -547,8 +551,7 @@ class HailDataTest {
         Regex("const val (\\w+) = \"([^\"]*)\"").findAll(file.readText())
             .associate { it.groupValues[1] to it.groupValues[2] }
 
-    private fun hailDataSource(): File =
-        kotlinSources().single { it.name == HAIL_DATA_FILE_NAME }
+    private fun hailDataSource(): File = kotlinSources().single { it.name == HAIL_DATA_FILE_NAME }
 
     /**
      * The app module's Kotlin sources, found by walking up from the test's working
@@ -566,7 +569,7 @@ class HailDataTest {
         }
         throw AssertionError(
             "could not find src/main/kotlin from ${File("").absolutePath}; this test " +
-                "checks the app's Float reads and cannot do that without the sources"
+                "checks the app's Float reads and cannot do that without the sources",
         )
     }
 
@@ -584,18 +587,25 @@ class HailDataTest {
         private const val TRIPLE_QUOTE = "\"\"\""
         private const val END_COMMENT = "*/"
         private val FUNCTION_DECLARATION = Regex("\\bfun\\s+$")
+
         // Any indentation, because a nested object or class inside the file has its properties
         // deeper and a parameter list is told apart by its parentheses rather than by depth.
         // The type annotation cannot cross a line: bounded to one, a declaration with no `=` on
         // its own line simply does not match, instead of reaching down the file to whatever `=`
         // comes next and reporting a span that has nothing to do with it.
         private val EAGER_PROPERTY =
-            Regex("^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)", RegexOption.MULTILINE)
+            Regex(
+                "^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)",
+                RegexOption.MULTILINE,
+            )
         private val GETTER = Regex("\\bget\\s*\\(")
+
         // A reference to the application from inside a string template, which masking erases.
         private val TEMPLATE_REFERENCE = Regex("\\$\\{[^}]*?(?<![\\w/])app(?![\\w])")
-        private val UNFINISHED = charArrayOf('(', '[', '{', ',', '=', '+', '-', '*', '/', '<', '>', '?', ':', '&', '|', '.', '\\')
-        private val LEADING = charArrayOf('(', '[', '.', '+', '-', '*', '/', '%', '?', ':', '&', '|', '=', '<', '>', '!')
+        private val UNFINISHED =
+            charArrayOf('(', '[', '{', ',', '=', '+', '-', '*', '/', '<', '>', '?', ':', '&', '|', '.', '\\')
+        private val LEADING =
+            charArrayOf('(', '[', '.', '+', '-', '*', '/', '%', '?', ':', '&', '|', '=', '<', '>', '!')
         private const val ELSE = "else"
         private val DANGLING_KEYWORD = Regex("\\b(?:else|if|when|try|do|return|throw|in|by)\\s*$")
         private const val BRACE = '{'
@@ -603,6 +613,7 @@ class HailDataTest {
         private val AWAITING_HEAD = Regex("\\b(?:if|when|while)\\s*\\((?:[^()]|\\([^()]*\\))*\\)\\s*$")
         private val HEADER = Regex("(?:fun|class|interface|object|constructor)\\s+[\\w<>,.?: ]*$")
         private val HEADER_START = Regex("(?m)^[ \\t]*(?:@\\w[\\w.:]*(?:\\([^)\\n]*\\))?[ \\t]*)*$|[;{}]")
+
         // A name, not a substring: `app` in a URL or a longer identifier is not a reference.
         private val APPLICATION = Regex("(?<![\\w/])app(?![\\w])")
         private val FIRST_ARGUMENT = Regex("\\A\\s*([\\w.]+)\\s*(?:,|$)")

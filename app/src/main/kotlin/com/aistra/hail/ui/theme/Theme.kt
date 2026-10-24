@@ -1,7 +1,9 @@
 package com.aistra.hail.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import com.aistra.hail.utils.HTarget
@@ -86,7 +88,8 @@ private val darkScheme = darkColorScheme(
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true, content: @Composable() () -> Unit
+    dynamicColor: Boolean = true,
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
         dynamicColor && HTarget.S -> {
@@ -95,10 +98,13 @@ fun AppTheme(
         }
 
         darkTheme -> darkScheme
+
         else -> lightScheme
     }
 
     MaterialTheme(
-        colorScheme = colorScheme, typography = AppTypography, content = content
+        colorScheme = colorScheme,
+        typography = AppTypography,
+        content = content,
     )
 }

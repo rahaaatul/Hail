@@ -26,15 +26,21 @@ object HPolicy {
 
     fun setAppSuspended(packageName: String, suspended: Boolean): Boolean =
         isDeviceOwnerActive && HTarget.N && dpm.setPackagesSuspended(
-            admin, arrayOf(packageName), suspended
+            admin,
+            arrayOf(packageName),
+            suspended,
         ).isEmpty()
 
     fun uninstallApp(packageName: String): Boolean = when {
         isDeviceOwnerActive -> {
             app.packageManager.packageInstaller.uninstall(
-                packageName, PendingIntent.getActivity(
-                    app, 0, Intent(), PendingIntent.FLAG_IMMUTABLE
-                ).intentSender
+                packageName,
+                PendingIntent.getActivity(
+                    app,
+                    0,
+                    Intent(),
+                    PendingIntent.FLAG_IMMUTABLE,
+                ).intentSender,
             )
             true
         }
@@ -43,9 +49,12 @@ object HPolicy {
     }
 
     fun enableBackupService() {
-        if (isDeviceOwnerActive && HTarget.O && !dpm.isBackupServiceEnabled(admin)) dpm.setBackupServiceEnabled(
-            admin, true
-        )
+        if (isDeviceOwnerActive && HTarget.O && !dpm.isBackupServiceEnabled(admin)) {
+            dpm.setBackupServiceEnabled(
+                admin,
+                true,
+            )
+        }
     }
 
     fun setOrganizationName(name: String? = null) {

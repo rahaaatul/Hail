@@ -37,10 +37,10 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "test",
             launchPackage = "com.example.launch",
-            unfreezePackages = listOf("com.example.dep")
+            unfreezePackages = listOf("com.example.dep"),
         )
         coEvery { AppActions.ensureUnfrozen("com.example.dep") } returns Result.failure(
-            IllegalStateException("Could not unfreeze")
+            IllegalStateException("Could not unfreeze"),
         )
 
         val result = ActionExecutor.prepare(action)
@@ -53,11 +53,11 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "test",
             launchPackage = "com.example.launch",
-            unfreezePackages = emptyList()
+            unfreezePackages = emptyList(),
         )
         coEvery { AppActions.ensureUnfrozen(any()) } returns Result.success(Unit)
         coEvery { AppActions.getLaunchIntent("com.example.launch") } returns Result.failure(
-            ActivityNotFoundException("Launch activity not found")
+            ActivityNotFoundException("Launch activity not found"),
         )
 
         val result = ActionExecutor.prepare(action)
@@ -70,7 +70,7 @@ class ActionExecutorTest {
         val action = LaunchAction(
             id = "test",
             launchPackage = "com.example.launch",
-            unfreezePackages = emptyList()
+            unfreezePackages = emptyList(),
         )
         val intent = Intent(Intent.ACTION_MAIN)
         coEvery { AppActions.ensureUnfrozen(any()) } returns Result.success(Unit)

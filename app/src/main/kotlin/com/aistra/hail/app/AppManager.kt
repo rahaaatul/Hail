@@ -4,7 +4,14 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp
-import com.aistra.hail.utils.*
+import com.aistra.hail.utils.HDhizuku
+import com.aistra.hail.utils.HIsland
+import com.aistra.hail.utils.HLog
+import com.aistra.hail.utils.HPackages
+import com.aistra.hail.utils.HPolicy
+import com.aistra.hail.utils.HShell
+import com.aistra.hail.utils.HShizuku
+import com.aistra.hail.utils.HUI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -20,12 +27,16 @@ object AppManager {
 
     fun isAppFrozen(packageName: String): Boolean = when {
         HailData.workingMode.endsWith(HailData.STOP) -> HPackages.isAppStopped(packageName)
+
         HailData.workingMode.endsWith(HailData.DISABLE) -> HPackages.isAppDisabled(packageName)
+
         HailData.workingMode.endsWith(HailData.HIDE) -> HPackages.isAppHidden(packageName)
+
         HailData.workingMode.endsWith(HailData.SUSPEND) -> HPackages.isAppSuspended(packageName)
-        else -> HPackages.isAppDisabled(packageName)
-                || HPackages.isAppHidden(packageName)
-                || HPackages.isAppSuspended(packageName)
+
+        else -> HPackages.isAppDisabled(packageName) ||
+            HPackages.isAppHidden(packageName) ||
+            HPackages.isAppSuspended(packageName)
     }
 
     private fun launchToClearStop(packageName: String): Boolean {
@@ -50,8 +61,8 @@ object AppManager {
         }
     }
 
-    private fun clearStopState(packageName: String): Boolean {
-        return if (HPackages.getApplicationInfoOrNull(packageName) == null) {
+    private fun clearStopState(packageName: String): Boolean =
+        if (HPackages.getApplicationInfoOrNull(packageName) == null) {
             HLog.d("clearStopState: package $packageName not installed")
             true
         } else if (!isAppFrozen(packageName)) {
@@ -60,7 +71,6 @@ object AppManager {
         } else {
             launchToClearStop(packageName)
         }
-    }
 
     fun setListFrozen(frozen: Boolean, vararg appInfo: AppInfo): String? {
         val excludeMe = appInfo.filter { it.packageName != BuildConfig.APPLICATION_ID }
@@ -78,32 +88,67 @@ object AppManager {
                             i++
                             name = it.name
                         }
+
                         it.applicationInfo != null && !isStopModeUnfreeze -> denied = true
                     }
                 }
             }
         }
-        return if (denied && i == 0) null else if (i == 1) name else i.toString()
+        return if (denied && i == 0) {
+            null
+        } else if (i == 1) {
+            name
+        } else {
+            i.toString()
+        }
     }
 
     fun setAppFrozen(packageName: String, frozen: Boolean): Boolean =
         packageName != BuildConfig.APPLICATION_ID && when (HailData.workingMode) {
             HailData.MODE_OWNER_HIDE -> HPolicy.setAppHidden(packageName, frozen)
+
             HailData.MODE_OWNER_SUSPEND -> HPolicy.setAppSuspended(packageName, frozen)
+
             HailData.MODE_DHIZUKU_HIDE -> HDhizuku.setAppHidden(packageName, frozen)
+
             HailData.MODE_DHIZUKU_SUSPEND -> HDhizuku.setAppSuspended(packageName, frozen)
+
             HailData.MODE_SU_STOP -> if (frozen) HShell.forceStopApp(packageName) else clearStopState(packageName)
+
             HailData.MODE_SU_DISABLE -> HShell.setAppDisabled(packageName, frozen)
+
             HailData.MODE_SU_HIDE -> HShell.setAppHidden(packageName, frozen)
+
             HailData.MODE_SU_SUSPEND -> HShell.setAppSuspended(packageName, frozen)
-            HailData.MODE_SHIZUKU_STOP -> if (frozen) HShizuku.forceStopApp(packageName) else clearStopState(packageName)
+
+            HailData.MODE_SHIZUKU_STOP -> if (frozen) {
+                HShizuku.forceStopApp(
+                    packageName,
+                )
+            } else {
+                clearStopState(packageName)
+            }
+
             HailData.MODE_SHIZUKU_DISABLE -> HShizuku.setAppDisabled(packageName, frozen)
+
             HailData.MODE_SHIZUKU_HIDE -> HShizuku.setAppHidden(packageName, frozen)
+
             HailData.MODE_SHIZUKU_SUSPEND -> HShizuku.setAppSuspended(packageName, frozen)
+
             HailData.MODE_ISLAND_HIDE -> HIsland.setAppHidden(packageName, frozen)
+
             HailData.MODE_ISLAND_SUSPEND -> HIsland.setAppSuspended(packageName, frozen)
-            HailData.MODE_PRIVAPP_STOP -> if (frozen) HPackages.forceStopApp(packageName) else clearStopState(packageName)
+
+            HailData.MODE_PRIVAPP_STOP -> if (frozen) {
+                HPackages.forceStopApp(
+                    packageName,
+                )
+            } else {
+                clearStopState(packageName)
+            }
+
             HailData.MODE_PRIVAPP_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
+
             else -> false
         }
 

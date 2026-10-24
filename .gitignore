@@ -1,5 +1,5 @@
 /.gradle/
-/.idea/
+.idea/
 /build/
 /local.properties
 /signing.properties
@@ -23,3 +23,13 @@ commits_since_v1.10.3.txt
 /.firecrawl/
 
 /.kotlin/
+
+/node_modules/
+/docs/superpowers/
+
+*.cxx/
+/.externalNativeBuild/
+/captures/
+*.log
+.DS_Store
+Thumbs.db
