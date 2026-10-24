@@ -309,9 +309,7 @@ internal fun LazyListScope.skipOptionsSection(autoFreezeAfterLock: MutableState<
             if (value && !isGranted) {
                 app.setAutoFreezeServiceEnabled(true)
                 context.startActivity(
-                    Intent(
-                        Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
-                    ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 )
                 false
             } else {
@@ -326,22 +324,19 @@ internal fun LazyListScope.skipOptionsSection(autoFreezeAfterLock: MutableState<
 }
 
 @Composable
-internal fun LazyListScope.shortcutsSection(
-    onAddPinShortcut: () -> Unit,
-    onResetDynamicShortcuts: () -> Unit,
-) {
+internal fun LazyListScope.shortcutsSection(addPinShortcut: () -> Unit) {
     preferenceCategory(key = "shortcuts", title = { Text(text = stringResource(R.string.title_shortcuts)) })
     preference(
         key = "add_pin_shortcut",
         title = { Text(text = stringResource(R.string.action_add_pin_shortcut)) },
         icon = { Icon(imageVector = Icons.AutoMirrored.Outlined.Shortcut, contentDescription = null) },
-        onClick = { onAddPinShortcut() },
+        onClick = addPinShortcut,
     )
     listPreference(
         key = HailData.DYNAMIC_SHORTCUT_ACTION,
         defaultValue = HailData.ACTION_NONE,
         onValueChange = { _, action ->
-            HShortcuts.removeAllDynamicShortcuts()
+            resetDynamicShortcuts()
             HShortcuts.addDynamicShortcutAction(action)
             true
         },
@@ -355,15 +350,15 @@ internal fun LazyListScope.shortcutsSection(
         key = "clear_dynamic_shortcuts",
         title = { Text(text = stringResource(R.string.action_clear_dynamic_shortcuts)) },
         icon = { Icon(imageVector = Icons.Outlined.CleaningServices, contentDescription = null) },
-        onClick = { onResetDynamicShortcuts() },
+        onClick = ::resetDynamicShortcuts,
     )
     horizontalDivider()
 }
 
 @Composable
 internal fun LazyListScope.cacheSection(
-    onConfirmRebuildCache: () -> Unit,
-    onRequestBackgroundActivity: () -> Unit,
+    confirmRebuildCache: () -> Unit,
+    requestBackgroundActivity: () -> Unit,
 ) {
     preferenceCategory(key = "cache", title = { Text(text = stringResource(R.string.title_cache)) })
     preference(
@@ -371,21 +366,21 @@ internal fun LazyListScope.cacheSection(
         title = { Text(text = stringResource(R.string.action_rebuild_cache)) },
         summary = { Text(text = stringResource(R.string.summary_rebuild_cache)) },
         icon = { Icon(imageVector = Icons.Outlined.DeleteSweep, contentDescription = null) },
-        onClick = { onConfirmRebuildCache() },
+        onClick = confirmRebuildCache,
     )
     preference(
         key = "background_activity",
         title = { Text(text = stringResource(R.string.allow_background_activity)) },
         summary = { Text(text = stringResource(R.string.summary_background_activity)) },
         icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
-        onClick = { onRequestBackgroundActivity() },
+        onClick = requestBackgroundActivity,
     )
     horizontalDivider()
 }
 
 @Composable
 internal fun LazyListScope.backupSection(
-    onShowBackupDialog: () -> Unit,
+    showBackupDialog: () -> Unit,
     onRestore: () -> Unit,
 ) {
     preferenceCategory(key = "backup", title = { Text(text = stringResource(R.string.title_backup)) })
@@ -393,12 +388,13 @@ internal fun LazyListScope.backupSection(
         key = "backup_preference",
         title = { Text(text = stringResource(R.string.action_backup)) },
         icon = { Icon(imageVector = Icons.Outlined.Backup, contentDescription = null) },
-        onClick = { onShowBackupDialog() },
+        onClick = showBackupDialog,
     )
     preference(
         key = "restore",
         title = { Text(text = stringResource(R.string.action_restore)) },
         icon = { Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null) },
-        onClick = { onRestore() },
+        onClick = onRestore,
     )
 }
+
