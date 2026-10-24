@@ -1,0 +1,113 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:HBackup.kt$HBackup$parent != null &amp;&amp; !parent.isDirectory &amp;&amp; !parent.mkdirs() &amp;&amp; !parent.isDirectory</ID>
+    <ID>ComplexCondition:SettingsFragment.kt$SettingsFragment$!options.apps &amp;&amp; !options.whitelist &amp;&amp; !options.actions &amp;&amp; !options.settings</ID>
+    <ID>CyclomaticComplexMethod:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
+    <ID>CyclomaticComplexMethod:AppManager.kt$AppManager$fun setAppFrozen(packageName: String, frozen: Boolean): Boolean</ID>
+    <ID>CyclomaticComplexMethod:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
+    <ID>CyclomaticComplexMethod:AppsViewModel.kt$AppsViewModel$private suspend fun filterList(appList: List&lt;ApplicationInfo&gt;, query: String?): List&lt;ApplicationInfo&gt;</ID>
+    <ID>CyclomaticComplexMethod:HBackup.kt$HBackup$private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream)</ID>
+    <ID>CyclomaticComplexMethod:HShortcuts.kt$HShortcuts$fun addDynamicShortcutAction(action: String)</ID>
+    <ID>CyclomaticComplexMethod:PagerAdapter.kt$PagerAdapter$override fun onBindViewHolder(holder: ViewHolder, position: Int)</ID>
+    <ID>CyclomaticComplexMethod:PagerFragment.kt$PagerFragment$override fun onItemLongClick(info: AppInfo): Boolean</ID>
+    <ID>CyclomaticComplexMethod:PagerFragment.kt$PagerFragment$private fun showTagDialog(list: List&lt;AppInfo&gt;? = null)</ID>
+    <ID>CyclomaticComplexMethod:SettingsFragment.kt$SettingsFragment$fun onWorkingModeChange(rememberState: MutableState&lt;String&gt;, mode: String): Boolean</ID>
+    <ID>ExplicitItLambdaParameter:PagerFragment.kt$PagerFragment${ i, it -&gt; entries[i] = resources.getQuantityString(R.plurals.deferred_task_entry, it, it) }</ID>
+    <ID>LargeClass:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
+    <ID>LargeClass:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
+    <ID>LongMethod:AboutFragment.kt$AboutFragment$@Composable private fun AboutScreen(installTime: Long)</ID>
+    <ID>LongMethod:HBackup.kt$HBackup$private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream)</ID>
+    <ID>LongMethod:PagerFragment.kt$PagerFragment$override fun onItemLongClick(info: AppInfo): Boolean</ID>
+    <ID>LongMethod:SettingsFragment.kt$SettingsFragment$@Composable private fun SettingsScreen()</ID>
+    <ID>LongMethod:SettingsFragment.kt$SettingsFragment$fun onWorkingModeChange(rememberState: MutableState&lt;String&gt;, mode: String): Boolean</ID>
+    <ID>LongMethod:SettingsFragment.kt$SettingsFragment$private fun addPinShortcut()</ID>
+    <ID>LongMethod:SettingsFragment.kt$SettingsFragment$private fun showRestoreDialog(file: File)</ID>
+    <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$for</ID>
+    <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
+    <ID>MagicNumber:AboutFragment.kt$AboutFragment$3</ID>
+    <ID>MagicNumber:AboutFragment.kt$AboutFragment$4</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$16</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$176</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$20</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$24</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$3</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$32</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$4</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$48f</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$64</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$72</ID>
+    <ID>MagicNumber:ActionsFragment.kt$ActionsFragment$8</ID>
+    <ID>MagicNumber:AppIconCache.kt$AppIconCache$100</ID>
+    <ID>MagicNumber:AppIconCache.kt$AppIconCache$1024</ID>
+    <ID>MagicNumber:AppIconCache.kt$AppIconCache$4</ID>
+    <ID>MagicNumber:AppIconCache.kt$AppIconCache.AppIconLruCache$1024</ID>
+    <ID>MagicNumber:AppPickerAdapter.kt$AppPickerAdapter.ViewHolder$0.55f</ID>
+    <ID>MagicNumber:AppsFragment.kt$AppsFragment.&lt;no name provided&gt;$300L</ID>
+    <ID>MagicNumber:AppsViewModel.kt$AppsViewModel$1000</ID>
+    <ID>MagicNumber:AutoFreezeService.kt$AutoFreezeService$100</ID>
+    <ID>MagicNumber:AutoFreezeWorker.kt$AutoFreezeWorker$3</ID>
+    <ID>MagicNumber:HBackup.kt$HBackup$8192</ID>
+    <ID>MagicNumber:HIsland.kt$HIsland$100</ID>
+    <ID>MagicNumber:HIsland.kt$HIsland$5</ID>
+    <ID>MagicNumber:HPackages.kt$HPackages$8</ID>
+    <ID>MagicNumber:HPackages.kt$HPackages$8192</ID>
+    <ID>MagicNumber:HSystem.kt$HSystem$1000</ID>
+    <ID>MagicNumber:HSystem.kt$HSystem$60</ID>
+    <ID>MagicNumber:LaunchAppHook.kt$LaunchAppHook$300</ID>
+    <ID>MagicNumber:LaunchAppHook.kt$LaunchAppHook$6</ID>
+    <ID>MagicNumber:LaunchAppHook.kt$LaunchAppHook$75</ID>
+    <ID>MagicNumber:PagerAdapter.kt$3</ID>
+    <ID>MagicNumber:PagerAdapter.kt$4</ID>
+    <ID>MagicNumber:PagerFragment.kt$PagerFragment$3</ID>
+    <ID>MagicNumber:PagerFragment.kt$PagerFragment$4</ID>
+    <ID>MagicNumber:PagerFragment.kt$PagerFragment$5</ID>
+    <ID>MagicNumber:PinyinSearch.kt$PinyinSearch$48</ID>
+    <ID>MagicNumber:PinyinSearch.kt$PinyinSearch$8</ID>
+    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$3</ID>
+    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$4</ID>
+    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$5</ID>
+    <ID>MagicNumber:SettingsFragment.kt$SettingsFragment$6</ID>
+    <ID>MaxLineLength:AppMetaCache.kt$AppMetaCache.&lt;no name provided&gt;$"CREATE TABLE IF NOT EXISTS action_dependencies (actionId TEXT NOT NULL, packageName TEXT NOT NULL, ordering INTEGER NOT NULL, PRIMARY KEY(actionId, packageName), FOREIGN KEY(actionId) REFERENCES actions(id) ON UPDATE NO ACTION ON DELETE CASCADE)"</ID>
+    <ID>MaxLineLength:HBackupTest.kt$HBackupTest$"""{"a_string":"hello","an_int":7,"a_long":4294967296,"a_bool":true,"a_set":["x","y"],"a_float":"15.0","a_whole_number_string":"15","an_exponent_string":"1e20"}"""</ID>
+    <ID>MaxLineLength:HailDataTest.kt$HailDataTest.Companion$"^[ \\t]+(?:@[\\w.:]+(?:\\([^()]*\\))?[ \\t]+)*(?:\\w+ )*(?:val|var) \\w+(?:[ \\t]*:[^=\\n]*?)?[ \\t]*=(?!=)"</ID>
+    <ID>MaxLineLength:PagerFragment.kt$PagerFragment$// Use snapshot to avoid ConcurrentModificationException since tagIdList is shared mutable state.</ID>
+    <ID>NestedBlockDepth:AppsFragment.kt$AppsFragment$override fun onMenuItemSelected(item: MenuItem): Boolean</ID>
+    <ID>ReturnCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
+    <ID>ReturnCount:AppIconCache.kt$AppIconCache$@SuppressLint("NewApi") suspend fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap</ID>
+    <ID>ReturnCount:AppManager.kt$AppManager$fun uninstallApp(packageName: String): Boolean</ID>
+    <ID>ReturnCount:AppMetaCache.kt$AppMetaCache$suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List&lt;ApplicationInfo&gt;</ID>
+    <ID>ReturnCount:AutoFreezeWorker.kt$AutoFreezeWorker$override fun doWork(): Result</ID>
+    <ID>ReturnCount:FuzzySearch.kt$FuzzySearch$fun search(raw: String?, query: String?): Boolean</ID>
+    <ID>ReturnCount:HRecyclerView.kt$HRecyclerView$override fun showContextMenuForChild(originalView: View?): Boolean</ID>
+    <ID>ReturnCount:HShizuku.kt$HShizuku$fun setAppSuspended(packageName: String, suspended: Boolean): Boolean</ID>
+    <ID>ReturnCount:HailData.kt$HailData$private fun saveAppsLocked(apps: List&lt;AppInfo&gt;): Boolean</ID>
+    <ID>ReturnCount:HailDataTest.kt$HailDataTest$private fun awaitsRest(value: String, text: String, nextLine: Int): Boolean</ID>
+    <ID>ReturnCount:PagerFragment.kt$PagerFragment$override fun onItemClick(info: AppInfo)</ID>
+    <ID>ReturnCount:PagerFragment.kt$PagerFragment$override fun onItemLongClick(info: AppInfo): Boolean</ID>
+    <ID>ReturnCount:PagerFragment.kt$PagerFragment$private fun setListFrozen( frozen: Boolean, list: List&lt;AppInfo&gt; = HailData.checkedList, updateList: Boolean = true, ): Job</ID>
+    <ID>ReturnCount:PinyinSearch.kt$PinyinSearch$fun searchPinyinAll(raw: String?, query: String?): Boolean</ID>
+    <ID>ReturnCount:PinyinSearch.kt$PinyinSearch$private fun searchAllSpell(raw: String, pinyinAll: String): Boolean</ID>
+    <ID>ReturnCount:PinyinSearch.kt$PinyinSearch$private fun searchCap(raw: String, pinyinCap: String): Boolean</ID>
+    <ID>ReturnCount:SettingsFragment.kt$SettingsFragment$fun onWorkingModeChange(rememberState: MutableState&lt;String&gt;, mode: String): Boolean</ID>
+    <ID>SpreadOperator:ApiActivity.kt$ApiActivity$(frozen, *filtered.toTypedArray())</ID>
+    <ID>SpreadOperator:AutoFreezeWorker.kt$AutoFreezeWorker$(true, *checkedList.toTypedArray())</ID>
+    <ID>SpreadOperator:PagerFragment.kt$PagerFragment$(*initialStates)</ID>
+    <ID>SwallowedException:AppIconCache.kt$AppIconCache$e: CancellationException</ID>
+    <ID>SwallowedException:AppIconCache.kt$AppIconCache$e: Throwable</ID>
+    <ID>SwallowedException:SettingsFragment.kt$SettingsFragment$e: java.io.FileNotFoundException</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$PagerFragment$IllegalArgumentException()</ID>
+    <ID>ThrowsCount:ApiActivity.kt$ApiActivity$private fun handleAction(action: String?): Boolean</ID>
+    <ID>TooGenericExceptionCaught:AppIconCache.kt$AppIconCache$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:AppManager.kt$AppManager$e: Exception</ID>
+    <ID>TooManyFunctions:PagerFragment.kt$PagerFragment : MainFragmentOnItemClickListenerOnItemLongClickListenerMenuProvider</ID>
+    <ID>TooManyFunctions:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
+    <ID>UnusedPrivateMember:PagerFragment.kt$PagerFragment$private fun MenuItem.updateIcon()</ID>
+    <ID>UseCheckOrError:ApiActivity.kt$ApiActivity$throw IllegalStateException("Tag unavailable:\n$it")</ID>
+    <ID>UseCheckOrError:HBackup.kt$HBackup$throw IllegalStateException("Failed to create directory: $parent")</ID>
+    <ID>UseCheckOrError:PagerFragment.kt$PagerFragment$throw IllegalStateException("Unhandled action entry: $entry")</ID>
+    <ID>UseCheckOrError:SettingsFragment.kt$SettingsFragment$throw IllegalStateException("unsupported shizuku version")</ID>
+    <ID>UseRequire:ApiActivity.kt$ApiActivity$throw IllegalArgumentException("Unknown scheme:\n${uri?.scheme}")</ID>
+  </CurrentIssues>
+</SmellBaseline>

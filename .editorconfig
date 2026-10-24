@@ -1,0 +1,35 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+# The code follows the IntelliJ IDEA style, which is what the Android Studio
+# formatter produces. ktlint's own official style adds rules that the code
+# does not follow, such as wrapping every parameter list onto its own line.
+ktlint_code_style = intellij_idea
+max_line_length = 120
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+# A composable is named in PascalCase, the same way detekt is told about it
+# in config/detekt.yml.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# The rule expects a private field with an underscore to back a public
+# property. The code uses the other convention of the platform, a private
+# field with an underscore and a private accessor, for the binding of a
+# fragment and for the state of a composable.
+ktlint_standard_backing-property-naming = disabled
+
+[*.{yml,yaml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
