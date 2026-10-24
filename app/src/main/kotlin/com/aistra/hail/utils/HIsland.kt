@@ -26,6 +26,8 @@ object HIsland {
     private const val ACTION_FREEZE = "com.oasisfeng.island.action.FREEZE"
     private const val ACTION_UNFREEZE = "com.oasisfeng.island.action.UNFREEZE"
     private const val EXTRA_CALLER_ID = "caller"
+    private const val MAX_LAUNCH_INTENT_ATTEMPTS = 5
+    private const val LAUNCH_INTENT_SLEEP_MS = 100
 
     private val thread by lazy { HandlerThread("HIsland").apply { start() } }
     private val handler by lazy { Handler(thread.looper) }
@@ -102,9 +104,9 @@ object HIsland {
     fun ensureLaunchIntentExists(packageName: String) {
         // Check every 100ms whether the launch intent for `packageName` exists.
         // Stay for a maximum of 500ms.
-        for (i in 0..<5) {
+        for (i in 0..<MAX_LAUNCH_INTENT_ATTEMPTS) {
             if (app.packageManager.getLaunchIntentForPackage(packageName) != null) return
-            Thread.sleep(100)
+            Thread.sleep(LAUNCH_INTENT_SLEEP_MS)
         }
     }
 }

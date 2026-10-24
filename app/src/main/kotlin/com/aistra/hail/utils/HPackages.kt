@@ -13,6 +13,9 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass
 object HPackages {
     val myUserId get() = android.os.Process.myUserHandle().hashCode()
 
+    private const val GET_INSTALLED_APPLICATIONS_FLAGS = 8192
+    private const val PRIVATE_FLAG_HIDDEN = 8
+
     private val PACKAGE_NAME = Regex("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+")
 
     /**
@@ -41,7 +44,7 @@ object HPackages {
     }
 
     fun getInstalledApplications(
-        flags: Int = if (HTarget.N) PackageManager.MATCH_UNINSTALLED_PACKAGES else 8192,
+        flags: Int = if (HTarget.N) PackageManager.MATCH_UNINSTALLED_PACKAGES else GET_INSTALLED_APPLICATIONS_FLAGS,
     ): List<ApplicationInfo> = if (HTarget.T) {
         app.packageManager.getInstalledApplications(
             PackageManager.ApplicationInfoFlags.of(flags.toLong()),
@@ -52,7 +55,7 @@ object HPackages {
 
     fun getUnhiddenPackageInfoOrNull(
         packageName: String,
-        flags: Int = if (HTarget.N) PackageManager.MATCH_UNINSTALLED_PACKAGES else 8192,
+        flags: Int = if (HTarget.N) PackageManager.MATCH_UNINSTALLED_PACKAGES else GET_INSTALLED_APPLICATIONS_FLAGS,
     ) = runCatching {
         if (HTarget.T) {
             app.packageManager.getPackageInfo(
@@ -66,7 +69,7 @@ object HPackages {
 
     fun getApplicationInfoOrNull(
         packageName: String,
-        flags: Int = if (HTarget.N) PackageManager.MATCH_UNINSTALLED_PACKAGES else 8192,
+        flags: Int = if (HTarget.N) PackageManager.MATCH_UNINSTALLED_PACKAGES else GET_INSTALLED_APPLICATIONS_FLAGS,
     ) = runCatching {
         if (HTarget.T) {
             app.packageManager.getApplicationInfo(
@@ -107,7 +110,7 @@ object HPackages {
         ?: true
 
     fun isPrivilegedApp(packageName: String): Boolean = getApplicationInfoOrNull(packageName)?.let {
-        (ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and 8 == 8
+        (ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN
     } ?: false
 
     fun canUninstallNormally(packageName: String): Boolean =

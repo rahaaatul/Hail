@@ -65,6 +65,7 @@ class AppsFragment :
     private var contextMenuInfo: ContextMenu.ContextMenuInfo? = null
 
     private var exportApkPkg: String? = null
+    private const val QUERY_DEBOUNCE_DELAY_MILLIS = 300L
     private val exportApk =
         registerForActivityResult(CreateDocument("application/vnd.android.package-archive")) { uri ->
             val exportApkPkg = exportApkPkg
@@ -237,7 +238,7 @@ class AppsFragment :
         }
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextChange(newText: String): Boolean {
-                model.postQuery(newText, if (newText.isEmpty()) 0L else 300L)
+                model.postQuery(newText, if (newText.isEmpty()) 0L else QUERY_DEBOUNCE_DELAY_MILLIS)
                 return true
             }
 

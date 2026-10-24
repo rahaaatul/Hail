@@ -11,6 +11,7 @@ import com.aistra.hail.services.AutoFreezeService
 import com.aistra.hail.utils.HSystem
 
 class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+    private const val MAX_TRIES = 3
     override fun doWork(): Result {
         if ((
                 inputData.getBoolean(HailData.ACTION_LOCK, true) &&
@@ -23,7 +24,7 @@ class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(cont
             return Result.success()
         }
         val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
-        repeat(3) {
+        repeat(MAX_TRIES) {
             val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
             if (result != null) {
                 app.setAutoFreezeService()

@@ -17,6 +17,9 @@ import com.aistra.hail.utils.HPackages.myUserId
 import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.Job
 
+private const val SELECTED_FLAG_BIT = 3
+private const val WHITELISTED_FLAG_BIT = 4
+
 class PagerAdapter(
     private val selectedList: List<AppInfo>,
     private val flags: MutableMap<String, Int> = mutableMapOf(),
@@ -100,6 +103,6 @@ class PagerAdapter(
 }
 
 private fun AppInfo.getFlag(selectedList: List<AppInfo>) =
-    (1 shl state.ordinal) or (this in selectedList).shl(3) or whitelisted.shl(4)
+    (1 shl state.ordinal) or (this in selectedList).shl(SELECTED_FLAG_BIT) or whitelisted.shl(WHITELISTED_FLAG_BIT)
 
 private fun Boolean.shl(bitCount: Int) = if (this) 1 shl bitCount else 0

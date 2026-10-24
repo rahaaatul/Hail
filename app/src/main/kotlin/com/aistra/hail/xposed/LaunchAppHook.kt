@@ -16,6 +16,9 @@ import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 
 class LaunchAppHook : XposedModule() {
+    private const val THREAD_SLEEP_MILLIS = 300
+    private const val UNSUSPEND_RETRIES = 6
+    private const val RETRY_SLEEP_MILLIS = 75
     @Throws(Throwable::class)
     override fun onPackageLoaded(param: XposedModuleInterface.PackageLoadedParam) {
         if (!HTarget.O || !param.isFirstPackage || param.packageName == BuildConfig.APPLICATION_ID) {
@@ -84,10 +87,10 @@ class LaunchAppHook : XposedModule() {
              * to start [com.aistra.hail.ui.api.ApiActivity] and successfully unfreeze.
              * We lack communication between applications, we can only wait.
              */
-            Thread.sleep(300)
-            repeat(6) {
+            Thread.sleep(THREAD_SLEEP_MILLIS)
+            repeat(UNSUSPEND_RETRIES) {
                 if (!(method.invoke(packageManager, packageName) as Boolean)) return@repeat
-                Thread.sleep(75)
+                Thread.sleep(RETRY_SLEEP_MILLIS)
             }
         }
     }

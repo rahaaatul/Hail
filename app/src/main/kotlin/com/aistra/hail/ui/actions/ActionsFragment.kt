@@ -37,6 +37,18 @@ class ActionsFragment : MainFragment() {
     private lateinit var adapter: ActionsAdapter
     private var actions: List<LaunchAction> = emptyList()
 
+    private const val ACTION_MENU_DELETE = 3
+    private const val EDITOR_PADDING_HORIZONTAL = 32
+    private const val APP_PICKER_GRID_SPAN_COUNT = 4
+    private const val PICKER_LIST_HEIGHT = 176
+    private const val PICKER_CONTAINER_PADDING_HORIZONTAL = 24
+    private const val PICKER_CONTAINER_PADDING_VERTICAL = 8
+    private const val PICKER_CARD_RADIUS = 48f
+    private const val PICKER_CARD_CONTENT_PADDING_HORIZONTAL = 20
+    private const val PICKER_SEARCH_MIN_HEIGHT = 64
+    private const val PICKER_SEARCH_CONTAINER_HEIGHT = 72
+    private const val PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN = 16
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, state: Bundle?): View {
         _binding = FragmentActionsBinding.inflate(inflater, container, false)
         adapter = ActionsAdapter(::execute, ::showActionMenu)
@@ -80,7 +92,7 @@ class ActionsFragment : MainFragment() {
                     loadActions()
                 }
 
-                3 -> confirmDelete(action)
+                ACTION_MENU_DELETE -> confirmDelete(action)
             }
         }.show()
     }
@@ -102,7 +114,7 @@ class ActionsFragment : MainFragment() {
         var selectedLaunch = existing?.launchPackage
         val content = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(32, 0, 32, 0)
+            setPadding(EDITOR_PADDING_HORIZONTAL, 0, EDITOR_PADDING_HORIZONTAL, 0)
         }
         val unfreeze = MaterialButton(activity).apply { text = getString(R.string.action_select_unfreeze) }
         val launch = MaterialButton(activity).apply { text = getString(R.string.action_select_launch) }
@@ -168,23 +180,23 @@ class ActionsFragment : MainFragment() {
             hint = getString(R.string.action_search_apps)
             setSingleLine(true)
             background = null
-            minHeight = 64
+            minHeight = PICKER_SEARCH_MIN_HEIGHT
             setPadding(0, 0, 0, 0)
         }
         val list = RecyclerView(activity).apply {
-            layoutManager = GridLayoutManager(activity, 4)
-            layoutParams = LinearLayout.LayoutParams(-1, 176)
+            layoutManager = GridLayoutManager(activity, APP_PICKER_GRID_SPAN_COUNT)
+            layoutParams = LinearLayout.LayoutParams(-1, PICKER_LIST_HEIGHT)
         }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(24, 8, 24, 8)
+            setPadding(PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL, PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL)
             val searchContainer = com.google.android.material.card.MaterialCardView(activity).apply {
-                radius = 48f
+                radius = PICKER_CARD_RADIUS
                 cardElevation = 0f
-                setContentPadding(20, 0, 20, 0)
-                addView(search, LinearLayout.LayoutParams(-1, 64))
+                setContentPadding(PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0, PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0)
+                addView(search, LinearLayout.LayoutParams(-1, PICKER_SEARCH_MIN_HEIGHT))
             }
-            addView(searchContainer, LinearLayout.LayoutParams(-1, 72).apply { bottomMargin = 16 })
+            addView(searchContainer, LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply { bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN })
             addView(list)
         }
         lateinit var pickerDialog: AlertDialog

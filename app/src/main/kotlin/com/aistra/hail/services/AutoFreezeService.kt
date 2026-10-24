@@ -16,6 +16,7 @@ import com.aistra.hail.receiver.ScreenOffReceiver
 import java.util.concurrent.ConcurrentHashMap
 
 class AutoFreezeService : NotificationListenerService() {
+    private const val START_FOREGROUND_ID = 100
     private val channelID = javaClass.simpleName
     private val lockReceiver by lazy { ScreenOffReceiver() }
     val activeNotifications = ConcurrentHashMap<String, StatusBarNotification>()
@@ -45,7 +46,7 @@ class AutoFreezeService : NotificationListenerService() {
                 freezeNonWhitelisted,
             )
         }
-        startForeground(100, notification.build())
+        startForeground(START_FOREGROUND_ID, notification.build())
         return START_STICKY
     }
 

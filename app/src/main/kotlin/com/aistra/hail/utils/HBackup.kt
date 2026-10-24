@@ -40,6 +40,7 @@ object HBackup {
     private const val FILE_WHITELIST = "whitelist.json"
     private const val FILE_ACTIONS = "actions.json"
     private const val FILE_SETTINGS = "settings.json"
+    private const val BUFFER_SIZE = 8192
 
     private val INT_AS_LONG_RANGE = Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()
 
@@ -197,7 +198,7 @@ object HBackup {
 
     private fun readJsonString(bufferedStream: BufferedInputStream): String {
         val stringBuilder = StringBuilder()
-        val buffer = ByteArray(8192)
+        val buffer = ByteArray(BUFFER_SIZE)
         var bytesRead: Int
         while (bufferedStream.read(buffer).also { bytesRead = it } != -1) {
             stringBuilder.append(String(buffer, 0, bytesRead, Charset.forName("UTF-8")))
@@ -206,7 +207,7 @@ object HBackup {
     }
 
     private fun readAppsJson(zipInputStream: ZipInputStream) {
-        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val bufferedStream = BufferedInputStream(zipInputStream, BUFFER_SIZE)
         val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
@@ -218,7 +219,7 @@ object HBackup {
     }
 
     private fun readWhitelistJson(zipInputStream: ZipInputStream) {
-        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val bufferedStream = BufferedInputStream(zipInputStream, BUFFER_SIZE)
         val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val pkg = jsonArray.getString(i)
@@ -231,7 +232,7 @@ object HBackup {
     }
 
     private suspend fun readActionsJson(zipInputStream: ZipInputStream) {
-        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val bufferedStream = BufferedInputStream(zipInputStream, BUFFER_SIZE)
         val jsonArray = JSONArray(readJsonString(bufferedStream))
         for (i in 0 until jsonArray.length()) {
             val obj = jsonArray.getJSONObject(i)
@@ -245,7 +246,7 @@ object HBackup {
     }
 
     private fun readSettingsJson(context: Context, zipInputStream: ZipInputStream) {
-        val bufferedStream = BufferedInputStream(zipInputStream, 8192)
+        val bufferedStream = BufferedInputStream(zipInputStream, BUFFER_SIZE)
         val jsonObject = JSONObject(readJsonString(bufferedStream))
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         // A numeric preference cannot be recognized from the JSON alone: JSONObject has no

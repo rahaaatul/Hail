@@ -5,6 +5,9 @@ import java.util.Locale
 
 /** 中文拼音搜索类 */
 object PinyinSearch {
+    private const val MAX_CAP_QUERY_LENGTH = 8
+    private const val MAX_ALL_SPELL_LENGTH = 48
+
     /**
      * 当前语言是中文时使用首字母和全拼进行搜索，满足任一条件则显示在搜索结果中
      * @param raw 需要匹配的原始字符串
@@ -25,7 +28,7 @@ object PinyinSearch {
      * 如搜索“计算器”时只需输入 "jsq"
      */
     private fun searchCap(raw: String, pinyinCap: String): Boolean {
-        if (pinyinCap.length > 8) return false // "最强多媒体播放器".length
+        if (pinyinCap.length > MAX_CAP_QUERY_LENGTH) return false // "最强多媒体播放器".length
         for (index in getNameStringList(raw)) {
             if (index.contains(pinyinCap, true)) {
                 return true
@@ -39,7 +42,7 @@ object PinyinSearch {
      * 如搜索“计算器”时只需输入 "jisuanqi"
      */
     private fun searchAllSpell(raw: String, pinyinAll: String): Boolean {
-        if (pinyinAll.length > 48) return false // "chuang".length * 8
+        if (pinyinAll.length > MAX_ALL_SPELL_LENGTH) return false // "chuang".length * 8
         for (index in getNameStringPinyinAll(raw)) {
             if (index.contains(pinyinAll, true)) {
                 return true

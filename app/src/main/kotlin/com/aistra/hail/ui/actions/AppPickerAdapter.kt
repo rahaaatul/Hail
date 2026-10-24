@@ -13,6 +13,7 @@ class AppPickerAdapter(
     private val selected: MutableSet<String>,
     private val onSelected: (String) -> Unit,
 ) : RecyclerView.Adapter<AppPickerAdapter.ViewHolder>() {
+    private const val SELECTED_ICON_ALPHA = 0.55f
     private var applications: List<android.content.pm.ApplicationInfo> = emptyList()
 
     fun submitList(value: List<android.content.pm.ApplicationInfo>) {
@@ -36,7 +37,7 @@ class AppPickerAdapter(
             val isSelected = packageName in selected
             binding.selectedTint.isVisible = isSelected
             binding.selectedIcon.isVisible = isSelected
-            binding.appIcon.alpha = if (isSelected) 0.55f else 1f
+            binding.appIcon.alpha = if (isSelected) SELECTED_ICON_ALPHA else 1f
             binding.root.setOnClickListener {
                 if (multi) {
                     selected.toggle(packageName)

@@ -11,6 +11,9 @@ import androidx.core.content.getSystemService
 import com.aistra.hail.app.HailData
 
 object HSystem {
+    private const val MILLIS_PER_SECOND = 1000
+    private const val SECONDS_PER_MINUTE = 60
+
     fun isInteractive(context: Context): Boolean {
         val powerManger = context.getSystemService<PowerManager>()!!
         return powerManger.isInteractive
@@ -38,7 +41,7 @@ object HSystem {
         val now = System.currentTimeMillis()
         val stats = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_BEST,
-            now - 1000 * 60 * (HailData.autoFreezeDelay + 1),
+            now - MILLIS_PER_SECOND * SECONDS_PER_MINUTE * (HailData.autoFreezeDelay + 1),
             now, // to ensure that we can get the last app used
         )?.sortedBy { it.lastTimeUsed }
         val foregroundPackageName = stats?.let {

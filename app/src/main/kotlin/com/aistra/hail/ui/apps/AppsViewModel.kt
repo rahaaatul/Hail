@@ -47,6 +47,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     private var refreshJob: Job? = null
     private var refreshStateJob: Job? = null
     private var lastUpdateTime: Long = 0
+    private const val APP_LIST_REFRESH_INTERVAL_MILLIS = 1000
     private var appListRefreshJob: Job? = null
 
     /**
@@ -82,7 +83,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
      * */
     fun updateAppList(forceRefresh: Boolean = false) {
         val now = System.currentTimeMillis()
-        if (!forceRefresh && now - lastUpdateTime < 1000) return
+        if (!forceRefresh && now - lastUpdateTime < APP_LIST_REFRESH_INTERVAL_MILLIS) return
         lastUpdateTime = now
         if (forceRefresh) {
             appListRefreshJob?.cancel()

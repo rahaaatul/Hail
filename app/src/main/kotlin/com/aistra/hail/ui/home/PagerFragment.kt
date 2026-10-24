@@ -103,6 +103,10 @@ class PagerFragment :
     private val adapter: HomeAdapter? get() = (parentFragment as? HomeFragment)?.binding?.pager?.adapter as? HomeAdapter
     private val tag: Pair<String, Int>? get() = tabs?.let { HailData.tags.getOrNull(it.selectedTabPosition) }
 
+    private const val INDEX_EXPORT_CLIPBOARD = 3
+    private const val INDEX_REMOVE_HOME = 4
+    private const val INDEX_UNFREEZE_REMOVE_HOME = 5
+
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
         requireActivity().onBackPressedDispatcher.addCallback(
@@ -487,18 +491,18 @@ class PagerFragment :
 
                 2 -> triStateTagDialog()
 
-                3 -> {
+                INDEX_EXPORT_CLIPBOARD -> {
                     exportToClipboard(selectedList)
                     deselect()
                 }
 
-                4 -> {
+                INDEX_REMOVE_HOME -> {
                     selectedList.forEach { removeCheckedApp(it.packageName, false) }
                     HailData.saveApps()
                     deselect()
                 }
 
-                5 -> {
+                INDEX_UNFREEZE_REMOVE_HOME -> {
                     val job = setListFrozen(false, selectedList, false)
                     lifecycleScope.launch {
                         job.join()
