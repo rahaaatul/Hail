@@ -13,7 +13,10 @@ import com.aistra.hail.utils.HSystem
 class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
     private const val MAX_TRIES = 3
     override fun doWork(): Result {
-        val result = if ((inputData.getBoolean(HailData.ACTION_LOCK, true) && HSystem.isInteractive(applicationContext)) || isSkipWhileCharging(applicationContext)) {
+        val result = if (
+            (inputData.getBoolean(HailData.ACTION_LOCK, true) && HSystem.isInteractive(applicationContext))
+                || isSkipWhileCharging(applicationContext)
+        ) {
             // Not stopping the AutoFreezeService here. The worker will run at
             // some point. Then we'll stop the Service
             Result.success()

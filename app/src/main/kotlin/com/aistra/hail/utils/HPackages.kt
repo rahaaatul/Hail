@@ -110,7 +110,8 @@ object HPackages {
         ?: true
 
     fun isPrivilegedApp(packageName: String): Boolean = getApplicationInfoOrNull(packageName)?.let {
-        (ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN
+        val privateFlags = (ApplicationInfo::class.java.getField("privateFlags").get(it) as Int)
+        privateFlags and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN
     } ?: false
 
     fun canUninstallNormally(packageName: String): Boolean =

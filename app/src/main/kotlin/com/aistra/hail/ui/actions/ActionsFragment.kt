@@ -189,14 +189,24 @@ class ActionsFragment : MainFragment() {
         }
         val container = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL, PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL)
+            setPadding(
+                PICKER_CONTAINER_PADDING_HORIZONTAL,
+                PICKER_CONTAINER_PADDING_VERTICAL,
+                PICKER_CONTAINER_PADDING_HORIZONTAL,
+                PICKER_CONTAINER_PADDING_VERTICAL,
+            )
             val searchContainer = com.google.android.material.card.MaterialCardView(activity).apply {
                 radius = PICKER_CARD_RADIUS
                 cardElevation = 0f
                 setContentPadding(PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0, PICKER_CARD_CONTENT_PADDING_HORIZONTAL, 0)
                 addView(search, LinearLayout.LayoutParams(-1, PICKER_SEARCH_MIN_HEIGHT))
             }
-            addView(searchContainer, LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply { bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN })
+            addView(
+                searchContainer,
+                LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply {
+                    bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN
+                },
+            )
             addView(list)
         }
         lateinit var pickerDialog: AlertDialog

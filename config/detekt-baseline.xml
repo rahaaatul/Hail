@@ -3,18 +3,11 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>LargeClass:SettingsFragment.kt$SettingsFragment : MainFragmentMenuProvider</ID>
+    <ID>LongMethod:ActionsFragment.kt$ActionsFragment$private fun showAppPicker(multi: Boolean, selected: Set&lt;String&gt;, onSelected: (Set&lt;String&gt;) -&gt; Unit)</ID>
     <ID>LongParameterList:PagerFragment.kt$( entries: Array&lt;String&gt;, frozen: Boolean, info: AppInfo, freezeStr: String, unfreezeStr: String, pinStr: String, unpinStr: String, whitelistStr: String, removeWhitelistStr: String, unfreezeRemoveHomeStr: String, )</ID>
     <ID>LongParameterList:PagerFragment.kt$( entries: List&lt;String&gt;, launchStr: String, freezeStr: String, unfreezeStr: String, deferredTaskStr: String, pinStr: String, unpinStr: String, whitelistStr: String, removeWhitelistStr: String, tagSetStr: String, addPinShortcutStr: String, exportClipboardStr: String, removeHomeStr: String, unfreezeRemoveHomeStr: String, )</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$for</ID>
     <ID>LoopWithTooManyJumpStatements:HailDataTest.kt$HailDataTest$while</ID>
-    <ID>MaxLineLength:ActionsFragment.kt$ActionsFragment$addView(searchContainer, LinearLayout.LayoutParams(-1, PICKER_SEARCH_CONTAINER_HEIGHT).apply { bottomMargin = PICKER_SEARCH_CONTAINER_BOTTOM_MARGIN })</ID>
-    <ID>MaxLineLength:ActionsFragment.kt$ActionsFragment$setPadding(PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL, PICKER_CONTAINER_PADDING_HORIZONTAL, PICKER_CONTAINER_PADDING_VERTICAL)</ID>
-    <ID>MaxLineLength:ApiActivity.kt$ApiActivity$HailApi.ACTION_FREEZE, HailApi.ACTION_UNFREEZE, HailApi.ACTION_FREEZE_TAG, HailApi.ACTION_UNFREEZE_TAG, HailApi.ACTION_FREEZE_ALL, HailApi.ACTION_UNFREEZE_ALL, HailApi.ACTION_FREEZE_NON_WHITELISTED, HailApi.ACTION_FREEZE_AUTO -&gt; handleFreezeAction(action)</ID>
-    <ID>MaxLineLength:AutoFreezeWorker.kt$AutoFreezeWorker$val</ID>
-    <ID>MaxLineLength:HPackages.kt$HPackages$(ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and PRIVATE_FLAG_HIDDEN == PRIVATE_FLAG_HIDDEN</ID>
-    <ID>MaxLineLength:PagerFragment.kt$HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first))</ID>
-    <ID>MaxLineLength:PagerFragment.kt$resources.getQuantityString(R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name)</ID>
-    <ID>MaxLineLength:SettingsFragment.kt$SettingsFragment$private</ID>
     <ID>NestedBlockDepth:HailDataTest.kt$HailDataTest$private fun initializerAfter(text: String, index: Int): String</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:PagerFragment.kt$IllegalArgumentException()</ID>
     <ID>TooManyFunctions:PagerFragment.kt$com.aistra.hail.ui.home.PagerFragment.kt</ID>

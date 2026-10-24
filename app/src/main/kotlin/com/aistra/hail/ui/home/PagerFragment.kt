@@ -882,7 +882,13 @@ private fun PagerFragment.showDeferredTaskDialog(info: AppInfo, pkg: String, fro
             val deferredAction = getString(if (!frozen) R.string.action_freeze else R.string.action_unfreeze)
             Snackbar.make(
                 activity.fab,
-                resources.getQuantityString(R.plurals.msg_deferred_task, values[i], values[i], deferredAction, info.name),
+                resources.getQuantityString(
+                    R.plurals.msg_deferred_task,
+                    values[i],
+                    values[i],
+                    deferredAction,
+                    info.name,
+                ),
                 Snackbar.LENGTH_INDEFINITE,
             ).setAction(R.string.action_undo) { HWork.cancelWork(pkg) }.show()
         }.setNegativeButton(android.R.string.cancel, null).show()
@@ -892,7 +898,12 @@ private fun PagerFragment.addPinShortcut(info: AppInfo, pkg: String) {
     tabs?.takeIf { it.tabCount > 1 }?.let {
         MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.action_unfreeze_tag)
             .setItems(HailData.tags.map { it.first }.toTypedArray()) { _, index ->
-                HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first))
+                HShortcuts.addPinShortcut(
+                    info,
+                    pkg,
+                    info.name,
+                    HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg).addTag(HailData.tags[index].first),
+                )
             }.setPositiveButton(R.string.action_skip) { _, _ ->
                 HShortcuts.addPinShortcut(info, pkg, info.name, HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, pkg))
             }.setNegativeButton(android.R.string.cancel, null).show()

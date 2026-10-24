@@ -1071,7 +1071,10 @@ class SettingsFragment :
         }
     }
 
-    private fun buildRestoreDismissListener(file: File, isRestoreStarted: () -> Boolean): DialogInterface.OnDismissListener =
+    private fun buildRestoreDismissListener(
+        file: File,
+        isRestoreStarted: () -> Boolean,
+    ): DialogInterface.OnDismissListener =
         DialogInterface.OnDismissListener { if (!isRestoreStarted()) file.delete() }
 
     private fun showTerminalDialog() {

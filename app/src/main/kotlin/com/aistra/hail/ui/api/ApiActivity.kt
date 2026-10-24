@@ -94,7 +94,9 @@ class ApiActivity : ComponentActivity() {
                 handled = false
             }
 
-            HailApi.ACTION_FREEZE, HailApi.ACTION_UNFREEZE, HailApi.ACTION_FREEZE_TAG, HailApi.ACTION_UNFREEZE_TAG, HailApi.ACTION_FREEZE_ALL, HailApi.ACTION_UNFREEZE_ALL, HailApi.ACTION_FREEZE_NON_WHITELISTED, HailApi.ACTION_FREEZE_AUTO -> handleFreezeAction(action)
+            HailApi.ACTION_FREEZE, HailApi.ACTION_UNFREEZE, HailApi.ACTION_FREEZE_TAG, HailApi.ACTION_UNFREEZE_TAG,
+            HailApi.ACTION_FREEZE_ALL, HailApi.ACTION_UNFREEZE_ALL, HailApi.ACTION_FREEZE_NON_WHITELISTED,
+            HailApi.ACTION_FREEZE_AUTO -> handleFreezeAction(action)
 
             HailApi.ACTION_LOCK, HailApi.ACTION_LOCK_FREEZE -> handleLockAction(action)
 
