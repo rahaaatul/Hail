@@ -178,8 +178,6 @@
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>
     <string name="summary_rebuild_cache">Remove cached app data and rebuild it in the background</string>
     <string name="title_actions">Actions</string>
-    <string name="title_cache">Cache</string>
-    <string name="working_mode_tag">Working mode of related apps</string>
     <string name="title_cache">தற்காலிக சேமிப்பு</string>
     <string name="working_mode_tag">தொடர்புடைய பயன்பாடுகளின் வேலை முறை</string>
     <string name="mode_jailbreak_disable">ஜெயில்பிரேக் - முடக்கு</string>
