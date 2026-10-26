@@ -1,31 +1,34 @@
 [versions]
-androidGradlePlugin = "9.3.2"
-kotlin = "2.4.10"
+androidGradlePlugin = "9.4.0"
+kotlin = "2.4.21"
 appcompat = "1.8.0"
 appiconloader = "1.5.0"
 biometricKtx = "1.4.0-alpha02"
 commonsText = "1.15.0"
-composeBom = "2026.08.00"
+composeBom = "2026.09.00"
 composePreference = "2.2.0"
 constraintlayout = "2.2.2"
-coreKtx = "1.19.0"
+coreKtx = "1.19.1"
 dhizukuApi = "2.6.0"
-hiddenapibypass = "6.1"
+hiddenapibypass = "6.2"
 insetter = "0.6.1"
 kotlinxCoroutinesAndroid = "1.11.0"
 lifecycleLivedataKtx = "2.11.0"
 material = "1.14.0"
-navigationKtx = "2.9.8"
+navigationKtx = "2.10.2"
 pinyin4j = "2.5.1"
 preferenceKtx = "1.2.1"
 shizuku = "13.1.5"
 swiperefreshlayout = "1.2.0"
-workRuntime = "2.11.2"
+workRuntime = "2.12.0"
 libxposed = "102.0.0"
 libsu = "6.0.0"
-room = "3.0.1"
-ksp = "2.3.10"
-sqlite = "2.7.0"
+room = "3.0.3"
+kover = "0.9.11"
+spotless = "8.10.4"
+detekt = "1.23.8"
+ksp = "2.3.12"
+sqlite = "2.7.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
@@ -65,4 +68,7 @@ androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
