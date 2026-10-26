@@ -16,5 +16,8 @@
   },
   "scripts": {
     "prepare": "husky"
+  },
+  "overrides": {
+    "conventional-changelog-writer": "^9.0.0"
   }
 }
