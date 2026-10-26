@@ -9,7 +9,7 @@ the checks.
 - Runs Detekt static analysis (`./gradlew detekt`)
 - Runs the Spotless formatting check (`./gradlew spotlessCheck`)
 - Runs the unit tests under the coverage agent and verifies the coverage bound
-  (`./gradlew test koverVerifyTested koverXmlReport koverHtmlReport`)
+  (`./gradlew test koverVerify koverXmlReport koverHtmlReport`)
 - Uploads the coverage report as an artifact, also when a check failed
 - Resolves the git ref that the Spotless ratchet compares against, so only the
   files that a change touches are format checked
