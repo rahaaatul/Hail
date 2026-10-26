@@ -12,3 +12,16 @@
 commits_since_v1.10.3.txt
 /.vscode/
 /docs/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.tmp
+
+# Husky
+.husky/_
+
+# macOS
+.DS_Store
