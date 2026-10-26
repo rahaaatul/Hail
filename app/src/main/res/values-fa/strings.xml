@@ -41,10 +41,10 @@
     <string name="msg_uninstall">می‌خواهید این برنامه را حذف کنید؟</string>
     <string name="working_mode">حالت کاری</string>
     <string name="mode_default">بیکار</string>
-    <string name="mode_owner_hide">مالک دستگاه - نهفتن</string>
+    <string name="mode_owner_hide">مالک دستگاه - پنهان کردن</string>
     <string name="mode_su_suspend">روت - تعلیق</string>
     <string name="mode_shizuku_disable">شیزوکو - از کار انداختن</string>
-    <string name="mode_shizuku_hide">شیوزوکو - نهفتن</string>
+    <string name="mode_shizuku_hide">شیزوکو - پنهان کردن</string>
     <string name="mode_shizuku_suspend">شیزوکو - تعلیق</string>
     <string name="title_set_owner">تنظیم مالک دستگاه</string>
     <string name="title_remove_owner">حذف مالک دستگاه</string>
@@ -90,12 +90,12 @@
     <string name="mode_owner_suspend">مالک دستگاه - تعلیق</string>
     <string name="msg_imported">درون ریخته: %s</string>
     <string name="msg_set_owner">دستور زیر را از adb اجرا کنید:
-\n%s</string>
+%s</string>
     <string name="donate_alipay">علی‌پی</string>
     <string name="synthesize_adaptive_icons">آمیختن آیکون‌های سازگار</string>
     <string name="skip_notifying_app">رد کردن برنامه‌ی دارای نوتیفیکیشن</string>
     <string name="action_terminal">ترمینال</string>
-    <string name="tile_action">اقدام کاشی</string>
+    <string name="tile_action">عملکرد تایل سریع</string>
     <string name="auto_freeze_notification_title">سرویس یخ‌زدن خودکار در حال اجرا است</string>
     <string name="auto_freeze_after_lock">بعد از قفل شدن صفحه</string>
     <string name="skip_foreground_app">رد کردن برنامه پیش زمینه</string>
@@ -145,10 +145,41 @@
         <item quantity="other">%2$s بعد از %1$d (دقیقه): %3$s</item>
     </plurals>
     <string name="home_font_size">اندازه فونت خانه</string>
-    <string name="app_theme">زمینه کارهٔ</string>
+    <string name="app_theme">تم برنامه</string>
     <string name="follow_system">پی‌گرفتن سامانه</string>
     <string name="theme_light">روشن</string>
     <string name="theme_dark">تیره</string>
     <string name="xposed_description">بازکردن خودکار برنامه‌های معلق شده برای برنامه‌های نشان شده</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="action_freeze_failed">یخ‌زدن ناموفق بود: %s</string>
+    <string name="action_app_unavailable">برنامه در دسترس نیست: %s</string>
+    <string name="action_create_action">ساخت عمل</string>
+    <string name="action_create_shortcut">ساخت میانبر</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_duplicate">تکرار</string>
+    <string name="action_edit_action">ویرایش عمل</string>
+    <string name="action_no_dependencies">برنامه‌ای برای یخ‌زدایی نیست</string>
+    <string name="action_rebuild_cache">پاک کردن و بازسازی کش</string>
+    <string name="action_required_unfreeze">حداقل یک برنامه برای یخ‌زدایی انتخاب کنید</string>
+    <string name="action_search_apps">جستجوی برنامه‌ها</string>
+    <string name="action_select_launch">برنامه‌ای برای اجرا انتخاب کنید</string>
+    <string name="action_select_unfreeze">برنامه‌هایی برای یخ‌زدایی انتخاب کنید</string>
+    <string name="action_unavailable">عمل در دسترس نیست</string>
+    <string name="action_unfreeze_failed">یخ‌زدایی ناموفق بود: %s</string>
+    <string name="allow_background_activity">اجازه فعالیت پس‌زمینه</string>
+    <string name="donate_kofi">کافی</string>
+    <string name="filter_all_apps">همه</string>
+    <string name="msg_confirm_rebuild_cache">این کار مetadata و آیکون‌ها را پاک کرده و همه برنامه‌های نصب شده را دوباره بارگذاری می‌کند. ادامه دهید؟</string>
+    <string name="no_items_to_select">موردی برای انتخاب نیست</string>
+    <string name="save">ذخیره</string>
+    <string name="state_disabled">غیرفعال</string>
+    <string name="state_hidden">پنهان</string>
+    <string name="state_running">در حال اجرا</string>
+    <string name="state_suspended">متوقف</string>
+    <string name="state_uninstalled">حذف نصب</string>
+    <string name="summary_background_activity">اجازه دهید یخ‌زدن خودکار وقتی هایل باز نیست ادامه یابد</string>
+    <string name="summary_rebuild_cache">داده‌های کش برنامه را پاک کرده و دوباره در پس‌زمینه بسازید</string>
+    <string name="title_actions">عملیات</string>
+    <string name="title_cache">کش</string>
+    <string name="working_mode_tag">حالت کاری برنامه‌های وابسته</string>
+    <string name="mode_jailbreak_disable">جیلبریک - غیرفعال</string>
 </resources>

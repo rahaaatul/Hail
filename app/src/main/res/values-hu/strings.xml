@@ -38,8 +38,8 @@
     <string name="mode_su_disable">Root - Letiltás</string>
     <string name="mode_su_suspend">Root - Felfüggesztés</string>
     <string name="mode_shizuku_suspend">Shizuku - Felfüggesztés</string>
-    <string name="mode_privapp_stop">Rendszer App - Kényszerített leállítás</string>
-    <string name="mode_privapp_disable">Rendszer App - Letiltás</string>
+    <string name="mode_privapp_stop">Rendszer Alkalmazás - Kényszerített leállítás</string>
+    <string name="mode_privapp_disable">Rendszer Alkalmazás - Letiltás</string>
     <string name="title_set_owner">Eszköztulajdonos beállítása</string>
     <string name="tap_to_select">Klikk a többszörös kiválasztáshoz</string>
     <string name="filter_system_apps">Rendszer</string>
@@ -64,8 +64,8 @@
         <item quantity="other">%d perc</item>
     </plurals>
     <plurals name="msg_deferred_task">
-        <item quantity="one">%2$s , %1$d perc után: %3$s</item>
-        <item quantity="other">%2$s , %1$d perc után: %3$s</item>
+        <item quantity="one">%2$s, %1$d perc után: %3$s</item>
+        <item quantity="other">%2$s, %1$d perc után: %3$s</item>
     </plurals>
     <string name="action_clear_dynamic_shortcuts">Törölje az összes dinamikus parancsikont</string>
     <string name="tile_action">Gyorskapcsoló művelet</string>
@@ -148,5 +148,37 @@
     <string name="action_terminal">Terminál</string>
     <string name="freeze_system_app">A rendszeralkalmazások fagyasztása vagy eltávolítása az eszközön bootloop-hoz vezethet. Győződjön meg arról, hogy tudja mit csinál, és előzetesen készítsen biztonsági másolatot adatairól, vagy használjon olyan helyreállítást, amely fájlkezelést támogat.</string>
     <string name="action_qq">QQ csoport</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="action_freeze_failed">Nem sikerült lefagyasztani: %s</string>
+    <string name="action_app_unavailable">Az alkalmazás nem érhető el: %s</string>
+    <string name="action_create_action">Művelet létrehozása</string>
+    <string name="action_create_shortcut">Parancsikon létrehozása</string>
+    <string name="action_delete">Törlés</string>
+    <string name="action_duplicate">Duplikálás</string>
+    <string name="action_edit_action">Művelet szerkesztése</string>
+    <string name="action_no_dependencies">Nincs felolvasztandó alkalmazás</string>
+    <string name="action_rebuild_cache">Gyorsítótár törlése és újraépítése</string>
+    <string name="action_required_unfreeze">Válasszon legalább egy felolvasztandó alkalmazást</string>
+    <string name="action_search_apps">Alkalmazások keresése</string>
+    <string name="action_select_launch">Válassza ki az indítandó alkalmazást</string>
+    <string name="action_select_unfreeze">Válassza ki a felolvasztandó alkalmazásokat</string>
+    <string name="action_unavailable">A művelet nem érhető el</string>
+    <string name="action_unfreeze_failed">Nem sikerült felolvasztani: %s</string>
+    <string name="allow_background_activity">Háttértevékenység engedélyezése</string>
+    <string name="donate_kofi">Ko-fi</string>
+    <string name="filter_all_apps">Összes</string>
+    <string name="msg_confirm_rebuild_cache">Ez törli a metaadatokat és az ikonokat, majd újratölti az összes telepített alkalmazást. Folytatja?</string>
+    <string name="no_items_to_select">Nincs kiválasztható elem</string>
+    <string name="save">Mentés</string>
+    <string name="state_disabled">Letiltva</string>
+    <string name="state_hidden">Elrejtve</string>
+    <string name="state_running">Fut</string>
+    <string name="state_suspended">Felfüggesztve</string>
+    <string name="state_uninstalled">Eltávolítva</string>
+    <string name="summary_background_activity">Az automatikus fagyasztás folytatása, ha a Hail nincs megnyitva</string>
+    <string name="summary_rebuild_cache">Törölje a gyorsítótárazott alkalmazásadatokat, és építse újra a háttérben</string>
+    <string name="title_actions">Műveletek</string>
+    <string name="title_cache">Gyorsítótár</string>
+    <string name="working_mode_tag">A kapcsolódó alkalmazások működési módja</string>
+    <string name="xposed_description">Engedélyezi a korlátozott alkalmazásoknak a felfüggesztett alkalmazások indítását</string>
+    <string name="mode_jailbreak_disable">Jailbreak - Letiltás</string>
 </resources>

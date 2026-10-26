@@ -65,7 +65,7 @@
     <string name="label_default">За замовчуванням</string>
     <string name="label_time">Час встановлення</string>
     <string name="label_version">Версія</string>
-    <string name="mode_default">Відключено</string>
+    <string name="mode_default">Бездіяльність</string>
     <string name="mode_owner_hide">Власник пристрою - Приховати</string>
     <string name="mode_owner_suspend">Власник пристрою - Призупинити</string>
     <string name="mode_shizuku_disable">Shizuku - Вимкнути</string>
@@ -133,9 +133,9 @@
     <string name="mode_dhizuku_hide">Dhizuku - Приховати</string>
     <string name="mode_dhizuku_suspend">Dhizuku - Призупинити</string>
     <string name="action_skip">Пропустити</string>
-    <string name="mode_su_hide">Root - Прихововати</string>
-    <string name="mode_island_hide">Island/Insular - Приховування</string>
-    <string name="mode_island_suspend">Island/Insular - Вимкнення</string>
+    <string name="mode_su_hide">Root - Приховати</string>
+    <string name="mode_island_hide">Island/Insular - Приховати</string>
+    <string name="mode_island_suspend">Island/Insular - Призупинити</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="shizuku_hide_adb">Shizuku працює по adb. Щоб приховати застосунки, перезапустіть Shizuku з рут правами.</string>
     <string name="command">Команда</string>
@@ -161,6 +161,31 @@
     <string name="state_disabled">Вимкнено</string>
     <string name="state_hidden">Приховано</string>
     <string name="state_suspended">Призупинено</string>
-    <string name="state_uninstalled">Видалено</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="state_uninstalled">Деінстальовано</string>
+
+    <string name="action_freeze_failed">Не вдалося заморозити: %s</string>
+    <string name="action_app_unavailable">Додаток недоступний: %s</string>
+    <string name="action_create_action">Створити дію</string>
+    <string name="action_create_shortcut">Створити ярлик</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_duplicate">Дублювати</string>
+    <string name="action_edit_action">Редагувати дію</string>
+    <string name="action_no_dependencies">Немає додатків для розморозки</string>
+    <string name="action_rebuild_cache">Очистити та перебудувати кеш</string>
+    <string name="action_required_unfreeze">Виберіть хоча б один додаток для розморозки</string>
+    <string name="action_search_apps">Пошук додатків</string>
+    <string name="action_select_launch">Виберіть додаток для запуску</string>
+    <string name="action_select_unfreeze">Виберіть додатки для розморозки</string>
+    <string name="action_unavailable">Дія недоступна</string>
+    <string name="action_unfreeze_failed">Не вдалося розморозити: %s</string>
+    <string name="allow_background_activity">Дозволити фонову активність</string>
+    <string name="filter_all_apps">Всі</string>
+    <string name="msg_confirm_rebuild_cache">Це очистить метадані та іконки, а потім перезавантажить кожен встановлений додаток. Продовжити?</string>
+    <string name="no_items_to_select">Немає елементів для вибору</string>
+    <string name="save">Зберегти</string>
+    <string name="summary_background_activity">Дозволити автоматичному замороженню продовжувати роботу, коли Hail не відкрито</string>
+    <string name="summary_rebuild_cache">Видалення кешованих даних додатків та перебудова їх у фоновому режимі</string>
+    <string name="title_actions">Дії</string>
+    <string name="title_cache">Кеш</string>
+    <string name="mode_jailbreak_disable">Джейлбрейк - Вимкнути</string>
 </resources>

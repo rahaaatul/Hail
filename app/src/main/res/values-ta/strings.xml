@@ -44,7 +44,7 @@
     <string name="title_about">பற்றி</string>
     <string name="label_default">இயல்புநிலை</string>
     <string name="label_version">பதிப்பு</string>
-    <string name="label_time">நேரத்தை நிறுவவும்</string>
+    <string name="label_time">நிறுவிய நேரம்</string>
     <string name="action_telegram">தந்தி குழு</string>
     <string name="action_qq">QQ குழு</string>
     <string name="action_donate">நன்கொடை</string>
@@ -61,7 +61,7 @@
     <string name="action_tag_remove">குறிச்சொல்லை அகற்று</string>
     <string name="action_tag_set">குறிச்சொல்லை அமைக்கவும்</string>
     <string name="action_add_pin_shortcut">முகப்புத் திரையில் சேர்க்கவும்</string>
-    <string name="action_unfreeze">இயக்கம்</string>
+    <string name="action_unfreeze">உறைநீக்கம்</string>
     <string name="action_export_clipboard">இடைநிலைப்பலகைக்கு ஏற்றுமதி</string>
     <string name="action_import_clipboard">இடைநிலைப்பலகைக்கு இறக்குமதி</string>
     <string name="action_remove_home">முகப்பிலிருந்து அகற்றவும்</string>
@@ -70,7 +70,7 @@
     <string name="action_undo">செயல்தவிர்</string>
     <string name="action_help">உதவி</string>
     <string name="action_search">தேடல்</string>
-    <string name="action_details">பயன்பாட்டு செய்தி</string>
+    <string name="action_details">பயன்பாட்டு தகவல்</string>
     <string name="action_extract_apk">APK பிரித்தெடுக்கவும்</string>
     <string name="action_uninstall">நிறுவல் நீக்க</string>
     <string name="msg_uninstall">இந்த பயன்பாட்டை நிறுவல் நீக்க விரும்புகிறீர்களா?</string>
@@ -81,10 +81,10 @@
     <string name="mode_owner_suspend">சாதன உரிமையாளர் - இடைநீக்கம்</string>
     <string name="mode_su_disable">ரூட் - முடக்கு</string>
     <string name="mode_su_suspend">ரூட் - இடைநீக்கம்</string>
-    <string name="mode_shizuku_stop">சிசுகு -ஃபோ ஆர் சே மற்றும் ப</string>
-    <string name="mode_shizuku_disable">சிசுகோ பி</string>
-    <string name="mode_shizuku_hide">செலவில்</string>
-    <string name="mode_shizuku_suspend">சிசுகுசு எச் பேனா டி</string>
+    <string name="mode_shizuku_stop">சிசுகு - படை நிறுத்தம்</string>
+    <string name="mode_shizuku_disable">சிசுகு - முடக்கு</string>
+    <string name="mode_shizuku_hide">சிசுகு - மறை</string>
+    <string name="mode_shizuku_suspend">சிசுகு - இடைநீக்கம்</string>
     <string name="mode_privapp_stop">கணினி பயன்பாடு - படை நிறுத்தம்</string>
     <string name="mode_privapp_disable">கணினி பயன்பாடு - முடக்கு</string>
     <string name="title_set_owner">சாதன உரிமையாளரை அமைக்கவும்</string>
@@ -96,7 +96,7 @@
     <string name="filter_user_apps">பயனர்</string>
     <string name="filter_system_apps">மண்டலம்</string>
     <string name="filter_frozen_apps">உறைந்த</string>
-    <string name="filter_unfrozen_apps">அன்ரோசன்</string>
+    <string name="filter_unfrozen_apps">உறைநீக்கப்பட்ட</string>
     <string name="sort_by">வரிசைப்படுத்தவும்</string>
     <string name="sort_name">பெயர்</string>
     <string name="sort_install">முதல் நிறுவல்</string>
@@ -119,7 +119,7 @@
     <string name="msg_extract_apk">பிரித்தெடுக்கப்பட்டது: %s</string>
     <string name="msg_freeze">உறைந்த: %s</string>
     <plurals name="deferred_task_entry">
-        <item quantity="one">%d மணித்துளி</item>
+        <item quantity="one">%d நிமிடம்</item>
         <item quantity="other">%d நிமிடங்கள்</item>
     </plurals>
     <string name="msg_unfreeze">உறைநீக்கம் செய்யப்பட்டது: %s</string>
@@ -132,7 +132,7 @@
     <string name="auto_freeze">ஆட்டோ முடக்கம்</string>
     <string name="auto_freeze_notification_title">ஆட்டோ ஃப்ரீச் பணி இயங்குகிறது</string>
     <string name="auto_freeze_after_lock">திரை பூட்டப்பட்ட பிறகு</string>
-    <string name="skip_while_charging">கட்டணம் வசூலிக்கும்போது தவிர்க்கவும்</string>
+    <string name="skip_while_charging">சார்ஜ் ஆகும்போது தவிர்க்கவும்</string>
     <string name="skip_foreground_app">முன்புற பயன்பாட்டைத் தவிர்க்கவும்</string>
     <string name="title_customize">தனிப்பயனாக்கு</string>
     <string name="grayscale_icon">கிரேச்கேல் படவுரு</string>
@@ -150,4 +150,37 @@
     <string name="theme_dark">இருண்ட</string>
     <string name="xposed_description">வரையறுக்கப்பட்ட செயலிகளுக்கான இடைநிறுத்தப்பட்ட செயலியைத் தானாகவே விடுவிக்கவும்</string>
     <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="action_app_unavailable">App unavailable: %s</string>
+    <string name="action_create_action">Create action</string>
+    <string name="action_create_shortcut">Create shortcut</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_duplicate">Duplicate</string>
+    <string name="action_edit_action">Edit action</string>
+    <string name="action_no_dependencies">No apps to unfreeze</string>
+    <string name="action_rebuild_cache">Clear and rebuild cache</string>
+    <string name="action_required_unfreeze">Select at least one app to unfreeze</string>
+    <string name="action_search_apps">Search apps</string>
+    <string name="action_select_launch">Select app to launch</string>
+    <string name="action_select_unfreeze">Select apps to unfreeze</string>
+    <string name="action_unavailable">Action unavailable</string>
+    <string name="action_unfreeze_failed">Could not unfreeze: %s</string>
+    <string name="allow_background_activity">Allow background activity</string>
+    <string name="donate_kofi">Ko-fi</string>
+    <string name="filter_all_apps">All</string>
+    <string name="msg_confirm_rebuild_cache">This clears metadata and icons, then reloads every installed app. Continue?</string>
+    <string name="no_items_to_select">No items to select</string>
+    <string name="save">Save</string>
+    <string name="state_disabled">Disabled</string>
+    <string name="state_hidden">Hidden</string>
+    <string name="state_running">Running</string>
+    <string name="state_suspended">Suspended</string>
+    <string name="state_uninstalled">Uninstalled</string>
+    <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>
+    <string name="summary_rebuild_cache">Remove cached app data and rebuild it in the background</string>
+    <string name="title_actions">Actions</string>
+    <string name="title_cache">Cache</string>
+    <string name="working_mode_tag">Working mode of related apps</string>
+    <string name="title_cache">தற்காலிக சேமிப்பு</string>
+    <string name="working_mode_tag">தொடர்புடைய பயன்பாடுகளின் வேலை முறை</string>
+    <string name="mode_jailbreak_disable">ஜெயில்பிரேக் - முடக்கு</string>
 </resources>

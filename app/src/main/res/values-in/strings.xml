@@ -50,8 +50,7 @@
     <string name="filter_frozen_apps">Dibekukan</string>
     <string name="filter_unfrozen_apps">Diaktifkan</string>
     <string name="msg_set_owner">Jalankan perintah dari adb: \n%s</string>
-    <string name="msg_remove_owner">Saat Hail sebagai pemilik perangkat dihapus, akan ada kesulitan mengatur kembali Aplikasi yang dibekukan.
-\nAplikasi yang dibekukan akan tetap beku setelah Hail dihapus, pastikan telah mengaktifkannya terlebih dahulu.</string>
+    <string name="msg_remove_owner">Saat Hail sebagai pemilik perangkat dihapus, akan ada kesulitan mengatur kembali Aplikasi yang dibekukan. Aplikasi yang dibekukan akan tetap beku setelah Hail dihapus, pastikan telah mengaktifkannya terlebih dahulu.</string>
     <string name="title_remove_owner">Hapus Pemilik Perangkat</string>
     <string name="filter_system_apps">Sistem</string>
     <string name="sort_name">Nama</string>
@@ -63,7 +62,7 @@
     <string name="auto_freeze">Bekukan otomatis</string>
     <string name="auto_freeze_notification_title">Layanan bekukan otomatis sedang berjalan</string>
     <string name="shizuku_missing">Shizuku tidak ditemukan :(</string>
-    <string name="msg_exported">Terekspor : %s</string>
+    <string name="msg_exported">Diekspor: %s</string>
     <plurals name="deferred_task_entry">
         <item quantity="other">%d menit</item>
     </plurals>
@@ -148,5 +147,36 @@
     <string name="app_theme">Tema aplikasi</string>
     <string name="theme_dark">Gelap</string>
     <string name="xposed_description">Izinkan aplikasi terdaftar mengaktifkan aplikasi yang ditangguhkan</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="working_mode_tag">Mode kerja aplikasi terkait</string>
+    <string name="donate_kofi">Ko-fi</string>
+    <string name="state_running">Berjalan</string>
+    <string name="state_disabled">Dinonaktifkan</string>
+    <string name="state_hidden">Tersembunyi</string>
+    <string name="state_suspended">Ditangguhkan</string>
+    <string name="state_uninstalled">Dihapus</string>
+    <string name="mode_jailbreak_disable">Jailbreak - Nonaktifkan</string>
+    <string name="action_freeze_failed">Gagal dibekukan: %s</string>
+    <string name="action_app_unavailable">Aplikasi tidak tersedia: %s</string>
+    <string name="action_create_action">Buat tindakan</string>
+    <string name="action_create_shortcut">Buat pintasan</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_duplicate">Duplikasi</string>
+    <string name="action_edit_action">Edit tindakan</string>
+    <string name="action_no_dependencies">Tidak ada aplikasi untuk diaktifkan</string>
+    <string name="action_rebuild_cache">Bersihkan dan bangun ulang cache</string>
+    <string name="action_required_unfreeze">Pilih minimal satu aplikasi untuk diaktifkan</string>
+    <string name="action_search_apps">Cari aplikasi</string>
+    <string name="action_select_launch">Pilih aplikasi untuk diluncurkan</string>
+    <string name="action_select_unfreeze">Pilih aplikasi untuk diaktifkan</string>
+    <string name="action_unavailable">Tindakan tidak tersedia</string>
+    <string name="action_unfreeze_failed">Gagal diaktifkan: %s</string>
+    <string name="allow_background_activity">Izinkan aktivitas latar belakang</string>
+    <string name="filter_all_apps">Semua</string>
+    <string name="msg_confirm_rebuild_cache">Ini akan menghapus metadata dan ikon, lalu memuat ulang setiap aplikasi yang terinstal. Lanjutkan?</string>
+    <string name="no_items_to_select">Tidak ada item untuk dipilih</string>
+    <string name="save">Simpan</string>
+    <string name="summary_background_activity">Izinkan bekukan otomatis melanjutkan ketika Hail tidak terbuka</string>
+    <string name="summary_rebuild_cache">Hapus data aplikasi yang di-cache dan bangun ulang di latar belakang</string>
+    <string name="title_actions">Tindakan</string>
+    <string name="title_cache">Cache</string>
 </resources>

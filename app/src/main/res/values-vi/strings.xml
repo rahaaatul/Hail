@@ -13,9 +13,9 @@
     <string name="action_remove_home">Xóa khỏi trang chủ</string>
     <string name="action_deferred_task">Trì hoãn tác vụ</string>
     <string name="action_unfreeze_tag">Rã băng nhãn</string>
-    <string name="msg_uninstall">Bạn có chắc là muốn gỡ cài đặt ứng dụng này\?</string>
+    <string name="msg_uninstall">Bạn có chắc là muốn gỡ cài đặt ứng dụng này?</string>
     <string name="mode_owner_suspend">Chủ sở hữu thiết bị - Tạm ngừng</string>
-    <string name="action_clear_dynamic_shortcuts">Xóa tất cả dynamic shortcuts</string>
+    <string name="action_clear_dynamic_shortcuts">Xóa tất cả lối tắt động</string>
     <string name="mode_default">Không hoạt động</string>
     <string name="action_import_app">Nhập ứng dụng</string>
     <string name="action_import_clipboard">Nhập từ Clipboard</string>
@@ -32,7 +32,7 @@
     <string name="action_telegram">Nhóm Telegram</string>
     <string name="tap_to_select">Nhấn để chọn nhiều</string>
     <string name="filter_user_apps">Người dùng</string>
-    <string name="nothing_here">Hỏng có gì ở đây cả</string>
+    <string name="nothing_here">Không có gì ở đây cả</string>
     <string name="msg_set_owner">Dùng lệnh adb sau:
 \n%s</string>
     <string name="action_none">Không làm gì cả</string>
@@ -41,6 +41,7 @@
     <string name="auto_freeze_after_lock">Sau khi khóa màn hình</string>
     <string name="action_unfreeze_all">Rã băng tất cả</string>
     <plurals name="msg_deferred_task">
+        <item quantity="one">%2$s sau %1$d phút: %3$s</item>
         <item quantity="other">%2$s sau %1$d phút: %3$s</item>
     </plurals>
     <string name="action_export_clipboard">Xuất ra Clipboard</string>
@@ -67,7 +68,7 @@
     <string name="action_extract_apk">Giải nén APK</string>
     <string name="action_freeze_tag">Đóng băng nhãn</string>
     <string name="action_select_all">Chọn tất cả</string>
-    <string name="action_unfreeze_remove_home">Giá băng và xóa khỏi trang chủ</string>
+    <string name="action_unfreeze_remove_home">Rã băng và xóa khỏi trang chủ</string>
     <string name="skip_while_charging">Bỏ qua trong khi sạc</string>
     <string name="label_default">Mặc định</string>
     <string name="filter_by">Lọc</string>
@@ -83,6 +84,7 @@
     <string name="action_tag_remove">Xóa nhãn</string>
     <string name="mode_su_suspend">Root - Tạm ngừng</string>
     <plurals name="deferred_task_entry">
+        <item quantity="one">%d phút</item>
         <item quantity="other">%d phút</item>
     </plurals>
     <string name="action_lock">Khóa</string>
@@ -102,7 +104,7 @@
     <string name="mode_shizuku_disable">Shizuku - Tắt</string>
     <string name="action_donate">Ủng hộ</string>
     <string name="label_time">Thời gian cài đặt</string>
-    <string name="action_github">Github</string>
+    <string name="action_github">GitHub</string>
     <string name="activity_not_found">Không tìm thấy Activity Launch</string>
     <string name="title_settings">Thiết lập</string>
     <string name="label_version">Phiên bản</string>
@@ -137,5 +139,48 @@
     <string name="mode_privapp_stop">Ứng dụng hệ thống - Buộc dừng</string>
     <string name="mode_privapp_disable">Ứng dụng hệ thống - Tắt</string>
     <string name="action_reinstall">Cài đặt lại</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="action_freeze_failed">Không thể đóng băng: %s</string>
+    <string name="action_app_unavailable">Ứng dụng không khả dụng: %s</string>
+    <string name="action_create_action">Tạo hành động</string>
+    <string name="action_create_shortcut">Tạo lối tắt</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_duplicate">Nhân bản</string>
+    <string name="action_edit_action">Sửa hành động</string>
+    <string name="action_fdroid">F-Droid</string>
+    <string name="action_no_dependencies">Không có ứng dụng nào để rã băng</string>
+    <string name="action_rebuild_cache">Xóa và xây lại bộ nhớ đệm</string>
+    <string name="action_required_unfreeze">Chọn ít nhất một ứng dụng để rã băng</string>
+    <string name="action_search_apps">Tìm ứng dụng</string>
+    <string name="action_select_launch">Chọn ứng dụng để mở</string>
+    <string name="action_select_unfreeze">Chọn ứng dụng để rã băng</string>
+    <string name="action_terminal">Terminal</string>
+    <string name="action_unavailable">Hành động không khả dụng</string>
+    <string name="action_unfreeze_failed">Không thể rã băng: %s</string>
+    <string name="allow_background_activity">Cho phép hoạt động nền</string>
+    <string name="app_theme">Giao diện ứng dụng</string>
+    <string name="donate_kofi">Ko-fi</string>
+    <string name="filter_all_apps">Tất cả</string>
+    <string name="follow_system">Theo hệ thống</string>
+    <string name="fuzzy_search">Tìm kiếm mờ</string>
+    <string name="home_font_size">Cỡ chữ trang chủ</string>
+    <string name="msg_confirm_rebuild_cache">Thao tác này sẽ xóa siêu dữ liệu và biểu tượng, sau đó tải lại mọi ứng dụng đã cài đặt. Tiếp tục?</string>
+    <string name="nine_key">Tìm kiếm T9</string>
+    <string name="no_items_to_select">Không có mục nào để chọn</string>
+    <string name="save">Lưu</string>
+    <string name="state_disabled">Đã tắt</string>
+    <string name="state_hidden">Đã ẩn</string>
+    <string name="state_running">Đang chạy</string>
+    <string name="state_suspended">Đã tạm ngừng</string>
+    <string name="state_uninstalled">Đã gỡ cài đặt</string>
+    <string name="summary_background_activity">Cho phép tự động đóng băng tiếp tục khi Hail không mở</string>
+    <string name="summary_rebuild_cache">Xóa dữ liệu ứng dụng đã lưu và xây lại ở nền</string>
+    <string name="tag">Nhãn</string>
+    <string name="theme_dark">Tối</string>
+    <string name="theme_light">Sáng</string>
+    <string name="tile_action">Hành động cho ô cài đặt nhanh</string>
+    <string name="title_actions">Hành động</string>
+    <string name="title_cache">Bộ nhớ đệm</string>
+    <string name="working_mode_tag">Chế độ làm việc của các ứng dụng liên quan</string>
+    <string name="xposed_description">Cho phép các ứng dụng được phạm vi mở ứng dụng đã tạm ngừng</string>
+    <string name="mode_jailbreak_disable">Jailbreak - Vô hiệu hóa</string>
 </resources>

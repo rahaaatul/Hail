@@ -79,12 +79,10 @@
     <string name="msg_unfreeze">Descongelado: %s</string>
     <plurals name="deferred_task_entry">
         <item quantity="one">%d minuto</item>
-        <item quantity="many">%d minutos</item>
         <item quantity="other">%d minutos</item>
     </plurals>
     <plurals name="msg_deferred_task">
         <item quantity="one">%2$s después de %1$d minuto: %3$s</item>
-        <item quantity="many">%2$s después de %1$d minutos: %3$s</item>
         <item quantity="other">%2$s después de %1$d minutos: %3$s</item>
     </plurals>
     <string name="action_clear_dynamic_shortcuts">Borrar todos los accesos directos dinámicos</string>
@@ -154,5 +152,32 @@
     <string name="working_mode_tag">Modo de funcionamiento de las aplicaciones relacionadas</string>
     <string name="state_running">En ejecución</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="state_uninstalled">Desinstalado</string>
+    <string name="state_suspended">Suspendido</string>
+    <string name="state_hidden">Oculto</string>
+    <string name="state_disabled">Desactivado</string>
+    <string name="action_freeze_failed">No se pudo congelar: %s</string>
+    <string name="action_create_action">Crear acción</string>
+    <string name="action_create_shortcut">Crear acceso directo</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_duplicate">Duplicar</string>
+    <string name="action_edit_action">Editar acción</string>
+    <string name="action_no_dependencies">No hay aplicaciones para descongelar</string>
+    <string name="action_rebuild_cache">Limpiar y reconstruir caché</string>
+    <string name="action_required_unfreeze">Selecciona al menos una aplicación para descongelar</string>
+    <string name="action_search_apps">Buscar aplicaciones</string>
+    <string name="action_select_launch">Seleccionar aplicación para abrir</string>
+    <string name="action_select_unfreeze">Seleccionar aplicaciones para descongelar</string>
+    <string name="action_unavailable">Acción no disponible</string>
+    <string name="action_unfreeze_failed">No se pudo descongelar: %s</string>
+    <string name="allow_background_activity">Permitir actividad en segundo plano</string>
+    <string name="filter_all_apps">Todas</string>
+    <string name="msg_confirm_rebuild_cache">Esto borrará metadatos e iconos, y volverá a cargar cada aplicación instalada. ¿Continuar?</string>
+    <string name="no_items_to_select">No hay elementos para seleccionar</string>
+    <string name="save">Guardar</string>
+    <string name="summary_background_activity">Permitir que la congelación automática continúe cuando Hail no está abierto</string>
+    <string name="summary_rebuild_cache">Elimina los datos en caché de las aplicaciones y los reconstruye en segundo plano</string>
+    <string name="title_actions">Acciones</string>
+    <string name="title_cache">Caché</string>
+    <string name="mode_jailbreak_disable">Jailbreak - Desactivar</string>
 </resources>

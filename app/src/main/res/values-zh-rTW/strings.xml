@@ -18,9 +18,9 @@
     <string name="action_freeze_all">全部凍結</string>
     <string name="action_unfreeze_all">全部解凍</string>
     <string name="action_freeze_current">凍結可見</string>
-    <string name="action_unfreeze_current">非解凍可見</string>
-    <string name="action_lock">螢幕鎖定</string>
-    <string name="action_lock_freeze">螢幕鎖定凍結</string>
+    <string name="action_unfreeze_current">解凍可見</string>
+    <string name="action_lock">鎖定</string>
+    <string name="action_lock_freeze">鎖定並凍結</string>
     <string name="action_launch">啟動</string>
     <string name="action_freeze">凍結</string>
     <string name="action_unfreeze">解凍</string>
@@ -48,7 +48,7 @@
     <string name="title_set_owner">設定為裝置擁有者</string>
     <string name="msg_set_owner">透過 adb 發出命令：\n%s</string>
     <string name="title_remove_owner">移除裝置擁有者</string>
-    <string name="msg_remove_owner">如果「雹」作為装置擁有者被移除，則在「雹」移除後重新組織應用程式可能會遇到困難。
+    <string name="msg_remove_owner">若將「雹」從裝置擁有者移除，移除後將難以重新組織應用程式。
 \n已凍結的應用程式在移除後仍會保持凍結，請確保您已將重要的應用程式解凍。</string>
     <string name="tap_to_select">輕觸多選</string>
     <string name="filter_by">篩選</string>
@@ -85,7 +85,7 @@
         <item quantity="other">%1$d 分鐘後 %2$s：%3$s</item>
     </plurals>
     <string name="action_clear_dynamic_shortcuts">清除所有動態捷徑</string>
-    <string name="tile_action">圖塊動作</string>
+    <string name="tile_action">快速設定圖塊動作</string>
     <string name="auto_freeze">自動凍結</string>
     <string name="auto_freeze_notification_title">自動凍結正在執行的服務</string>
     <string name="auto_freeze_after_lock">螢幕鎖定後</string>
@@ -147,6 +147,37 @@
     <string name="follow_system">遵循系統</string>
     <string name="theme_light">淺色模式</string>
     <string name="theme_dark">深色模式</string>
-    <string name="xposed_description">為作用域内的程式自動解凍被暫停的應用程式</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="xposed_description">允許受範圍限制的應用程式啟動已暫停的應用程式</string>
+    <string name="working_mode_tag">相關應用程式的工作模式</string>
+    <string name="state_running">執行中</string>
+    <string name="state_disabled">已停用</string>
+    <string name="state_hidden">已隱藏</string>
+    <string name="state_suspended">已暫停</string>
+    <string name="donate_kofi">Ko-fi</string>
+    <string name="state_uninstalled">已解除安裝</string>
+    <string name="action_freeze_failed">無法凍結: %s</string>
+    <string name="action_app_unavailable">應用程式不可用: %s</string>
+    <string name="action_create_action">建立動作</string>
+    <string name="action_create_shortcut">建立捷徑</string>
+    <string name="action_delete">刪除</string>
+    <string name="action_duplicate">複製</string>
+    <string name="action_edit_action">編輯動作</string>
+    <string name="action_no_dependencies">沒有可解凍的應用程式</string>
+    <string name="action_rebuild_cache">清除並重建快取</string>
+    <string name="action_required_unfreeze">請至少選擇一個應用程式來解凍</string>
+    <string name="action_search_apps">搜尋應用程式</string>
+    <string name="action_select_launch">選擇要啟動的應用程式</string>
+    <string name="action_select_unfreeze">選擇要解凍的應用程式</string>
+    <string name="action_unavailable">動作不可用</string>
+    <string name="action_unfreeze_failed">無法解凍: %s</string>
+    <string name="allow_background_activity">允許背景活動</string>
+    <string name="filter_all_apps">全部</string>
+    <string name="msg_confirm_rebuild_cache">這會清除中繼資料與圖示，然後重新載入每個已安裝的應用程式。繼續嗎?</string>
+    <string name="no_items_to_select">沒有可選擇的項目</string>
+    <string name="save">儲存</string>
+    <string name="summary_background_activity">允許自動凍結在 Hail 未開啟時繼續運行</string>
+    <string name="summary_rebuild_cache">移除應用程式快取資料並在背景重建</string>
+    <string name="title_actions">動作</string>
+    <string name="title_cache">快取</string>
+    <string name="mode_jailbreak_disable">越獄 - 停用</string>
 </resources>

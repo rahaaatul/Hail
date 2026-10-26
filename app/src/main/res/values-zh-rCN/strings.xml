@@ -19,8 +19,8 @@
     <string name="action_unfreeze_all">全部解冻</string>
     <string name="action_freeze_current">冻结可见</string>
     <string name="action_unfreeze_current">解冻可见</string>
-    <string name="action_lock">锁屏</string>
-    <string name="action_lock_freeze">冻结并锁屏</string>
+    <string name="action_lock">锁定</string>
+    <string name="action_lock_freeze">冻结并锁定</string>
     <string name="action_launch">启动</string>
     <string name="action_freeze">冻结</string>
     <string name="action_unfreeze">解冻</string>
@@ -49,7 +49,7 @@
     <string name="title_set_owner">设置设备所有者</string>
     <string name="msg_set_owner">通过 adb 发出命令：\n%s</string>
     <string name="title_remove_owner">移除设备所有者</string>
-    <string name="msg_remove_owner">将移除雹的设备所有者，移除后便无法冻结与解冻应用。
+    <string name="msg_remove_owner">将移除雹的设备所有者，移除后将无法再冻结或解冻应用。
 \n已冻结的应用在移除设备所有者后仍会保持冻结状态，请确保您已将重要的应用解冻。</string>
     <string name="tap_to_select">点按多选</string>
     <string name="filter_by">筛选</string>
@@ -70,7 +70,7 @@
     <string name="permission_denied">没有权限</string>
     <string name="app_not_installed">应用未安装</string>
     <string name="activity_not_found">无可启动活动</string>
-    <string name="shizuku_missing">Shizuku 失踪了（</string>
+    <string name="shizuku_missing">Shizuku 失踪了</string>
     <string name="operation_failed">操作失败：%s</string>
     <string name="msg_selected">已选择：%s</string>
     <string name="msg_exported">已导出：%s</string>
@@ -90,8 +90,8 @@
     <string name="auto_freeze">自动冻结</string>
     <string name="auto_freeze_notification_title">自动冻结服务正在运行</string>
     <string name="auto_freeze_after_lock">锁屏后</string>
-    <string name="skip_while_charging">仅未充电时</string>
-    <string name="skip_foreground_app">保留前台应用</string>
+    <string name="skip_while_charging">充电时跳过</string>
+    <string name="skip_foreground_app">跳过前台应用</string>
     <string name="title_customize">自定义</string>
     <string name="grayscale_icon">灰度图标</string>
     <string name="compact_icon">紧凑图标</string>
@@ -107,7 +107,7 @@
     <string name="synthesize_adaptive_icons">合成自适应图标</string>
     <string name="action_export_current">导出可见</string>
     <string name="action_export_all">全部导出</string>
-    <string name="skip_notifying_app">保留通知中应用</string>
+    <string name="skip_notifying_app">跳过通知中的应用</string>
     <string name="auto_freeze_delay">冻结延时（分钟）</string>
     <string name="mode_owner_suspend">设备所有者 - 暂停</string>
     <string name="mode_su_suspend">Root - 暂停</string>
@@ -155,5 +155,29 @@
     <string name="state_suspended">已暂停</string>
     <string name="state_uninstalled">已卸载</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="action_freeze_failed">Could not freeze: %s</string>
+    <string name="mode_jailbreak_disable">越狱 - 停用</string>
+    <string name="action_freeze_failed">无法冻结：%s</string>
+    <string name="action_unfreeze_failed">无法解冻：%s</string>
+    <string name="action_app_unavailable">应用不可用：%s</string>
+    <string name="action_create_action">创建操作</string>
+    <string name="action_create_shortcut">创建快捷方式</string>
+    <string name="action_delete">删除</string>
+    <string name="action_duplicate">复制</string>
+    <string name="action_edit_action">编辑操作</string>
+    <string name="action_no_dependencies">没有要解冻的应用</string>
+    <string name="action_rebuild_cache">清除并重建缓存</string>
+    <string name="action_required_unfreeze">至少选择一个要解冻的应用</string>
+    <string name="action_search_apps">搜索应用</string>
+    <string name="action_select_launch">选择要启动的应用</string>
+    <string name="action_select_unfreeze">选择要解冻的应用</string>
+    <string name="action_unavailable">操作不可用</string>
+    <string name="allow_background_activity">允许后台活动</string>
+    <string name="filter_all_apps">全部</string>
+    <string name="msg_confirm_rebuild_cache">这将清除元数据和图标，然后重新加载所有已安装的应用。是否继续？</string>
+    <string name="no_items_to_select">无可选择项</string>
+    <string name="save">保存</string>
+    <string name="summary_background_activity">当 Hail 未打开时仍允许自动冻结</string>
+    <string name="summary_rebuild_cache">删除缓存的应用数据并在后台重建</string>
+    <string name="title_actions">操作</string>
+    <string name="title_cache">缓存</string>
 </resources>
