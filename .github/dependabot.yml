@@ -11,8 +11,8 @@ updates:
       - "dependencies"
       - "npm"
     commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
+      prefix: "chore"
+      prefix-development: "chore-dev"
       include: "scope"
     groups:
       # npm development dependencies
@@ -42,8 +42,8 @@ updates:
       - "dependencies"
       - "gradle"
     commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
+      prefix: "chore"
+      prefix-development: "chore-dev"
       include: "scope"
     groups:
       # Gradle dependencies (all)
@@ -73,8 +73,8 @@ updates:
       - "dependencies"
       - "github-actions"
     commit-message:
-      prefix: "deps"
-      prefix-development: "deps-dev"
+      prefix: "chore"
+      prefix-development: "chore-dev"
       include: "scope"
     groups:
       # GitHub Actions
