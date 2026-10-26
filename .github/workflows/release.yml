@@ -12,7 +12,6 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
-      - 'package-lock.json'
       - 'app/src/main/AndroidManifest.xml'
       - '.editorconfig'
       - 'config/detekt.yml'
