@@ -5,27 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'app/src/**'
-      - 'app/build.gradle.kts'
-      - 'app/r8-rules.pro'
-      - 'gradle/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'app/src/main/AndroidManifest.xml'
-      - '.editorconfig'
-      - 'config/detekt.yml'
-      - 'config/detekt-baseline.xml'
-      - 'release.config.js'
-      - '.github/scripts/**'
-      - '.github/workflows/release.yml'
-      - '.github/actions/build-apk/**'
-      - '.github/actions/setup-java-gradle/**'
-      - '.github/actions/commitlint/**'
-      - '!**.md'
-      - '!**.txt'
-      - '!LICENSE'
-      - '!README.md'
+      - 'app/**'
   workflow_dispatch:
 
 concurrency:
