@@ -21,31 +21,51 @@ object HPolicy {
 
     val lockScreen get() = isAdminActive.also { if (it) dpm.lockNow() }
 
-    fun setAppHidden(packageName: String, hidden: Boolean): Boolean =
-        isDeviceOwnerActive && dpm.setApplicationHidden(admin, packageName, hidden)
+    fun setAppHidden(
+        packageName: String,
+        hidden: Boolean,
+    ): Boolean = isDeviceOwnerActive && dpm.setApplicationHidden(admin, packageName, hidden)
 
-    fun setAppSuspended(packageName: String, suspended: Boolean): Boolean =
-        isDeviceOwnerActive && HTarget.N && dpm.setPackagesSuspended(
-            admin, arrayOf(packageName), suspended
-        ).isEmpty()
+    fun setAppSuspended(
+        packageName: String,
+        suspended: Boolean,
+    ): Boolean =
+        isDeviceOwnerActive && HTarget.N &&
+            dpm
+                .setPackagesSuspended(
+                    admin,
+                    arrayOf(packageName),
+                    suspended,
+                ).isEmpty()
 
-    fun uninstallApp(packageName: String): Boolean = when {
-        isDeviceOwnerActive -> {
-            app.packageManager.packageInstaller.uninstall(
-                packageName, PendingIntent.getActivity(
-                    app, 0, Intent(), PendingIntent.FLAG_IMMUTABLE
-                ).intentSender
-            )
-            true
+    fun uninstallApp(packageName: String): Boolean =
+        when {
+            isDeviceOwnerActive -> {
+                app.packageManager.packageInstaller.uninstall(
+                    packageName,
+                    PendingIntent
+                        .getActivity(
+                            app,
+                            0,
+                            Intent(),
+                            PendingIntent.FLAG_IMMUTABLE,
+                        ).intentSender,
+                )
+                true
+            }
+
+            else -> {
+                false
+            }
         }
 
-        else -> false
-    }
-
     fun enableBackupService() {
-        if (isDeviceOwnerActive && HTarget.O && !dpm.isBackupServiceEnabled(admin)) dpm.setBackupServiceEnabled(
-            admin, true
-        )
+        if (isDeviceOwnerActive && HTarget.O && !dpm.isBackupServiceEnabled(admin)) {
+            dpm.setBackupServiceEnabled(
+                admin,
+                true,
+            )
+        }
     }
 
     fun setOrganizationName(name: String? = null) {

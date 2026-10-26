@@ -19,17 +19,24 @@ import kotlinx.coroutines.Job
 
 class PagerAdapter(
     private val selectedList: List<AppInfo>,
-    private val flags: MutableMap<String, Int> = mutableMapOf()
+    private val flags: MutableMap<String, Int> = mutableMapOf(),
 ) : ListAdapter<AppInfo, PagerAdapter.ViewHolder>(HomeDiff(selectedList, flags)) {
     private var loadIconJob: Job? = null
     lateinit var onItemClickListener: OnItemClickListener
     lateinit var onItemLongClickListener: OnItemLongClickListener
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(
-        LayoutInflater.from(parent.context).inflate(R.layout.item_home, parent, false)
-    )
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder =
+        ViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.item_home, parent, false),
+        )
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val info = currentList[position]
         flags[info.packageName] = info.getFlag(selectedList)
         holder.itemView.run {
@@ -37,35 +44,43 @@ class PagerAdapter(
             setOnLongClickListener { onItemLongClickListener.onItemLongClick(info) }
             findViewById<ImageView>(R.id.app_icon).run {
                 info.applicationInfo?.let {
-                    loadIconJob = AppIconCache.loadIconBitmapAsync(
-                        context,
-                        it,
-                        myUserId,
-                        this,
-                        HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN
-                    )
+                    loadIconJob =
+                        AppIconCache.loadIconBitmapAsync(
+                            context,
+                            it,
+                            myUserId,
+                            this,
+                            HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
+                        )
                 } ?: run {
                     setImageDrawable(context.packageManager.defaultActivityIcon)
                     colorFilter = null
                 }
             }
             findViewById<TextView>(R.id.app_name).run {
-                text = buildString {
-                    if (!HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN) append("\u2744\uFE0F")
-                    if (info.whitelisted) append("\uD83D\uDD12")
-                    append(info.name)
-                }
+                text =
+                    buildString {
+                        if (!HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN) append("\u2744\uFE0F")
+                        if (info.whitelisted) append("\uD83D\uDD12")
+                        append(info.name)
+                    }
                 isEnabled = !HailData.grayscaleIcon || info.state != AppInfo.State.FROZEN
                 when {
-                    info in selectedList -> setTextColor(
-                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary)
-                    )
+                    info in selectedList -> {
+                        setTextColor(
+                            MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary),
+                        )
+                    }
 
-                    info.state == AppInfo.State.NOT_FOUND -> setTextColor(
-                        MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError)
-                    )
+                    info.state == AppInfo.State.NOT_FOUND -> {
+                        setTextColor(
+                            MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError),
+                        )
+                    }
 
-                    else -> setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+                    else -> {
+                        setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+                    }
                 }
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, HailData.homeFontSize)
             }
@@ -81,15 +96,23 @@ class PagerAdapter(
     }
 
     private class HomeDiff(
-        private val selectedList: List<AppInfo>, private val flags: Map<String, Int>
+        private val selectedList: List<AppInfo>,
+        private val flags: Map<String, Int>,
     ) : DiffUtil.ItemCallback<AppInfo>() {
-        override fun areItemsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean = oldItem == newItem
+        override fun areItemsTheSame(
+            oldItem: AppInfo,
+            newItem: AppInfo,
+        ): Boolean = oldItem == newItem
 
-        override fun areContentsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean =
-            flags[oldItem.packageName] == newItem.getFlag(selectedList)
+        override fun areContentsTheSame(
+            oldItem: AppInfo,
+            newItem: AppInfo,
+        ): Boolean = flags[oldItem.packageName] == newItem.getFlag(selectedList)
     }
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class ViewHolder(
+        view: View,
+    ) : RecyclerView.ViewHolder(view)
 
     interface OnItemClickListener {
         fun onItemClick(info: AppInfo)
@@ -100,7 +123,6 @@ class PagerAdapter(
     }
 }
 
-private fun AppInfo.getFlag(selectedList: List<AppInfo>) =
-    (1 shl state.ordinal) or (this in selectedList).shl(3) or whitelisted.shl(4)
+private fun AppInfo.getFlag(selectedList: List<AppInfo>) = (1 shl state.ordinal) or (this in selectedList).shl(3) or whitelisted.shl(4)
 
 private fun Boolean.shl(bitCount: Int) = if (this) 1 shl bitCount else 0

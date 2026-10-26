@@ -1,0 +1,21 @@
+export PATH="$HOME/.local/bin:$PATH"
+
+# Run actionlint on staged workflow files
+STAGED_YML=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.github/workflows/.*\.(yml|yaml)$' || true)
+if [ -n "$STAGED_YML" ]; then
+  actionlint $STAGED_YML || {
+    echo "actionlint failed. Fix workflow syntax before committing."
+    exit 1
+  }
+fi
+
+# Run Spotless check and Detekt on staged Kotlin/Java files if gradlew exists
+if [ -f "./gradlew" ]; then
+  STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(kt|kts|java)$' || true)
+  if [ -n "$STAGED" ]; then
+    ./gradlew spotlessCheck detekt --quiet || {
+      echo "Lint/format checks failed. Run './gradlew spotlessApply' to fix formatting."
+      exit 1
+    }
+  fi
+fi

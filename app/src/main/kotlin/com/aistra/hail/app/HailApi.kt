@@ -42,10 +42,15 @@ object HailApi {
 
     const val EXTRA_ACTION_ID = "action_id"
 
-    fun getIntentForPackage(action: String, packageName: String) =
-        Intent(action).putExtra(HailData.KEY_PACKAGE, packageName)
+    fun getIntentForPackage(
+        action: String,
+        packageName: String,
+    ) = Intent(action).putExtra(HailData.KEY_PACKAGE, packageName)
 
     fun Intent.addTag(tag: String) = putExtra(HailData.KEY_TAG, tag)
 
-    fun getIntentForTag(action: String, tag: String) = Intent(action).addTag(tag)
+    fun getIntentForTag(
+        action: String,
+        tag: String,
+    ) = Intent(action).addTag(tag)
 }

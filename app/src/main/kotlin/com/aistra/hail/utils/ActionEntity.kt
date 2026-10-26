@@ -7,5 +7,5 @@ import androidx.room3.PrimaryKey
 @Entity(tableName = "actions")
 data class ActionEntity(
     @PrimaryKey val id: String = "",
-    val launchPackage: String = ""
+    val launchPackage: String = "",
 )

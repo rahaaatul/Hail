@@ -68,25 +68,26 @@ object HailData {
     const val MODE_ISLAND_SUSPEND = ISLAND + SUSPEND
     const val MODE_PRIVAPP_STOP = PRIVAPP + STOP
     const val MODE_PRIVAPP_DISABLE = PRIVAPP + DISABLE
-    val WORKING_MODE_VALUES = listOf(
-        MODE_DEFAULT,
-        MODE_SHIZUKU_STOP,
-        MODE_SHIZUKU_DISABLE,
-        MODE_SHIZUKU_HIDE,
-        MODE_SHIZUKU_SUSPEND,
-        MODE_SU_STOP,
-        MODE_SU_DISABLE,
-        MODE_SU_HIDE,
-        MODE_SU_SUSPEND,
-        MODE_DHIZUKU_HIDE,
-        MODE_DHIZUKU_SUSPEND,
-        MODE_OWNER_HIDE,
-        MODE_OWNER_SUSPEND,
-        MODE_ISLAND_HIDE,
-        MODE_ISLAND_SUSPEND,
-        MODE_PRIVAPP_STOP,
-        MODE_PRIVAPP_DISABLE
-    )
+    val WORKING_MODE_VALUES =
+        listOf(
+            MODE_DEFAULT,
+            MODE_SHIZUKU_STOP,
+            MODE_SHIZUKU_DISABLE,
+            MODE_SHIZUKU_HIDE,
+            MODE_SHIZUKU_SUSPEND,
+            MODE_SU_STOP,
+            MODE_SU_DISABLE,
+            MODE_SU_HIDE,
+            MODE_SU_SUSPEND,
+            MODE_DHIZUKU_HIDE,
+            MODE_DHIZUKU_SUSPEND,
+            MODE_OWNER_HIDE,
+            MODE_OWNER_SUSPEND,
+            MODE_ISLAND_HIDE,
+            MODE_ISLAND_SUSPEND,
+            MODE_PRIVAPP_STOP,
+            MODE_PRIVAPP_DISABLE,
+        )
     const val BIOMETRIC_LOGIN = "biometric_login"
     const val APP_THEME = "app_theme"
     const val FOLLOW_SYSTEM = "follow_system"
@@ -114,7 +115,7 @@ object HailData {
             ACTION_UNFREEZE_ALL,
             ACTION_FREEZE_NON_WHITELISTED,
             ACTION_LOCK,
-            ACTION_LOCK_FREEZE
+            ACTION_LOCK_FREEZE,
         )
     const val AUTO_FREEZE_AFTER_LOCK = "auto_freeze_after_lock"
     const val AUTO_FREEZE_DELAY = "auto_freeze_delay_f"
@@ -122,14 +123,15 @@ object HailData {
     const val SKIP_FOREGROUND_APP = "skip_foreground_app"
     const val SKIP_NOTIFYING_APP = "skip_notifying_app"
     const val DYNAMIC_SHORTCUT_ACTION = "dynamic_shortcut_action"
-    val DYNAMIC_SHORTCUT_ACTIONS = listOf(
-        ACTION_NONE,
-        ACTION_FREEZE_ALL,
-        ACTION_UNFREEZE_ALL,
-        ACTION_FREEZE_NON_WHITELISTED,
-        ACTION_LOCK,
-        ACTION_LOCK_FREEZE
-    )
+    val DYNAMIC_SHORTCUT_ACTIONS =
+        listOf(
+            ACTION_NONE,
+            ACTION_FREEZE_ALL,
+            ACTION_UNFREEZE_ALL,
+            ACTION_FREEZE_NON_WHITELISTED,
+            ACTION_LOCK,
+            ACTION_LOCK_FREEZE,
+        )
 
     private val sp by lazy { PreferenceManager.getDefaultSharedPreferences(app) }
     val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
@@ -167,16 +169,19 @@ object HailData {
             runCatching {
                 val json = JSONArray(HFiles.read(appsPath))
                 for (i in 0 until json.length()) {
-                    add(with(json.getJSONObject(i)) {
-                        AppInfo(
-                            packageName = getString(KEY_PACKAGE),
-                            pinned = optBoolean(KEY_PINNED),
-                            whitelisted = optBoolean(KEY_WHITELISTED),
-                            tagIdList = optJSONArray(KEY_TAGS)?.let {
-                                MutableList(it.length()) { index -> it.getInt(index) }
-                            } ?: mutableListOf(optInt(KEY_TAG))
-                        )
-                    })
+                    add(
+                        with(json.getJSONObject(i)) {
+                            AppInfo(
+                                packageName = getString(KEY_PACKAGE),
+                                pinned = optBoolean(KEY_PINNED),
+                                whitelisted = optBoolean(KEY_WHITELISTED),
+                                tagIdList =
+                                    optJSONArray(KEY_TAGS)?.let {
+                                        MutableList(it.length()) { index -> it.getInt(index) }
+                                    } ?: mutableListOf(optInt(KEY_TAG)),
+                            )
+                        },
+                    )
                 }
             }
         }
@@ -187,31 +192,41 @@ object HailData {
         return checkedList.any { it.packageName == packageName }
     }
 
-    fun addCheckedApp(packageName: String, tagId: Int = 0, saveApps: Boolean = true) {
+    fun addCheckedApp(
+        packageName: String,
+        tagId: Int = 0,
+        saveApps: Boolean = true,
+    ) {
         if (packageName == BuildConfig.APPLICATION_ID) return
         checkedList.add(AppInfo(packageName, tagIdList = mutableListOf(tagId)))
         if (saveApps) saveApps()
     }
 
-    fun removeCheckedApp(packageName: String, saveApps: Boolean = true) {
+    fun removeCheckedApp(
+        packageName: String,
+        saveApps: Boolean = true,
+    ) {
         checkedList.removeAll { it.packageName == packageName }
         if (saveApps) saveApps()
     }
 
     fun saveApps() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(appsPath, JSONArray().run {
-            checkedList.forEach {
-                put(
-                    JSONObject()
-                        .put(KEY_PACKAGE, it.packageName)
-                        .put(KEY_PINNED, it.pinned)
-                        .put(KEY_WHITELISTED, it.whitelisted)
-                        .put(KEY_TAGS, JSONArray(it.tagIdList))
-                )
-            }
-            toString()
-        })
+        HFiles.write(
+            appsPath,
+            JSONArray().run {
+                checkedList.forEach {
+                    put(
+                        JSONObject()
+                            .put(KEY_PACKAGE, it.packageName)
+                            .put(KEY_PINNED, it.pinned)
+                            .put(KEY_WHITELISTED, it.whitelisted)
+                            .put(KEY_TAGS, JSONArray(it.tagIdList)),
+                    )
+                }
+                toString()
+            },
+        )
     }
 
     val tags: MutableList<Pair<String, Int>> by lazy {
@@ -229,15 +244,21 @@ object HailData {
 
     fun saveTags() {
         if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(tagsPath, JSONArray().run {
-            tags.forEach {
-                put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
-            }
-            toString()
-        })
+        HFiles.write(
+            tagsPath,
+            JSONArray().run {
+                tags.forEach {
+                    put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
+                }
+                toString()
+            },
+        )
     }
 
     fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }
 
-    fun changeAppsFilter(filter: String, enabled: Boolean) = sp.edit { putBoolean(filter, enabled) }
+    fun changeAppsFilter(
+        filter: String,
+        enabled: Boolean,
+    ) = sp.edit { putBoolean(filter, enabled) }
 }

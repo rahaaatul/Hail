@@ -23,7 +23,7 @@ fun InsetterApplyTypeDsl.paddingRelative(
         bottom = bottom,
         horizontal = horizontal,
         vertical = vertical,
-        animated = animated
+        animated = animated,
     )
 }
 
@@ -44,12 +44,13 @@ fun InsetterApplyTypeDsl.marginRelative(
         bottom = bottom,
         horizontal = horizontal,
         vertical = vertical,
-        animated = animated
+        animated = animated,
     )
 }
 
 fun InsetterDsl.typeDefault(f: InsetterApplyTypeDsl.() -> Unit) = type(INSETS_TYPE_DEFAULT, f = f)
 
-fun View.applyDefaultInsetter(f: InsetterApplyTypeDsl.() -> Unit) = applyInsetter {
-    typeDefault(f)
-}
+fun View.applyDefaultInsetter(f: InsetterApplyTypeDsl.() -> Unit) =
+    applyInsetter {
+        typeDefault(f)
+    }

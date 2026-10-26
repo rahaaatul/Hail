@@ -10,18 +10,27 @@ object PinyinSearch {
      * @param raw 需要匹配的原始字符串
      * @param query 输入的字符串
      */
-    fun searchPinyinAll(raw: String?, query: String?): Boolean {
+    fun searchPinyinAll(
+        raw: String?,
+        query: String?,
+    ): Boolean {
         if (query.isNullOrEmpty()) return true
         if (raw.isNullOrEmpty()) return false
-        return if (Locale.getDefault().language != Locale.CHINESE.language) false
-        else searchCap(raw, query) || searchAllSpell(raw, query)
+        return if (Locale.getDefault().language != Locale.CHINESE.language) {
+            false
+        } else {
+            searchCap(raw, query) || searchAllSpell(raw, query)
+        }
     }
 
     /**
      * 根据拼音首字母进行搜索
      * 如搜索“计算器”时只需输入 "jsq"
      */
-    private fun searchCap(raw: String, pinyinCap: String): Boolean {
+    private fun searchCap(
+        raw: String,
+        pinyinCap: String,
+    ): Boolean {
         if (pinyinCap.length > 8) return false // "最强多媒体播放器".length
         for (index in getNameStringList(raw)) {
             if (index.contains(pinyinCap, true)) {
@@ -35,7 +44,10 @@ object PinyinSearch {
      * 根据全部拼音进行搜索
      * 如搜索“计算器”时只需输入 "jisuanqi"
      */
-    private fun searchAllSpell(raw: String, pinyinAll: String): Boolean {
+    private fun searchAllSpell(
+        raw: String,
+        pinyinAll: String,
+    ): Boolean {
         if (pinyinAll.length > 48) return false // "chuang".length * 8
         for (index in getNameStringPinyinAll(raw)) {
             if (index.contains(pinyinAll, true)) {
@@ -58,7 +70,10 @@ object PinyinSearch {
     }
 
     private fun getNameCapList(
-        capList: CharArray, currentIndex: Int, target: String, result: ArrayList<String>
+        capList: CharArray,
+        currentIndex: Int,
+        target: String,
+        result: ArrayList<String>,
     ) {
         if (currentIndex == target.length - 1) {
             val arrayOrNull = PinyinHelper.toHanyuPinyinStringArray(target[currentIndex])
@@ -72,7 +87,6 @@ object PinyinSearch {
                     result.add(String(capList))
                 }
             }
-
         } else {
             val arrayOrNull = PinyinHelper.toHanyuPinyinStringArray(target[currentIndex])
             if (arrayOrNull == null) {
@@ -89,12 +103,14 @@ object PinyinSearch {
                     getNameCapList(arr, newIndex, target, result)
                 }
             }
-
         }
     }
 
     private fun getNameCapListPinyinAll(
-        fullList: Array<String>, currentIndex: Int, target: String, result: ArrayList<String>
+        fullList: Array<String>,
+        currentIndex: Int,
+        target: String,
+        result: ArrayList<String>,
     ) {
         if (currentIndex == target.length - 1) {
             val arrayOrNull = PinyinHelper.toHanyuPinyinStringArray(target[currentIndex])
@@ -108,7 +124,6 @@ object PinyinSearch {
                     result.add(fullList.joinToString(""))
                 }
             }
-
         } else {
             val arrayOrNull = PinyinHelper.toHanyuPinyinStringArray(target[currentIndex])
             if (arrayOrNull == null) {
@@ -125,7 +140,6 @@ object PinyinSearch {
                     getNameCapListPinyinAll(arr, newIndex, target, result)
                 }
             }
-
         }
     }
 }

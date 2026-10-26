@@ -1,0 +1,23 @@
+name: Download Release APKs
+description: Download release and debug APKs from an existing GitHub release
+inputs:
+  release-tag:
+    description: Git tag for the published release
+    required: true
+outputs:
+  releaseApkPath:
+    description: Path to the downloaded release APK
+    value: ${{ steps.download.outputs.releaseApkPath }}
+  debugApkPath:
+    description: Path to the downloaded debug APK
+    value: ${{ steps.download.outputs.debugApkPath }}
+runs:
+  using: composite
+  steps:
+    - id: download
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: bash "$GITHUB_ACTION_PATH/download-release-apks.sh"

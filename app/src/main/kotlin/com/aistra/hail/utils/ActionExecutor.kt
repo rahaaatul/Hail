@@ -12,22 +12,23 @@ import java.util.concurrent.ConcurrentHashMap
 object ActionExecutor {
     private val mutexes = ConcurrentHashMap<String, Mutex>()
 
-    suspend fun prepare(action: LaunchAction): Result<Intent> = withContext(Dispatchers.IO) {
-        val mutex = mutexes.computeIfAbsent(action.id) { Mutex() }
-        mutex.withLock {
-            action.unfreezePackages.forEach { packageName ->
-                AppActions.ensureUnfrozen(packageName).onFailure {
+    suspend fun prepare(action: LaunchAction): Result<Intent> =
+        withContext(Dispatchers.IO) {
+            val mutex = mutexes.computeIfAbsent(action.id) { Mutex() }
+            mutex.withLock {
+                action.unfreezePackages.forEach { packageName ->
+                    AppActions.ensureUnfrozen(packageName).onFailure {
+                        return@withContext Result.failure(
+                            IllegalStateException(app.getString(R.string.action_unfreeze_failed, packageName)),
+                        )
+                    }
+                }
+                AppActions.ensureUnfrozen(action.launchPackage).onFailure {
                     return@withContext Result.failure(
-                        IllegalStateException(app.getString(R.string.action_unfreeze_failed, packageName))
+                        IllegalStateException(app.getString(R.string.action_unfreeze_failed, action.launchPackage)),
                     )
                 }
+                AppActions.getLaunchIntent(action.launchPackage)
             }
-            AppActions.ensureUnfrozen(action.launchPackage).onFailure {
-                return@withContext Result.failure(
-                    IllegalStateException(app.getString(R.string.action_unfreeze_failed, action.launchPackage))
-                )
-            }
-            AppActions.getLaunchIntent(action.launchPackage)
         }
-    }
 }

@@ -17,26 +17,37 @@ class AutoFreezeService : NotificationListenerService() {
     private val channelID = javaClass.simpleName
     private val lockReceiver by lazy { ScreenOffReceiver() }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         createNotificationChannel()
-        val freezeAuto = PendingIntent.getActivity(
-            applicationContext, 0, Intent(HailApi.ACTION_FREEZE_AUTO), PendingIntent.FLAG_IMMUTABLE
-        )
-        val notification = NotificationCompat.Builder(this, channelID)
-            .setContentTitle(getString(R.string.auto_freeze_notification_title))
-            .setSmallIcon(R.drawable.ic_round_frozen)
-            .addAction(R.drawable.ic_round_frozen, getString(R.string.auto_freeze), freezeAuto)
-        if (HailData.checkedList.any { it.whitelisted }) {
-            val freezeNonWhitelisted = PendingIntent.getActivity(
+        val freezeAuto =
+            PendingIntent.getActivity(
                 applicationContext,
                 0,
-                Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
-                PendingIntent.FLAG_IMMUTABLE
+                Intent(HailApi.ACTION_FREEZE_AUTO),
+                PendingIntent.FLAG_IMMUTABLE,
             )
+        val notification =
+            NotificationCompat
+                .Builder(this, channelID)
+                .setContentTitle(getString(R.string.auto_freeze_notification_title))
+                .setSmallIcon(R.drawable.ic_round_frozen)
+                .addAction(R.drawable.ic_round_frozen, getString(R.string.auto_freeze), freezeAuto)
+        if (HailData.checkedList.any { it.whitelisted }) {
+            val freezeNonWhitelisted =
+                PendingIntent.getActivity(
+                    applicationContext,
+                    0,
+                    Intent(HailApi.ACTION_FREEZE_NON_WHITELISTED),
+                    PendingIntent.FLAG_IMMUTABLE,
+                )
             notification.addAction(
                 R.drawable.ic_round_frozen,
                 getString(R.string.action_freeze_non_whitelisted),
-                freezeNonWhitelisted
+                freezeNonWhitelisted,
             )
         }
         startForeground(100, notification.build())

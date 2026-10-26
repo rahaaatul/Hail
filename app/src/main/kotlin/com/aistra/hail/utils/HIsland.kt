@@ -39,7 +39,7 @@ object HIsland {
 //        val um = app.getSystemService<UserManager>()!!
         val dpm = app.getSystemService<DevicePolicyManager>()!!
         for (pkg in arrayOf("com.oasisfeng.island", "com.oasisfeng.island.fdroid")) {
-            if (dpm.isProfileOwnerApp(pkg) /* || (!um.isManagedProfile && dpm.isDeviceOwnerApp(pkg)) */) {
+            if (dpm.isProfileOwnerApp(pkg)) {
                 ownerApp = pkg
                 return
             }
@@ -47,38 +47,52 @@ object HIsland {
         ownerApp = null
     }
 
-    fun freezePermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            app, PERMISSION_FREEZE_PACKAGE
+    fun freezePermissionGranted(): Boolean =
+        ContextCompat.checkSelfPermission(
+            app,
+            PERMISSION_FREEZE_PACKAGE,
         ) == PackageManager.PERMISSION_GRANTED
-    }
 
-    fun suspendPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            app, PERMISSION_SUSPEND_PACKAGE
+    fun suspendPermissionGranted(): Boolean =
+        ContextCompat.checkSelfPermission(
+            app,
+            PERMISSION_SUSPEND_PACKAGE,
         ) == PackageManager.PERMISSION_GRANTED
-    }
 
-    private fun setAppFrozen(packageName: String, action: String): Boolean {
+    private fun setAppFrozen(
+        packageName: String,
+        action: String,
+    ): Boolean {
         if (ownerApp == null) return false
-        val intent = Intent(action).apply {
-            data = Uri.fromParts("package", packageName, null)
-            setPackage(ownerApp)
-            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-            putExtra(
-                EXTRA_CALLER_ID, PendingIntent.getActivity(app, 0, Intent(), PendingIntent.FLAG_IMMUTABLE)
-            )
-        }
+        val intent =
+            Intent(action).apply {
+                data = Uri.fromParts("package", packageName, null)
+                setPackage(ownerApp)
+                addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                putExtra(
+                    EXTRA_CALLER_ID,
+                    PendingIntent.getActivity(app, 0, Intent(), PendingIntent.FLAG_IMMUTABLE),
+                )
+            }
         val result = CompletableDeferred<Boolean>()
         app.sendOrderedBroadcast(
-            intent, null, object : BroadcastReceiver() {
-                override fun onReceive(context: Context, intent: Intent) {
+            intent,
+            null,
+            object : BroadcastReceiver() {
+                override fun onReceive(
+                    context: Context,
+                    intent: Intent,
+                ) {
                     if (resultCode != Activity.RESULT_OK) {
                         HLog.i("HIsland", resultData)
                     }
                     result.complete(resultCode == Activity.RESULT_OK)
                 }
-            }, handler, Activity.RESULT_OK, null, null
+            },
+            handler,
+            Activity.RESULT_OK,
+            null,
+            null,
         )
         return runBlocking {
             runCatching {
@@ -87,11 +101,15 @@ object HIsland {
         }
     }
 
-    fun setAppHidden(packageName: String, hidden: Boolean): Boolean =
-        HTarget.N && setAppFrozen(packageName, if (hidden) ACTION_FREEZE else ACTION_UNFREEZE)
+    fun setAppHidden(
+        packageName: String,
+        hidden: Boolean,
+    ): Boolean = HTarget.N && setAppFrozen(packageName, if (hidden) ACTION_FREEZE else ACTION_UNFREEZE)
 
-    fun setAppSuspended(packageName: String, suspended: Boolean): Boolean =
-        HTarget.N && setAppFrozen(packageName, if (suspended) ACTION_SUSPEND else ACTION_UNSUSPEND)
+    fun setAppSuspended(
+        packageName: String,
+        suspended: Boolean,
+    ): Boolean = HTarget.N && setAppFrozen(packageName, if (suspended) ACTION_SUSPEND else ACTION_UNSUSPEND)
 
     fun ensureLaunchIntentExists(packageName: String) {
         // Check every 100ms whether the launch intent for `packageName` exists.

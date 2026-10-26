@@ -18,13 +18,15 @@ import com.google.android.material.tabs.TabLayoutMediator
 class HomeFragment : MainFragment() {
     var multiselect: Boolean = false
     val selectedList: MutableList<AppInfo> = mutableListOf()
-    private var _binding: FragmentHomeBinding? = null
-    val binding get() = _binding!!
+    private var bindingView: FragmentHomeBinding? = null
+    val binding get() = bindingView!!
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
     ): View {
-        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        bindingView = FragmentHomeBinding.inflate(inflater, container, false)
         if (tags.size == 1) binding.tabs.isVisible = false
         binding.pager.adapter = HomeAdapter(this)
         TabLayoutMediator(binding.tabs, binding.pager) { tab, position ->
@@ -38,6 +40,6 @@ class HomeFragment : MainFragment() {
         multiselect = false
         selectedList.clear()
         super.onDestroyView()
-        _binding = null
+        bindingView = null
     }
 }

@@ -1,7 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kover)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.detekt)
 }
 
 android {
@@ -18,11 +21,17 @@ android {
     namespace = "com.aistra.hail"
     compileSdk = 37
 
+    val versionCodeProperties = rootProject.file("versionCode.properties")
+    val versionCodeFromProperties = versionCodeProperties.readText().lines()
+        .firstOrNull { it.startsWith("VERSION_CODE=") }
+        ?.removePrefix("VERSION_CODE=")
+        ?.toInt()
+
     defaultConfig {
         applicationId = "com.aistra.hail"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
-        versionCode = 43
+        versionCode = versionCodeFromProperties ?: 43
         versionName = "1.11.4"
         ndk {
             val abi = project.findProperty("abi") as String?
@@ -74,11 +83,23 @@ android {
 }
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(26)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 kotlin {
-    jvmToolchain(26)
+    jvmToolchain(21)
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint()
+    }
+}
+
+detekt {
+    config.from(rootProject.file("config/detekt.yml"))
+    baseline = rootProject.file("config/detekt-baseline.xml")
 }
 
 dependencies {
@@ -89,7 +110,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.biometric.ktx)
+    implementation("androidx.biometric:biometric:1.4.0-alpha07")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)

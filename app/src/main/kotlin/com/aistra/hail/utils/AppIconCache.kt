@@ -11,7 +11,16 @@ import android.widget.ImageView
 import androidx.collection.LruCache
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.zhanghai.android.appiconloader.AppIconLoader
 import java.io.File
 import java.security.MessageDigest
@@ -25,13 +34,13 @@ import kotlin.coroutines.CoroutineContext
  * https://raw.githubusercontent.com/RikkaApps/Shizuku/master/manager/src/main/java/moe/shizuku/manager/utils/AppIconCache.kt
  */
 object AppIconCache : CoroutineScope {
-
-    private class AppIconLruCache constructor(maxSize: Int) :
-        LruCache<Triple<String, Int, Int>, Bitmap>(maxSize) {
-
-        override fun sizeOf(key: Triple<String, Int, Int>, value: Bitmap): Int {
-            return value.byteCount / 1024
-        }
+    private class AppIconLruCache constructor(
+        maxSize: Int,
+    ) : LruCache<Triple<String, Int, Int>, Bitmap>(maxSize) {
+        override fun sizeOf(
+            key: Triple<String, Int, Int>,
+            value: Bitmap,
+        ): Int = value.byteCount / 1024
     }
 
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main
@@ -57,53 +66,82 @@ object AppIconCache : CoroutineScope {
         lruCache = AppIconLruCache(availableCacheSize)
 
         // Initialize load icon scheduler
-        val availableProcessorsCount = try {
-            Runtime.getRuntime().availableProcessors()
-        } catch (ignored: Exception) {
-            1
-        }
+        val availableProcessorsCount =
+            try {
+                Runtime.getRuntime().availableProcessors()
+            } catch (ignored: Exception) {
+                1
+            }
         val threadCount = 1.coerceAtLeast(availableProcessorsCount / 2)
         val loadIconExecutor: Executor = Executors.newFixedThreadPool(threadCount)
         dispatcher = loadIconExecutor.asCoroutineDispatcher()
         shrinkNonAdaptiveIcons = HailData.synthesizeAdaptiveIcons
     }
 
-    private fun get(packageName: String, userId: Int, size: Int): Bitmap? {
-        return lruCache[Triple(packageName, userId, size)]
-    }
+    private fun get(
+        packageName: String,
+        userId: Int,
+        size: Int,
+    ): Bitmap? = lruCache[Triple(packageName, userId, size)]
 
-    private fun put(packageName: String, userId: Int, size: Int, bitmap: Bitmap) {
+    private fun put(
+        packageName: String,
+        userId: Int,
+        size: Int,
+        bitmap: Bitmap,
+    ) {
         if (get(packageName, userId, size) == null) {
             lruCache.put(Triple(packageName, userId, size), bitmap)
         }
     }
 
-    private fun diskKey(info: ApplicationInfo, userId: Int, size: Int): String {
-        val sourceSignature = runCatching {
-            "${info.sourceDir}:${File(info.sourceDir).lastModified()}"
-        }.getOrDefault(info.sourceDir ?: "")
-        val value = listOf(
-            info.packageName,
-            userId,
-            size,
-            sourceSignature,
-            HailData.iconPack,
-            HailData.synthesizeAdaptiveIcons
-        ).joinToString("|")
-        return MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
+    private fun diskKey(
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+    ): String {
+        val sourceSignature =
+            runCatching {
+                "${info.sourceDir}:${File(info.sourceDir).lastModified()}"
+            }.getOrDefault(info.sourceDir ?: "")
+        val value =
+            listOf(
+                info.packageName,
+                userId,
+                size,
+                sourceSignature,
+                HailData.iconPack,
+                HailData.synthesizeAdaptiveIcons,
+            ).joinToString("|")
+        return MessageDigest
+            .getInstance("SHA-256")
+            .digest(value.toByteArray())
             .joinToString("") { "%02x".format(it) }
     }
 
-    private fun diskFile(info: ApplicationInfo, userId: Int, size: Int) =
-        File(diskCacheDir, "${diskKey(info, userId, size)}.png")
+    private fun diskFile(
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+    ) = File(diskCacheDir, "${diskKey(info, userId, size)}.png")
 
-    private fun readDisk(info: ApplicationInfo, userId: Int, size: Int): Bitmap? = runCatching {
-        diskFile(info, userId, size).takeIf { it.isFile }?.let { file ->
-            BitmapFactory.decodeFile(file.path)?.takeIf { it.width == size && it.height == size }
-        }
-    }.getOrNull()
+    private fun readDisk(
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+    ): Bitmap? =
+        runCatching {
+            diskFile(info, userId, size).takeIf { it.isFile }?.let { file ->
+                BitmapFactory.decodeFile(file.path)?.takeIf { it.width == size && it.height == size }
+            }
+        }.getOrNull()
 
-    private fun writeDisk(info: ApplicationInfo, userId: Int, size: Int, bitmap: Bitmap) {
+    private fun writeDisk(
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+        bitmap: Bitmap,
+    ) {
         runCatching {
             if (!diskCacheDir.exists()) diskCacheDir.mkdirs()
             val target = diskFile(info, userId, size)
@@ -122,17 +160,28 @@ object AppIconCache : CoroutineScope {
         }
     }
 
-    fun prefetch(context: Context, applications: Collection<ApplicationInfo>, userId: Int = 0): Job = launch {
-        withContext(dispatcher) {
-            val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
-            applications.map { info ->
-                async { getOrLoadBitmap(context, info, userId, size) }
-            }.awaitAll()
+    fun prefetch(
+        context: Context,
+        applications: Collection<ApplicationInfo>,
+        userId: Int = 0,
+    ): Job =
+        launch {
+            withContext(dispatcher) {
+                val size = context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
+                applications
+                    .map { info ->
+                        async { getOrLoadBitmap(context, info, userId, size) }
+                    }.awaitAll()
+            }
         }
-    }
 
     @SuppressLint("NewApi")
-    suspend fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap {
+    suspend fun getOrLoadBitmap(
+        context: Context,
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+    ): Bitmap {
         val cachedBitmap = get(info.packageName, userId, size)
         if (cachedBitmap != null) {
             return cachedBitmap
@@ -159,13 +208,14 @@ object AppIconCache : CoroutineScope {
         info: ApplicationInfo,
         userId: Int,
         view: ImageView,
-        setColorFilter: Boolean = false
+        setColorFilter: Boolean = false,
     ): Job {
         return launch {
             view.setTag(info.packageName)
-            val size = view.measuredWidth.let {
-                if (it > 0) it else context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
-            }
+            val size =
+                view.measuredWidth.let {
+                    if (it > 0) it else context.resources.getDimensionPixelSize(R.dimen.app_icon_size)
+                }
             if (shrinkNonAdaptiveIcons != HailData.synthesizeAdaptiveIcons) {
                 lruCache.evictAll()
             } else {
@@ -179,16 +229,17 @@ object AppIconCache : CoroutineScope {
                 }
             }
 
-            val bitmap = try {
-                withContext(dispatcher) {
-                    getOrLoadBitmap(context, info, userId, size)
+            val bitmap =
+                try {
+                    withContext(dispatcher) {
+                        getOrLoadBitmap(context, info, userId, size)
+                    }
+                } catch (e: CancellationException) {
+                    // do nothing if canceled
+                    return@launch
+                } catch (e: Throwable) {
+                    null
                 }
-            } catch (e: CancellationException) {
-                // do nothing if canceled
-                return@launch
-            } catch (e: Throwable) {
-                null
-            }
 
             if (view.tag == info.packageName) {
                 if (bitmap != null) {

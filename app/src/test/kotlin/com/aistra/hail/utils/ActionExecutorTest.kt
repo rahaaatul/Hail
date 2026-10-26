@@ -33,52 +33,60 @@ class ActionExecutorTest {
     }
 
     @Test
-    fun `prepare returns failure when unfreeze fails`() = runTest {
-        val action = LaunchAction(
-            id = "test",
-            launchPackage = "com.example.launch",
-            unfreezePackages = listOf("com.example.dep")
-        )
-        coEvery { AppActions.ensureUnfrozen("com.example.dep") } returns Result.failure(
-            IllegalStateException("Could not unfreeze")
-        )
+    fun `prepare returns failure when unfreeze fails`() =
+        runTest {
+            val action =
+                LaunchAction(
+                    id = "test",
+                    launchPackage = "com.example.launch",
+                    unfreezePackages = listOf("com.example.dep"),
+                )
+            coEvery { AppActions.ensureUnfrozen("com.example.dep") } returns
+                Result.failure(
+                    IllegalStateException("Could not unfreeze"),
+                )
 
-        val result = ActionExecutor.prepare(action)
+            val result = ActionExecutor.prepare(action)
 
-        assertTrue(result.isFailure)
-    }
-
-    @Test
-    fun `prepare returns failure when launch intent fails`() = runTest {
-        val action = LaunchAction(
-            id = "test",
-            launchPackage = "com.example.launch",
-            unfreezePackages = emptyList()
-        )
-        coEvery { AppActions.ensureUnfrozen(any()) } returns Result.success(Unit)
-        coEvery { AppActions.getLaunchIntent("com.example.launch") } returns Result.failure(
-            ActivityNotFoundException("Launch activity not found")
-        )
-
-        val result = ActionExecutor.prepare(action)
-
-        assertTrue(result.isFailure)
-    }
+            assertTrue(result.isFailure)
+        }
 
     @Test
-    fun `prepare returns launch intent on success`() = runTest {
-        val action = LaunchAction(
-            id = "test",
-            launchPackage = "com.example.launch",
-            unfreezePackages = emptyList()
-        )
-        val intent = Intent(Intent.ACTION_MAIN)
-        coEvery { AppActions.ensureUnfrozen(any()) } returns Result.success(Unit)
-        coEvery { AppActions.getLaunchIntent("com.example.launch") } returns Result.success(intent)
+    fun `prepare returns failure when launch intent fails`() =
+        runTest {
+            val action =
+                LaunchAction(
+                    id = "test",
+                    launchPackage = "com.example.launch",
+                    unfreezePackages = emptyList(),
+                )
+            coEvery { AppActions.ensureUnfrozen(any()) } returns Result.success(Unit)
+            coEvery { AppActions.getLaunchIntent("com.example.launch") } returns
+                Result.failure(
+                    ActivityNotFoundException("Launch activity not found"),
+                )
 
-        val result = ActionExecutor.prepare(action)
+            val result = ActionExecutor.prepare(action)
 
-        assertTrue(result.isSuccess)
-        assertEquals(intent, result.getOrThrow())
-    }
+            assertTrue(result.isFailure)
+        }
+
+    @Test
+    fun `prepare returns launch intent on success`() =
+        runTest {
+            val action =
+                LaunchAction(
+                    id = "test",
+                    launchPackage = "com.example.launch",
+                    unfreezePackages = emptyList(),
+                )
+            val intent = Intent(Intent.ACTION_MAIN)
+            coEvery { AppActions.ensureUnfrozen(any()) } returns Result.success(Unit)
+            coEvery { AppActions.getLaunchIntent("com.example.launch") } returns Result.success(intent)
+
+            val result = ActionExecutor.prepare(action)
+
+            assertTrue(result.isSuccess)
+            assertEquals(intent, result.getOrThrow())
+        }
 }

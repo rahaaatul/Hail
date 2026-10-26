@@ -17,34 +17,44 @@ object HSystem {
     }
 
     fun isCharging(context: Context): Boolean {
-        val batteryStatus = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { filter ->
-            context.registerReceiver(null, filter)
-        }
+        val batteryStatus =
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { filter ->
+                context.registerReceiver(null, filter)
+            }
         val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
         return status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
     }
 
     @Suppress("SameParameterValue")
-    private fun checkOp(context: Context, op: String): Boolean {
+    private fun checkOp(
+        context: Context,
+        op: String,
+    ): Boolean {
         val opsManager = context.getSystemService<AppOpsManager>()!!
         val result = opsManager.checkOpNoThrow(op, android.os.Process.myUid(), context.packageName)
         return result == AppOpsManager.MODE_ALLOWED
     }
 
-    fun checkOpUsageStats(context: Context): Boolean =
-        checkOp(context, AppOpsManager.OPSTR_GET_USAGE_STATS)
+    fun checkOpUsageStats(context: Context): Boolean = checkOp(context, AppOpsManager.OPSTR_GET_USAGE_STATS)
 
-    fun isForegroundApp(context: Context, packageName: String): Boolean {
+    fun isForegroundApp(
+        context: Context,
+        packageName: String,
+    ): Boolean {
         val usageStatsManager = context.getSystemService<UsageStatsManager>()!!
         val now = System.currentTimeMillis()
-        val stats = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_BEST,
-            now - 1000 * 60 * (HailData.autoFreezeDelay + 1), now  // to ensure that we can get the last app used
-        )?.sortedBy { it.lastTimeUsed }
-        val foregroundPackageName = stats?.let {
-            if (it.isEmpty()) return@let null
-            it.last()?.packageName
-        }
+        val stats =
+            usageStatsManager
+                .queryUsageStats(
+                    UsageStatsManager.INTERVAL_BEST,
+                    now - 1000 * 60 * (HailData.autoFreezeDelay + 1),
+                    now, // to ensure that we can get the last app used
+                )?.sortedBy { it.lastTimeUsed }
+        val foregroundPackageName =
+            stats?.let {
+                if (it.isEmpty()) return@let null
+                it.last()?.packageName
+            }
         return foregroundPackageName == packageName
     }
 }

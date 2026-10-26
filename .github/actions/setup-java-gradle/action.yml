@@ -1,0 +1,97 @@
+name: Setup Java and Gradle
+description: Checkout code, setup Java, cache Gradle, and set up release keystore if provided
+inputs:
+  java-version:
+    description: Java version to setup
+    required: false
+    default: 21
+  distribution:
+    description: Java distribution to setup
+    required: false
+    default: temurin
+  gradle-cache:
+    description: Enable Gradle caching
+    required: false
+    default: true
+  persist-credentials:
+    description: >-
+      Whether the checkout step leaves the GITHUB_TOKEN in the local git
+      configuration. Set to 'false' for jobs that build code from an
+      untrusted pull request.
+    required: false
+    default: 'true'
+  gradle-build-cache:
+    description: >-
+      Enable the Gradle build cache (task output cache). Set to 'false' for CodeQL,
+      which must observe the compiler actually running: task outputs restored
+      FROM-CACHE produce no TRAP files and yield an empty or partial database.
+      The dependency cache is unaffected.
+    required: false
+    default: 'true'
+  keystore-file:
+    description: Base64 encoded keystore file
+    required: false
+    default: ""
+  keystore-password:
+    description: Keystore password
+    required: false
+    default: ""
+  key-alias:
+    description: Key alias
+    required: false
+    default: ""
+  key-password:
+    description: Key password
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+        persist-credentials: ${{ inputs.persist-credentials }}
+    - name: Setup Java
+      uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+      with:
+        distribution: '${{ inputs.distribution }}'
+        java-version: '${{ inputs.java-version }}'
+    - name: Set up release keystore
+      if: ${{ inputs.keystore-file != '' }}
+      shell: bash
+      run: |
+        echo "${{ inputs.keystore-file }}" | base64 --decode > /tmp/release.keystore
+        chmod 600 /tmp/release.keystore
+        if [ ! -s /tmp/release.keystore ]; then
+          echo "The release keystore decoded to an empty file." >&2
+          exit 1
+        fi
+        ls -l /tmp/release.keystore
+        echo "RELEASE_KEYSTORE_PATH=/tmp/release.keystore" >> $GITHUB_ENV
+        # The build script reads the credentials as project properties, and an
+        # environment variable named ORG_GRADLE_PROJECT_<name> is the one Gradle
+        # exposes as the project property <name>.
+        echo "ORG_GRADLE_PROJECT_releaseStorePassword=${{ inputs.keystore-password }}" >> $GITHUB_ENV
+        echo "ORG_GRADLE_PROJECT_releaseKeyAlias=${{ inputs.key-alias }}" >> $GITHUB_ENV
+        echo "ORG_GRADLE_PROJECT_releaseKeyPassword=${{ inputs.key-password }}" >> $GITHUB_ENV
+    - name: Cache Gradle
+      if: ${{ inputs.gradle-cache == 'true' }}
+      uses: burrunan/gradle-cache-action@404534c34a2faa40430357a3183522a845b04f3b
+      with:
+        save-local-build-cache: ${{ inputs.gradle-build-cache }}
+        remote-build-cache-proxy-enabled: ${{ inputs.gradle-build-cache }}
+    - name: Set Gradle properties for optimization
+      run: |
+        # The release commits gradle.properties, so the block below carries a
+        # marker and is stripped from the file before it is committed.
+        echo "# --- applied by the setup-java-gradle action, not part of the repository ---" >> gradle.properties
+        echo "org.gradle.caching=${{ inputs.gradle-build-cache == 'true' && 'true' || 'false' }}" >> gradle.properties
+        echo "org.gradle.configuration-cache=true" >> gradle.properties
+        echo "org.gradle.configuration-cache.problems=warn" >> gradle.properties
+        echo "org.gradle.parallel=true" >> gradle.properties
+        echo "org.gradle.workers.max=4" >> gradle.properties
+        echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" >> gradle.properties
+        echo "android.useAndroidX=true" >> gradle.properties
+        echo "kotlin.code.style=official" >> gradle.properties
+      shell: bash

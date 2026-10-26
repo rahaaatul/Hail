@@ -27,7 +27,10 @@ interface ActionDao {
     fun delete(actionId: String)
 
     @Transaction
-    fun saveAction(action: ActionEntity, dependencies: List<ActionDependencyEntity>) {
+    fun saveAction(
+        action: ActionEntity,
+        dependencies: List<ActionDependencyEntity>,
+    ) {
         upsert(action)
         deleteDependencies(action.id)
         upsertDependencies(dependencies)

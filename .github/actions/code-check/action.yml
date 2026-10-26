@@ -1,0 +1,137 @@
+name: Code check
+description: >-
+  Run the code checks of the project - the Detekt static analysis, the Spotless
+  formatting check and the Kover coverage gate - before the APKs are built.
+
+inputs:
+  gradle-args:
+    description: >-
+      Extra arguments appended to every Gradle invocation, for example
+      --no-build-cache.
+    required: false
+    default: ''
+  ratchet-base:
+    description: >-
+      The git ref that the Spotless ratchet compares against. Only the files
+      that differ from it are format checked. Empty means the target of the
+      pull request, or origin/main outside a pull request.
+    required: false
+    default: ''
+  run-detekt:
+    description: Run the Detekt static analysis.
+    required: false
+    default: 'true'
+  run-spotless:
+    description: Run the Spotless formatting check.
+    required: false
+    default: 'true'
+  run-kover:
+    description: >-
+      Run the unit tests under the coverage agent and verify the coverage
+      bound of the classes that have a test suite.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the Spotless ratchet base
+      id: ratchet
+      shell: bash
+      env:
+        REQUESTED_BASE: ${{ inputs.ratchet-base }}
+        PR_BASE_REF: ${{ github.base_ref }}
+      run: |
+        set -euo pipefail
+        # The target of the pull request, so a pull request only format checks
+        # the files that pull request touches. Outside a pull request there is
+        # no target branch, and the stable release branch is the thing that
+        # the new work has not reached yet.
+        base="$REQUESTED_BASE"
+        if [ -z "$base" ]; then
+          if [ -n "$PR_BASE_REF" ]; then
+            base="origin/$PR_BASE_REF"
+          else
+            base="origin/main"
+          fi
+        fi
+        # Spotless fails the task with "No such reference" when the ref is
+        # missing, so a branch that was never pushed falls back to the stable
+        # release branch.
+        if ! git rev-parse --verify --quiet "$base" >/dev/null; then
+          echo "ratchet base $base is not in this checkout, using origin/main" >&2
+          base="origin/main"
+        fi
+        # The merge base is the tree that Spotless would compare against
+        # anyway, and a commit hash does not move while the branch does.
+        merge_base=$(git merge-base HEAD "$base")
+        echo "ratchet-from=$merge_base" >> "$GITHUB_OUTPUT"
+        echo "Spotless ratchet base is $base, merge base is $merge_base"
+
+    - name: Run Detekt and the Spotless formatting check
+      if: ${{ inputs.run-detekt == 'true' || inputs.run-spotless == 'true' }}
+      shell: bash
+      env:
+        RUN_DETEKT: ${{ inputs.run-detekt }}
+        RUN_SPOTLESS: ${{ inputs.run-spotless }}
+        RATCHET_FROM: ${{ steps.ratchet.outputs.ratchet-from }}
+        GRADLE_ARGS: ${{ inputs.gradle-args }}
+      run: |
+        set -euo pipefail
+        # These two do not compile anything, so they are cheap and they are
+        # the checks most likely to fail. They run before the tests so that a
+        # formatting mistake does not cost a test run.
+        tasks=""
+        if [ "$RUN_DETEKT" = "true" ]; then
+          tasks="$tasks detekt"
+        fi
+        if [ "$RUN_SPOTLESS" = "true" ]; then
+          tasks="$tasks spotlessCheck"
+        fi
+        ./gradlew $tasks --no-daemon \
+          -PspotlessRatchetFrom="$RATCHET_FROM" \
+          $GRADLE_ARGS
+
+    - name: Verify the detekt baseline does not grow
+      if: ${{ inputs.run-detekt == 'true' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Detekt already fails on issues not in the baseline, but nothing stops
+        # someone from regenerating the baseline to hide new issues. This step
+        # makes the baseline immutable in one direction: CI fails if it would
+        # grow (new issues introduced), but allows it to shrink (existing issues
+        # fixed).
+        committed_ids=$(sed -n 's/.*<ID>\(.*\)<\/ID>.*/\1/p' config/detekt-baseline.xml | sort)
+        cp config/detekt-baseline.xml /tmp/detekt-baseline-before.xml
+        ./gradlew detektBaseline --no-daemon
+        regenerated_ids=$(sed -n 's/.*<ID>\(.*\)<\/ID>.*/\1/p' config/detekt-baseline.xml | sort)
+        new_ids=$(comm -13 <(echo "$committed_ids") <(echo "$regenerated_ids"))
+        if [ -n "$new_ids" ]; then
+          echo "::error::The detekt baseline grew - new detekt issues were introduced without fixing them:"
+          echo "$new_ids"
+          exit 1
+        fi
+
+    - name: Run the unit tests and verify the coverage
+      if: ${{ inputs.run-kover == 'true' }}
+      shell: bash
+      env:
+        GRADLE_ARGS: ${{ inputs.gradle-args }}
+      run: |
+        set -euo pipefail
+        # One invocation, so the test tasks run once. The coverage agent is
+        # attached to the same test tasks, and the reports read that single
+        # run instead of a second one.
+        ./gradlew test koverVerifyTested koverXmlReport koverHtmlReport \
+          --no-daemon $GRADLE_ARGS
+
+    - name: Upload the coverage report
+      if: always() && inputs.run-kover == 'true'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: kover-report-${{ github.sha }}
+        path: |
+          app/build/reports/kover/html/
+          app/build/reports/kover/report.xml
+        retention-days: 30

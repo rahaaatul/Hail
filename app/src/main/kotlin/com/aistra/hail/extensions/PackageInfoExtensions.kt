@@ -2,7 +2,6 @@ package com.aistra.hail.extensions
 
 import android.content.pm.PackageInfo
 import androidx.core.content.pm.PackageInfoCompat
-
 import com.aistra.hail.HailApp.Companion.app
 
 /**

@@ -10,12 +10,20 @@ import com.aistra.hail.app.HailData
 import com.aistra.hail.services.AutoFreezeService
 import com.aistra.hail.utils.HSystem
 
-class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+class AutoFreezeWorker(
+    context: Context,
+    params: WorkerParameters,
+) : Worker(context, params) {
     override fun doWork(): Result {
-        if ((inputData.getBoolean(HailData.ACTION_LOCK, true)
-                    && HSystem.isInteractive(applicationContext))
-            || isSkipWhileCharging(applicationContext)
-        ) return Result.success() // Not stopping the AutoFreezeService here. The worker will run at some point. Then we'll stop the Service
+        if ((
+                inputData.getBoolean(HailData.ACTION_LOCK, true) &&
+                    HSystem.isInteractive(applicationContext)
+            ) ||
+            isSkipWhileCharging(applicationContext)
+        ) {
+            return Result.success() // Not stopping the AutoFreezeService here.
+        }
+        // The worker will run at some point. Then we'll stop the Service
         val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
         repeat(3) {
             val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
@@ -27,11 +35,17 @@ class AutoFreezeWorker(context: Context, params: WorkerParameters) : Worker(cont
         return Result.success() // 3 tries failed -> stop WorkManager retries
     }
 
-    private fun isSkipWhileCharging(context: Context): Boolean =
-        HailData.skipWhileCharging && HSystem.isCharging(context)
+    private fun isSkipWhileCharging(context: Context): Boolean = HailData.skipWhileCharging && HSystem.isCharging(context)
 
-    private fun isSkipApp(context: Context, appInfo: AppInfo): Boolean =
-        AppManager.isAppFrozen(appInfo.packageName) || (HailData.skipForegroundApp && HSystem.isForegroundApp(
-            context, appInfo.packageName
-        )) || (HailData.skipNotifyingApp && AutoFreezeService.instance.activeNotifications.any { it.packageName == appInfo.packageName }) || appInfo.whitelisted
+    private fun isSkipApp(
+        context: Context,
+        appInfo: AppInfo,
+    ): Boolean =
+        AppManager.isAppFrozen(appInfo.packageName) || (
+            HailData.skipForegroundApp &&
+                HSystem.isForegroundApp(
+                    context,
+                    appInfo.packageName,
+                )
+        ) || (HailData.skipNotifyingApp && AutoFreezeService.instance.activeNotifications.any { it.packageName == appInfo.packageName }) || appInfo.whitelisted
 }

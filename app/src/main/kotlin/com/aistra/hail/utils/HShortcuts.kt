@@ -13,9 +13,12 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
-import kotlinx.coroutines.*
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.zhanghai.android.appiconloader.AppIconLoader
+import kotlin.coroutines.CoroutineContext
 
 object HShortcuts : CoroutineScope {
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main
@@ -24,23 +27,34 @@ object HShortcuts : CoroutineScope {
         AppIconLoader(
             app.resources.getDimensionPixelSize(R.dimen.app_icon_size),
             HailData.synthesizeAdaptiveIcons,
-            app
+            app,
         )
     }
 
-    fun addPinShortcut(icon: Drawable, id: String, label: CharSequence, intent: Intent) {
+    fun addPinShortcut(
+        icon: Drawable,
+        id: String,
+        label: CharSequence,
+        intent: Intent,
+    ) {
         launch {
             addPinShortcut(getDrawableIcon(icon), id, label, intent)
         }
     }
 
-    fun addPinShortcut(appInfo: AppInfo, id: String, label: CharSequence, intent: Intent) {
+    fun addPinShortcut(
+        appInfo: AppInfo,
+        id: String,
+        label: CharSequence,
+        intent: Intent,
+    ) {
         launch {
-            val icon = appInfo.applicationInfo?.let {
-                withContext(Dispatchers.IO) {
-                    IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+            val icon =
+                appInfo.applicationInfo?.let {
+                    withContext(Dispatchers.IO) {
+                        IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+                    }
                 }
-            }
             if (icon != null) {
                 addPinShortcut(IconCompat.createWithBitmap(icon), id, label, intent)
             } else {
@@ -56,7 +70,7 @@ object HShortcuts : CoroutineScope {
                 AppInfo(action.launchPackage),
                 "action_${action.id}",
                 label,
-                Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id)
+                Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id),
             )
         }
     }
@@ -64,14 +78,17 @@ object HShortcuts : CoroutineScope {
     fun updateActionShortcut(action: LaunchAction) {
         val label = AppInfo(action.launchPackage).name
         launch {
-            val icon = AppInfo(action.launchPackage).applicationInfo?.let {
-                withContext(Dispatchers.IO) {
-                    IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+            val icon =
+                AppInfo(action.launchPackage).applicationInfo?.let {
+                    withContext(Dispatchers.IO) {
+                        IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+                    }
                 }
-            }
-            val builder = ShortcutInfoCompat.Builder(app, "action_${action.id}")
-                .setShortLabel(label)
-                .setIntent(Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id))
+            val builder =
+                ShortcutInfoCompat
+                    .Builder(app, "action_${action.id}")
+                    .setShortLabel(label)
+                    .setIntent(Intent(HailApi.ACTION_LAUNCH_ACTION).putExtra(HailApi.EXTRA_ACTION_ID, action.id))
             if (icon != null) {
                 builder.setIcon(IconCompat.createWithBitmap(icon))
             }
@@ -79,15 +96,27 @@ object HShortcuts : CoroutineScope {
         }
     }
 
-    private fun addPinShortcut(icon: IconCompat, id: String, label: CharSequence, intent: Intent) {
+    private fun addPinShortcut(
+        icon: IconCompat,
+        id: String,
+        label: CharSequence,
+        intent: Intent,
+    ) {
         if (ShortcutManagerCompat.isRequestPinShortcutSupported(app)) {
             val shortcut =
-                ShortcutInfoCompat.Builder(app, id).setIcon(icon).setShortLabel(label)
-                    .setIntent(intent).build()
+                ShortcutInfoCompat
+                    .Builder(app, id)
+                    .setIcon(icon)
+                    .setShortLabel(label)
+                    .setIntent(intent)
+                    .build()
             ShortcutManagerCompat.requestPinShortcut(app, shortcut, null)
-        } else HUI.showToast(
-            R.string.operation_failed, app.getString(R.string.action_add_pin_shortcut)
-        )
+        } else {
+            HUI.showToast(
+                R.string.operation_failed,
+                app.getString(R.string.action_add_pin_shortcut),
+            )
+        }
     }
 
     fun addDynamicShortcut(packageName: String) {
@@ -95,16 +124,22 @@ object HShortcuts : CoroutineScope {
         val applicationInfo = HPackages.getApplicationInfoOrNull(packageName)
         launch {
             val shortcut =
-                ShortcutInfoCompat.Builder(app, packageName.hashCode().toString())
-                    .setIcon(IconCompat.createWithBitmap(applicationInfo?.let {
-                        withContext(Dispatchers.IO) {
-                            IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
-                        }
-                    } ?: getBitmapFromDrawable(
-                        app.packageManager.defaultActivityIcon
-                    ))).setShortLabel(
-                        applicationInfo?.loadLabel(app.packageManager) ?: packageName
-                    ).setIntent(HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, packageName)).build()
+                ShortcutInfoCompat
+                    .Builder(app, packageName.hashCode().toString())
+                    .setIcon(
+                        IconCompat.createWithBitmap(
+                            applicationInfo?.let {
+                                withContext(Dispatchers.IO) {
+                                    IconPack.loadIcon(it.packageName) ?: iconLoader.loadIcon(it)
+                                }
+                            } ?: getBitmapFromDrawable(
+                                app.packageManager.defaultActivityIcon,
+                            ),
+                        ),
+                    ).setShortLabel(
+                        applicationInfo?.loadLabel(app.packageManager) ?: packageName,
+                    ).setIntent(HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, packageName))
+                    .build()
             ShortcutManagerCompat.pushDynamicShortcut(app, shortcut)
             addDynamicShortcutAction(HailData.dynamicShortcutAction)
         }
@@ -112,33 +147,42 @@ object HShortcuts : CoroutineScope {
 
     fun addDynamicShortcutAction(action: String) {
         if (action == HailData.ACTION_NONE) return
-        val id = when (action) {
-            HailData.ACTION_FREEZE_ALL -> HailApi.ACTION_FREEZE_ALL
-            HailData.ACTION_FREEZE_NON_WHITELISTED -> HailApi.ACTION_FREEZE_NON_WHITELISTED
-            HailData.ACTION_LOCK -> HailApi.ACTION_LOCK
-            HailData.ACTION_LOCK_FREEZE -> HailApi.ACTION_LOCK_FREEZE
-            else -> HailApi.ACTION_UNFREEZE_ALL
-        }
-        val icon = when (action) {
-            HailData.ACTION_FREEZE_ALL, HailData.ACTION_FREEZE_NON_WHITELISTED -> R.drawable.ic_round_frozen_shortcut
-            HailData.ACTION_LOCK, HailData.ACTION_LOCK_FREEZE -> R.drawable.ic_outline_lock_shortcut
-            else -> R.drawable.ic_round_unfrozen_shortcut
-        }
-        val label = when (action) {
-            HailData.ACTION_FREEZE_ALL -> R.string.action_freeze_all
-            HailData.ACTION_FREEZE_NON_WHITELISTED -> R.string.action_freeze_non_whitelisted
-            HailData.ACTION_LOCK -> R.string.action_lock
-            HailData.ACTION_LOCK_FREEZE -> R.string.action_lock_freeze
-            else -> R.string.action_unfreeze_all
-        }
+        val id =
+            when (action) {
+                HailData.ACTION_FREEZE_ALL -> HailApi.ACTION_FREEZE_ALL
+                HailData.ACTION_FREEZE_NON_WHITELISTED -> HailApi.ACTION_FREEZE_NON_WHITELISTED
+                HailData.ACTION_LOCK -> HailApi.ACTION_LOCK
+                HailData.ACTION_LOCK_FREEZE -> HailApi.ACTION_LOCK_FREEZE
+                else -> HailApi.ACTION_UNFREEZE_ALL
+            }
+        val icon =
+            when (action) {
+                HailData.ACTION_FREEZE_ALL, HailData.ACTION_FREEZE_NON_WHITELISTED -> R.drawable.ic_round_frozen_shortcut
+                HailData.ACTION_LOCK, HailData.ACTION_LOCK_FREEZE -> R.drawable.ic_outline_lock_shortcut
+                else -> R.drawable.ic_round_unfrozen_shortcut
+            }
+        val label =
+            when (action) {
+                HailData.ACTION_FREEZE_ALL -> R.string.action_freeze_all
+                HailData.ACTION_FREEZE_NON_WHITELISTED -> R.string.action_freeze_non_whitelisted
+                HailData.ACTION_LOCK -> R.string.action_lock
+                HailData.ACTION_LOCK_FREEZE -> R.string.action_lock_freeze
+                else -> R.string.action_unfreeze_all
+            }
         launch {
-            val shortcut = ShortcutInfoCompat.Builder(app, id).setIcon(
-                getDrawableIcon(
-                    AppCompatResources.getDrawable(
-                        app, icon
-                    )!!
-                )
-            ).setShortLabel(app.getString(label)).setIntent(Intent(id)).build()
+            val shortcut =
+                ShortcutInfoCompat
+                    .Builder(app, id)
+                    .setIcon(
+                        getDrawableIcon(
+                            AppCompatResources.getDrawable(
+                                app,
+                                icon,
+                            )!!,
+                        ),
+                    ).setShortLabel(app.getString(label))
+                    .setIntent(Intent(id))
+                    .build()
             ShortcutManagerCompat.pushDynamicShortcut(app, shortcut)
         }
     }
@@ -147,17 +191,20 @@ object HShortcuts : CoroutineScope {
         ShortcutManagerCompat.removeAllDynamicShortcuts(app)
     }
 
-    private suspend fun getDrawableIcon(drawable: Drawable): IconCompat =
-        IconCompat.createWithBitmap(getBitmapFromDrawable(drawable))
+    private suspend fun getDrawableIcon(drawable: Drawable): IconCompat = IconCompat.createWithBitmap(getBitmapFromDrawable(drawable))
 
-    private suspend fun getBitmapFromDrawable(drawable: Drawable): Bitmap = withContext(Dispatchers.IO) {
-        Bitmap.createBitmap(
-            drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888
-        ).also {
-            with(Canvas(it)) {
-                drawable.setBounds(0, 0, width, height)
-                drawable.draw(this)
-            }
+    private suspend fun getBitmapFromDrawable(drawable: Drawable): Bitmap =
+        withContext(Dispatchers.IO) {
+            Bitmap
+                .createBitmap(
+                    drawable.intrinsicWidth,
+                    drawable.intrinsicHeight,
+                    Bitmap.Config.ARGB_8888,
+                ).also {
+                    with(Canvas(it)) {
+                        drawable.setBounds(0, 0, width, height)
+                        drawable.draw(this)
+                    }
+                }
         }
-    }
 }
