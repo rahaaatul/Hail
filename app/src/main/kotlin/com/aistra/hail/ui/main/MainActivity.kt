@@ -78,7 +78,7 @@ class MainActivity :
                 .Builder()
                 .setTitle(getString(R.string.action_biometric))
                 .setSubtitle(getString(R.string.msg_biometric))
-                .setNegativeButtonText(getString(android.R.string.cancel))
+                .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
                 .build()
         biometricPrompt.authenticate(promptInfo)
     }
