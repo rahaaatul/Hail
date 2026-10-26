@@ -43,6 +43,7 @@ object HailData {
     const val OWNER = "owner_"
     const val DHIZUKU = "dhizuku_"
     const val SU = "su_"
+    const val JAILBREAK = "jailbreak_"
     const val SHIZUKU = "shizuku_"
     const val ISLAND = "island_"
     const val PRIVAPP = "privapp_"
@@ -60,6 +61,7 @@ object HailData {
     const val MODE_SU_DISABLE = SU + DISABLE
     const val MODE_SU_HIDE = SU + HIDE
     const val MODE_SU_SUSPEND = SU + SUSPEND
+    const val MODE_JAILBREAK_DISABLE = JAILBREAK + DISABLE
     const val MODE_DHIZUKU_HIDE = DHIZUKU + HIDE
     const val MODE_DHIZUKU_SUSPEND = DHIZUKU + SUSPEND
     const val MODE_OWNER_HIDE = OWNER + HIDE
@@ -79,6 +81,7 @@ object HailData {
             MODE_SU_DISABLE,
             MODE_SU_HIDE,
             MODE_SU_SUSPEND,
+            MODE_JAILBREAK_DISABLE,
             MODE_DHIZUKU_HIDE,
             MODE_DHIZUKU_SUSPEND,
             MODE_OWNER_HIDE,

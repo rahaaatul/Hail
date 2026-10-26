@@ -113,4 +113,9 @@ object HShell {
     ) = execSU(
         "appops set $userArg $packageName RUN_ANY_IN_BACKGROUND ${if (restricted) "ignore" else "allow"}",
     ).first == 0
+
+    fun grantPermission(
+        packageName: String,
+        permission: String,
+    ) = execSU("pm grant $userArg $packageName $permission").first == 0
 }

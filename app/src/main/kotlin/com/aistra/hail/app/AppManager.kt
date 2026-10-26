@@ -18,7 +18,7 @@ object AppManager {
             when {
                 HailData.workingMode.startsWith(HailData.OWNER) -> HPolicy.lockScreen
                 HailData.workingMode.startsWith(HailData.DHIZUKU) -> HDhizuku.lockScreen
-                HailData.workingMode.startsWith(HailData.SU) -> HShell.lockScreen
+                HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.lockScreen
                 HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.lockScreen
                 else -> false
             }
@@ -104,7 +104,7 @@ object AppManager {
                 HailData.MODE_ISLAND_HIDE -> HIsland.setAppHidden(packageName, frozen)
                 HailData.MODE_ISLAND_SUSPEND -> HIsland.setAppSuspended(packageName, frozen)
                 HailData.MODE_PRIVAPP_STOP -> !frozen || HPackages.forceStopApp(packageName)
-                HailData.MODE_PRIVAPP_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
+                HailData.MODE_PRIVAPP_DISABLE, HailData.MODE_JAILBREAK_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
                 else -> false
             }
 
@@ -118,7 +118,7 @@ object AppManager {
                 if (HDhizuku.uninstallApp(packageName)) return true
             }
 
-            HailData.workingMode.startsWith(HailData.SU) -> {
+            HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> {
                 if (HShell.uninstallApp(packageName)) return true
             }
 
@@ -132,7 +132,7 @@ object AppManager {
 
     fun reinstallApp(packageName: String): Boolean =
         when {
-            HailData.workingMode.startsWith(HailData.SU) -> HShell.reinstallApp(packageName)
+            HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.reinstallApp(packageName)
             HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.reinstallApp(packageName)
             else -> false
         }
@@ -140,7 +140,7 @@ object AppManager {
     suspend fun execute(command: String): Pair<Int, String?> =
         withContext(Dispatchers.IO) {
             when {
-                HailData.workingMode.startsWith(HailData.SU) -> HShell.execute(command, true)
+                HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.execute(command, true)
                 HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.execute(command)
                 else -> 0 to null
             }
