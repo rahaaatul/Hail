@@ -6,3 +6,19 @@ plugins {
     alias(libs.plugins.spotless) apply false
     alias(libs.plugins.detekt) apply false
 }
+
+buildscript {
+    configurations.classpath {
+        resolutionStrategy {
+            // Force patched versions of AGP buildscript-classpath transitives
+            // flagged by Dependabot (#22-#29). Build-time only — not packaged
+            // in the APK — but the graph still reports them.
+            force("org.apache.commons:commons-lang3:3.18.0")
+            force("org.bouncycastle:bcprov-jdk18on:1.79")
+            force("org.bouncycastle:bcpkix-jdk18on:1.79")
+            force("org.bitbucket.b_c:jose4j:0.9.6")
+            force("org.jdom:jdom2:2.0.6.1")
+            force("org.apache.httpcomponents:httpclient:4.5.14")
+        }
+    }
+}

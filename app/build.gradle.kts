@@ -154,3 +154,4 @@ dependencies {
     androidTestImplementation("io.mockk:mockk-android:1.13.12")
     androidTestImplementation("androidx.room3:room3-testing:3.0.1")
 }
+
