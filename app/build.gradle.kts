@@ -32,7 +32,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = versionCodeFromProperties ?: 43
-        versionName = "1.11.4"
+        versionName = project.findProperty("version") as String? ?: "1.11.4"
         ndk {
             val abi = project.findProperty("abi") as String?
             if (abi != null) abiFilters += abi
@@ -78,6 +78,21 @@ android {
     testOptions {
         unitTests.all {
             it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+        }
+    }
+    androidComponents {
+        onVariants { variant ->
+            val buildTypeName = variant.buildType
+            val appName = (rootProject.findProperty("appName") as String?)?.lowercase()
+            if (buildTypeName != null && appName != null) {
+                val suffix = android.buildTypes.getByName(buildTypeName).versionNameSuffix
+                variant.outputs.forEach { output ->
+                    val versionName = output.versionName.orNull?.removeSuffix(suffix.orEmpty())
+                    if (versionName != null) {
+                        output.outputFileName.set("$appName-v$versionName-$buildTypeName.apk")
+                    }
+                }
+            }
         }
     }
 }

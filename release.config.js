@@ -94,7 +94,7 @@ export default {
       '@semantic-release/git',
       {
         assets: ['gradle.properties', 'versionCode.properties', 'CHANGELOG.md'],
-        message: 'chore(release): ${nextRelease.version} [skip ci]'
+        message: 'chore(release): ${nextRelease.version.replace("-dev.", ".")} [skip ci]'
       }
     ],
     [

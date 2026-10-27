@@ -6,16 +6,16 @@ updates:
     schedule:
       interval: "daily"
       time: "00:00"
-      timezone: "America/New_York"
+      timezone: "UTC"
     labels:
       - "dependencies"
       - "npm"
     commit-message:
       prefix: "chore"
-      prefix-development: "chore-dev"
+      prefix-development: "chore"
       include: "scope"
+    versioning-strategy: "increase"
     groups:
-      # npm development dependencies
       npm-dev-deps:
         patterns:
           - "*"
@@ -23,44 +23,49 @@ updates:
         update-types:
           - "minor"
           - "patch"
-    ignore:
-      - dependency-name: "semantic-release"
-        versions: ["22.x"]  # Pin to specific version if needed, or remove to allow updates
-      - dependency-name: "@semantic-release/git"
-        versions: ["10.x"]  # Example of pinning
-    allow:
-      - dependency-type: "development"  # Only update devDependencies for npm
-
   # Gradle dependencies in the root directory
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "daily"
       time: "00:00"
-      timezone: "America/New_York"
+      timezone: "UTC"
     labels:
       - "dependencies"
       - "gradle"
     commit-message:
       prefix: "chore"
-      prefix-development: "chore-dev"
+      prefix-development: "chore"
       include: "scope"
     groups:
-      # Gradle dependencies (all)
       gradle-deps:
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
-    # For Gradle, we might want to ignore certain versions or dependencies
-    ignore:
-      - dependency-name: "com.android.tools.build:gradle"
-        versions: ["8.x"]  # Example if we want to pin AGP version
-    # Explicit updates for specific dependencies
-    allow:
-      - dependency-name: "org.lsposed.hiddenapibypass:hiddenapibypass"
-      - dependency-type: "development"
+
+  # Gradle dependencies in the app module (subproject build.gradle.kts)
+  - package-ecosystem: "gradle"
+    directory: "/app"
+    schedule:
+      interval: "daily"
+      time: "00:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "gradle"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      gradle-app-deps:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions in the root directory
   - package-ecosystem: "github-actions"
@@ -68,16 +73,15 @@ updates:
     schedule:
       interval: "daily"
       time: "00:00"
-      timezone: "America/New_York"
+      timezone: "UTC"
     labels:
       - "dependencies"
       - "github-actions"
     commit-message:
       prefix: "chore"
-      prefix-development: "chore-dev"
+      prefix-development: "chore"
       include: "scope"
     groups:
-      # GitHub Actions
       github-actions:
         patterns:
           - "*"

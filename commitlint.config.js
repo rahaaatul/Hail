@@ -15,18 +15,17 @@ module.exports = {
         'build',
         'ci',
         'chore',
-        'revert'
-      ]
+        'revert',
+        'wip',
+      ],
     ],
     'subject-empty': [2, 'never'],
     'type-empty': [2, 'never'],
     'scope-empty': [1, 'never'],
-    'header-max-length': [2, 'always', 100]
+    'subject-case': [2, 'never', ['start-case', 'pascal-case', 'upper-case']],
+    'header-max-length': [2, 'always', 100],
+    'body-max-line-length': [1, 'always', 100],
+    'footer-max-line-length': [1, 'always', 100],
   },
-  ignores: [
-    (commit) => {
-      const subject = commit.subject || '';
-      return !/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)[(:]/.test(subject);
-    },
-  ],
+  defaultIgnores: true,
 };

@@ -1,0 +1,65 @@
+name: Open pull request
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Short description of what this PR will do'
+        required: false
+        default: 'update the development branch'
+  push:
+    branches:
+      - dev
+  workflow_run:
+    workflows: ["Build pull request"]
+    types:
+      - completed
+    branches:
+      - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MESSAGE: ${{ github.event.inputs.message || 'update the development branch' }}
+
+jobs:
+  pull-request:
+    name: Open pull request
+    runs-on: ubuntu-latest
+    if: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')) }}
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Check for commits to merge
+        id: changes
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin main
+          COUNT=$(git rev-list --count origin/main..HEAD)
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No commits ahead of main, nothing to merge."
+          else
+            echo "$COUNT commit(s) ahead of main."
+          fi
+        shell: bash
+      - name: Open pull request
+        if: steps.changes.outputs.count != '0'
+        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
+        with:
+          destination_branch: main
+          pr_title: 'chore: ${{ env.MESSAGE }}'
+          pr_body: |
+            This pull request will ${{ env.MESSAGE }}.
+
+            ## Before merging this PR
+
+            - [ ] Verify the build passes
+          pr_draft: true

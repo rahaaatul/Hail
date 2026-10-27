@@ -10,60 +10,10 @@ on:
   push:
     branches:
       - dev
-    paths:
-      - 'app/src/**'
-      - 'app/build.gradle.kts'
-      - 'app/r8-rules.pro'
-      - 'gradle/**'
-      - '**.kt'
-      - '**.java'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'app/src/main/AndroidManifest.xml'
-      - 'app/src/main/res/**'
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - 'app/src/main/assets/**'
-      - 'app/src/main/jni/**'
-      - 'app/src/main/aidl/**'
-      - 'app/src/main/rs/**'
-      - '.editorconfig'
-      - 'config/detekt.yml'
-      - 'config/detekt-baseline.xml'
-      - '!**.md'
-      - '!**.txt'
-      - '!LICENSE'
-      - '!README.md'
   pull_request:
     branches:
       - dev
       - main
-    paths:
-      - 'app/src/**'
-      - 'app/build.gradle.kts'
-      - 'app/r8-rules.pro'
-      - 'gradle/**'
-      - '**.kt'
-      - '**.java'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - 'app/src/main/AndroidManifest.xml'
-      - 'app/src/main/res/**'
-      - '.github/workflows/**'
-      - '.github/actions/**'
-      - 'app/src/main/assets/**'
-      - 'app/src/main/jni/**'
-      - 'app/src/main/aidl/**'
-      - 'app/src/main/rs/**'
-      - '.editorconfig'
-      - 'config/detekt.yml'
-      - 'config/detekt-baseline.xml'
-      - '!**.md'
-      - '!**.txt'
-      - '!LICENSE'
-      - '!README.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -77,7 +27,6 @@ jobs:
     name: Build APK
     permissions:
       contents: read
-      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -87,7 +36,18 @@ jobs:
         uses: ./.github/actions/commitlint
         with:
           config-file: './commitlint.config.js'
+      - name: Check for changed workflow files
+        id: changed-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COUNT=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" -- '.github/workflows/*.yml' '.github/workflows/*.yaml' | wc -l)
+          else
+            COUNT=$(git diff --name-only "${{ github.event.before }}" "${{ github.event.after }}" -- '.github/workflows/*.yml' '.github/workflows/*.yaml' | wc -l)
+          fi
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+        shell: bash
       - name: Lint the workflow files
+        if: steps.changed-files.outputs.count != '0'
         uses: ./.github/actions/lint-workflows
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -118,43 +78,3 @@ jobs:
           name: debug-apk-${{ github.sha }}
           path: ${{ steps.build.outputs.debugApkPath }}
           retention-days: 1
-
-  pull-request:
-    name: Open pull request
-    needs: build
-    runs-on: ubuntu-latest
-    if: ${{ needs.build.result == 'success' && github.event_name == 'push' }}
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          fetch-depth: 0
-      - name: Check for commits to merge
-        id: changes
-        run: |
-          set -euo pipefail
-          git fetch --quiet origin main
-          COUNT=$(git rev-list --count origin/main..HEAD)
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-          if [ "$COUNT" -eq 0 ]; then
-            echo "No commits ahead of main, nothing to merge."
-          else
-            echo "$COUNT commit(s) ahead of main."
-          fi
-        shell: bash
-      - name: Open pull request
-        if: steps.changes.outputs.count != '0'
-        uses: repo-sync/pull-request@7e79a9f5dc3ad0ce53138f01df2fad14a04831c5
-        with:
-          destination_branch: main
-          pr_title: 'chore: ${{ env.MESSAGE }}'
-          pr_body: |
-            This pull request will ${{ env.MESSAGE }}.
-
-            ## Before merging this PR
-
-            - [ ] Verify the build passes
-          pr_draft: true
