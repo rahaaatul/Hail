@@ -182,4 +182,15 @@
     <string name="working_mode_tag">সম্পর্কিত অ্যাপের কাজের ধরণ</string>
     <string name="xposed_description">স্কোপড অ্যাপকে স্থগিত অ্যাপ লঞ্চ করতে দিন</string>
     <string name="mode_jailbreak_disable">জেলব্রেক - নিষ্ক্রিয়</string>
-</resources>
+
+    <string name="action_create_backup">ব্যাকআপ</string>
+    <string name="backup_category_apps">অ্যাপস</string>
+    <string name="backup_category_actions">অ্যাকশনস</string>
+    <string name="backup_category_whitelist">হোয়াইটলিস্ট</string>
+    <string name="restore_backup">ব্যাকআপ ফিরিয়ে আনার জন্যে</string>
+
+    <string name="summary_biometric_login">বায়োমেট্রিক প্রমাণীকরণের মাধ্যমে অ্যাপ নিরাপদ Brug</string>
+    <string name="summary_backup">অ্যাপস, ট্যাগ, অ্যাকশন, সেটিংস এবং হোয়াইটলিস্ট ব্যাকআপ করুন</string>
+    <string name="summary_restore">আর্কাইভ থেকে অ্যাপস, ট্যাগ, অ্যাকশন, সেটিংস এবং হোয়াইটলিস্ট ফিরিয়ে আনা</string>
+
+    <string name="action_data">ডেটা</string></resources>

@@ -185,4 +185,26 @@
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="xposed_description">Allow scoped apps to launch suspended apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Desativar</string>
-</resources>
+    <string name="title_backup">Backup / Restaurar</string>
+    <string name="title_backup_restore">Backup / Restaurar</string>
+    <string name="section_backup">Backup</string>
+    <string name="action_create_backup">Backup</string>
+    <string name="action_choose_archive">Escolher arquivo</string>
+    <string name="action_restore">Restaurar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="restore_no_archive">Nenhum arquivo selecionado</string>
+    <string name="restore_from">Restaurar de: %1$s</string>
+    <string name="restore_backup">Restaurar backup</string>
+    <string name="backup_category_apps">Aplicativos</string>
+    <string name="backup_category_tags">Tags</string>
+    <string name="backup_category_actions">Ações</string>
+    <string name="backup_category_settings">Configurações</string>
+    <string name="backup_category_whitelist">Lista de permissões</string>
+    <string name="dialog_confirm_restore_title">Confirmar restauração</string>
+    <string name="dialog_confirm_restore_message">Isso substituirá os dados atuais pelo conteúdo do backup. Continuar?</string>
+
+    <string name="summary_biometric_login">Acesso seguro ao aplicativo por autenticação biométrica</string>
+    <string name="summary_backup">Faça backup de aplicativos, tags, ações, configurações e lista de permissões</string>
+    <string name="summary_restore">Restaure aplicativos, tags, ações, configurações e lista de permissões de um arquivo</string>
+
+    <string name="action_data">Dados</string></resources>
