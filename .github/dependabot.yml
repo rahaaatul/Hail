@@ -23,6 +23,14 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # conventional-changelog-conventionalcommits@10 is incompatible with the
+      # conventional-changelog-writer@8 used by the semantic-release plugins
+      # (@semantic-release/release-notes-generator@14, @semantic-release/commit-analyzer).
+      # Pin to the last writer@8-compatible major (v9). See
+      # https://github.com/conventional-changelog/conventional-changelog/issues/1495
+      - dependency-name: "conventional-changelog-conventionalcommits"
+        versions: [">=10.0.0"]
   # Gradle dependencies in the root directory
   - package-ecosystem: "gradle"
     directory: "/"
