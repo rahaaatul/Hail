@@ -15,6 +15,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -24,6 +25,10 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ManageSearch
 import androidx.compose.material.icons.automirrored.outlined.Shortcut
+import androidx.compose.material.icons.filled.Backup
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.outlined.Adb
 import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material.icons.outlined.AppShortcut
@@ -31,6 +36,7 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BatterySaver
 import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DashboardCustomize
 import androidx.compose.material.icons.outlined.DeleteSweep
@@ -49,6 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +70,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -73,6 +81,9 @@ import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
 import com.aistra.hail.databinding.DialogInputBinding
+import com.aistra.hail.ui.backup.BackupDialog
+import com.aistra.hail.ui.backup.BackupRestoreViewModel
+import com.aistra.hail.ui.backup.RestoreDialog
 import com.aistra.hail.ui.main.MainActivity
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
@@ -116,6 +127,20 @@ class SettingsFragment :
     private val iconPackValuesState = mutableStateOf(listOf(HailData.ACTION_NONE))
     private val iconPackNamesState = mutableStateOf(mapOf<String, String>())
 
+    private val viewModel: BackupRestoreViewModel by viewModels()
+    private lateinit var composeView: ComposeView
+
+    private val createBackupLauncher =
+        registerForActivityResult(CreateDocument("application/zip")) { uri ->
+            uri?.let { destinationUri ->
+                requireContext().contentResolver.takePersistableUriPermission(
+                    destinationUri,
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+                viewModel.performBackup(destinationUri)
+            }
+        }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -156,16 +181,19 @@ class SettingsFragment :
                 }
             }
         }
-        return ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                AppTheme {
-                    ProvidePreferenceLocals {
-                        SettingsScreen()
+
+        composeView =
+            ComposeView(requireContext()).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setContent {
+                    AppTheme {
+                        ProvidePreferenceLocals {
+                            SettingsScreen()
+                        }
                     }
                 }
             }
-        }
+        return composeView
     }
 
     @Composable
@@ -177,6 +205,8 @@ class SettingsFragment :
         }
         val iconPackValues by iconPackValuesState
         val autoFreezeAfterLock = rememberPreferenceState(HailData.AUTO_FREEZE_AFTER_LOCK, false)
+        var showBackupDialog by remember { mutableStateOf(false) }
+        val restoreState by viewModel.restoreState.collectAsState()
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             listPreference(
                 key = HailData.WORKING_MODE,
@@ -197,6 +227,15 @@ class SettingsFragment :
                 },
                 titleId = R.string.action_biometric,
                 icon = Icons.Outlined.Fingerprint,
+            )
+            preference(
+                key = "data",
+                title = { Text(text = stringResource(R.string.action_data)) },
+                summary = { Text(text = stringResource(R.string.summary_data)) },
+                icon = { Icon(imageVector = Icons.Default.Storage, contentDescription = null) },
+                onClick = {
+                    findNavController().navigate(R.id.action_settings_to_data)
+                },
             )
             horizontalDivider()
             preferenceCategory(key = "customize", title = { Text(text = stringResource(R.string.title_customize)) })
@@ -377,6 +416,31 @@ class SettingsFragment :
                 summary = { Text(text = stringResource(R.string.summary_background_activity)) },
                 icon = { Icon(imageVector = Icons.Outlined.BatterySaver, contentDescription = null) },
                 onClick = ::requestBackgroundActivity,
+            )
+        }
+        if (showBackupDialog) {
+            BackupDialog(
+                onDismissRequest = { showBackupDialog = false },
+                viewModel = viewModel,
+                onCreateBackupClick = {
+                    showBackupDialog = false
+                    val appName = getString(R.string.app_name).lowercase()
+                    val versionName =
+                        requireContext()
+                            .packageManager
+                            .getPackageInfo(requireContext().packageName, 0)
+                            .versionName
+                            ?.substringBefore("-g")
+                            ?: "unknown"
+                    createBackupLauncher.launch("$appName-$versionName-${System.currentTimeMillis()}.hail")
+                },
+            )
+        }
+        if (restoreState.fileName != null) {
+            RestoreDialog(
+                onDismissRequest = viewModel::clearStagedArchive,
+                viewModel = viewModel,
+                onRestoreConfirmed = viewModel::onRestoreConfirmed,
             )
         }
     }
