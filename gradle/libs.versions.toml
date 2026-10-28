@@ -12,9 +12,10 @@ coreKtx = "1.19.1"
 dhizukuApi = "2.6.0"
 hiddenapibypass = "6.2"
 insetter = "0.6.1"
-kotlinxCoroutinesAndroid = "1.11.0"
+kotlinxCoroutinesAndroid = "1.10.2"
 lifecycleLivedataKtx = "2.11.0"
 material = "1.14.0"
+material3 = "1.5.0-beta02"
 navigationKtx = "2.10.2"
 pinyin4j = "2.5.1"
 preferenceKtx = "1.2.1"
@@ -29,6 +30,10 @@ spotless = "8.10.4"
 detekt = "1.23.8"
 ksp = "2.3.12"
 sqlite = "2.7.1"
+robolectric = "4.14"
+protobuf = "4.32.1"
+protobufGradlePlugin = "0.10.0"
+datastore = "1.1.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
@@ -39,7 +44,7 @@ androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "a
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleLivedataKtx" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
-androidx-material3 = { module = "androidx.compose.material3:material3" }
+androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationKtx" }
 androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationKtx" }
@@ -54,6 +59,7 @@ dhizuku-api = { module = "io.github.iamr0s:Dhizuku-API", version.ref = "dhizukuA
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 insetter = { module = "dev.chrisbanes.insetter:insetter", version.ref = "insetter" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesAndroid" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4j" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
@@ -64,6 +70,10 @@ androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref =
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room" }
 androidx-room-sqlite-wrapper = { module = "androidx.room3:room3-sqlite-wrapper", version.ref = "room" }
 androidx-sqlite = { module = "androidx.sqlite:sqlite", version.ref = "sqlite" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+protobuf-kotlin-lite = { module = "com.google.protobuf:protobuf-kotlin-lite", version.ref = "protobuf" }
+protobuf-java-lite = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobuf" }
+androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
@@ -72,3 +82,4 @@ kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufGradlePlugin" }
