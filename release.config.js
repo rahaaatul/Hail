@@ -60,7 +60,7 @@ const preset = conventionalChangelogConventionalCommits({
 
 export default {
   branches: ['main', { name: 'dev', prerelease: true }],
-  tagFormat: 'v${version.replace("-dev.", ".")}',
+  tagFormat: 'v${version}',
   plugins: [
     [
       '@semantic-release/commit-analyzer',

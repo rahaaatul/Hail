@@ -8,11 +8,11 @@
 # version for a release and a version with a prerelease identifier for a
 # prerelease, for example 1.12.0 and 1.12.0-dev.3.
 #
-# The version name of a prerelease is the version it leads to followed by the
-# number of the prerelease, so the development branch produces 1.12.0.1,
-# 1.12.0.2 and so on, while the release itself stays 1.12.0. The tag keeps
-# the identifier, so the version of a prerelease is still unambiguous in the
-# tag list.
+# The version name of a prerelease keeps its prerelease identifier, so the
+# development branch produces 1.12.0-dev.1, 1.12.0-dev.2 and so on, while the
+# release itself stays 1.12.0. The tag keeps the same identifier, so the
+# version of a prerelease is unambiguous in the tag list and matches the APK
+# version name.
 #
 # The version code moves on every release, prereleases included, so that
 # each build can be installed over the one before it. The counter lives in
@@ -30,8 +30,8 @@ VERSION="${1:?Usage: prepare-release.sh <version>}"
 
 cd "$(dirname "$0")/../.."
 
-# 1.12.0-dev.3 -> 1.12.0.3, and 1.12.0 stays 1.12.0.
-VERSION_NAME="$(printf '%s' "$VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*)-.*\.([0-9]+)$/\1.\3/')"
+# 1.12.0-dev.3 stays 1.12.0-dev.3, and 1.12.0 stays 1.12.0.
+VERSION_NAME="$VERSION"
 
 CURRENT_VERSION_CODE="$(grep -oE 'VERSION_CODE=[0-9]+' versionCode.properties | cut -d'=' -f2)"
 NEW_VERSION_CODE=$((CURRENT_VERSION_CODE + 1))
