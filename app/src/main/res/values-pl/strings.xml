@@ -185,4 +185,26 @@
     <string name="title_cache">Pamięć podręczna</string>
     <string name="working_mode_tag">Tryb pracy powiązanych aplikacji</string>
     <string name="mode_jailbreak_disable">Jailbreak - Wyłącz</string>
-</resources>
+    <string name="title_backup">Kopia zapasowa / Przywracanie</string>
+    <string name="title_backup_restore">Kopia zapasowa / Przywracanie</string>
+    <string name="section_backup">Kopia zapasowa</string>
+    <string name="action_create_backup">Kopia zapasowa</string>
+    <string name="action_choose_archive">Wybierz archiwum</string>
+    <string name="action_restore">Przywróć</string>
+    <string name="action_cancel">Anuluj</string>
+    <string name="restore_no_archive">Nie wybrano archiwum</string>
+    <string name="restore_from">Przywróć z: %1$s</string>
+    <string name="restore_backup">Przywróć kopię zapasową</string>
+    <string name="backup_category_apps">Aplikacje</string>
+    <string name="backup_category_tags">Tagi</string>
+    <string name="backup_category_actions">Akcje</string>
+    <string name="backup_category_settings">Ustawienia</string>
+    <string name="backup_category_whitelist">Biała lista</string>
+    <string name="dialog_confirm_restore_title">Potwierdź przywracanie</string>
+    <string name="dialog_confirm_restore_message">To zastąpi bieżące dane zawartością kopii zapasowej. Kontynuować?</string>
+
+    <string name="summary_biometric_login">Bezpieczny dostęp do aplikacji za pomocą uwierzytelniania biometrycznego</string>
+    <string name="summary_backup">Utwórz kopię zapasową aplikacji, tagów, akcji, ustawień i białej listy</string>
+    <string name="summary_restore">Przywróć aplikacje, tagi, akcje, ustawienia i białą listę z archiwum</string>
+
+    <string name="action_data">Dane</string></resources>

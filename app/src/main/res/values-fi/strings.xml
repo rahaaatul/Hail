@@ -183,4 +183,26 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Poista käytöstä</string>
-</resources>
+    <string name="title_backup">Varmuuskopiointi / Palautus</string>
+    <string name="title_backup_restore">Varmuuskopiointi / Palautus</string>
+    <string name="section_backup">Varmuuskopiointi</string>
+    <string name="action_create_backup">Varmuuskopio</string>
+    <string name="action_choose_archive">Valitse arkisto</string>
+    <string name="action_restore">Palauta</string>
+    <string name="action_cancel">Peruuta</string>
+    <string name="restore_no_archive">Arkistoa ei valittu</string>
+    <string name="restore_from">Palauta kohteesta: %1$s</string>
+    <string name="restore_backup">Palauta varmuuskopiosta</string>
+    <string name="backup_category_apps">Sovellukset</string>
+    <string name="backup_category_tags">Tunnisteet</string>
+    <string name="backup_category_actions">Toiminnot</string>
+    <string name="backup_category_settings">Asetukset</string>
+    <string name="backup_category_whitelist">Sallittujen sovellusten lista</string>
+    <string name="dialog_confirm_restore_title">Vahvista palautus</string>
+    <string name="dialog_confirm_restore_message">Tämä korvaa nykyiset tiedot varmuuskopion sisällöllä. Jatketaanko?</string>
+
+    <string name="summary_biometric_login">Turvallinen sovelluksen pääsy biometrisellä todennuksella</string>
+    <string name="summary_backup">Varmuuskopioi sovellukset, tagit, toiminnot, asetukset ja sallittujen sovellusten lista</string>
+    <string name="summary_restore">Palauta sovellukset, tagit, toiminnot, asetukset ja sallittujen sovellusten lista varmuuskopiosta</string>
+
+    <string name="action_data">Tiedot</string></resources>

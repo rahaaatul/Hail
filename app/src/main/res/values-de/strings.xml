@@ -182,4 +182,15 @@
     <string name="title_actions">Aktionen</string>
     <string name="title_cache">Cache</string>
     <string name="mode_jailbreak_disable">Jailbreak - Deaktivieren</string>
-</resources>
+
+    <string name="action_create_backup">Backup</string>
+    <string name="backup_category_apps">Apps</string>
+    <string name="backup_category_actions">Aktionen</string>
+    <string name="backup_category_whitelist">Whitelist</string>
+    <string name="restore_backup">Backup wiederherstellen</string>
+
+    <string name="summary_biometric_login">Sicherer Zugriff auf die App über biometrische Authentifizierung</string>
+    <string name="summary_backup">Apps, Tags, Aktionen, Einstellungen und Whitelist sichern</string>
+    <string name="summary_restore">Apps, Tags, Aktionen, Einstellungen und Whitelist aus einem Archiv wiederherstellen</string>
+
+    <string name="action_data">Daten</string></resources>

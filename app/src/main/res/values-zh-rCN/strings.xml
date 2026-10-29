@@ -180,4 +180,26 @@
     <string name="summary_rebuild_cache">删除缓存的应用数据并在后台重建</string>
     <string name="title_actions">操作</string>
     <string name="title_cache">缓存</string>
-</resources>
+    <string name="title_backup">备份 / 恢复</string>
+    <string name="title_backup_restore">备份 / 恢复</string>
+    <string name="section_backup">备份</string>
+    <string name="action_create_backup">备份</string>
+    <string name="action_choose_archive">选择归档</string>
+    <string name="action_restore">恢复</string>
+    <string name="action_cancel">取消</string>
+    <string name="restore_no_archive">未选择归档</string>
+    <string name="restore_from">从 %1$s 恢复</string>
+    <string name="restore_backup">从备份恢复</string>
+    <string name="backup_category_apps">应用</string>
+    <string name="backup_category_tags">标签</string>
+    <string name="backup_category_actions">操作</string>
+    <string name="backup_category_settings">设置</string>
+    <string name="backup_category_whitelist">白名单</string>
+    <string name="dialog_confirm_restore_title">确认恢复</string>
+    <string name="dialog_confirm_restore_message">这将用备份内容替换当前数据。继续?</string>
+
+    <string name="summary_biometric_login">通过生物识别安全访问应用</string>
+    <string name="summary_backup">备份应用、标签、操作、设置和白名单</string>
+    <string name="summary_restore">从备份中恢复应用、标签、操作、设置和白名单</string>
+
+    <string name="action_data">数据</string></resources>

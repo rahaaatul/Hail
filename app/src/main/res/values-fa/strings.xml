@@ -182,4 +182,26 @@
     <string name="title_cache">کش</string>
     <string name="working_mode_tag">حالت کاری برنامه‌های وابسته</string>
     <string name="mode_jailbreak_disable">جیلبریک - غیرفعال</string>
-</resources>
+    <string name="title_backup">نسخه پشتیبانی / بازگردانی</string>
+    <string name="title_backup_restore">نسخه پشتیبانی / بازگردانی</string>
+    <string name="section_backup">نسخه پشتیبانی</string>
+    <string name="action_create_backup">نسخه پشتیبانی</string>
+    <string name="action_choose_archive">انتخاب بایگانی</string>
+    <string name="action_restore">بازگردانی</string>
+    <string name="action_cancel">لغو</string>
+    <string name="restore_no_archive">هیچ بایگانی انتخاب نشده است</string>
+    <string name="restore_from">بازگردانی از: %1$s</string>
+    <string name="restore_backup">بازگردانی نسخه پشتیبانی</string>
+    <string name="backup_category_apps">برنامه‌ها</string>
+    <string name="backup_category_tags">برچسب‌ها</string>
+    <string name="backup_category_actions">اقدامات</string>
+    <string name="backup_category_settings">تنظیمات</string>
+    <string name="backup_category_whitelist">لیست سفید</string>
+    <string name="dialog_confirm_restore_title">تایید بازگردانی</string>
+    <string name="dialog_confirm_restore_message">این داده‌های فعلی را با محتوای نسخه پشتیبانی جایگزین می‌کند. ادامه دهید؟</string>
+
+    <string name="summary_biometric_login">دسترسی ایمن به برنامه با احراز هویت بیومتریک</string>
+    <string name="summary_backup">پشتیبان‌گیری از برنامه‌ها، برچسب‌ها، اقدامات، تنظیمات و لیست سفید</string>
+    <string name="summary_restore">بازگردانی برنامه‌ها، برچسب‌ها، اقدامات، تنظیمات و لیست سفید از یک نسخه پشتیبان</string>
+
+    <string name="action_data">داده‌ها</string></resources>

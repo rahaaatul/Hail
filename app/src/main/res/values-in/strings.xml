@@ -179,4 +179,26 @@
     <string name="summary_rebuild_cache">Hapus data aplikasi yang di-cache dan bangun ulang di latar belakang</string>
     <string name="title_actions">Tindakan</string>
     <string name="title_cache">Cache</string>
-</resources>
+    <string name="title_backup">Cadangan / Pemulihan</string>
+    <string name="title_backup_restore">Cadangan / Pemulihan</string>
+    <string name="section_backup">Cadangan</string>
+    <string name="action_create_backup">Cadangan</string>
+    <string name="action_choose_archive">Pilih Arsip</string>
+    <string name="action_restore">Pulihkan</string>
+    <string name="action_cancel">Batalkan</string>
+    <string name="restore_no_archive">Tidak ada arsip yang dipilih</string>
+    <string name="restore_from">Pulihkan dari: %1$s</string>
+    <string name="restore_backup">Pulihkan cadangan</string>
+    <string name="backup_category_apps">Aplikasi</string>
+    <string name="backup_category_tags">Tag</string>
+    <string name="backup_category_actions">Tindakan</string>
+    <string name="backup_category_settings">Pengaturan</string>
+    <string name="backup_category_whitelist">Daftar putih</string>
+    <string name="dialog_confirm_restore_title">Konfirmasi Pemulihan</string>
+    <string name="dialog_confirm_restore_message">Ini akan mengganti data saat ini dengan isi cadangan. Lanjutkan?</string>
+
+    <string name="summary_biometric_login">Akses aman ke aplikasi dengan otentikasi biometrik</string>
+    <string name="summary_backup">Cadangkan aplikasi, tag, tindakan, pengaturan dan daftar putih</string>
+    <string name="summary_restore">Pulihkan aplikasi, tag, tindakan, pengaturan dan daftar putih dari arsip</string>
+
+    <string name="action_data">Data</string></resources>
