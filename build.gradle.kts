@@ -9,17 +9,21 @@ plugins {
 }
 
 // Force patched versions of AGP buildscript-classpath transitives
-// flagged by Dependabot (#22-#29). Build-time only — not packaged
+// flagged by Dependabot (#22-#33). Build-time only — not packaged
 // in the APK — but the graph still reports them.
 // Configured outside the buildscript block because Gradle 9+ forbids
 // mutating buildscript configurations inside buildscript (error in Gradle 10).
 buildscript.configurations.named("classpath").configure {
     resolutionStrategy {
+        force("org.freemarker:freemarker:2.3.35")
         force("org.apache.commons:commons-lang3:3.21.0")
         force("org.bouncycastle:bcprov-jdk18on:1.86")
         force("org.bouncycastle:bcpkix-jdk18on:1.86")
         force("org.bitbucket.b_c:jose4j:0.9.7")
         force("org.jdom:jdom2:2.0.6.1")
         force("org.apache.httpcomponents:httpclient:4.5.14")
+    }
+}
+>>>>>>> 648ccb7c (fix(security): force patched freemarker 2.3.35 on buildscript classpath to resolve Dependabot #33)
     }
 }
