@@ -414,6 +414,8 @@ private suspend fun applySettings(settings: SettingsBackup?) {
                 settings.hasSkipWhileCharging() to { setSkipWhileCharging(settings.skipWhileCharging) },
                 settings.hasSkipForegroundApp() to { setSkipForegroundApp(settings.skipForegroundApp) },
                 settings.hasSkipNotifyingApp() to { setSkipNotifyingApp(settings.skipNotifyingApp) },
+                settings.hasHomeFontSize() to { setHomeFontSize(settings.homeFontSize) },
+                settings.hasAutoFreezeDelay() to { setAutoFreezeDelay(settings.autoFreezeDelay) },
             )
         appliedSettings.forEach { (condition, apply) -> if (condition) apply() }
     }

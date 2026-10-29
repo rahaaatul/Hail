@@ -4,8 +4,10 @@ import android.content.Context
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.SettingsDataStore
 import com.aistra.hail.backup.BackupOptions
 import com.aistra.hail.backup.RestoreOptions
+import com.aistra.hail.backup.SettingsBackup
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -18,6 +20,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.nio.charset.StandardCharsets
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = HailApp::class)
@@ -106,6 +114,149 @@ class HBackupRoundtripTest {
             HailData.tags.clear()
 
             assertFalse(restore(context, outputFile, RestoreOptions(apps = true, tags = true)).isSuccess)
+
+            outputFile.delete()
+        }
+    }
+
+    @Test
+    fun `settings are backed up`() {
+        runBlocking {
+            SettingsDataStore.updateSettings {
+                setSortBy("install")
+                setFilterUserApps(false)
+                setHomeFontSize(18f)
+                setWorkingMode("shizuku_stop")
+                setGrayscaleIcon(true)
+            }
+
+            val outputFile = File(context.cacheDir, "backup-test-${System.currentTimeMillis()}.hail")
+            assertTrue(
+                backup(
+                    context,
+                    outputFile,
+                    BackupOptions(settings = true),
+                ).isSuccess,
+            )
+
+            val zipFile = ZipFile(outputFile)
+            val entry = zipFile.getEntry("settings.bin")
+            require(entry != null) { "settings.bin not found in archive" }
+            val input: InputStream = zipFile.getInputStream(entry)
+            val bytes = input.readBytes()
+            val settings = SettingsBackup.parseFrom(bytes)
+
+            assertTrue(settings.hasSortBy())
+            assertEquals("install", settings.sortBy)
+            assertTrue(settings.hasFilterUserApps())
+            assertFalse(settings.filterUserApps)
+            assertTrue(settings.hasHomeFontSize())
+            assertEquals(18f, settings.homeFontSize, 0.001f)
+            assertTrue(settings.hasWorkingMode())
+            assertEquals("shizuku_stop", settings.workingMode)
+            assertTrue(settings.hasGrayscaleIcon())
+            assertTrue(settings.grayscaleIcon)
+
+            zipFile.close()
+            outputFile.delete()
+        }
+    }
+
+    @Test
+    fun `settings are restored`() {
+        runBlocking {
+            // Pre-seed DataStore with different values, then back them up
+            SettingsDataStore.updateSettings {
+                setSortBy("name")
+                setFilterUserApps(true)
+                setHomeFontSize(20f)
+                setWorkingMode("default_mode")
+                setGrayscaleIcon(false)
+            }
+
+            val outputFile = File(context.cacheDir, "restore-test-${System.currentTimeMillis()}.hail")
+            assertTrue(
+                backup(
+                    context,
+                    outputFile,
+                    BackupOptions(apps = true, tags = true, actions = true, settings = true, whitelist = true),
+                ).isSuccess,
+            )
+
+            // Mutate DataStore to different values after backup
+            SettingsDataStore.updateSettings {
+                setSortBy("mutated")
+                setFilterUserApps(false)
+                setHomeFontSize(99f)
+                setWorkingMode("mutated_mode")
+                setGrayscaleIcon(true)
+            }
+
+            assertTrue(
+                restore(
+                    context,
+                    outputFile,
+                    RestoreOptions(settings = true),
+                ).isSuccess,
+            )
+
+            // Should match backed-up values, not mutated ones
+            val restored = SettingsDataStore.readSettings()
+            assertEquals("name", restored.sortBy)
+            assertTrue(restored.filterUserApps)
+            assertEquals(20f, restored.homeFontSize, 0.001f)
+            assertEquals("default_mode", restored.workingMode)
+            assertFalse(restored.grayscaleIcon)
+
+            outputFile.delete()
+        }
+    }
+
+    @Test
+    fun `restore preserves non-backed-up fields`() {
+        runBlocking {
+            // Pre-seed DataStore with non-default values for both fields
+            SettingsDataStore.updateSettings {
+                setSortBy("preserved")
+                setFilterUserApps(true)
+            }
+
+            // Manually craft a backup zip whose settings.bin only has sortBy present
+            // (filterUserApps absent → hasFilterUserApps() = false → not applied on restore)
+            val outputFile = File(context.cacheDir, "preserve-test-${System.currentTimeMillis()}.hail")
+            val settings = SettingsBackup.newBuilder().setSortBy("install").build()
+            val byteArray = settings.toByteArray()
+
+            ZipOutputStream(FileOutputStream(outputFile)).use { zos ->
+                zos.putNextEntry(ZipEntry("manifest.json"))
+                zos.write("{\"format\":\"hail-backup\",\"version\":1}".toByteArray(StandardCharsets.UTF_8))
+                zos.closeEntry()
+                zos.putNextEntry(ZipEntry("apps.json"))
+                zos.write("[]".toByteArray(StandardCharsets.UTF_8))
+                zos.closeEntry()
+                zos.putNextEntry(ZipEntry("tags.json"))
+                zos.write("[]".toByteArray(StandardCharsets.UTF_8))
+                zos.closeEntry()
+                zos.putNextEntry(ZipEntry("actions.json"))
+                zos.write("[]".toByteArray(StandardCharsets.UTF_8))
+                zos.closeEntry()
+                zos.putNextEntry(ZipEntry("settings.bin"))
+                zos.write(byteArray)
+                zos.closeEntry()
+            }
+
+            assertTrue(
+                restore(
+                    context,
+                    outputFile,
+                    RestoreOptions(settings = true),
+                ).isSuccess,
+            )
+
+            // sortBy was present in backup → applied; filterUserApps was absent → preserved
+            val restored = SettingsDataStore.readSettings()
+            assertEquals("install", restored.sortBy)
+            assertTrue(restored.filterUserApps)
 
             outputFile.delete()
         }
