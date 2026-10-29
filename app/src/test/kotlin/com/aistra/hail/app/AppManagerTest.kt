@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -71,7 +72,7 @@ class AppManagerTest {
 
     @Test
     fun `execute returns 0 to null when mode not SU or SHIZUKU`() =
-        runTest {
+        runBlocking {
             every { HailData.workingMode } returns HailData.MODE_DEFAULT
             val (code, output) = AppManager.execute("some command")
             assertEquals(0, code)

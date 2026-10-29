@@ -175,4 +175,26 @@
     <string name="working_mode_tag">संबंधित ऐप्स का वर्किंग मोड</string>
     <string name="xposed_description">स्कोप्ड ऐप्स को निलंबित ऐप्स लॉन्च करने दें</string>
     <string name="mode_jailbreak_disable">जेलब्रेक - अक्षम</string>
-</resources>
+    <string name="title_backup">बैकअप / पुनर्स्थापना</string>
+    <string name="title_backup_restore">बैकअप / पुनर्स्थापना</string>
+    <string name="section_backup">बैकअप</string>
+    <string name="action_create_backup">बैकअप</string>
+    <string name="action_choose_archive">संग्रह चुनें</string>
+    <string name="action_restore">पुनर्स्थापित करें</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="restore_no_archive">कोई संग्रह नहीं चुना गया</string>
+    <string name="restore_from">से पुनर्स्थापित करें: %1$s</string>
+    <string name="restore_backup">बैकअप पुनर्स्थापित करें</string>
+    <string name="backup_category_apps">ऐप्स</string>
+    <string name="backup_category_tags">टैग</string>
+    <string name="backup_category_actions">क्रियाएं</string>
+    <string name="backup_category_settings">सेटिंग्ज़</string>
+    <string name="backup_category_whitelist">व्हाइटलिस्ट</string>
+    <string name="dialog_confirm_restore_title">पुनर्स्थापना की पुष्टि करें</string>
+    <string name="dialog_confirm_restore_message">यह वर्तमान डेटा को बैकअप की सामग्री से बदल देगा। जारी रखें?</string>
+
+    <string name="summary_biometric_login">बायोमीट्रिक प्रमाणीकरण के माध्यम से ऐप तक सुरक्षित पहुंच</string>
+    <string name="summary_backup">ऐप्स, टैग, क्रियाएं, सेटिंग्स और व्हाइटलिस्ट का बैकअप लें</string>
+    <string name="summary_restore">ऐप्स, टैग, क्रियाएं, सेटिंग्स और व्हाइटलिस्ट को एक आर्काइव से पुनर्स्थापित करें</string>
+
+    <string name="action_data">डेटा</string></resources>

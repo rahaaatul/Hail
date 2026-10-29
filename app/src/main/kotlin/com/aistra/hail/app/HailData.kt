@@ -1,11 +1,15 @@
 package com.aistra.hail.app
 
-import androidx.core.content.edit
-import androidx.preference.PreferenceManager
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
-import com.aistra.hail.R
+import com.aistra.hail.app.SettingsData
 import com.aistra.hail.utils.HFiles
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -31,7 +35,7 @@ object HailData {
     private const val KEY_WHITELISTED = "whitelisted"
     const val KEY_PACKAGE = "package"
     const val KEY_FROZEN = "frozen"
-    private const val SORT_BY = "sort_by"
+    const val SORT_BY = "sort_by"
     const val SORT_NAME = "name"
     const val SORT_INSTALL = "install"
     const val SORT_UPDATE = "update"
@@ -136,32 +140,50 @@ object HailData {
             ACTION_LOCK_FREEZE,
         )
 
-    private val sp by lazy { PreferenceManager.getDefaultSharedPreferences(app) }
-    val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
-    val filterUserApps get() = sp.getBoolean(FILTER_USER_APPS, true)
-    val filterSystemApps get() = sp.getBoolean(FILTER_SYSTEM_APPS, false)
-    val filterAllApps get() = sp.getBoolean(FILTER_ALL_APPS, true)
-    val filterFrozenApps get() = sp.getBoolean(FILTER_FROZEN_APPS, true)
-    val filterUnfrozenApps get() = sp.getBoolean(FILTER_UNFROZEN_APPS, true)
-    val workingMode get() = sp.getString(WORKING_MODE, MODE_DEFAULT)!!
-    val biometricLogin get() = sp.getBoolean(BIOMETRIC_LOGIN, false)
-    val appTheme get() = sp.getString(APP_THEME, FOLLOW_SYSTEM)!!
-    val iconPack get() = sp.getString(ICON_PACK, ACTION_NONE)!!
-    val grayscaleIcon get() = sp.getBoolean(GRAYSCALE_ICON, true)
-    val compactIcon get() = sp.getBoolean(COMPACT_ICON, false)
-    val synthesizeAdaptiveIcons get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
-    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, 14f)
-    val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, false)
-    val nineKeySearch get() = sp.getBoolean(NINE_KEY_SEARCH, false)
-    val tileAction get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
-    var autoFreezeAfterLock
-        get() = sp.getBoolean(AUTO_FREEZE_AFTER_LOCK, false)
-        set(value) = sp.edit { putBoolean(AUTO_FREEZE_AFTER_LOCK, value) }
-    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, 0f).toLong()
-    val skipWhileCharging get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
-    val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
-    val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
-    val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
+    // Cached settings from Proto DataStore, exposed as a hot StateFlow from startup.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    internal val settingsData: StateFlow<SettingsData> by lazy {
+        val stateFlow = MutableStateFlow(SettingsData())
+        scope.launch {
+            SettingsDataStore.settingsFlow.collect { stateFlow.value = it }
+        }
+        stateFlow
+    }
+
+    // ── Synchronous getters (read from DataStore cache) ──
+
+    val sortBy get() = settingsData.value.sortBy
+    val filterUserApps get() = settingsData.value.filterUserApps
+    val filterSystemApps get() = settingsData.value.filterSystemApps
+    val filterAllApps get() = settingsData.value.filterAllApps
+    val filterFrozenApps get() = settingsData.value.filterFrozenApps
+    val filterUnfrozenApps get() = settingsData.value.filterUnfrozenApps
+    val workingMode get() = settingsData.value.workingMode
+    val biometricLogin get() = settingsData.value.biometricLogin
+    val appTheme get() = settingsData.value.appTheme
+    val iconPack get() = settingsData.value.iconPack
+    val grayscaleIcon get() = settingsData.value.grayscaleIcon
+    val compactIcon get() = settingsData.value.compactIcon
+    val synthesizeAdaptiveIcons get() = settingsData.value.synthesizeAdaptiveIcons
+    val homeFontSize get() = settingsData.value.homeFontSize
+    val fuzzySearch get() = settingsData.value.fuzzySearch
+    val nineKeySearch get() = settingsData.value.nineKeySearch
+    val tileAction get() = settingsData.value.tileAction
+    var autoFreezeAfterLock: Boolean
+        get() = settingsData.value.autoFreezeAfterLock
+        set(value) {
+            scope.launch {
+                SettingsDataStore.updateSettings { setAutoFreezeAfterLock(value) }
+            }
+        }
+    val autoFreezeDelay get() = settingsData.value.autoFreezeDelay
+    val skipWhileCharging get() = settingsData.value.skipWhileCharging
+    val skipForegroundApp get() = settingsData.value.skipForegroundApp
+    val skipNotifyingApp get() = settingsData.value.skipNotifyingApp
+    val dynamicShortcutAction get() = settingsData.value.dynamicShortcutAction
+
+    // ── File-backed state (unchanged — still JSON on disk) ──
 
     private val dir = "${app.filesDir.path}/v1"
     private val appsPath = "$dir/apps.json"
@@ -209,6 +231,7 @@ object HailData {
         packageName: String,
         saveApps: Boolean = true,
     ) {
+        if (packageName == BuildConfig.APPLICATION_ID) return
         checkedList.removeAll { it.packageName == packageName }
         if (saveApps) saveApps()
     }
@@ -240,7 +263,7 @@ object HailData {
                     add(with(json.getJSONObject(i)) { getString(KEY_TAG) to getInt(KEY_ID) })
                 }
             }.onFailure {
-                add(app.getString(R.string.label_default) to 0)
+                add("Default" to 0)
             }
         }
     }
@@ -258,10 +281,41 @@ object HailData {
         )
     }
 
-    fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }
+    // ── Async setters (write to Proto DataStore) ──
+
+    fun changeAppsSort(sort: String) =
+        scope.launch {
+            SettingsDataStore.updateSettings { setSortBy(sort) }
+        }
 
     fun changeAppsFilter(
         filter: String,
         enabled: Boolean,
-    ) = sp.edit { putBoolean(filter, enabled) }
+    ) = scope.launch {
+        SettingsDataStore.updateSettings {
+            when (filter) {
+                FILTER_USER_APPS -> {
+                    setFilterUserApps(enabled)
+                }
+
+                FILTER_SYSTEM_APPS -> {
+                    setFilterSystemApps(enabled)
+                }
+
+                FILTER_ALL_APPS -> {
+                    setFilterAllApps(enabled)
+                }
+
+                FILTER_FROZEN_APPS -> {
+                    setFilterFrozenApps(enabled)
+                }
+
+                FILTER_UNFROZEN_APPS -> {
+                    setFilterUnfrozenApps(enabled)
+                }
+
+                else -> { /* unknown filter key — ignore */ }
+            }
+        }
+    }
 }

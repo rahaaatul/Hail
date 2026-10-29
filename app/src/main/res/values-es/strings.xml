@@ -180,4 +180,26 @@
     <string name="title_actions">Acciones</string>
     <string name="title_cache">Caché</string>
     <string name="mode_jailbreak_disable">Jailbreak - Desactivar</string>
-</resources>
+    <string name="title_backup">Copia de seguridad / Restaurar</string>
+    <string name="title_backup_restore">Copia de seguridad / Restaurar</string>
+    <string name="section_backup">Copia de seguridad</string>
+    <string name="action_create_backup">Copia de seguridad</string>
+    <string name="action_choose_archive">Elegir archivo</string>
+    <string name="action_restore">Restaurar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="restore_no_archive">No se seleccionó ningún archivo</string>
+    <string name="restore_from">Restaurar desde: %1$s</string>
+    <string name="restore_backup">Restaurar copia de seguridad</string>
+    <string name="backup_category_apps">Aplicaciones</string>
+    <string name="backup_category_tags">Etiquetas</string>
+    <string name="backup_category_actions">Acciones</string>
+    <string name="backup_category_settings">Configuración</string>
+    <string name="backup_category_whitelist">Lista blanca</string>
+    <string name="dialog_confirm_restore_title">Confirmar restauración</string>
+    <string name="dialog_confirm_restore_message">Esto reemplazará los datos actuales con el contenido de la copia de seguridad. ¿Continuar?</string>
+
+    <string name="summary_biometric_login">Acceso seguro a la aplicación mediante autenticación biométrica</string>
+    <string name="summary_backup">Realizar copia de seguridad de aplicaciones, etiquetas, acciones, ajustes y lista blanca</string>
+    <string name="summary_restore">Restaurar aplicaciones, etiquetas, acciones, ajustes y lista blanca desde una copia de seguridad</string>
+
+    <string name="action_data">Datos</string></resources>

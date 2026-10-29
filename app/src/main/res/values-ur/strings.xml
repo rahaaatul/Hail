@@ -183,4 +183,26 @@
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="xposed_description">Allow scoped apps to launch suspended apps</string>
     <string name="mode_jailbreak_disable">جیلبریک - غیر فعال</string>
-</resources>
+    <string name="title_backup">بیکاپ / بحالی</string>
+    <string name="title_backup_restore">بیکاپ / بحالی</string>
+    <string name="section_backup">بیکاپ</string>
+    <string name="action_create_backup">بیکاپ</string>
+    <string name="action_choose_archive">آرکائیو منتخب کریں</string>
+    <string name="action_restore">بحالی کریں</string>
+    <string name="action_cancel">منسوخ کریں</string>
+    <string name="restore_no_archive">کوئی آرکائیو منتخب نہیں کیا گیا</string>
+    <string name="restore_from">%1$s سے بحالی کریں</string>
+    <string name="restore_backup">بیکاپ بحالی کریں</string>
+    <string name="backup_category_apps">ایپس</string>
+    <string name="backup_category_tags">ٹیگز</string>
+    <string name="backup_category_actions">ایکشنز</string>
+    <string name="backup_category_settings">ترتیبات</string>
+    <string name="backup_category_whitelist">وائٹ لسٹ</string>
+    <string name="dialog_confirm_restore_title">بحالی کی تصدیق کریں</string>
+    <string name="dialog_confirm_restore_message">یہ موجودہ ڈیٹا کو بیکاپ کے مواد سے تبدیل کر دے گا۔ جاری رکھیں؟</string>
+
+    <string name="summary_biometric_login">بائیومیٹرک تصدیق کے ذریعے ایپ تک محفوظ رسائی</string>
+    <string name="summary_backup">ایپس، ٹیگز، ایکشنز، سیٹنگز اور وائٹ لسٹ کا بیکاپ لیں</string>
+    <string name="summary_restore">ایپس، ٹیگز، ایکشنز، سیٹنگز اور وائٹ لسٹ کو ایک آر카이ـو سے بحال کریں</string>
+
+    <string name="action_data">ڈیٹا</string></resources>

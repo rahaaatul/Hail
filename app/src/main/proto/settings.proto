@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package com.aistra.hail.backup;
+
+option java_package = "com.aistra.hail.backup";
+option java_multiple_files = true;
+option java_outer_classname = "SettingsBackupProto";
+
+// User settings backed up/restored via the Hail backup archive.
+// Fields are optional so presence can be distinguished from default values,
+// enabling safe schema evolution (add/remove fields without breaking old backups).
+message SettingsBackup {
+  // String settings
+  optional string sort_by = 1;
+  optional string working_mode = 2;
+  optional string app_theme = 3;
+  optional string icon_pack = 4;
+  optional string tile_action = 5;
+  optional string dynamic_shortcut_action = 6;
+
+  // Boolean settings
+  optional bool filter_user_apps = 7;
+  optional bool filter_system_apps = 8;
+  optional bool filter_all_apps = 9;
+  optional bool filter_frozen_apps = 10;
+  optional bool filter_unfrozen_apps = 11;
+  optional bool biometric_login = 12;
+  optional bool grayscale_icon = 13;
+  optional bool compact_icon = 14;
+  optional bool synthesize_adaptive_icons = 15;
+  optional bool fuzzy_search = 16;
+  optional bool nine_key_search = 17;
+  optional bool auto_freeze_after_lock = 18;
+  optional bool skip_while_charging = 19;
+  optional bool skip_foreground_app = 20;
+  optional bool skip_notifying_app = 21;
+
+  // Float settings
+  optional float home_font_size = 22;
+  optional float auto_freeze_delay = 23;
+}

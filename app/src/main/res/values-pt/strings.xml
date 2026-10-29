@@ -183,4 +183,26 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Desativar</string>
-</resources>
+    <string name="title_backup">Backup / Restaurar</string>
+    <string name="title_backup_restore">Backup / Restaurar</string>
+    <string name="section_backup">Backup</string>
+    <string name="action_create_backup">Cópia de segurança</string>
+    <string name="action_choose_archive">Escolher ficheiro</string>
+    <string name="action_restore">Restaurar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="restore_no_archive">Nenhum ficheiro selecionado</string>
+    <string name="restore_from">Restaurar a partir de: %1$s</string>
+    <string name="restore_backup">Restaurar cópia de segurança</string>
+    <string name="backup_category_apps">Aplicações</string>
+    <string name="backup_category_tags">Etiquetas</string>
+    <string name="backup_category_actions">Ações</string>
+    <string name="backup_category_settings">Definições</string>
+    <string name="backup_category_whitelist">Lista branca</string>
+    <string name="dialog_confirm_restore_title">Confirmar restauração</string>
+    <string name="dialog_confirm_restore_message">Isto vai substituir os dados atuais pelo conteúdo da cópia de segurança. Continuar?</string>
+
+    <string name="summary_biometric_login">Acesso seguro à aplicação através de autenticação biométrica</string>
+    <string name="summary_backup">Faça cópia de segurança de aplicações, etiquetas, ações, definições e lista branca</string>
+    <string name="summary_restore">Restaure aplicações, etiquetas, ações, definições e lista branca de um arquivo</string>
+
+    <string name="action_data">Dados</string></resources>

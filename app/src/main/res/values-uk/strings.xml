@@ -188,4 +188,26 @@
     <string name="title_actions">Дії</string>
     <string name="title_cache">Кеш</string>
     <string name="mode_jailbreak_disable">Джейлбрейк - Вимкнути</string>
-</resources>
+    <string name="title_backup">Резервне копіювання / Відновлення</string>
+    <string name="title_backup_restore">Резервне копіювання / Відновлення</string>
+    <string name="section_backup">Резервне копіювання</string>
+    <string name="action_create_backup">Резервна копія</string>
+    <string name="action_choose_archive">Оберіть архів</string>
+    <string name="action_restore">Відновити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="restore_no_archive">Архів не обрано</string>
+    <string name="restore_from">Відновити з: %1$s</string>
+    <string name="restore_backup">Відновити з резервної копії</string>
+    <string name="backup_category_apps">Додатки</string>
+    <string name="backup_category_tags">Теги</string>
+    <string name="backup_category_actions">Дії</string>
+    <string name="backup_category_settings">Налаштування</string>
+    <string name="backup_category_whitelist">Білий список</string>
+    <string name="dialog_confirm_restore_title">Підтвердити відновлення</string>
+    <string name="dialog_confirm_restore_message">Це замінить поточні дані вмістом резервної копії. Продовжити?</string>
+
+    <string name="summary_biometric_login">Безпечний доступ до програми через біометричну аутентифікацію</string>
+    <string name="summary_backup">Створіть резервну копію програм, тегів, дій, налаштувань та білого списку</string>
+    <string name="summary_restore">Відновіть програми, теги, дії, налаштування та білого списку з резервної копії</string>
+
+    <string name="action_data">Дані</string></resources>

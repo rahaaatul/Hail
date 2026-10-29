@@ -185,4 +185,15 @@
     <string name="title_cache">Кэш</string>
     <string name="working_mode_tag">Працоўны рэжым звязаных праграм</string>
     <string name="mode_jailbreak_disable">Джейлбрейк - Адключыць</string>
-</resources>
+
+    <string name="action_create_backup">Рэзервная копія</string>
+    <string name="backup_category_apps">Прэграмы</string>
+    <string name="backup_category_actions">Дзеяньгі</string>
+    <string name="backup_category_whitelist">Бялы спіс</string>
+    <string name="restore_backup">Аднавоціць рэзервную копію</string>
+
+    <string name="summary_biometric_login">Бяспечны ўваход у праграму па біяметрычнай аўтарызацыі</string>
+    <string name="summary_backup">Рэзервоваць праграмы, тэгі, дзеянні, настраўні і білы спіс</string>
+    <string name="summary_restore">Аднавіць праграмы, тэгі, дзеянні, настраўні і білы спіс з рэзервнай копіі</string>
+
+    <string name="action_data">Дадзеныя</string></resources>

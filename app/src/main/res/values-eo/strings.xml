@@ -181,4 +181,26 @@
     <string name="title_actions">Agoj</string>
     <string name="title_cache">Keŝo</string>
     <string name="mode_jailbreak_disable">Jailbreak - Malŝalti</string>
-</resources>
+    <string name="title_backup">Kopiigo / Restaurado</string>
+    <string name="title_backup_restore">Kopiigo / Restaurado</string>
+    <string name="section_backup">Kopiigo</string>
+    <string name="action_create_backup">Kopio</string>
+    <string name="action_choose_archive">Elekti arkevon</string>
+    <string name="action_restore">Restaurado</string>
+    <string name="action_cancel">Nuligi</string>
+    <string name="restore_no_archive">Nenia arkevo elektita</string>
+    <string name="restore_from">Restaurado el: %1$s</string>
+    <string name="restore_backup">Restaradon kopion</string>
+    <string name="backup_category_apps">Aplikaĵoj</string>
+    <string name="backup_category_tags">Markoj</string>
+    <string name="backup_category_actions">Agoj</string>
+    <string name="backup_category_settings">Agordoj</string>
+    <string name="backup_category_whitelist">Blanklisto</string>
+    <string name="dialog_confirm_restore_title">Konfirmi restauradon</string>
+    <string name="dialog_confirm_restore_message">Ĉi tiu anstataŭigos nunajn datumojn per kopiiga enhavo. Daŭrigi?</string>
+
+    <string name="summary_biometric_login">Sekura alirejo al aplikacio per biometria aŭtentigado</string>
+    <string name="summary_backup">Konservi aplikaĵojn, markojn, agojn, agordojn kaj blankliston</string>
+    <string name="summary_restore">Restaurigi aplikaĵojn, markojn, agojn, agordojn kaj blankliston el arkivo</string>
+
+    <string name="action_data">Daten</string></resources>

@@ -182,4 +182,15 @@
     <string name="working_mode_tag">Režim fungování souvisejících aplikací</string>
     <string name="xposed_description">Povolit omezeným aplikacím spouštět suspendované aplikace</string>
     <string name="mode_jailbreak_disable">Jailbreak - Zakázat</string>
-</resources>
+
+    <string name="action_create_backup">Záloha</string>
+    <string name="backup_category_apps">Aplikace</string>
+    <string name="backup_category_actions">Akce</string>
+    <string name="backup_category_whitelist">Bílistina</string>
+    <string name="restore_backup">Obnovit ze zálohy</string>
+
+    <string name="summary_biometric_login">Zabezpečený přístup k aplikaci pomocí biometrické autentizace</string>
+    <string name="summary_backup">Zálohovat aplikace, značky, akce, nastavení a bílistinu</string>
+    <string name="summary_restore">Obnovit aplikace, značky, akce, nastavení a bílistinu ze zálohy</string>
+
+    <string name="action_data">Data</string></resources>
