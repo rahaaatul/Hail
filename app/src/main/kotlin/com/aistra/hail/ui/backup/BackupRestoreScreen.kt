@@ -236,7 +236,7 @@ private fun confirmRestoreDialog(
     )
 }
 
-private val BackupCategory.stringResId: Int
+internal val BackupCategory.stringResId: Int
     get() =
         when (this) {
             BackupCategory.APPS -> R.string.backup_category_apps

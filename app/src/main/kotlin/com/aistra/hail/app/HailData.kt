@@ -2,7 +2,6 @@ package com.aistra.hail.app
 
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
-import com.aistra.hail.R
 import com.aistra.hail.app.SettingsData
 import com.aistra.hail.utils.HFiles
 import kotlinx.coroutines.CoroutineScope
@@ -264,7 +263,7 @@ object HailData {
                     add(with(json.getJSONObject(i)) { getString(KEY_TAG) to getInt(KEY_ID) })
                 }
             }.onFailure {
-                add(app.getString(R.string.label_default) to 0)
+                add("Default" to 0)
             }
         }
     }

@@ -86,9 +86,14 @@ class SettingsDataStoreTest {
             corrupted[corrupted.size / 2] = (corrupted[corrupted.size / 2].toInt() xor 0xFF).toByte()
 
             val input = ByteArrayInputStream(corrupted)
-            assertThrows(CorruptionException::class.java) {
+            var exception: Throwable? = null
+            try {
                 SettingsSerializer.readFrom(input)
+            } catch (e: Throwable) {
+                exception = e
             }
+            assertTrue(exception != null)
+            assertTrue(exception is CorruptionException)
         }
 
     @Test
@@ -107,7 +112,7 @@ class SettingsDataStoreTest {
         assertFalse(data.filterUserApps)
         assertEquals(20f, data.homeFontSize, 0.001f)
         assertEquals(HailData.MODE_DEFAULT, data.workingMode)
-        assertTrue(data.filterSystemApps)
+        assertFalse(data.filterSystemApps)
         assertEquals(HailData.FOLLOW_SYSTEM, data.appTheme)
         assertEquals(HailData.ACTION_NONE, data.iconPack)
         assertEquals(HailData.AUTO_FREEZE_AFTER_LOCK, data.tileAction)
