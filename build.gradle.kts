@@ -24,6 +24,3 @@ buildscript.configurations.named("classpath").configure {
         force("org.apache.httpcomponents:httpclient:4.5.14")
     }
 }
->>>>>>> 648ccb7c (fix(security): force patched freemarker 2.3.35 on buildscript classpath to resolve Dependabot #33)
-    }
-}
