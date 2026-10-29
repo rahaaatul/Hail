@@ -106,6 +106,18 @@ kotlin {
     jvmToolchain(21)
 }
 
+// Force patched versions of transitive dependencies flagged by Dependabot.
+// These are pulled in by Gradle plugins (KSP, Detekt, Spotless, Compose) and
+// are not declared directly. Forcing them here covers every configuration so
+// the vulnerable versions are excluded from the resolved dependency graph.
+configurations.all {
+    resolutionStrategy.force("org.freemarker:freemarker:2.3.35")
+    resolutionStrategy.force("org.bouncycastle:bcprov-jdk18on:1.86")
+    resolutionStrategy.force("org.bouncycastle:bcpkix-jdk18on:1.86")
+    resolutionStrategy.force("org.apache.commons:commons-lang3:3.21.0")
+    resolutionStrategy.force("org.apache.httpcomponents:httpclient:4.5.14")
+}
+
 spotless {
     kotlin {
         target("src/**/*.kt")
