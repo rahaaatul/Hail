@@ -111,6 +111,7 @@ kotlin {
 // are not declared directly. Forcing them here covers every configuration so
 // the vulnerable versions are excluded from the resolved dependency graph.
 configurations.all {
+    resolutionStrategy.force("com.google.guava:guava:33.7.2")
     resolutionStrategy.force("org.freemarker:freemarker:2.3.35")
     resolutionStrategy.force("org.bouncycastle:bcprov-jdk18on:1.86")
     resolutionStrategy.force("org.bouncycastle:bcpkix-jdk18on:1.86")
