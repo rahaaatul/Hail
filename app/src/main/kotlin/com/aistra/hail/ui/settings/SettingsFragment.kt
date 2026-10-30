@@ -558,7 +558,10 @@ class SettingsFragment :
     private fun String.toEntry(
         values: List<String>,
         @ArrayRes entriesId: Int,
-    ): String = resources.getStringArray(entriesId)[values.indexOf(this)]
+    ): String {
+        val index = values.indexOf(this)
+        return if (index >= 0) resources.getStringArray(entriesId)[index] else this
+    }
 
     private fun resetDynamicShortcuts() {
         HShortcuts.removeAllDynamicShortcuts()
