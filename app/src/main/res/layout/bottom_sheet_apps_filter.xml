@@ -105,6 +105,7 @@
             android:layout_height="wrap_content"
             android:text="@string/state_running"
             app:chipBackgroundColor="@color/chip_bg"
+            app:chipIconTint="@color/chip_icon_tint"
             android:textColor="@color/chip_text_color"/>
 
         <com.google.android.material.chip.Chip
@@ -114,6 +115,7 @@
             android:layout_height="wrap_content"
             android:text="@string/state_disabled"
             app:chipBackgroundColor="@color/chip_bg"
+            app:chipIconTint="@color/chip_icon_tint"
             android:textColor="@color/chip_text_color"/>
 
         <com.google.android.material.chip.Chip
