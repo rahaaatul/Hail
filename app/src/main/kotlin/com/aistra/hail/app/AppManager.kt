@@ -9,6 +9,7 @@ import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HShell
 import com.aistra.hail.utils.HShizuku
 import com.aistra.hail.utils.HUI
+import com.aistra.hail.utils.AppMetaCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -106,6 +107,9 @@ object AppManager {
                 HailData.MODE_PRIVAPP_STOP -> !frozen || HPackages.forceStopApp(packageName)
                 HailData.MODE_PRIVAPP_DISABLE, HailData.MODE_JAILBREAK_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
                 else -> false
+            }.let { result ->
+                if (result) AppMetaCache.invalidateState(listOf(packageName))
+                result
             }
 
     fun uninstallApp(packageName: String): Boolean {
