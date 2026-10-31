@@ -88,8 +88,8 @@
     <string name="filter_frozen_apps">Frozen</string>
     <string name="filter_unfrozen_apps">Unfrozen</string>
     <string name="sort_by">Sort by</string>
-    <string name="filter_apps_type">App type</string>
-    <string name="filter_freeze_state">Freeze state</string>
+    <string name="filter_apps_type">Type</string>
+    <string name="filter_freeze_state">Status</string>
     <string name="action_close">Close</string>
     <string name="sort_name">Name</string>
     <string name="sort_install">First install</string>

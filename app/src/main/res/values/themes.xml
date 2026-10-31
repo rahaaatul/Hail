@@ -75,6 +75,7 @@
 
     <style name="Theme.Hail.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
         <item name="android:windowIsTranslucent">true</item>
-        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/bottom_sheet_background</item>
+        <item name="android:windowElevation">8dp</item>
     </style>
 </resources>

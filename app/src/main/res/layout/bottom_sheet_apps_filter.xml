@@ -103,39 +103,34 @@
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_running"
-            app:chipBackgroundColor="@color/status_chip_bg"/>
+            android:text="@string/state_running"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_disabled"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_disabled"
-            app:chipBackgroundColor="@color/status_chip_bg"/>
+            android:text="@string/state_disabled"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_suspended"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_suspended"
-            app:chipBackgroundColor="@color/status_chip_bg"/>
+            android:text="@string/state_suspended"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_hidden"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_hidden"
-            app:chipBackgroundColor="@color/status_chip_bg"/>
+            android:text="@string/state_hidden"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_stopped"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_stopped"
-            app:chipBackgroundColor="@color/status_chip_bg"/>
+            android:text="@string/state_stopped"/>
     </com.google.android.material.chip.ChipGroup>
 </LinearLayout>
