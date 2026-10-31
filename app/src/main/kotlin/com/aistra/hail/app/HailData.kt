@@ -41,9 +41,11 @@ object HailData {
     const val SORT_UPDATE = "update"
     const val FILTER_USER_APPS = "filter_user_apps"
     const val FILTER_SYSTEM_APPS = "filter_system_apps"
-    const val FILTER_ALL_APPS = "filter_all_apps"
-    const val FILTER_FROZEN_APPS = "filter_frozen_apps"
-    const val FILTER_UNFROZEN_APPS = "filter_unfrozen_apps"
+    const val FILTER_ENABLED_APPS = "filter_enabled_apps"
+    const val FILTER_DISABLED_APPS = "filter_disabled_apps"
+    const val FILTER_SUSPENDED_APPS = "filter_suspended_apps"
+    const val FILTER_HIDDEN_APPS = "filter_hidden_apps"
+    const val FILTER_STOPPED_APPS = "filter_stopped_apps"
     const val OWNER = "owner_"
     const val DHIZUKU = "dhizuku_"
     const val SU = "su_"
@@ -143,12 +145,13 @@ object HailData {
     // Cached settings from Proto DataStore, exposed as a hot StateFlow from startup.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    internal val settingsData: StateFlow<SettingsData> by lazy {
-        val stateFlow = MutableStateFlow(SettingsData())
+    private val _settingsData = MutableStateFlow(SettingsData())
+    internal val settingsData: StateFlow<SettingsData> = _settingsData
+
+    init {
         scope.launch {
-            SettingsDataStore.settingsFlow.collect { stateFlow.value = it }
+            SettingsDataStore.settingsFlow.collect { _settingsData.value = it }
         }
-        stateFlow
     }
 
     // ── Synchronous getters (read from DataStore cache) ──
@@ -156,9 +159,11 @@ object HailData {
     val sortBy get() = settingsData.value.sortBy
     val filterUserApps get() = settingsData.value.filterUserApps
     val filterSystemApps get() = settingsData.value.filterSystemApps
-    val filterAllApps get() = settingsData.value.filterAllApps
-    val filterFrozenApps get() = settingsData.value.filterFrozenApps
-    val filterUnfrozenApps get() = settingsData.value.filterUnfrozenApps
+    val filterEnabledApps get() = settingsData.value.filterEnabledApps
+    val filterDisabledApps get() = settingsData.value.filterDisabledApps
+    val filterSuspendedApps get() = settingsData.value.filterSuspendedApps
+    val filterHiddenApps get() = settingsData.value.filterHiddenApps
+    val filterStoppedApps get() = settingsData.value.filterStoppedApps
     val workingMode get() = settingsData.value.workingMode
     val biometricLogin get() = settingsData.value.biometricLogin
     val appTheme get() = settingsData.value.appTheme
@@ -283,38 +288,66 @@ object HailData {
 
     // ── Async setters (write to Proto DataStore) ──
 
-    fun changeAppsSort(sort: String) =
+    fun changeAppsSort(sort: String) {
+        // Optimistically update the in-memory state so the UI reflects the sort change
+        // immediately instead of waiting for the async Proto DataStore write to complete.
+        _settingsData.value = _settingsData.value.copy(sortBy = sort)
+        // Persist to Proto DataStore in the background.
         scope.launch {
             SettingsDataStore.updateSettings { setSortBy(sort) }
         }
+    }
 
     fun changeAppsFilter(
         filter: String,
         enabled: Boolean,
-    ) = scope.launch {
-        SettingsDataStore.updateSettings {
-            when (filter) {
-                FILTER_USER_APPS -> {
-                    setFilterUserApps(enabled)
-                }
+    ) {
+        // Optimistically update the in-memory state so the UI reflects the filter change
+        // immediately instead of waiting for the async Proto DataStore write to complete.
+        _settingsData.value = when (filter) {
+            FILTER_USER_APPS -> _settingsData.value.copy(filterUserApps = enabled)
+            FILTER_SYSTEM_APPS -> _settingsData.value.copy(filterSystemApps = enabled)
+            FILTER_ENABLED_APPS -> _settingsData.value.copy(filterEnabledApps = enabled)
+            FILTER_DISABLED_APPS -> _settingsData.value.copy(filterDisabledApps = enabled)
+            FILTER_SUSPENDED_APPS -> _settingsData.value.copy(filterSuspendedApps = enabled)
+            FILTER_HIDDEN_APPS -> _settingsData.value.copy(filterHiddenApps = enabled)
+            FILTER_STOPPED_APPS -> _settingsData.value.copy(filterStoppedApps = enabled)
+            else -> _settingsData.value
+        }
+        // Persist to Proto DataStore in the background.
+        scope.launch {
+            SettingsDataStore.updateSettings {
+                when (filter) {
+                    FILTER_USER_APPS -> {
+                        setFilterUserApps(enabled)
+                    }
 
-                FILTER_SYSTEM_APPS -> {
-                    setFilterSystemApps(enabled)
-                }
+                    FILTER_SYSTEM_APPS -> {
+                        setFilterSystemApps(enabled)
+                    }
 
-                FILTER_ALL_APPS -> {
-                    setFilterAllApps(enabled)
-                }
+                    FILTER_ENABLED_APPS -> {
+                        setFilterEnabledApps(enabled)
+                    }
 
-                FILTER_FROZEN_APPS -> {
-                    setFilterFrozenApps(enabled)
-                }
+                    FILTER_DISABLED_APPS -> {
+                        setFilterDisabledApps(enabled)
+                    }
 
-                FILTER_UNFROZEN_APPS -> {
-                    setFilterUnfrozenApps(enabled)
-                }
+                    FILTER_SUSPENDED_APPS -> {
+                        setFilterSuspendedApps(enabled)
+                    }
 
-                else -> { /* unknown filter key — ignore */ }
+                    FILTER_HIDDEN_APPS -> {
+                        setFilterHiddenApps(enabled)
+                    }
+
+                    FILTER_STOPPED_APPS -> {
+                        setFilterStoppedApps(enabled)
+                    }
+
+                    else -> { /* unknown filter key — ignore */ }
+                }
             }
         }
     }

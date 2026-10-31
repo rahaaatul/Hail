@@ -25,9 +25,11 @@ data class SettingsData(
     val sortBy: String = HailData.SORT_NAME,
     val filterUserApps: Boolean = true,
     val filterSystemApps: Boolean = false,
-    val filterAllApps: Boolean = true,
-    val filterFrozenApps: Boolean = true,
-    val filterUnfrozenApps: Boolean = true,
+    val filterEnabledApps: Boolean = true,
+    val filterDisabledApps: Boolean = true,
+    val filterSuspendedApps: Boolean = true,
+    val filterHiddenApps: Boolean = true,
+    val filterStoppedApps: Boolean = true,
     val workingMode: String = HailData.MODE_DEFAULT,
     val biometricLogin: Boolean = false,
     val appTheme: String = HailData.FOLLOW_SYSTEM,
@@ -67,9 +69,11 @@ fun SettingsBackup.toSettingsData(): SettingsData =
         sortBy = valueOrDefault(hasSortBy(), sortBy, HailData.SORT_NAME),
         filterUserApps = valueOrDefault(hasFilterUserApps(), filterUserApps, true),
         filterSystemApps = valueOrDefault(hasFilterSystemApps(), filterSystemApps, false),
-        filterAllApps = valueOrDefault(hasFilterAllApps(), filterAllApps, true),
-        filterFrozenApps = valueOrDefault(hasFilterFrozenApps(), filterFrozenApps, true),
-        filterUnfrozenApps = valueOrDefault(hasFilterUnfrozenApps(), filterUnfrozenApps, true),
+        filterEnabledApps = valueOrDefault(hasFilterEnabledApps(), filterEnabledApps, true),
+        filterDisabledApps = valueOrDefault(hasFilterDisabledApps(), filterDisabledApps, true),
+        filterSuspendedApps = valueOrDefault(hasFilterSuspendedApps(), filterSuspendedApps, true),
+        filterHiddenApps = valueOrDefault(hasFilterHiddenApps(), filterHiddenApps, true),
+        filterStoppedApps = valueOrDefault(hasFilterStoppedApps(), filterStoppedApps, true),
         workingMode = valueOrDefault(hasWorkingMode(), workingMode, HailData.MODE_DEFAULT),
         biometricLogin = valueOrDefault(hasBiometricLogin(), biometricLogin, false),
         appTheme = valueOrDefault(hasAppTheme(), appTheme, HailData.FOLLOW_SYSTEM),
@@ -103,9 +107,11 @@ fun SettingsData.toSettingsBackup(): SettingsBackup =
         .setDynamicShortcutAction(dynamicShortcutAction)
         .setFilterUserApps(filterUserApps)
         .setFilterSystemApps(filterSystemApps)
-        .setFilterAllApps(filterAllApps)
-        .setFilterFrozenApps(filterFrozenApps)
-        .setFilterUnfrozenApps(filterUnfrozenApps)
+        .setFilterEnabledApps(filterEnabledApps)
+        .setFilterDisabledApps(filterDisabledApps)
+        .setFilterSuspendedApps(filterSuspendedApps)
+        .setFilterHiddenApps(filterHiddenApps)
+        .setFilterStoppedApps(filterStoppedApps)
         .setBiometricLogin(biometricLogin)
         .setGrayscaleIcon(grayscaleIcon)
         .setCompactIcon(compactIcon)
@@ -235,9 +241,11 @@ private val booleanSetters: Map<String, (SettingsBackup.Builder, Boolean) -> Uni
     mapOf(
         HailData.FILTER_USER_APPS to { builder, value -> builder.setFilterUserApps(value) },
         HailData.FILTER_SYSTEM_APPS to { builder, value -> builder.setFilterSystemApps(value) },
-        HailData.FILTER_ALL_APPS to { builder, value -> builder.setFilterAllApps(value) },
-        HailData.FILTER_FROZEN_APPS to { builder, value -> builder.setFilterFrozenApps(value) },
-        HailData.FILTER_UNFROZEN_APPS to { builder, value -> builder.setFilterUnfrozenApps(value) },
+        HailData.FILTER_ENABLED_APPS to { builder, value -> builder.setFilterEnabledApps(value) },
+        HailData.FILTER_DISABLED_APPS to { builder, value -> builder.setFilterDisabledApps(value) },
+        HailData.FILTER_SUSPENDED_APPS to { builder, value -> builder.setFilterSuspendedApps(value) },
+        HailData.FILTER_HIDDEN_APPS to { builder, value -> builder.setFilterHiddenApps(value) },
+        HailData.FILTER_STOPPED_APPS to { builder, value -> builder.setFilterStoppedApps(value) },
         HailData.BIOMETRIC_LOGIN to { builder, value -> builder.setBiometricLogin(value) },
         HailData.GRAYSCALE_ICON to { builder, value -> builder.setGrayscaleIcon(value) },
         HailData.COMPACT_ICON to { builder, value -> builder.setCompactIcon(value) },
