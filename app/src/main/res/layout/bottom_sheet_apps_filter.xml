@@ -103,34 +103,49 @@
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_running"/>
+            android:text="@string/state_running"
+            android:checkable="false"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_disabled"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_disabled"/>
+            android:text="@string/state_disabled"
+            android:checkable="false"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_suspended"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_suspended"/>
+            android:text="@string/state_suspended"
+            android:checkable="false"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_hidden"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_hidden"/>
+            android:text="@string/state_hidden"
+            android:checkable="false"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_stopped"
             style="@style/Widget.Material3.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/state_stopped"/>
+            android:text="@string/state_stopped"
+            android:checkable="false"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
     </com.google.android.material.chip.ChipGroup>
 </LinearLayout>

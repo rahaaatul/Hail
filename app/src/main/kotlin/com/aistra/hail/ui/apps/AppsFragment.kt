@@ -1,6 +1,5 @@
 package com.aistra.hail.ui.apps
 
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
@@ -19,7 +18,6 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.appcompat.widget.SearchView
-import androidx.core.content.ContextCompat
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
@@ -425,18 +423,6 @@ class AppsFragment :
         chipHidden.isChecked = HailData.filterHiddenApps
         chipStopped.isChecked = HailData.filterStoppedApps
 
-        // Dark text on light bg when selected, muted text when unselected
-        val chipTextColor = ColorStateList(
-            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-            intArrayOf(
-                ContextCompat.getColor(requireContext(), R.color.md_theme_onPrimaryContainer),
-                ContextCompat.getColor(requireContext(), R.color.md_theme_onSurfaceVariant),
-            ),
-        )
-        listOf(chipEnabled, chipDisabled, chipSuspended, chipHidden, chipStopped).forEach {
-            it.setTextColor(chipTextColor)
-        }
-
         val chips = listOf(
             chipEnabled to HailData.FILTER_ENABLED_APPS,
             chipDisabled to HailData.FILTER_DISABLED_APPS,
@@ -455,7 +441,8 @@ class AppsFragment :
         }
 
         chips.forEach { (chip, filter) ->
-            chip.setOnCheckedChangeListener { _, isChecked ->
+            chip.setOnClickListener {
+                chip.isChecked = !chip.isChecked
                 applyStatus(chip, filter)
             }
         }
