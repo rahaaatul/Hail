@@ -82,7 +82,7 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
             updating = true
             this.info = info
             val metadata = AppMetaCache.get(pkg)
-            val frozen = metadata?.state == AppInfo.State.FROZEN
+            val disabled = metadata?.state == AppInfo.State.DISABLED
             val isSelf = pkg == BuildConfig.APPLICATION_ID
 
             binding.appIcon.apply {
@@ -92,13 +92,13 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
                         info,
                         HPackages.myUserId,
                         this,
-                        HailData.grayscaleIcon && frozen,
+                        HailData.grayscaleIcon && disabled,
                     )
             }
             binding.appName.apply {
                 val name = metadata?.name ?: pkg
-                text = if (!HailData.grayscaleIcon && frozen) "❄️$name" else name
-                isEnabled = !HailData.grayscaleIcon || !frozen
+                text = if (!HailData.grayscaleIcon && disabled) "❄️$name" else name
+                isEnabled = !HailData.grayscaleIcon || !disabled
                 if (HPackages.isAppUninstalled(pkg)) {
                     setTextColor(
                         MaterialColors.getColor(
@@ -112,7 +112,7 @@ class AppsAdapter : ListAdapter<ApplicationInfo, AppsAdapter.ViewHolder>(DIFF) {
             }
             binding.appDesc.apply {
                 text = pkg
-                isEnabled = !HailData.grayscaleIcon || !frozen
+                isEnabled = !HailData.grayscaleIcon || !disabled
             }
             binding.appStar.apply {
                 isEnabled = !isSelf
