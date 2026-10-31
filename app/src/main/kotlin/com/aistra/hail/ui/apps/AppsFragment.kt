@@ -14,8 +14,10 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.appcompat.widget.SearchView
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -33,12 +35,14 @@ import com.aistra.hail.extensions.isRtl
 import com.aistra.hail.extensions.marginRelative
 import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.ui.main.MainFragment
+import com.aistra.hail.ui.apps.FilterBottomSheetContent
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HFiles
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.aistra.hail.views.HRecyclerView
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,12 +60,19 @@ class AppsFragment :
     private val binding get() = bindingView!!
     private lateinit var appsAdapter: AppsAdapter
 
+    // Bottom sheet that shows the filter options and stays open across toggles.
+    private var filterBottomSheet: BottomSheetDialog? = null
+
     // Prevent the same data from being filtered twice in `onCreateView`
     private var lastAppsHash: Int = 0
     private lateinit var lastQuery: String
     private val isAppsChanged get() = model.apps.value.hashCode() != lastAppsHash
     private val isQueryChanged get() = model.query.value != lastQuery
     private var contextMenuInfo: ContextMenu.ContextMenuInfo? = null
+
+    // Set to true before a user-triggered (force) refresh so the next empty display list
+    // surfaces an informational toast instead of silently showing nothing.
+    private var showEmptyToast = false
 
     private var exportApkPkg: String? = null
     private val exportApk =
@@ -105,7 +116,10 @@ class AppsFragment :
                 onItemCheckedChangeListener = this@AppsFragment
             }
         binding.refresh.apply {
-            setOnRefreshListener { model.updateAppList(true) }
+            setOnRefreshListener {
+                showEmptyToast = true
+                model.updateAppList(true)
+            }
             applyDefaultInsetter { marginRelative(isRtl, start = !isLandscape, end = true) }
         }
         binding.recyclerView.apply {
@@ -134,7 +148,25 @@ class AppsFragment :
             }
         }
         model.displayApps.observe(viewLifecycleOwner) {
+            val empty = it.isNullOrEmpty()
+            binding.empty.isVisible = empty
+            // Consume the one-shot flag: surface an informational toast when a user-triggered
+            // refresh yields no apps matching the selected filters.
+            if (showEmptyToast) {
+                showEmptyToast = false
+                if (empty) {
+                    HUI.showToast(R.string.msg_no_apps_match)
+                }
+            }
             appsAdapter.submitList(it)
+        }
+
+        // Background reload: whenever the app metadata cache revision changes
+        // (app state changed via freeze/enable/disable/etc.), re-filter the displayed list.
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppMetaCache.revision.collect { _ ->
+                updateDisplayAppList()
+            }
         }
 
         return binding.root
@@ -142,7 +174,8 @@ class AppsFragment :
 
     override fun onResume() {
         super.onResume()
-        model.updateAppList()
+        showEmptyToast = true
+        model.updateAppList(true)
     }
 
     override fun onItemClick(buttonView: CompoundButton) {
@@ -298,18 +331,6 @@ class AppsFragment :
                     else -> R.id.sort_by_name
                 },
             ).isChecked = true
-        menu
-            .findItem(
-                if (HailData.filterAllApps) {
-                    R.id.filter_all_apps
-                } else if (HailData.filterSystemApps) {
-                    R.id.filter_system_apps
-                } else {
-                    R.id.filter_user_apps
-                },
-            ).isChecked = true
-        menu.findItem(R.id.filter_frozen_apps).isChecked = HailData.filterFrozenApps
-        menu.findItem(R.id.filter_unfrozen_apps).isChecked = HailData.filterUnfrozenApps
     }
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
@@ -340,27 +361,38 @@ class AppsFragment :
                 changeAppsSort(HailData.SORT_UPDATE, item)
             }
 
-            R.id.filter_user_apps -> {
-                changeAppsFilter(HailData.FILTER_USER_APPS, item)
-            }
-
-            R.id.filter_system_apps -> {
-                changeAppsFilter(HailData.FILTER_SYSTEM_APPS, item)
-            }
-
-            R.id.filter_all_apps -> {
-                changeAppsFilter(HailData.FILTER_ALL_APPS, item)
-            }
-
-            R.id.filter_frozen_apps -> {
-                changeAppsFilter(HailData.FILTER_FROZEN_APPS, item)
-            }
-
-            R.id.filter_unfrozen_apps -> {
-                changeAppsFilter(HailData.FILTER_UNFROZEN_APPS, item)
+            R.id.filter_by -> {
+                showFilterBottomSheet()
+                return true
             }
         }
         return false
+    }
+
+    /**
+     * Shows the filter bottom sheet (Compose-based). Stays open while the user toggles
+     * System/User and status chips; dismissed via swipe-down or tapping outside.
+     * Filter changes re-filter the already-loaded app list — no PackageManager reload.
+     */
+    private fun showFilterBottomSheet() {
+        val sheet = BottomSheetDialog(requireContext(), R.style.Theme_Hail_BottomSheet)
+        val composeView = ComposeView(requireContext()).apply {
+            setContent {
+                com.aistra.hail.ui.theme.AppTheme {
+                    FilterBottomSheetContent(
+                        onFilterChanged = {
+                            showEmptyToast = true
+                            updateDisplayAppList()
+                        },
+                        onDismissRequest = { sheet.dismiss() },
+                    )
+                }
+            }
+        }
+        sheet.setContentView(composeView)
+        sheet.setOnDismissListener { filterBottomSheet = null }
+        filterBottomSheet = sheet
+        sheet.show()
     }
 
     private fun changeAppsSort(
@@ -369,40 +401,6 @@ class AppsFragment :
     ) {
         item.isChecked = true
         HailData.changeAppsSort(sort)
-        updateDisplayAppList()
-    }
-
-    private fun changeAppsFilter(
-        filter: String,
-        item: MenuItem,
-    ) {
-        when (item.itemId) {
-            R.id.filter_all_apps -> {
-                item.isChecked = true
-                HailData.changeAppsFilter(HailData.FILTER_ALL_APPS, true)
-                HailData.changeAppsFilter(HailData.FILTER_USER_APPS, true)
-                HailData.changeAppsFilter(HailData.FILTER_SYSTEM_APPS, true)
-            }
-
-            R.id.filter_user_apps -> {
-                item.isChecked = true
-                HailData.changeAppsFilter(filter, item.isChecked)
-                HailData.changeAppsFilter(HailData.FILTER_SYSTEM_APPS, false)
-                HailData.changeAppsFilter(HailData.FILTER_ALL_APPS, false)
-            }
-
-            R.id.filter_system_apps -> {
-                item.isChecked = true
-                HailData.changeAppsFilter(filter, item.isChecked)
-                HailData.changeAppsFilter(HailData.FILTER_USER_APPS, false)
-                HailData.changeAppsFilter(HailData.FILTER_ALL_APPS, false)
-            }
-
-            else -> {
-                item.isChecked = !item.isChecked
-                HailData.changeAppsFilter(filter, item.isChecked)
-            }
-        }
         updateDisplayAppList()
     }
 

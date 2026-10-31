@@ -88,6 +88,9 @@
     <string name="filter_frozen_apps">Frozen</string>
     <string name="filter_unfrozen_apps">Unfrozen</string>
     <string name="sort_by">Sort by</string>
+    <string name="filter_apps_type">App type</string>
+    <string name="filter_freeze_state">Freeze state</string>
+    <string name="action_close">Close</string>
     <string name="sort_name">Name</string>
     <string name="sort_install">First install</string>
     <string name="sort_update">Last update</string>
@@ -139,6 +142,7 @@
     <string name="action_whitelist">Add to Whitelist</string>
     <string name="action_remove_whitelist">Remove from Whitelist</string>
     <string name="nothing_here">Nothing here</string>
+    <string name="msg_no_apps_match">No apps match the selected filters</string>
     <string name="action_import_frozen">Import frozen app</string>
     <string name="action_import_app">Import app</string>
     <string name="synthesize_adaptive_icons">Synthesize adaptive icons</string>
