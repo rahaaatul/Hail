@@ -104,7 +104,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/state_running"
-            android:checkable="false"
             app:chipBackgroundColor="@color/chip_bg"
             android:textColor="@color/chip_text_color"/>
 
@@ -114,7 +113,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/state_disabled"
-            android:checkable="false"
             app:chipBackgroundColor="@color/chip_bg"
             android:textColor="@color/chip_text_color"/>
 
@@ -124,7 +122,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/state_suspended"
-            android:checkable="false"
             app:chipBackgroundColor="@color/chip_bg"
             android:textColor="@color/chip_text_color"/>
 
@@ -134,7 +131,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/state_hidden"
-            android:checkable="false"
             app:chipBackgroundColor="@color/chip_bg"
             android:textColor="@color/chip_text_color"/>
 
@@ -144,7 +140,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/state_stopped"
-            android:checkable="false"
             app:chipBackgroundColor="@color/chip_bg"
             android:textColor="@color/chip_text_color"/>
     </com.google.android.material.chip.ChipGroup>

@@ -431,19 +431,19 @@ class AppsFragment :
             chipStopped to HailData.FILTER_STOPPED_APPS,
         )
 
-        val applyStatus = { chip: Chip, filter: String ->
-            val anyOtherChecked = chips.any { (c, _) -> c != chip && c.isChecked }
-            if (chip.isChecked || anyOtherChecked) {
-                HailData.changeAppsFilter(filter, chip.isChecked)
+        chips.forEach { (chip, filter) ->
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                if (!isChecked) {
+                    // Cannot uncheck the last status chip
+                    val anyOtherChecked = chips.any { (c, _) -> c != chip && c.isChecked }
+                    if (!anyOtherChecked) {
+                        chip.isChecked = true
+                        return@setOnCheckedChangeListener
+                    }
+                }
+                HailData.changeAppsFilter(filter, isChecked)
                 showEmptyToast = true
                 updateDisplayAppList()
-            }
-        }
-
-        chips.forEach { (chip, filter) ->
-            chip.setOnClickListener {
-                chip.isChecked = !chip.isChecked
-                applyStatus(chip, filter)
             }
         }
 
