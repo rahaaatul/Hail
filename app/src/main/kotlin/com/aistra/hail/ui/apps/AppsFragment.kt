@@ -10,11 +10,14 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.appcompat.widget.SearchView
-import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.isVisible
@@ -35,7 +38,6 @@ import com.aistra.hail.extensions.isRtl
 import com.aistra.hail.extensions.marginRelative
 import com.aistra.hail.extensions.paddingRelative
 import com.aistra.hail.ui.main.MainFragment
-import com.aistra.hail.ui.apps.FilterBottomSheetContent
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HFiles
 import com.aistra.hail.utils.HPackages
@@ -43,6 +45,8 @@ import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HUI
 import com.aistra.hail.views.HRecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -370,26 +374,85 @@ class AppsFragment :
     }
 
     /**
-     * Shows the filter bottom sheet (Compose-based). Stays open while the user toggles
-     * System/User and status chips; dismissed via swipe-down or tapping outside.
+     * Shows the filter bottom sheet (View-based Material 3). Stays open while the user toggles
+     * System/User segment buttons and status chips; dismissed via swipe-down or tapping outside.
      * Filter changes re-filter the already-loaded app list — no PackageManager reload.
      */
     private fun showFilterBottomSheet() {
         val sheet = BottomSheetDialog(requireContext(), R.style.Theme_Hail_BottomSheet)
-        val composeView = ComposeView(requireContext()).apply {
-            setContent {
-                com.aistra.hail.ui.theme.AppTheme {
-                    FilterBottomSheetContent(
-                        onFilterChanged = {
-                            showEmptyToast = true
-                            updateDisplayAppList()
-                        },
-                        onDismissRequest = { sheet.dismiss() },
-                    )
-                }
+        val view = LayoutInflater.from(requireContext()).inflate(
+            R.layout.bottom_sheet_apps_filter, null, false
+        )
+
+        // ── Type segment buttons ──
+        val btnSystem = view.findViewById<Button>(R.id.btn_type_system)
+        val btnUser = view.findViewById<Button>(R.id.btn_type_user)
+
+        // Sync initial state from HailData filters
+        btnSystem.isSelected = HailData.filterSystemApps
+        btnUser.isSelected = HailData.filterUserApps
+
+        val applyType = { system: Boolean, user: Boolean ->
+            if (system || user) {
+                HailData.changeAppsFilter(HailData.FILTER_SYSTEM_APPS, system)
+                HailData.changeAppsFilter(HailData.FILTER_USER_APPS, user)
+                btnSystem.isSelected = system
+                btnUser.isSelected = user
+                showEmptyToast = true
+                updateDisplayAppList()
             }
         }
-        sheet.setContentView(composeView)
+
+        btnSystem.setOnClickListener {
+            val newSystem = !btnSystem.isSelected
+            val newUser = if (newSystem) false else btnUser.isSelected
+            if (newSystem || newUser) applyType(newSystem, newUser)
+        }
+
+        btnUser.setOnClickListener {
+            val newUser = !btnUser.isSelected
+            val newSystem = if (newUser) false else btnSystem.isSelected
+            if (newSystem || newUser) applyType(newSystem, newUser)
+        }
+
+        // ── Status chips ──
+        val chipEnabled = view.findViewById<Chip>(R.id.chip_enabled)
+        val chipDisabled = view.findViewById<Chip>(R.id.chip_disabled)
+        val chipSuspended = view.findViewById<Chip>(R.id.chip_suspended)
+        val chipHidden = view.findViewById<Chip>(R.id.chip_hidden)
+        val chipStopped = view.findViewById<Chip>(R.id.chip_stopped)
+
+        // Sync initial state from HailData filters
+        chipEnabled.isChecked = HailData.filterEnabledApps
+        chipDisabled.isChecked = HailData.filterDisabledApps
+        chipSuspended.isChecked = HailData.filterSuspendedApps
+        chipHidden.isChecked = HailData.filterHiddenApps
+        chipStopped.isChecked = HailData.filterStoppedApps
+
+        val chips = listOf(
+            chipEnabled to HailData.FILTER_ENABLED_APPS,
+            chipDisabled to HailData.FILTER_DISABLED_APPS,
+            chipSuspended to HailData.FILTER_SUSPENDED_APPS,
+            chipHidden to HailData.FILTER_HIDDEN_APPS,
+            chipStopped to HailData.FILTER_STOPPED_APPS,
+        )
+
+        val applyStatus = { chip: Chip, filter: String ->
+            val anyOtherChecked = chips.any { (c, _) -> c != chip && c.isChecked }
+            if (chip.isChecked || anyOtherChecked) {
+                HailData.changeAppsFilter(filter, chip.isChecked)
+                showEmptyToast = true
+                updateDisplayAppList()
+            }
+        }
+
+        chips.forEach { (chip, filter) ->
+            chip.setOnCheckedChangeListener { _, isChecked ->
+                applyStatus(chip, filter)
+            }
+        }
+
+        sheet.setContentView(view)
         sheet.setOnDismissListener { filterBottomSheet = null }
         filterBottomSheet = sheet
         sheet.show()
