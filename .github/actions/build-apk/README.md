@@ -49,6 +49,7 @@ jobs:
 
 - `releaseApkPath`: Path to the built release APK
 - `debugApkPath`: Path to the built debug APK
+- `releaseMappingPath`: Path to the release R8 `mapping.txt` (generated when `isMinifyEnabled` is true for release builds; empty if no release build ran)
 
 ## How it works
 
