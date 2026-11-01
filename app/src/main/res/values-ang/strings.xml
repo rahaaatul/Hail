@@ -171,4 +171,26 @@
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="xposed_description">Let scoped apps launch held-back apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Disable</string>
-</resources>
+    <string name="title_backup">Safety-copy / Andbringan</string>
+    <string name="title_backup_restore">Safety-copy / Andbringan</string>
+    <string name="section_backup">Safety-copy</string>
+    <string name="action_create_backup">Safety-copy</string>
+    <string name="action_choose_archive">Choose old-scrifts</string>
+    <string name="action_restore">Bring back</string>
+    <string name="action_cancel">Withdraw</string>
+    <string name="restore_no_archive">No old-scrifts chosen</string>
+    <string name="restore_from">Bring back from: %1$s</string>
+    <string name="restore_backup">Bring back Safety-copy</string>
+    <string name="backup_category_apps">Apps</string>
+    <string name="backup_category_tags">Tegs</string>
+    <string name="backup_category_actions">Deeds</string>
+    <string name="backup_category_settings">Settings</string>
+    <string name="backup_category_whitelist">White-list</string>
+    <string name="dialog_confirm_restore_title">Confirm Bring back</string>
+    <string name="dialog_confirm_restore_message">This will set over current data with the safety-copy contents. Go on?</string>
+
+    <string name="summary_biometric_login">Biometric authentication access security</string>
+    <string name="summary_backup">Backup apps, tags, actions, settings and whitelist</string>
+    <string name="summary_restore">Restore apps, tags, actions, settings and whitelist from archive</string>
+
+    <string name="action_data">Data</string></resources>

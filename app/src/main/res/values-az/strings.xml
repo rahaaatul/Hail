@@ -176,4 +176,26 @@ Dondurulmuş tətbiqlər silindikdən sonra dondurulmuş qalacaq, vacib tətbiql
     <string name="working_mode_tag">Əlaqəli tətbiqlərin iş rejimi</string>
     <string name="xposed_description">Məhdud tətbiqlərə dayandırılmış tətbiqləri başlatmağa icazə ver</string>
     <string name="mode_jailbreak_disable">Jailbreak - Deaktiv et</string>
-</resources>
+    <string name="title_backup">Yedək / Bərpalama</string>
+    <string name="title_backup_restore">Yedək / Bərpalama</string>
+    <string name="section_backup">Yedək</string>
+    <string name="action_create_backup">Yedək</string>
+    <string name="action_choose_archive">Arxivi seçin</string>
+    <string name="action_restore">Bərpalama</string>
+    <string name="action_cancel">Ləğv et</string>
+    <string name="restore_no_archive">Arxiv seçilməyib</string>
+    <string name="restore_from">Arxivdən bərpalama: %1$s</string>
+    <string name="restore_backup">Yedəkdən bərpalama</string>
+    <string name="backup_category_apps">Proqramlar</string>
+    <string name="backup_category_tags">Etiketlər</string>
+    <string name="backup_category_actions">Əməliyyatlar</string>
+    <string name="backup_category_settings">Təyinatlar</string>
+    <string name="backup_category_whitelist">Məcburi siyahı</string>
+    <string name="dialog_confirm_restore_title">Bərpalamağı təsdiq edin</string>
+    <string name="dialog_confirm_restore_message">Bu cari məlumatları yedəkin məzmunu ilə dəyişəcək. Davam etmək istəyirsiniz?</string>
+
+    <string name="summary_biometric_login">Biometriyə təsdiqləşmə ilə tətbiqli girişə təhlükəsizlik</string>
+    <string name="summary_backup">Tətbiqləri, etiketləri, əməliyyatları, tədbirləri və bəcləni yedəklə</string>
+    <string name="summary_restore">Yedəkdən tətbiqləri, etiketləri, əməliyyatları, tədbirləri və bəcləni geri əldə et</string>
+
+    <string name="action_data">Məlumatlar</string></resources>

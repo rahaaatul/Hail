@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.spotless)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -117,6 +118,22 @@ detekt {
     baseline = rootProject.file("config/detekt-baseline.xml")
 }
 
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.32.1"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+                create("kotlin")
+            }
+        }
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -144,12 +161,16 @@ dependencies {
     implementation(libs.compose.preference)
     implementation(libs.commons.text)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.hiddenapibypass)
     implementation(libs.libsu.core)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.sqlite.wrapper)
     implementation(libs.androidx.sqlite)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.protobuf.kotlin.lite)
+    implementation(libs.protobuf.java.lite)
+    implementation(libs.androidx.datastore)
     compileOnly(libs.libxposed.api)
 
     testImplementation("junit:junit:4.13.2")
@@ -160,6 +181,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("androidx.room3:room3-testing:3.0.1")
     testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation(libs.robolectric)
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")

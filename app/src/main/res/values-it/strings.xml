@@ -185,4 +185,8 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Disabilita</string>
-</resources>
+
+    <string name="summary_biometric_login">Accesso sicuro all’app tramite autenticazione biometrica</string>
+    <string name="summary_backup">Esegui backup di app, tag, azioni, impostazioni e whitelist</string>
+    <string name="summary_restore">Ripristina app, tag, azioni, impostazioni e whitelist da un archivio</string>
+    <string name="action_data">Dati</string></resources>

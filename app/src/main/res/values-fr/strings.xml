@@ -152,4 +152,8 @@
     <string name="theme_dark">Sombre</string>
     <string name="xposed_description">Automatiquement dégeler l\'application suspendue pour les applicationss avec portée limitée</string>
     <string name="action_freeze_failed">Could not freeze: %s</string>
-</resources>
+
+    <string name="summary_biometric_login">Sécuriser l’accès à l’application par authentification biométrique</string>
+    <string name="summary_backup">Sauvegarder applis, étiquettes, actions, réglages et liste blanche</string>
+    <string name="summary_restore">Restaurer applis, étiquettes, actions, réglages et liste blanche depuis une archive</string>
+    <string name="action_data">Données</string></resources>

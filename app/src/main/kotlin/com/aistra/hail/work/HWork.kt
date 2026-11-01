@@ -36,7 +36,7 @@ object HWork {
             HailApi.ACTION_FREEZE_ALL,
             ExistingWorkPolicy.REPLACE, // in case the old task has not been executed...
             OneTimeWorkRequestBuilder<AutoFreezeWorker>().run {
-                if (screenOff) setInitialDelay(HailData.autoFreezeDelay, TimeUnit.MINUTES)
+                if (screenOff) setInitialDelay(HailData.autoFreezeDelay.toLong(), TimeUnit.MINUTES)
                 setInputData(workDataOf(HailData.ACTION_LOCK to screenOff))
                 build()
             },

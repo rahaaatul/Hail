@@ -191,4 +191,26 @@
     <string name="title_cache">التخزين المؤقت</string>
     <string name="working_mode_tag">وضع العمل للتطبيقات ذات الصلة</string>
     <string name="mode_jailbreak_disable">جيلبريك - تعطيل</string>
-</resources>
+    <string name="title_backup">النسخ الاحتياطي / الاستعادة</string>
+    <string name="title_backup_restore">النسخ الاحتياطي / الاستعادة</string>
+    <string name="section_backup">النسخ الاحتياطي</string>
+    <string name="action_create_backup">نسخة احتياطية</string>
+    <string name="action_choose_archive">اختر الأرشيف</string>
+    <string name="action_restore">استعادة</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="restore_no_archive">لم يتم تحديد أرشيف</string>
+    <string name="restore_from">الاستعادة من: %1$s</string>
+    <string name="restore_backup">استعادة نسخة احتياطية</string>
+    <string name="backup_category_apps">تطبيقات</string>
+    <string name="backup_category_tags">التصنيفات</string>
+    <string name="backup_category_actions">إجراءات</string>
+    <string name="backup_category_settings">الإعدادات</string>
+    <string name="backup_category_whitelist">قائمة بيضاء</string>
+    <string name="dialog_confirm_restore_title">تأكيد الاستعادة</string>
+    <string name="dialog_confirm_restore_message">سيستبدل هذا البيانات الحالية بمحتويات النسخة الاحتياطية. متابعة؟</string>
+
+    <string name="summary_biometric_login">تأمين الوصول إلى التطبيق باستخدام المصادقة البيومترية</string>
+    <string name="summary_backup">نسخ احتياطي للتطبيقات والعلامات والإجراءات والإعدادات والقائمة البيضاء</string>
+    <string name="summary_restore">استعادة التطبيقات والعلامات والإجراءات والإعدادات والقائمة البيضاء من النسخة الاحتياطية</string>
+
+    <string name="action_data">البيانات</string></resources>

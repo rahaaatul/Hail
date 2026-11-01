@@ -183,4 +183,26 @@
     <string name="working_mode_tag">Chế độ làm việc của các ứng dụng liên quan</string>
     <string name="xposed_description">Cho phép các ứng dụng được phạm vi mở ứng dụng đã tạm ngừng</string>
     <string name="mode_jailbreak_disable">Jailbreak - Vô hiệu hóa</string>
-</resources>
+    <string name="title_backup">Sao lưu / Phục hồi</string>
+    <string name="title_backup_restore">Sao lưu / Phục hồi</string>
+    <string name="section_backup">Sao lưu</string>
+    <string name="action_create_backup">Sao lưu</string>
+    <string name="action_choose_archive">Chọn tệp lưu trữ</string>
+    <string name="action_restore">Phục hồi</string>
+    <string name="action_cancel">Hủy bỏ</string>
+    <string name="restore_no_archive">Chưa chọn tệp lưu trữ nào</string>
+    <string name="restore_from">Phục hồi từ: %1$s</string>
+    <string name="restore_backup">Phục hồi sao lưu</string>
+    <string name="backup_category_apps">Ứng dụng</string>
+    <string name="backup_category_tags">Nhãn</string>
+    <string name="backup_category_actions">Hành động</string>
+    <string name="backup_category_settings">Cài đặt</string>
+    <string name="backup_category_whitelist">Danh sách trắng</string>
+    <string name="dialog_confirm_restore_title">Xác nhận phục hồi</string>
+    <string name="dialog_confirm_restore_message">Hành động này sẽ thay thế dữ liệu hiện tại bằng nội dung sao lưu. Tiếp tục?</string>
+
+    <string name="summary_biometric_login">Truy cập ứng dụng an toàn bằng xác thực sinh trắc học</string>
+    <string name="summary_backup">Sao lưu ứng dụng, thẻ, hành động, cài đặt và danh sách trắng</string>
+    <string name="summary_restore">Khôi phục ứng dụng, thẻ, hành động, cài đặt và danh sách trắng từ bản sao lưu</string>
+
+    <string name="action_data">Dữ liệu</string></resources>

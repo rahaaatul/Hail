@@ -179,4 +179,26 @@
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="xposed_description">Allow scoped apps to launch suspended apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - 無効化</string>
-</resources>
+    <string name="title_backup">バックアップ / 復元</string>
+    <string name="title_backup_restore">バックアップ / 復元</string>
+    <string name="section_backup">バックアップ</string>
+    <string name="action_create_backup">バックアップ</string>
+    <string name="action_choose_archive">アーカイブを選択</string>
+    <string name="action_restore">復元</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="restore_no_archive">アーカイブが選択されていません</string>
+    <string name="restore_from">復元元: %1$s</string>
+    <string name="restore_backup">バックアップを復元</string>
+    <string name="backup_category_apps">アプリ</string>
+    <string name="backup_category_tags">タグ</string>
+    <string name="backup_category_actions">アクション</string>
+    <string name="backup_category_settings">設定</string>
+    <string name="backup_category_whitelist">ホワイトリスト</string>
+    <string name="dialog_confirm_restore_title">復元を確認</string>
+    <string name="dialog_confirm_restore_message">現在のデータをバックアップの内容で置き換えます。続行しますか?</string>
+
+    <string name="summary_biometric_login">生体認証によるアプリへの安全なアクセス</string>
+    <string name="summary_backup">アプリ、タグ、アクション、設定、ホワイトリストをバックアップ</string>
+    <string name="summary_restore">アプリ、タグ、アクション、設定、ホワイトリストをアーカイブから復元</string>
+
+    <string name="action_data">データ</string></resources>

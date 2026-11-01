@@ -181,4 +181,26 @@
     <string name="working_mode_tag">A kapcsolódó alkalmazások működési módja</string>
     <string name="xposed_description">Engedélyezi a korlátozott alkalmazásoknak a felfüggesztett alkalmazások indítását</string>
     <string name="mode_jailbreak_disable">Jailbreak - Letiltás</string>
-</resources>
+    <string name="title_backup">Biztonsági mentés / Visszaállítás</string>
+    <string name="title_backup_restore">Biztonsági mentés / Visszaállítás</string>
+    <string name="section_backup">Biztonsági mentés</string>
+    <string name="action_create_backup">Mentés</string>
+    <string name="action_choose_archive">Archívum kiválasztása</string>
+    <string name="action_restore">Visszaállítás</string>
+    <string name="action_cancel">Mégsem</string>
+    <string name="restore_no_archive">Nincs archívum kiválasztva</string>
+    <string name="restore_from">Visszaállítás innen: %1$s</string>
+    <string name="restore_backup">Visszaállítás mentésből</string>
+    <string name="backup_category_apps">Alkalmazások</string>
+    <string name="backup_category_tags">Címkék</string>
+    <string name="backup_category_actions">Műveletek</string>
+    <string name="backup_category_settings">Beállítások</string>
+    <string name="backup_category_whitelist">Fehérlista</string>
+    <string name="dialog_confirm_restore_title">Visszaállítás megerősítése</string>
+    <string name="dialog_confirm_restore_message">Ez a jelenlegi adatokat a biztonsági mentés tartalmával cseréli le. Folytatni kívánja?</string>
+
+    <string name="summary_biometric_login">Biztonsos elérés biometrikus hitelesítéssel</string>
+    <string name="summary_backup">Alkalmazások, címkék, műveletek, beállítások és fehérlista biztonsági mentése</string>
+    <string name="summary_restore">Alkalmazások, címkék, műveletek, beállítások és fehérlista visszaállítása mentésből</string>
+
+    <string name="action_data">Adatok</string></resources>

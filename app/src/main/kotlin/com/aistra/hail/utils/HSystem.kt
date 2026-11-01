@@ -47,7 +47,7 @@ object HSystem {
             usageStatsManager
                 .queryUsageStats(
                     UsageStatsManager.INTERVAL_BEST,
-                    now - 1000 * 60 * (HailData.autoFreezeDelay + 1),
+                    now - 1000 * 60 * (HailData.autoFreezeDelay + 1).toLong(),
                     now, // to ensure that we can get the last app used
                 )?.sortedBy { it.lastTimeUsed }
         val foregroundPackageName =

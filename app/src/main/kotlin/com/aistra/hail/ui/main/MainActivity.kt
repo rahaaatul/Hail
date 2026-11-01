@@ -13,6 +13,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -104,6 +105,40 @@ class MainActivity :
             setupActionBarWithNavController(navController, appBarConfiguration)
             bottomNav?.setupWithNavController(navController)
             navRail?.setupWithNavController(navController)
+
+            // Always navigate to the existing Settings page instead of pushing a
+            // duplicate SettingsFragment on top of whatever is current.
+            // popUpTo(R.id.nav_settings, inclusive = true) pops down to and
+            // including Settings if it's already on the back stack (e.g. we're
+            // on the Data page inside Settings), then re-pushes Settings.
+            // If Settings isn't on the stack, there's nothing to pop and it just
+            // pushes Settings on top — either way we end up on a single Settings
+            // page, never a duplicate/loop.
+            val navigateToSettings = {
+                navController.navigate(
+                    R.id.nav_settings,
+                    null,
+                    NavOptions
+                        .Builder()
+                        .setPopUpTo(R.id.nav_settings, true)
+                        .build(),
+                    null,
+                )
+            }
+            bottomNav?.setOnItemSelectedListener { item ->
+                when (item.itemId) {
+                    R.id.nav_settings -> navigateToSettings()
+                    else -> navController.navigate(item.itemId)
+                }
+                true
+            }
+            navRail?.setOnItemSelectedListener { item ->
+                when (item.itemId) {
+                    R.id.nav_settings -> navigateToSettings()
+                    else -> navController.navigate(item.itemId)
+                }
+                true
+            }
 
             val isRtl = isRtl
             val isLandscape = isLandscape

@@ -183,4 +183,26 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Devre Dışı Bırak</string>
-</resources>
+    <string name="title_backup">Yedek / Geri Yükleme</string>
+    <string name="title_backup_restore">Yedek / Geri Yükleme</string>
+    <string name="section_backup">Yedek</string>
+    <string name="action_create_backup">Yedek</string>
+    <string name="action_choose_archive">Arşiv Seçin</string>
+    <string name="action_restore">Geri Yükle</string>
+    <string name="action_cancel">İptal Et</string>
+    <string name="restore_no_archive">Arşiv seçilmedi</string>
+    <string name="restore_from">Yedekten geri yükle</string>
+    <string name="restore_backup">Yedeği geri yükle</string>
+    <string name="backup_category_apps">Uygulamalar</string>
+    <string name="backup_category_tags">Etiketler</string>
+    <string name="backup_category_actions">İşlemler</string>
+    <string name="backup_category_settings">Ayarlar</string>
+    <string name="backup_category_whitelist">Beyaz Liste</string>
+    <string name="dialog_confirm_restore_title">Geri Yüklemeyi Onayla</string>
+    <string name="dialog_confirm_restore_message">Bu, geçerli verileri yedeğin içeriğiyle değiştirecektir. Devam etmek istiyor musunuz?</string>
+
+    <string name="summary_biometric_login">Biyometrik kimlik doğrulama ile uygulamaya güvenli erişim</string>
+    <string name="summary_backup">Uygulamaları, etiketleri, işlemleri, ayarları ve beyaz listeyi yedekle</string>
+    <string name="summary_restore">Uygulamaları, etiketleri, işlemleri, ayarları ve beyaz listeyi yedekten geri yükle</string>
+
+    <string name="action_data">Veriler</string></resources>

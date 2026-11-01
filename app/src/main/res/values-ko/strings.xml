@@ -181,4 +181,26 @@
     <string name="title_actions">작업</string>
     <string name="title_cache">캐시</string>
     <string name="mode_jailbreak_disable">Jailbreak - 비활성화</string>
-</resources>
+    <string name="title_backup">백업 / 복원</string>
+    <string name="title_backup_restore">백업 / 복원</string>
+    <string name="section_backup">백업</string>
+    <string name="action_create_backup">백업</string>
+    <string name="action_choose_archive">아카이브 선택</string>
+    <string name="action_restore">복원</string>
+    <string name="action_cancel">취소</string>
+    <string name="restore_no_archive">선택된 아카이브가 없습니다</string>
+    <string name="restore_from">%1$s에서 복원</string>
+    <string name="restore_backup">백업 복원</string>
+    <string name="backup_category_apps">앱</string>
+    <string name="backup_category_tags">태그</string>
+    <string name="backup_category_actions">작업</string>
+    <string name="backup_category_settings">설정</string>
+    <string name="backup_category_whitelist">화이트리스트</string>
+    <string name="dialog_confirm_restore_title">복원 확인</string>
+    <string name="dialog_confirm_restore_message">현재 데이터를 백업 내용으로 대체합니다. 계속하시겠습니까?</string>
+
+    <string name="summary_biometric_login">생체 인증을 통한 앱 안전 접근</string>
+    <string name="summary_backup">앱, 태그, 작업, 설정, 화이트리스트 백업</string>
+    <string name="summary_restore">아카이브에서 앱, 태그, 작업, 설정, 화이트리스트 복원</string>
+
+    <string name="action_data">데이터</string></resources>

@@ -180,4 +180,26 @@
     <string name="working_mode_tag">相關應用工作模式</string>
     <string name="xposed_description">允許範圍應用啟動已暫停應用</string>
     <string name="mode_jailbreak_disable">越獄 - 停用</string>
-</resources>
+    <string name="title_backup">備份 / 還原</string>
+    <string name="title_backup_restore">備份 / 還原</string>
+    <string name="section_backup">備份</string>
+    <string name="action_create_backup">備份</string>
+    <string name="action_choose_archive">選擇檔案庫</string>
+    <string name="action_restore">還原</string>
+    <string name="action_cancel">取消</string>
+    <string name="restore_no_archive">未選擇檔案庫</string>
+    <string name="restore_from">從 %1$s 還原</string>
+    <string name="restore_backup">從備份還原</string>
+    <string name="backup_category_apps">應用程式</string>
+    <string name="backup_category_tags">標籤</string>
+    <string name="backup_category_actions">動作</string>
+    <string name="backup_category_settings">設置</string>
+    <string name="backup_category_whitelist">白名單</string>
+    <string name="dialog_confirm_restore_title">確認還原</string>
+    <string name="dialog_confirm_restore_message">這將會把當前資料替換為備份內容。繼續嗎?</string>
+
+    <string name="summary_biometric_login">以生物特徵驗證安全存取應用程式</string>
+    <string name="summary_backup">備份應用程式、標籤、動作、設定與白名單</string>
+    <string name="summary_restore">從檔案還原應用程式、標籤、動作、設定與白名單</string>
+
+    <string name="action_data">數據</string></resources>

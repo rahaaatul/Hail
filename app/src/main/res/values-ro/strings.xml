@@ -181,4 +181,26 @@
         <item quantity="other">%2$s după %1$d minute: %3$s</item>
     </plurals>
     <string name="mode_jailbreak_disable">Jailbreak - Dezactivare</string>
-</resources>
+    <string name="title_backup">Copie de siguranță / Restaurare</string>
+    <string name="title_backup_restore">Copie de siguranță / Restaurare</string>
+    <string name="section_backup">Copie de siguranță</string>
+    <string name="action_create_backup">Copie de siguranță</string>
+    <string name="action_choose_archive">Alege arhivă</string>
+    <string name="action_restore">Restaurare</string>
+    <string name="action_cancel">Anulează</string>
+    <string name="restore_no_archive">Nicio arhivă selectată</string>
+    <string name="restore_from">Restaurare din: %1$s</string>
+    <string name="restore_backup">Restaurează copia de siguranță</string>
+    <string name="backup_category_apps">Aplicații</string>
+    <string name="backup_category_tags">Etichete</string>
+    <string name="backup_category_actions">Acțiuni</string>
+    <string name="backup_category_settings">Setări</string>
+    <string name="backup_category_whitelist">Listă albă</string>
+    <string name="dialog_confirm_restore_title">Confirmați restaurarea</string>
+    <string name="dialog_confirm_restore_message">Aceasta va înlocui datele curente cu conținutul copiei de siguranță. Continuați?</string>
+
+    <string name="summary_biometric_login">Acces siguranță la aplicație prin autentificare biometrică</string>
+    <string name="summary_backup">Faceți copie de siguranță pentru aplicații, etichete, acțiuni, setări și listă albă</string>
+    <string name="summary_restore">Restaurați aplicații, etichete, acțiuni, setări și listă albă dintr-un arhivă</string>
+
+    <string name="action_data">Date</string></resources>

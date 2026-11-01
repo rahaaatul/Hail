@@ -181,4 +181,26 @@
     <string name="title_shortcuts">ทางลัด</string>
     <string name="xposed_description">อนุญาตให้แอปที่ถูกจำกัดเปิดแอปที่ถูกระงับได้</string>
     <string name="mode_jailbreak_disable">Jailbreak - ปิดใช้งาน</string>
-</resources>
+    <string name="title_backup">สำรองข้อมูล / กู้คืน</string>
+    <string name="title_backup_restore">สำรองข้อมูล / กู้คืน</string>
+    <string name="section_backup">สำรองข้อมูล</string>
+    <string name="action_create_backup">แอปที่จัดการ</string>
+    <string name="action_choose_archive">เลือกไฟล์สำรอง</string>
+    <string name="action_restore">กู้คืน</string>
+    <string name="action_cancel">ยกเลิก</string>
+    <string name="restore_no_archive">ยังไม่ได้เลือกไฟล์สำรอง</string>
+    <string name="restore_from">กู้คืนจาก: %1$s</string>
+    <string name="restore_backup">กู้คืนสำรองข้อมูล</string>
+    <string name="backup_category_apps">แอป</string>
+    <string name="backup_category_tags">แท็ก</string>
+    <string name="backup_category_actions">การดำเนินการ</string>
+    <string name="backup_category_settings">การตั้งค่า</string>
+    <string name="backup_category_whitelist">รายการขาว</string>
+    <string name="dialog_confirm_restore_title">ยืนยันการกู้คืน</string>
+    <string name="dialog_confirm_restore_message">สิ่งนี้จะแทนที่ข้อมูลปัจจุบันด้วยเนื้อหาของการสำรองข้อมูล ต้องการดำเนินการต่อหรือไม่?</string>
+
+    <string name="summary_biometric_login">เข้าถึงแอปอย่างปลอดภัยด้วยการยืนยันตัวตนทางชีวภาพ</string>
+    <string name="summary_backup">สำรองข้อมูลแอป, แท็ก, การดำเนินการ, การตั้งค่า และรายการขาว</string>
+    <string name="summary_restore">กู้คืนแอป, แท็ก, การดำเนินการ, การตั้งค่า และรายการขาวจากไฟล์สำรอง</string>
+
+    <string name="action_data">ข้อมูล</string></resources>

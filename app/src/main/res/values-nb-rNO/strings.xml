@@ -183,4 +183,26 @@
     <string name="working_mode_tag">Arbeidsmodus for relaterte programmer</string>
     <string name="xposed_description">Tillat avgrensede programmer å starte hvilende programmer</string>
     <string name="mode_jailbreak_disable">Jailbreak - Deaktiver</string>
-</resources>
+    <string name="title_backup">Sikkerhetskopiering / Gjenoppretting</string>
+    <string name="title_backup_restore">Sikkerhetskopiering / Gjenoppretting</string>
+    <string name="section_backup">Sikkerhetskopiering</string>
+    <string name="action_create_backup">Sikkerhetskopi</string>
+    <string name="action_choose_archive">Velg arkiv</string>
+    <string name="action_restore">Gjenopprett</string>
+    <string name="action_cancel">Avbryt</string>
+    <string name="restore_no_archive">Ingen arkiv valgt</string>
+    <string name="restore_from">Gjenopprett fra: %1$s</string>
+    <string name="restore_backup">Gjenopprett sikkerhetskopi</string>
+    <string name="backup_category_apps">Apper</string>
+    <string name="backup_category_tags">Etiketter</string>
+    <string name="backup_category_actions">Handlinger</string>
+    <string name="backup_category_settings">Innstillinger</string>
+    <string name="backup_category_whitelist">Hvitliste</string>
+    <string name="dialog_confirm_restore_title">Bekreft gjenoppretting</string>
+    <string name="dialog_confirm_restore_message">Dette vil erstatte gjeldende data med sikkerhetskopiens innhold. Fortsett?</string>
+
+    <string name="summary_biometric_login">Sikker tilgang til appen med biometrisk autentisering</string>
+    <string name="summary_backup">Sikkerhetskopiér apper, tags, handlinger, innstillinger og hvitliste</string>
+    <string name="summary_restore">Gjenopprett apper, tags, handlinger, innstillinger og hvitliste fra arkiv</string>
+
+    <string name="action_data">Data</string></resources>

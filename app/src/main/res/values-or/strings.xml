@@ -39,4 +39,26 @@
     <string name="mode_default">ଅକାମ</string>
     <string name="mode_dhizuku_hide">Dhizuku - ଲୁଚାଅ</string>
     <string name="action_freeze_failed">Could not freeze: %s</string>
-</resources>
+    <string name="title_backup">ବ୍ୟାକଅପ୍ / ପୁନରୁଦ୍ଧାର</string>
+    <string name="title_backup_restore">ବ୍ୟାକଅପ୍ / ପୁନରୁଦ୍ଧାର</string>
+    <string name="section_backup">ବ୍ୟାକଅପ୍</string>
+    <string name="action_create_backup">ବ୍ୟାକଅପ୍</string>
+    <string name="action_choose_archive">ଆର୍କାଇଭ୍ ବଛନ୍ତୁ</string>
+    <string name="action_restore">ପୁନରୁଦ୍ଧାର କରନ୍ତୁ</string>
+    <string name="action_cancel">ଅନୁଦାନ କରନ୍ତୁ</string>
+    <string name="restore_no_archive">କୌଣସି ଆର୍କାଇଭ୍ ବଛାଯାଇ ନାହିଁ</string>
+    <string name="restore_from">%1$s ରୁ ପୁନରୁଦ୍ଧାର କର</string>
+    <string name="restore_backup">ବ୍ୟାକଅପ୍ ପୁନରୁଦ୍ଧାର କର</string>
+    <string name="backup_category_apps">ଆପ୍</string>
+    <string name="backup_category_tags">ଟ୍ୟାଗ</string>
+    <string name="backup_category_actions">ଆକସନ</string>
+    <string name="backup_category_settings">ସେଟିଂସ</string>
+    <string name="backup_category_whitelist">ୱାଇଟଲିଷ୍ଟ</string>
+    <string name="dialog_confirm_restore_title">ପୁନରୁଦ୍ଧାରକୁ ନିଶ୍ଚିତ କରନ୍ତୁ</string>
+    <string name="dialog_confirm_restore_message">ଏହା ବର୍ତ୍ତମାନ ଡାଟାକୁ ବ୍ୟାକଅପ୍ ର ବିଷୟବସ୍ତୁ ଦ୍ୱାରା ପ୍ରତିସ୍ଥାପନ କରିବ। ଆଗେ ବଢିବେକି?</string>
+
+    <string name="summary_biometric_login">ବାଇଓମେଟ୍ରିକ ପ୍ରମାଣିକରଣ ସହିତ ଆପ୍ ପହଞ୍ଚା</string>
+    <string name="summary_backup">ଆପ୍, ଟ୍ୟାଗ୍, ଆକ୍ସନ, ସେଟିଂ ଏବଂ ୱାଇଟଲିଷ୍ଟର ବ୍ୟାକଅପ୍ ନିଅନ୍ତୁ</string>
+    <string name="summary_restore">ଆର୍କାଇଭ୍ ରୁ ଆପ୍, ଟ୍ୟାଗ୍, ଆକ୍ସନ, ସେଟିଂ ଏବଂ ୱାଇଟଲିଷ୍ଟ ପୁନରୁଦ୍ଧାର କରନ୍ତୁ</string>
+
+    <string name="action_data">ଡାଟା</string></resources>
