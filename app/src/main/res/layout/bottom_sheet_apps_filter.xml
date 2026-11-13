@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Drag handle -->
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/bottom_sheet_drag_handle"
+        android:importantForAccessibility="no"/>
+
+    <!-- App type section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/filter_apps_type"
+            android:src="@drawable/ic_round_apps"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/filter_apps_type"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_type_system"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/segment_system"
+            android:minHeight="40dp"
+            android:paddingHorizontal="12dp"
+            android:text="@string/filter_system_apps"
+            android:textColor="@color/type_button_text"/>
+
+        <Button
+            android:id="@+id/btn_type_user"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/segment_user"
+            android:minHeight="40dp"
+            android:paddingHorizontal="12dp"
+            android:text="@string/filter_user_apps"
+            android:textColor="@color/type_button_text"/>
+    </LinearLayout>
+
+    <!-- App status section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/filter_freeze_state"
+            android:src="@drawable/ic_outline_filter"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/filter_freeze_state"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chip_group_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:singleSelection="false">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_enabled"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/state_running"
+            app:chipBackgroundColor="@color/chip_bg"
+            app:chipIconTint="@color/chip_icon_tint"
+            android:textColor="@color/chip_text_color"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_disabled"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/state_disabled"
+            app:chipBackgroundColor="@color/chip_bg"
+            app:chipIconTint="@color/chip_icon_tint"
+            android:textColor="@color/chip_text_color"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_suspended"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/state_suspended"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_hidden"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/state_hidden"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_stopped"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/state_stopped"
+            app:chipBackgroundColor="@color/chip_bg"
+            android:textColor="@color/chip_text_color"/>
+    </com.google.android.material.chip.ChipGroup>
+</LinearLayout>

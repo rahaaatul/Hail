@@ -72,4 +72,10 @@
     <style name="Theme.Hail.AppBarOverlay" parent="ThemeOverlay.Material3.ActionBar"/>
 
     <style name="Theme.Hail.PopupOverlay" parent="ThemeOverlay.Material3"/>
+
+    <style name="Theme.Hail.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@drawable/bottom_sheet_background</item>
+        <item name="android:windowElevation">8dp</item>
+    </style>
 </resources>

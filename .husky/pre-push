@@ -1,0 +1,7 @@
+# Run Detekt before pushing; formatting is checked by the pre-commit hook.
+if [ -f "./gradlew" ]; then
+  ./gradlew detekt --quiet || {
+    echo "Detekt failed. Run './gradlew detekt' for the report and fix the newly introduced issues."
+    exit 1
+  }
+fi

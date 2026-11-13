@@ -4,6 +4,8 @@
 
     <color name="md_theme_primary">#32628D</color>
     <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="color_chip_selected_bg">#97c9fe</color>
+    <color name="color_chip_selected_text">#003058</color>
     <color name="md_theme_primaryContainer">#CFE5FF</color>
     <color name="md_theme_onPrimaryContainer">#001D34</color>
     <color name="md_theme_secondary">#526070</color>

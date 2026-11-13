@@ -7,7 +7,6 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
-import com.aistra.hail.app.AppManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -207,8 +206,11 @@ object AppMetaCache {
     private fun readState(packageName: String): AppInfo.State =
         when {
             HPackages.getApplicationInfoOrNull(packageName) == null -> AppInfo.State.NOT_FOUND
-            AppManager.isAppFrozen(packageName) -> AppInfo.State.FROZEN
-            else -> AppInfo.State.UNFROZEN
+            HPackages.isAppSuspended(packageName) -> AppInfo.State.SUSPENDED
+            HPackages.isAppHidden(packageName) -> AppInfo.State.HIDDEN
+            HPackages.isAppStopped(packageName) -> AppInfo.State.STOPPED
+            HPackages.isAppDisabled(packageName) -> AppInfo.State.DISABLED
+            else -> AppInfo.State.ENABLED
         }
 
     private suspend fun persist(installedPackages: Set<String>? = null) {
@@ -233,7 +235,7 @@ object AppMetaCache {
             flags = flags,
             enabled = enabled,
             installed = installed,
-            state = if (frozen) AppInfo.State.FROZEN else AppInfo.State.UNFROZEN,
+            state = AppInfo.State.values()[frozen.coerceIn(0, AppInfo.State.values().size - 1)],
             sourceSignature = sourceSignature,
         )
 
@@ -247,7 +249,7 @@ object AppMetaCache {
             flags = flags,
             enabled = enabled,
             installed = installed,
-            frozen = state == AppInfo.State.FROZEN,
+            frozen = state.ordinal,
             sourceSignature = sourceSignature,
         )
 
