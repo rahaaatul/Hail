@@ -3,6 +3,7 @@ package com.aistra.hail.app
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.SettingsData
+import com.aistra.hail.backup.SettingsBackup
 import com.aistra.hail.utils.HFiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -146,7 +147,7 @@ object HailData {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _settingsData = MutableStateFlow(SettingsData())
-    internal val settingsData: StateFlow<SettingsData> = _settingsData
+    val settingsData: StateFlow<SettingsData> = _settingsData.asStateFlow()
 
     init {
         scope.launch {
@@ -304,51 +305,63 @@ object HailData {
     ) {
         // Optimistically update the in-memory state so the UI reflects the filter change
         // immediately instead of waiting for the async Proto DataStore write to complete.
-        _settingsData.value = when (filter) {
-            FILTER_USER_APPS -> _settingsData.value.copy(filterUserApps = enabled)
-            FILTER_SYSTEM_APPS -> _settingsData.value.copy(filterSystemApps = enabled)
-            FILTER_ENABLED_APPS -> _settingsData.value.copy(filterEnabledApps = enabled)
-            FILTER_DISABLED_APPS -> _settingsData.value.copy(filterDisabledApps = enabled)
-            FILTER_SUSPENDED_APPS -> _settingsData.value.copy(filterSuspendedApps = enabled)
-            FILTER_HIDDEN_APPS -> _settingsData.value.copy(filterHiddenApps = enabled)
-            FILTER_STOPPED_APPS -> _settingsData.value.copy(filterStoppedApps = enabled)
-            else -> _settingsData.value
-        }
+        _settingsData.value = applyFilterToSettings(_settingsData.value, filter, enabled)
         // Persist to Proto DataStore in the background.
         scope.launch {
-            SettingsDataStore.updateSettings {
-                when (filter) {
-                    FILTER_USER_APPS -> {
-                        setFilterUserApps(enabled)
-                    }
+            SettingsDataStore.updateSettings { persistFilter(filter, enabled) }
+        }
+    }
 
-                    FILTER_SYSTEM_APPS -> {
-                        setFilterSystemApps(enabled)
-                    }
+    private fun applyFilterToSettings(
+        settings: SettingsData,
+        filter: String,
+        enabled: Boolean,
+    ): SettingsData =
+        when (filter) {
+            FILTER_USER_APPS -> settings.copy(filterUserApps = enabled)
+            FILTER_SYSTEM_APPS -> settings.copy(filterSystemApps = enabled)
+            FILTER_ENABLED_APPS -> settings.copy(filterEnabledApps = enabled)
+            FILTER_DISABLED_APPS -> settings.copy(filterDisabledApps = enabled)
+            FILTER_SUSPENDED_APPS -> settings.copy(filterSuspendedApps = enabled)
+            FILTER_HIDDEN_APPS -> settings.copy(filterHiddenApps = enabled)
+            FILTER_STOPPED_APPS -> settings.copy(filterStoppedApps = enabled)
+            else -> settings
+        }
 
-                    FILTER_ENABLED_APPS -> {
-                        setFilterEnabledApps(enabled)
-                    }
-
-                    FILTER_DISABLED_APPS -> {
-                        setFilterDisabledApps(enabled)
-                    }
-
-                    FILTER_SUSPENDED_APPS -> {
-                        setFilterSuspendedApps(enabled)
-                    }
-
-                    FILTER_HIDDEN_APPS -> {
-                        setFilterHiddenApps(enabled)
-                    }
-
-                    FILTER_STOPPED_APPS -> {
-                        setFilterStoppedApps(enabled)
-                    }
-
-                    else -> { /* unknown filter key — ignore */ }
-                }
+    private fun SettingsBackup.Builder.persistFilter(
+        filter: String,
+        enabled: Boolean,
+    ) {
+        when (filter) {
+            FILTER_USER_APPS -> {
+                setFilterUserApps(enabled)
             }
+
+            FILTER_SYSTEM_APPS -> {
+                setFilterSystemApps(enabled)
+            }
+
+            FILTER_ENABLED_APPS -> {
+                setFilterEnabledApps(enabled)
+            }
+
+            FILTER_DISABLED_APPS -> {
+                setFilterDisabledApps(enabled)
+            }
+
+            FILTER_SUSPENDED_APPS -> {
+                setFilterSuspendedApps(enabled)
+            }
+
+            FILTER_HIDDEN_APPS -> {
+                setFilterHiddenApps(enabled)
+            }
+
+            FILTER_STOPPED_APPS -> {
+                setFilterStoppedApps(enabled)
+            }
+
+            else -> { /* unknown filter key — ignore */ }
         }
     }
 }

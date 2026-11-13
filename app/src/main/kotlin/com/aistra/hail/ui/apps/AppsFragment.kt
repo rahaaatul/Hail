@@ -337,40 +337,49 @@ class AppsFragment :
             ).isChecked = true
     }
 
-    override fun onMenuItemSelected(item: MenuItem): Boolean {
+    override fun onMenuItemSelected(item: MenuItem): Boolean =
         when (item.itemId) {
             R.id.action_select_all -> {
-                val displayedApps = model.displayApps.value.orEmpty()
-                val selfPkg = BuildConfig.APPLICATION_ID
-                val allChecked = displayedApps.isNotEmpty() && displayedApps.all { it.packageName == selfPkg || HailData.isChecked(it.packageName) }
-                if (allChecked) {
-                    displayedApps.forEach { if (it.packageName != selfPkg) HailData.removeCheckedApp(it.packageName, false) }
-                } else {
-                    displayedApps.forEach { if (it.packageName != selfPkg) HailData.addCheckedApp(it.packageName, 0, false) }
-                }
-                HailData.saveApps()
-                appsAdapter.notifyDataSetChanged()
-                return true
+                toggleSelectAll()
+                true
             }
 
             R.id.sort_by_name -> {
                 changeAppsSort(HailData.SORT_NAME, item)
+                true
             }
 
             R.id.sort_by_install -> {
                 changeAppsSort(HailData.SORT_INSTALL, item)
+                true
             }
 
             R.id.sort_by_update -> {
                 changeAppsSort(HailData.SORT_UPDATE, item)
+                true
             }
 
             R.id.filter_by -> {
                 showFilterBottomSheet()
-                return true
+                true
+            }
+
+            else -> {
+                false
             }
         }
-        return false
+
+    private fun toggleSelectAll() {
+        val displayedApps = model.displayApps.value.orEmpty()
+        val selfPkg = BuildConfig.APPLICATION_ID
+        val allChecked = displayedApps.isNotEmpty() && displayedApps.all { it.packageName == selfPkg || HailData.isChecked(it.packageName) }
+        if (allChecked) {
+            displayedApps.forEach { if (it.packageName != selfPkg) HailData.removeCheckedApp(it.packageName, false) }
+        } else {
+            displayedApps.forEach { if (it.packageName != selfPkg) HailData.addCheckedApp(it.packageName, 0, false) }
+        }
+        HailData.saveApps()
+        appsAdapter.notifyDataSetChanged()
     }
 
     /**
@@ -380,11 +389,23 @@ class AppsFragment :
      */
     private fun showFilterBottomSheet() {
         val sheet = BottomSheetDialog(requireContext(), R.style.Theme_Hail_BottomSheet)
-        val view = LayoutInflater.from(requireContext()).inflate(
-            R.layout.bottom_sheet_apps_filter, null, false
-        )
+        val view =
+            LayoutInflater.from(requireContext()).inflate(
+                R.layout.bottom_sheet_apps_filter,
+                null,
+                false,
+            )
 
-        // ── Type segment buttons ──
+        setupTypeSegments(view)
+        setupStatusChips(view)
+
+        sheet.setContentView(view)
+        sheet.setOnDismissListener { filterBottomSheet = null }
+        filterBottomSheet = sheet
+        sheet.show()
+    }
+
+    private fun setupTypeSegments(view: View) {
         val btnSystem = view.findViewById<Button>(R.id.btn_type_system)
         val btnUser = view.findViewById<Button>(R.id.btn_type_user)
 
@@ -408,8 +429,9 @@ class AppsFragment :
             showEmptyToast = true
             updateDisplayAppList()
         }
+    }
 
-        // ── Status chips ──
+    private fun setupStatusChips(view: View) {
         val chipEnabled = view.findViewById<Chip>(R.id.chip_enabled)
         val chipDisabled = view.findViewById<Chip>(R.id.chip_disabled)
         val chipSuspended = view.findViewById<Chip>(R.id.chip_suspended)
@@ -423,13 +445,14 @@ class AppsFragment :
         chipHidden.isChecked = HailData.filterHiddenApps
         chipStopped.isChecked = HailData.filterStoppedApps
 
-        val chips = listOf(
-            chipEnabled to HailData.FILTER_ENABLED_APPS,
-            chipDisabled to HailData.FILTER_DISABLED_APPS,
-            chipSuspended to HailData.FILTER_SUSPENDED_APPS,
-            chipHidden to HailData.FILTER_HIDDEN_APPS,
-            chipStopped to HailData.FILTER_STOPPED_APPS,
-        )
+        val chips =
+            listOf(
+                chipEnabled to HailData.FILTER_ENABLED_APPS,
+                chipDisabled to HailData.FILTER_DISABLED_APPS,
+                chipSuspended to HailData.FILTER_SUSPENDED_APPS,
+                chipHidden to HailData.FILTER_HIDDEN_APPS,
+                chipStopped to HailData.FILTER_STOPPED_APPS,
+            )
 
         chips.forEach { (chip, filter) ->
             chip.setOnCheckedChangeListener { _, isChecked ->
@@ -446,11 +469,6 @@ class AppsFragment :
                 updateDisplayAppList()
             }
         }
-
-        sheet.setContentView(view)
-        sheet.setOnDismissListener { filterBottomSheet = null }
-        filterBottomSheet = sheet
-        sheet.show()
     }
 
     private fun changeAppsSort(

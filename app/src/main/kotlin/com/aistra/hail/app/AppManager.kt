@@ -2,6 +2,7 @@ package com.aistra.hail.app
 
 import android.content.Intent
 import com.aistra.hail.BuildConfig
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
 import com.aistra.hail.utils.HIsland
 import com.aistra.hail.utils.HPackages
@@ -9,7 +10,6 @@ import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HShell
 import com.aistra.hail.utils.HShizuku
 import com.aistra.hail.utils.HUI
-import com.aistra.hail.utils.AppMetaCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

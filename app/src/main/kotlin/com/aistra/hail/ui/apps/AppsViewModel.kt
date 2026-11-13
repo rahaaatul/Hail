@@ -93,11 +93,12 @@ class AppsViewModel(
             postRefreshState(true)
         }
         viewModelScope.launch {
-            val appList = runCatching {
-                withContext(Dispatchers.IO) {
-                    AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
-                }
-            }.getOrDefault(emptyList())
+            val appList =
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
+                    }
+                }.getOrDefault(emptyList())
             // Always publish — even an empty list — so the UI reflects the load result.
             apps.postValue(appList)
             updateDisplayAppList()
