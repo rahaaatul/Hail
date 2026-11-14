@@ -47,9 +47,11 @@ class SettingsDataStoreTest {
                     .setDynamicShortcutAction(HailData.ACTION_NONE)
                     .setFilterUserApps(false)
                     .setFilterSystemApps(true)
-                    .setFilterAllApps(false)
-                    .setFilterFrozenApps(true)
-                    .setFilterUnfrozenApps(false)
+                    .setFilterEnabledApps(true)
+                    .setFilterDisabledApps(false)
+                    .setFilterSuspendedApps(true)
+                    .setFilterHiddenApps(false)
+                    .setFilterStoppedApps(true)
                     .setBiometricLogin(true)
                     .setGrayscaleIcon(false)
                     .setCompactIcon(true)
@@ -126,9 +128,11 @@ class SettingsDataStoreTest {
                 sortBy = HailData.SORT_INSTALL,
                 filterUserApps = false,
                 filterSystemApps = true,
-                filterAllApps = false,
-                filterFrozenApps = false,
-                filterUnfrozenApps = false,
+                filterEnabledApps = true,
+                filterDisabledApps = false,
+                filterSuspendedApps = true,
+                filterHiddenApps = false,
+                filterStoppedApps = true,
                 workingMode = HailData.MODE_SHIZUKU_HIDE,
                 biometricLogin = true,
                 appTheme = HailData.THEME_LIGHT,
@@ -156,6 +160,16 @@ class SettingsDataStoreTest {
         assertFalse(backup.filterUserApps)
         assertTrue(backup.hasFilterSystemApps())
         assertTrue(backup.filterSystemApps)
+        assertTrue(backup.hasFilterEnabledApps())
+        assertTrue(backup.filterEnabledApps)
+        assertTrue(backup.hasFilterDisabledApps())
+        assertFalse(backup.filterDisabledApps)
+        assertTrue(backup.hasFilterSuspendedApps())
+        assertTrue(backup.filterSuspendedApps)
+        assertTrue(backup.hasFilterHiddenApps())
+        assertFalse(backup.filterHiddenApps)
+        assertTrue(backup.hasFilterStoppedApps())
+        assertTrue(backup.filterStoppedApps)
         assertTrue(backup.hasWorkingMode())
         assertEquals(HailData.MODE_SHIZUKU_HIDE, backup.workingMode)
         assertTrue(backup.hasBiometricLogin())

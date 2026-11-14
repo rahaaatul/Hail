@@ -47,9 +47,11 @@ class HailDataTest {
     fun `FILTER constants are correct`() {
         assertEquals("filter_user_apps", HailData.FILTER_USER_APPS)
         assertEquals("filter_system_apps", HailData.FILTER_SYSTEM_APPS)
-        assertEquals("filter_all_apps", HailData.FILTER_ALL_APPS)
-        assertEquals("filter_frozen_apps", HailData.FILTER_FROZEN_APPS)
-        assertEquals("filter_unfrozen_apps", HailData.FILTER_UNFROZEN_APPS)
+        assertEquals("filter_enabled_apps", HailData.FILTER_ENABLED_APPS)
+        assertEquals("filter_disabled_apps", HailData.FILTER_DISABLED_APPS)
+        assertEquals("filter_suspended_apps", HailData.FILTER_SUSPENDED_APPS)
+        assertEquals("filter_hidden_apps", HailData.FILTER_HIDDEN_APPS)
+        assertEquals("filter_stopped_apps", HailData.FILTER_STOPPED_APPS)
     }
 
     @Test

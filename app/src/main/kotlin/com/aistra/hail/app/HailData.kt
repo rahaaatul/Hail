@@ -3,12 +3,14 @@ package com.aistra.hail.app
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.SettingsData
+import com.aistra.hail.backup.SettingsBackup
 import com.aistra.hail.utils.HFiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -41,9 +43,11 @@ object HailData {
     const val SORT_UPDATE = "update"
     const val FILTER_USER_APPS = "filter_user_apps"
     const val FILTER_SYSTEM_APPS = "filter_system_apps"
-    const val FILTER_ALL_APPS = "filter_all_apps"
-    const val FILTER_FROZEN_APPS = "filter_frozen_apps"
-    const val FILTER_UNFROZEN_APPS = "filter_unfrozen_apps"
+    const val FILTER_ENABLED_APPS = "filter_enabled_apps"
+    const val FILTER_DISABLED_APPS = "filter_disabled_apps"
+    const val FILTER_SUSPENDED_APPS = "filter_suspended_apps"
+    const val FILTER_HIDDEN_APPS = "filter_hidden_apps"
+    const val FILTER_STOPPED_APPS = "filter_stopped_apps"
     const val OWNER = "owner_"
     const val DHIZUKU = "dhizuku_"
     const val SU = "su_"
@@ -143,12 +147,13 @@ object HailData {
     // Cached settings from Proto DataStore, exposed as a hot StateFlow from startup.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    internal val settingsData: StateFlow<SettingsData> by lazy {
-        val stateFlow = MutableStateFlow(SettingsData())
+    private val _settingsData = MutableStateFlow(SettingsData())
+    val settingsData: StateFlow<SettingsData> = _settingsData.asStateFlow()
+
+    init {
         scope.launch {
-            SettingsDataStore.settingsFlow.collect { stateFlow.value = it }
+            SettingsDataStore.settingsFlow.collect { _settingsData.value = it }
         }
-        stateFlow
     }
 
     // ── Synchronous getters (read from DataStore cache) ──
@@ -156,9 +161,11 @@ object HailData {
     val sortBy get() = settingsData.value.sortBy
     val filterUserApps get() = settingsData.value.filterUserApps
     val filterSystemApps get() = settingsData.value.filterSystemApps
-    val filterAllApps get() = settingsData.value.filterAllApps
-    val filterFrozenApps get() = settingsData.value.filterFrozenApps
-    val filterUnfrozenApps get() = settingsData.value.filterUnfrozenApps
+    val filterEnabledApps get() = settingsData.value.filterEnabledApps
+    val filterDisabledApps get() = settingsData.value.filterDisabledApps
+    val filterSuspendedApps get() = settingsData.value.filterSuspendedApps
+    val filterHiddenApps get() = settingsData.value.filterHiddenApps
+    val filterStoppedApps get() = settingsData.value.filterStoppedApps
     val workingMode get() = settingsData.value.workingMode
     val biometricLogin get() = settingsData.value.biometricLogin
     val appTheme get() = settingsData.value.appTheme
@@ -283,39 +290,79 @@ object HailData {
 
     // ── Async setters (write to Proto DataStore) ──
 
-    fun changeAppsSort(sort: String) =
+    fun changeAppsSort(sort: String) {
+        // Optimistically update the in-memory state so the UI reflects the sort change
+        // immediately instead of waiting for the async Proto DataStore write to complete.
+        _settingsData.value = _settingsData.value.copy(sortBy = sort)
+        // Persist to Proto DataStore in the background.
         scope.launch {
             SettingsDataStore.updateSettings { setSortBy(sort) }
         }
+    }
 
     fun changeAppsFilter(
         filter: String,
         enabled: Boolean,
-    ) = scope.launch {
-        SettingsDataStore.updateSettings {
-            when (filter) {
-                FILTER_USER_APPS -> {
-                    setFilterUserApps(enabled)
-                }
+    ) {
+        // Optimistically update the in-memory state so the UI reflects the filter change
+        // immediately instead of waiting for the async Proto DataStore write to complete.
+        _settingsData.value = applyFilterToSettings(_settingsData.value, filter, enabled)
+        // Persist to Proto DataStore in the background.
+        scope.launch {
+            SettingsDataStore.updateSettings { persistFilter(filter, enabled) }
+        }
+    }
 
-                FILTER_SYSTEM_APPS -> {
-                    setFilterSystemApps(enabled)
-                }
+    private fun applyFilterToSettings(
+        settings: SettingsData,
+        filter: String,
+        enabled: Boolean,
+    ): SettingsData =
+        when (filter) {
+            FILTER_USER_APPS -> settings.copy(filterUserApps = enabled)
+            FILTER_SYSTEM_APPS -> settings.copy(filterSystemApps = enabled)
+            FILTER_ENABLED_APPS -> settings.copy(filterEnabledApps = enabled)
+            FILTER_DISABLED_APPS -> settings.copy(filterDisabledApps = enabled)
+            FILTER_SUSPENDED_APPS -> settings.copy(filterSuspendedApps = enabled)
+            FILTER_HIDDEN_APPS -> settings.copy(filterHiddenApps = enabled)
+            FILTER_STOPPED_APPS -> settings.copy(filterStoppedApps = enabled)
+            else -> settings
+        }
 
-                FILTER_ALL_APPS -> {
-                    setFilterAllApps(enabled)
-                }
-
-                FILTER_FROZEN_APPS -> {
-                    setFilterFrozenApps(enabled)
-                }
-
-                FILTER_UNFROZEN_APPS -> {
-                    setFilterUnfrozenApps(enabled)
-                }
-
-                else -> { /* unknown filter key — ignore */ }
+    private fun SettingsBackup.Builder.persistFilter(
+        filter: String,
+        enabled: Boolean,
+    ) {
+        when (filter) {
+            FILTER_USER_APPS -> {
+                setFilterUserApps(enabled)
             }
+
+            FILTER_SYSTEM_APPS -> {
+                setFilterSystemApps(enabled)
+            }
+
+            FILTER_ENABLED_APPS -> {
+                setFilterEnabledApps(enabled)
+            }
+
+            FILTER_DISABLED_APPS -> {
+                setFilterDisabledApps(enabled)
+            }
+
+            FILTER_SUSPENDED_APPS -> {
+                setFilterSuspendedApps(enabled)
+            }
+
+            FILTER_HIDDEN_APPS -> {
+                setFilterHiddenApps(enabled)
+            }
+
+            FILTER_STOPPED_APPS -> {
+                setFilterStoppedApps(enabled)
+            }
+
+            else -> { /* unknown filter key — ignore */ }
         }
     }
 }

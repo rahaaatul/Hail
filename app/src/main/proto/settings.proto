@@ -21,21 +21,23 @@ message SettingsBackup {
   // Boolean settings
   optional bool filter_user_apps = 7;
   optional bool filter_system_apps = 8;
-  optional bool filter_all_apps = 9;
-  optional bool filter_frozen_apps = 10;
-  optional bool filter_unfrozen_apps = 11;
-  optional bool biometric_login = 12;
-  optional bool grayscale_icon = 13;
-  optional bool compact_icon = 14;
-  optional bool synthesize_adaptive_icons = 15;
-  optional bool fuzzy_search = 16;
-  optional bool nine_key_search = 17;
-  optional bool auto_freeze_after_lock = 18;
-  optional bool skip_while_charging = 19;
-  optional bool skip_foreground_app = 20;
-  optional bool skip_notifying_app = 21;
+  optional bool filter_enabled_apps = 9;
+  optional bool filter_disabled_apps = 10;
+  optional bool filter_suspended_apps = 11;
+  optional bool filter_hidden_apps = 12;
+  optional bool filter_stopped_apps = 13;
+  optional bool biometric_login = 14;
+  optional bool grayscale_icon = 15;
+  optional bool compact_icon = 16;
+  optional bool synthesize_adaptive_icons = 17;
+  optional bool fuzzy_search = 18;
+  optional bool nine_key_search = 19;
+  optional bool auto_freeze_after_lock = 20;
+  optional bool skip_while_charging = 21;
+  optional bool skip_foreground_app = 22;
+  optional bool skip_notifying_app = 23;
 
   // Float settings
-  optional float home_font_size = 22;
-  optional float auto_freeze_delay = 23;
+  optional float home_font_size = 24;
+  optional float auto_freeze_delay = 25;
 }

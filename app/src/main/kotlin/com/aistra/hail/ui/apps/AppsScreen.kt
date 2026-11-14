@@ -26,10 +26,14 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,19 +80,57 @@ private val grayscaleColorFilter: ColorFilter =
 
 /**
  * Apps list screen: pull-to-refresh + grid of installed apps with per-app actions.
- *
- * Replaces the previous SwipeRefreshLayout + RecyclerView + item_apps.xml layout.
  */
 @Composable
 fun AppsScreen(
     model: AppsViewModel,
-    checkedRevision: Int,
+    ui: AppsUiState,
     onToggleChecked: (packageName: String, checked: Boolean) -> Unit,
     onAction: (info: ApplicationInfo, action: AppAction) -> Unit,
     onLiftChange: (lifted: Boolean) -> Unit,
 ) {
     val apps by model.displayApps.observeAsState(emptyList())
     val isRefreshing by model.isRefreshing.observeAsState(false)
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+    ) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { model.updateAppList(true) },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            AppsGrid(
+                apps = apps,
+                ui = ui,
+                onToggleChecked = onToggleChecked,
+                onAction = onAction,
+                onLiftChange = onLiftChange,
+            )
+        }
+        if (ui.filterSheetVisible) {
+            FilterBottomSheet(
+                onDismissRequest = { ui.filterSheetVisible = false },
+                onFilterChanged = {
+                    ui.showEmptyToast = true
+                    model.updateDisplayAppList()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppsGrid(
+    apps: List<ApplicationInfo>,
+    ui: AppsUiState,
+    onToggleChecked: (packageName: String, checked: Boolean) -> Unit,
+    onAction: (info: ApplicationInfo, action: AppAction) -> Unit,
+    onLiftChange: (lifted: Boolean) -> Unit,
+) {
     val context = LocalContext.current
     val isLandscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -107,33 +149,44 @@ fun AppsScreen(
             .collect { onLiftChange(it) }
     }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
-    ) {
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { model.updateAppList(true) },
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(span),
+            state = gridState,
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = bottomInset),
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(span),
-                state = gridState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = bottomInset),
-            ) {
-                items(apps, key = { it.packageName }) { info ->
-                    AppItem(
-                        info = info,
-                        revision = checkedRevision,
-                        onCheckedChange = { checked -> onToggleChecked(info.packageName, checked) },
-                        onAction = { action -> onAction(info, action) },
-                    )
-                }
+            items(apps, key = { it.packageName }) { info ->
+                AppItem(
+                    info = info,
+                    revision = ui.checkedRevision,
+                    onCheckedChange = { checked -> onToggleChecked(info.packageName, checked) },
+                    onAction = { action -> onAction(info, action) },
+                )
             }
         }
+        if (apps.isEmpty()) {
+            Text(
+                text = stringResource(R.string.nothing_here),
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterBottomSheet(
+    onDismissRequest: () -> Unit,
+    onFilterChanged: () -> Unit,
+) {
+    val sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        )
+    ModalBottomSheet(onDismissRequest = onDismissRequest, sheetState = sheetState) {
+        FilterBottomSheetContent(onFilterChanged = onFilterChanged)
     }
 }
 
@@ -146,7 +199,7 @@ private fun AppItem(
 ) {
     val pkg = info.packageName
     val metadata = AppMetaCache.get(pkg)
-    val frozen = metadata?.state == AppInfo.State.FROZEN
+    val disabled = metadata?.state == AppInfo.State.DISABLED
     val grayscale = HailData.grayscaleIcon
     val name = metadata?.name ?: pkg
     val isSelf = pkg == BuildConfig.APPLICATION_ID
@@ -164,12 +217,12 @@ private fun AppItem(
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppIcon(info = info, dimmed = grayscale && frozen)
+        AppIcon(info = info, dimmed = grayscale && disabled)
         AppTexts(
             modifier = Modifier.weight(1f),
             pkg = pkg,
             name = name,
-            frozen = frozen,
+            disabled = disabled,
             grayscale = grayscale,
         )
         Checkbox(
@@ -226,10 +279,10 @@ private fun AppTexts(
     modifier: Modifier = Modifier,
     pkg: String,
     name: String,
-    frozen: Boolean,
+    disabled: Boolean,
     grayscale: Boolean,
 ) {
-    val dimmed = grayscale && frozen
+    val dimmed = grayscale && disabled
     val textColor =
         when {
             HPackages.isAppUninstalled(pkg) -> MaterialTheme.colorScheme.error
@@ -241,7 +294,7 @@ private fun AppTexts(
 
     Column(modifier = modifier) {
         Text(
-            text = if (!grayscale && frozen) "❄️$name" else name,
+            text = if (!grayscale && disabled) "❄️$name" else name,
             style = MaterialTheme.typography.bodyMedium,
             color = textColor,
             maxLines = 1,

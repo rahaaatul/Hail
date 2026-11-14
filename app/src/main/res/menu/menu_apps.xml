@@ -15,35 +15,10 @@
             app:showAsAction="always"
             tools:ignore="AlwaysShowAction"/>
     <item
+            android:id="@+id/filter_by"
             android:icon="@drawable/ic_outline_filter"
             android:title="@string/filter_by"
-            app:showAsAction="ifRoom">
-        <menu>
-            <group
-                    android:id="@+id/group_filter_apps"
-                    android:checkableBehavior="single">
-                <item
-                        android:id="@+id/filter_all_apps"
-                        android:title="@string/filter_all_apps"/>
-                <item
-                        android:id="@+id/filter_user_apps"
-                        android:title="@string/filter_user_apps"/>
-                <item
-                        android:id="@+id/filter_system_apps"
-                        android:title="@string/filter_system_apps"/>
-            </group>
-            <group
-                    android:id="@+id/group_filter_frozen"
-                    android:checkableBehavior="all">
-                <item
-                        android:id="@+id/filter_frozen_apps"
-                        android:title="@string/filter_frozen_apps"/>
-                <item
-                        android:id="@+id/filter_unfrozen_apps"
-                        android:title="@string/filter_unfrozen_apps"/>
-            </group>
-        </menu>
-    </item>
+            app:showAsAction="ifRoom"/>
     <item
             android:icon="@drawable/ic_outline_sort"
             android:title="@string/sort_by"

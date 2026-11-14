@@ -13,9 +13,6 @@ import android.view.ViewGroup
 import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.appcompat.widget.SearchView
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.MenuHost
@@ -47,8 +44,12 @@ class AppsFragment :
     MenuProvider {
     private val model: AppsViewModel by viewModels()
 
-    // Bumped whenever the checked set changes so the Compose list re-reads HailData.
-    private var checkedRevision by mutableStateOf(0)
+    // Hoisted UI state shared with the Compose list (checked set, filter sheet, empty toast).
+    private val ui = AppsUiState()
+
+    // Prevent the same data from being filtered twice in `onCreateView`
+    private var lastAppsHash: Int = 0
+    private lateinit var lastQuery: String
 
     private var exportApkPkg: String? = null
     private val exportApk =
@@ -86,9 +87,42 @@ class AppsFragment :
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
-        // Re-filter the displayed list whenever the installed apps or the search query change.
-        model.apps.observe(viewLifecycleOwner) { model.updateDisplayAppList() }
-        model.query.observe(viewLifecycleOwner) { model.updateDisplayAppList() }
+        model.apps.apply {
+            lastAppsHash = value.hashCode()
+            observe(viewLifecycleOwner) {
+                if (it.hashCode() != lastAppsHash) model.updateDisplayAppList()
+                lastAppsHash = it.hashCode()
+            }
+        }
+        model.query.apply {
+            lastQuery = value ?: ""
+            observe(viewLifecycleOwner) {
+                if (it != lastQuery) model.updateDisplayAppList()
+                lastQuery = it
+            }
+        }
+        model.displayApps.observe(viewLifecycleOwner) {
+            val empty = it.isNullOrEmpty()
+            // Consume the one-shot flag: surface an informational toast when a user-triggered
+            // refresh yields no apps matching the selected filters.
+            if (ui.showEmptyToast) {
+                ui.showEmptyToast = false
+                if (empty) {
+                    HUI.showToast(R.string.msg_no_apps_match)
+                }
+            }
+        }
+        model.isRefreshing.observe(viewLifecycleOwner) { refreshing ->
+            if (refreshing) ui.showEmptyToast = true
+        }
+
+        // Background reload: whenever the app metadata cache revision changes
+        // (app state changed via freeze/enable/disable/etc.), re-filter the displayed list.
+        viewLifecycleOwner.lifecycleScope.launch {
+            AppMetaCache.revision.collect { _ ->
+                model.updateDisplayAppList()
+            }
+        }
 
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -96,14 +130,14 @@ class AppsFragment :
                 AppTheme {
                     AppsScreen(
                         model = model,
-                        checkedRevision = checkedRevision,
+                        ui = ui,
                         onToggleChecked = { pkg, checked ->
                             if (checked) {
                                 HailData.addCheckedApp(pkg)
                             } else {
                                 HailData.removeCheckedApp(pkg)
                             }
-                            checkedRevision++
+                            ui.checkedRevision++
                         },
                         onAction = ::onAppAction,
                         onLiftChange = { lifted -> activity.appbar.setLifted(lifted) },
@@ -115,7 +149,8 @@ class AppsFragment :
 
     override fun onResume() {
         super.onResume()
-        model.updateAppList()
+        ui.showEmptyToast = true
+        model.updateAppList(true)
     }
 
     private fun onAppAction(
@@ -232,61 +267,39 @@ class AppsFragment :
                     else -> R.id.sort_by_name
                 },
             ).isChecked = true
-        menu
-            .findItem(
-                if (HailData.filterAllApps) {
-                    R.id.filter_all_apps
-                } else if (HailData.filterSystemApps) {
-                    R.id.filter_system_apps
-                } else {
-                    R.id.filter_user_apps
-                },
-            ).isChecked = true
-        menu.findItem(R.id.filter_frozen_apps).isChecked = HailData.filterFrozenApps
-        menu.findItem(R.id.filter_unfrozen_apps).isChecked = HailData.filterUnfrozenApps
     }
 
-    override fun onMenuItemSelected(item: MenuItem): Boolean {
+    override fun onMenuItemSelected(item: MenuItem): Boolean =
         when (item.itemId) {
             R.id.action_select_all -> {
                 toggleSelectAll()
-                return true
+                true
             }
 
             R.id.sort_by_name -> {
                 changeAppsSort(HailData.SORT_NAME, item)
+                true
             }
 
             R.id.sort_by_install -> {
                 changeAppsSort(HailData.SORT_INSTALL, item)
+                true
             }
 
             R.id.sort_by_update -> {
                 changeAppsSort(HailData.SORT_UPDATE, item)
+                true
             }
 
-            R.id.filter_user_apps -> {
-                changeAppsFilter(HailData.FILTER_USER_APPS, item)
+            R.id.filter_by -> {
+                ui.filterSheetVisible = true
+                true
             }
 
-            R.id.filter_system_apps -> {
-                changeAppsFilter(HailData.FILTER_SYSTEM_APPS, item)
-            }
-
-            R.id.filter_all_apps -> {
-                changeAppsFilter(HailData.FILTER_ALL_APPS, item)
-            }
-
-            R.id.filter_frozen_apps -> {
-                changeAppsFilter(HailData.FILTER_FROZEN_APPS, item)
-            }
-
-            R.id.filter_unfrozen_apps -> {
-                changeAppsFilter(HailData.FILTER_UNFROZEN_APPS, item)
+            else -> {
+                false
             }
         }
-        return false
-    }
 
     private fun toggleSelectAll() {
         val displayedApps = model.displayApps.value.orEmpty()
@@ -298,7 +311,7 @@ class AppsFragment :
             displayedApps.forEach { if (it.packageName != selfPkg) HailData.addCheckedApp(it.packageName, 0, false) }
         }
         HailData.saveApps()
-        checkedRevision++
+        ui.checkedRevision++
     }
 
     private fun changeAppsSort(
@@ -307,40 +320,6 @@ class AppsFragment :
     ) {
         item.isChecked = true
         HailData.changeAppsSort(sort)
-        model.updateDisplayAppList()
-    }
-
-    private fun changeAppsFilter(
-        filter: String,
-        item: MenuItem,
-    ) {
-        when (item.itemId) {
-            R.id.filter_all_apps -> {
-                item.isChecked = true
-                HailData.changeAppsFilter(HailData.FILTER_ALL_APPS, true)
-                HailData.changeAppsFilter(HailData.FILTER_USER_APPS, true)
-                HailData.changeAppsFilter(HailData.FILTER_SYSTEM_APPS, true)
-            }
-
-            R.id.filter_user_apps -> {
-                item.isChecked = true
-                HailData.changeAppsFilter(filter, item.isChecked)
-                HailData.changeAppsFilter(HailData.FILTER_SYSTEM_APPS, false)
-                HailData.changeAppsFilter(HailData.FILTER_ALL_APPS, false)
-            }
-
-            R.id.filter_system_apps -> {
-                item.isChecked = true
-                HailData.changeAppsFilter(filter, item.isChecked)
-                HailData.changeAppsFilter(HailData.FILTER_USER_APPS, false)
-                HailData.changeAppsFilter(HailData.FILTER_ALL_APPS, false)
-            }
-
-            else -> {
-                item.isChecked = !item.isChecked
-                HailData.changeAppsFilter(filter, item.isChecked)
-            }
-        }
         model.updateDisplayAppList()
     }
 
