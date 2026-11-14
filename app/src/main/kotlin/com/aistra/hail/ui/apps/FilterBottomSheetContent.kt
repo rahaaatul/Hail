@@ -8,19 +8,29 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MultiChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonColors
+import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,18 +48,16 @@ import com.aistra.hail.app.HailData
  */
 @Composable
 fun FilterBottomSheetContent(onFilterChanged: () -> Unit) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 24.dp),
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
         TypeSection(onFilterChanged = onFilterChanged)
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(16.dp))
+        SectionDivider()
         StatusSection(onFilterChanged = onFilterChanged)
     }
+}
+
+@Composable
+private fun SectionDivider() {
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 }
 
 @Composable
@@ -58,27 +66,40 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
     var user by remember { mutableStateOf(HailData.filterUserApps) }
     val selectedCount = (if (system) 1 else 0) + (if (user) 1 else 0)
 
-    SectionTitle(text = stringResource(R.string.filter_apps_type))
+    SectionTitle(text = stringResource(R.string.filter_apps_type), icon = Icons.Rounded.Apps)
 
-    Row(modifier = Modifier.fillMaxWidth()) {
-        TypeSegment(
-            modifier = Modifier.weight(1f),
-            label = stringResource(R.string.filter_system_apps),
-            selected = system,
-            onClick = {
+    MultiChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        SegmentedButton(
+            checked = system,
+            onCheckedChange = {
                 toggleFilter(system, selectedCount, HailData.FILTER_SYSTEM_APPS, onFilterChanged) { system = it }
             },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            icon = {},
+            label = { Text(text = stringResource(R.string.filter_system_apps)) },
+            colors = segmentedColors(),
         )
-        TypeSegment(
-            modifier = Modifier.weight(1f),
-            label = stringResource(R.string.filter_user_apps),
-            selected = user,
-            onClick = {
+        SegmentedButton(
+            checked = user,
+            onCheckedChange = {
                 toggleFilter(user, selectedCount, HailData.FILTER_USER_APPS, onFilterChanged) { user = it }
             },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            icon = {},
+            label = { Text(text = stringResource(R.string.filter_user_apps)) },
+            colors = segmentedColors(),
         )
     }
 }
+
+@Composable
+private fun segmentedColors(): SegmentedButtonColors =
+    SegmentedButtonDefaults.colors(
+        activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+        activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        inactiveContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        inactiveContentColor = MaterialTheme.colorScheme.onSurface,
+    )
 
 @Composable
 private fun StatusSection(onFilterChanged: () -> Unit) {
@@ -94,12 +115,12 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
             (if (hidden) 1 else 0) +
             (if (stopped) 1 else 0)
 
-    SectionTitle(text = stringResource(R.string.filter_freeze_state))
+    SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = Icons.Rounded.CheckCircle)
 
     FlowRow(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         StatusChip(
             label = stringResource(R.string.state_running),
@@ -140,14 +161,28 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
 }
 
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(bottom = 12.dp),
-    )
+private fun SectionTitle(
+    text: String,
+    icon: ImageVector,
+) {
+    Row(
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.height(16.dp),
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 /**
@@ -170,41 +205,6 @@ private fun toggleFilter(
 }
 
 /**
- * Shared-edge segment button for Type selection (System | User).
- * Adjacent segments share edges via zero spacing.
- */
-@Composable
-private fun TypeSegment(
-    modifier: Modifier = Modifier,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Button(
-        modifier = modifier,
-        onClick = onClick,
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor =
-                    if (selected) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainer
-                    },
-                contentColor =
-                    if (selected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-            ),
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        Text(text = label)
-    }
-}
-
-/**
  * Individual status filter chip (multi-select toggle).
  * Tapping one chip toggles only that status; cannot unselect the last selected chip.
  */
@@ -214,26 +214,16 @@ private fun StatusChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    Button(
-        modifier = Modifier,
+    FilterChip(
+        selected = selected,
         onClick = onClick,
+        label = { Text(text = label) },
         colors =
-            ButtonDefaults.buttonColors(
-                containerColor =
-                    if (selected) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        Color.Transparent
-                    },
-                contentColor =
-                    if (selected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+            FilterChipDefaults.filterChipColors(
+                containerColor = Color.Transparent,
+                labelColor = MaterialTheme.colorScheme.onSurface,
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ),
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        Text(text = label)
-    }
+    )
 }

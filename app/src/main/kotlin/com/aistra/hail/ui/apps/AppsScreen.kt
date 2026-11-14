@@ -168,6 +168,7 @@ private fun AppsGrid(
         if (apps.isEmpty()) {
             Text(
                 text = stringResource(R.string.nothing_here),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.align(Alignment.Center),
             )
         }
@@ -317,6 +318,14 @@ private fun AppActionMenu(
     onDismissRequest: () -> Unit,
     onAction: (AppAction) -> Unit,
 ) {
+    val actions =
+        listOf(
+            stringResource(R.string.action_details) to AppAction.DETAILS,
+            stringResource(R.string.action_export_clipboard) to AppAction.COPY,
+            stringResource(R.string.action_extract_apk) to AppAction.EXTRACT,
+            stringResource(R.string.action_uninstall) to AppAction.UNINSTALL,
+            stringResource(R.string.action_reinstall) to AppAction.REINSTALL,
+        )
     DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
         Text(
             text = title,
@@ -324,26 +333,12 @@ private fun AppActionMenu(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
         HorizontalDivider()
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_details)) },
-            onClick = { onAction(AppAction.DETAILS) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_export_clipboard)) },
-            onClick = { onAction(AppAction.COPY) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_extract_apk)) },
-            onClick = { onAction(AppAction.EXTRACT) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_uninstall)) },
-            onClick = { onAction(AppAction.UNINSTALL) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_reinstall)) },
-            onClick = { onAction(AppAction.REINSTALL) },
-        )
+        actions.forEach { (label, action) ->
+            DropdownMenuItem(
+                text = { Text(label) },
+                onClick = { onAction(action) },
+            )
+        }
     }
 }
 
