@@ -100,16 +100,7 @@ export default {
     [
       '@semantic-release/github',
       {
-        assets: [{ path: 'app/build/outputs/apk/**/*.apk' }],
-        successComment: false
-      }
-    ],
-    [
-      '@cleyrop-org/semantic-release-backmerge',
-      {
-        backmergeBranches: [{ from: 'main', to: 'dev' }],
-        clearWorkspace: true,
-        ignorePaths: ['gradle.properties']
+        successCommentCondition: false
       }
     ]
   ]
