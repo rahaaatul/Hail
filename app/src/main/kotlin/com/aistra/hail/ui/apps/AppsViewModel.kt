@@ -80,6 +80,9 @@ class AppsViewModel(
     /**
      * This method is only used to refresh all the applications that the user has installed
      * and has no filtering or sorting effect.
+     *
+     * The loaded list is always published (even when empty) so the UI can reflect the result
+     * and show an empty-state / informational toast instead of staying stuck on a blank screen.
      * */
     fun updateAppList(forceRefresh: Boolean = false) {
         val now = System.currentTimeMillis()
@@ -91,13 +94,14 @@ class AppsViewModel(
         }
         viewModelScope.launch {
             val appList =
-                withContext(Dispatchers.IO) {
-                    AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
-                }
-            if (appList.isNotEmpty()) {
-                apps.postValue(appList)
-                updateDisplayAppList()
-            }
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
+                    }
+                }.getOrDefault(emptyList())
+            // Always publish — even an empty list — so the UI reflects the load result.
+            apps.postValue(appList)
+            updateDisplayAppList()
             if (forceRefresh) {
                 postRefreshState(false)
             } else if (appList.isNotEmpty()) {
@@ -145,16 +149,18 @@ class AppsViewModel(
                     val metadata = AppMetaCache.get(it.packageName)
                     val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
                     val name = metadata?.name ?: it.packageName
-                    val frozen = metadata?.state == AppInfo.State.FROZEN
+                    val status = metadata?.state ?: AppInfo.State.NOT_FOUND
                     (
-                        HailData.filterAllApps ||
-                            (HailData.filterUserApps && !isSystemApp) ||
+                        (HailData.filterUserApps && !isSystemApp) ||
                             (HailData.filterSystemApps && isSystemApp)
                     ) &&
 
                         (
-                            (HailData.filterFrozenApps && frozen) ||
-                                (HailData.filterUnfrozenApps && !frozen)
+                            (HailData.filterEnabledApps && status == AppInfo.State.ENABLED) ||
+                                (HailData.filterDisabledApps && status == AppInfo.State.DISABLED) ||
+                                (HailData.filterSuspendedApps && status == AppInfo.State.SUSPENDED) ||
+                                (HailData.filterHiddenApps && status == AppInfo.State.HIDDEN) ||
+                                (HailData.filterStoppedApps && status == AppInfo.State.STOPPED)
                         ) &&
                         // Search apps
                         (
