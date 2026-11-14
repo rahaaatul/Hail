@@ -110,6 +110,7 @@ spotless {
     kotlin {
         target("src/**/*.kt")
         ktlint()
+        (project.findProperty("spotlessRatchetFrom") as String?)?.let { ratchetFrom(it) }
     }
 }
 

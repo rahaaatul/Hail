@@ -50,7 +50,7 @@ class PagerAdapter(
                             it,
                             myUserId,
                             this,
-                            HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN,
+                            HailData.grayscaleIcon && info.state == AppInfo.State.DISABLED,
                         )
                 } ?: run {
                     setImageDrawable(context.packageManager.defaultActivityIcon)
@@ -60,11 +60,11 @@ class PagerAdapter(
             findViewById<TextView>(R.id.app_name).run {
                 text =
                     buildString {
-                        if (!HailData.grayscaleIcon && info.state == AppInfo.State.FROZEN) append("\u2744\uFE0F")
+                        if (!HailData.grayscaleIcon && info.state == AppInfo.State.DISABLED) append("\u2744\uFE0F")
                         if (info.whitelisted) append("\uD83D\uDD12")
                         append(info.name)
                     }
-                isEnabled = !HailData.grayscaleIcon || info.state != AppInfo.State.FROZEN
+                isEnabled = !HailData.grayscaleIcon || info.state != AppInfo.State.DISABLED
                 when {
                     info in selectedList -> {
                         setTextColor(

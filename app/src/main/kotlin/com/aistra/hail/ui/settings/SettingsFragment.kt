@@ -560,7 +560,13 @@ class SettingsFragment :
         @ArrayRes entriesId: Int,
     ): String {
         val index = values.indexOf(this)
-        return if (index >= 0) resources.getStringArray(entriesId)[index] else this
+        return if (index >= 0) {
+            resources.getStringArray(entriesId)[index]
+        } else {
+            // Stored preference value no longer matches any list entry (e.g. after an update
+            // that changed available options). Return the raw value instead of crashing.
+            this
+        }
     }
 
     private fun resetDynamicShortcuts() {

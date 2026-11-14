@@ -1,10 +1,13 @@
 package com.aistra.hail.ui.apps
 
 import android.app.Application
+import android.app.usage.UsageStatsManager
 import android.content.pm.ApplicationInfo
+import androidx.core.content.getSystemService
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.AppIconCache
@@ -20,6 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class AppsViewModel(
     application: Application,
@@ -80,6 +84,9 @@ class AppsViewModel(
     /**
      * This method is only used to refresh all the applications that the user has installed
      * and has no filtering or sorting effect.
+     *
+     * The loaded list is always published (even when empty) so the UI can reflect the result
+     * and show an empty-state / informational toast instead of staying stuck on a blank screen.
      * */
     fun updateAppList(forceRefresh: Boolean = false) {
         val now = System.currentTimeMillis()
@@ -91,13 +98,14 @@ class AppsViewModel(
         }
         viewModelScope.launch {
             val appList =
-                withContext(Dispatchers.IO) {
-                    AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
-                }
-            if (appList.isNotEmpty()) {
-                apps.postValue(appList)
-                updateDisplayAppList()
-            }
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        AppMetaCache.getInstalledApplicationsCacheFirst(forceRefresh)
+                    }
+                }.getOrDefault(emptyList())
+            // Always publish — even an empty list — so the UI reflects the load result.
+            apps.postValue(appList)
+            updateDisplayAppList()
             if (forceRefresh) {
                 postRefreshState(false)
             } else if (appList.isNotEmpty()) {
@@ -145,16 +153,18 @@ class AppsViewModel(
                     val metadata = AppMetaCache.get(it.packageName)
                     val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
                     val name = metadata?.name ?: it.packageName
-                    val frozen = metadata?.state == AppInfo.State.FROZEN
+                    val status = metadata?.state ?: AppInfo.State.NOT_FOUND
                     (
-                        HailData.filterAllApps ||
-                            (HailData.filterUserApps && !isSystemApp) ||
+                        (HailData.filterUserApps && !isSystemApp) ||
                             (HailData.filterSystemApps && isSystemApp)
                     ) &&
 
                         (
-                            (HailData.filterFrozenApps && frozen) ||
-                                (HailData.filterUnfrozenApps && !frozen)
+                            (HailData.filterEnabledApps && status == AppInfo.State.ENABLED) ||
+                                (HailData.filterDisabledApps && status == AppInfo.State.DISABLED) ||
+                                (HailData.filterSuspendedApps && status == AppInfo.State.SUSPENDED) ||
+                                (HailData.filterHiddenApps && status == AppInfo.State.HIDDEN) ||
+                                (HailData.filterStoppedApps && status == AppInfo.State.STOPPED)
                         ) &&
                         // Search apps
                         (
@@ -167,24 +177,39 @@ class AppsViewModel(
                                 PinyinSearch.searchPinyinAll(name, query)
                         )
                 }.run {
-                    when (HailData.sortBy) {
-                        HailData.SORT_INSTALL -> {
-                            sortedBy {
-                                AppMetaCache.get(it.packageName)?.firstInstallTime ?: 0
+                    val ascending = HailData.sortAscending(HailData.sortBy)
+                    val usageStats =
+                        if (HailData.sortBy == HailData.SORT_LAST_USED || HailData.sortBy == HailData.SORT_MOST_USED) {
+                            withContext(Dispatchers.IO) { loadUsageStats() }
+                        } else {
+                            emptyMap()
+                        }
+                    val sizes =
+                        if (HailData.sortBy == HailData.SORT_SIZE) {
+                            withContext(Dispatchers.IO) {
+                                associate { it.packageName to (it.sourceDir?.let { dir -> File(dir).length() } ?: 0L) }
                             }
+                        } else {
+                            emptyMap()
                         }
-
-                        HailData.SORT_UPDATE -> {
-                            sortedByDescending {
-                                AppMetaCache.get(it.packageName)?.lastUpdateTime ?: 0
-                            }
+                    val comparator: Comparator<ApplicationInfo> =
+                        when (HailData.sortBy) {
+                            HailData.SORT_INSTALL -> compareBy { AppMetaCache.get(it.packageName)?.firstInstallTime ?: 0L }
+                            HailData.SORT_UPDATE -> compareBy { AppMetaCache.get(it.packageName)?.lastUpdateTime ?: 0L }
+                            HailData.SORT_SIZE -> compareBy { sizes[it.packageName] ?: 0L }
+                            HailData.SORT_LAST_USED -> compareBy { usageStats[it.packageName]?.lastTimeUsed ?: 0L }
+                            HailData.SORT_MOST_USED -> compareBy { usageStats[it.packageName]?.totalTimeInForeground ?: 0L }
+                            else -> Comparator { a, b -> NameComparator.compare(a, b) }
                         }
-
-                        else -> {
-                            sortedWith(NameComparator)
-                        }
-                    }
+                    if (ascending) sortedWith(comparator) else sortedWith(comparator.reversed())
                 }
         }
+    }
+
+    private fun loadUsageStats(): Map<String, android.app.usage.UsageStats> {
+        val usageStatsManager = HailApp.app.getSystemService<UsageStatsManager>()!!
+        return usageStatsManager
+            .queryUsageStats(UsageStatsManager.INTERVAL_BEST, 0, System.currentTimeMillis())
+            .associateBy { it.packageName }
     }
 }

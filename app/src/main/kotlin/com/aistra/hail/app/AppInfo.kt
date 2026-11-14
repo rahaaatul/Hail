@@ -10,7 +10,7 @@ class AppInfo(
     var whitelisted: Boolean = false,
     val tagIdList: MutableList<Int> = mutableListOf(0),
 ) {
-    enum class State { NOT_FOUND, UNFROZEN, FROZEN }
+    enum class State { NOT_FOUND, ENABLED, DISABLED, SUSPENDED, HIDDEN, STOPPED }
 
     val applicationInfo: ApplicationInfo? get() = HPackages.getApplicationInfoOrNull(packageName)
     val name get() = AppMetaCache.get(packageName)?.name ?: packageName
@@ -18,7 +18,7 @@ class AppInfo(
     val state get() =
         AppMetaCache.get(packageName)?.state ?: when {
             applicationInfo == null -> State.NOT_FOUND
-            else -> State.UNFROZEN
+            else -> State.ENABLED
         }
 
     override fun equals(other: Any?): Boolean = other is AppInfo && other.packageName == packageName

@@ -2,6 +2,7 @@ package com.aistra.hail.app
 
 import android.content.Intent
 import com.aistra.hail.BuildConfig
+import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
 import com.aistra.hail.utils.HIsland
 import com.aistra.hail.utils.HPackages
@@ -106,6 +107,9 @@ object AppManager {
                 HailData.MODE_PRIVAPP_STOP -> !frozen || HPackages.forceStopApp(packageName)
                 HailData.MODE_PRIVAPP_DISABLE, HailData.MODE_JAILBREAK_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
                 else -> false
+            }.let { result ->
+                if (result) AppMetaCache.invalidateState(listOf(packageName))
+                result
             }
 
     fun uninstallApp(packageName: String): Boolean {

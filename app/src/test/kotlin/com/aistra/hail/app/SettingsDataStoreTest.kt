@@ -47,9 +47,11 @@ class SettingsDataStoreTest {
                     .setDynamicShortcutAction(HailData.ACTION_NONE)
                     .setFilterUserApps(false)
                     .setFilterSystemApps(true)
-                    .setFilterAllApps(false)
-                    .setFilterFrozenApps(true)
-                    .setFilterUnfrozenApps(false)
+                    .setFilterEnabledApps(true)
+                    .setFilterDisabledApps(false)
+                    .setFilterSuspendedApps(true)
+                    .setFilterHiddenApps(false)
+                    .setFilterStoppedApps(true)
                     .setBiometricLogin(true)
                     .setGrayscaleIcon(false)
                     .setCompactIcon(true)
@@ -102,6 +104,7 @@ class SettingsDataStoreTest {
             SettingsBackup
                 .newBuilder()
                 .setSortBy(HailData.SORT_INSTALL)
+                .putSortDirections(HailData.SORT_SIZE, false)
                 .setFilterUserApps(false)
                 .setHomeFontSize(20f)
                 .build()
@@ -109,6 +112,7 @@ class SettingsDataStoreTest {
         val data = backup.toSettingsData()
 
         assertEquals(HailData.SORT_INSTALL, data.sortBy)
+        assertEquals(mapOf(HailData.SORT_SIZE to false), data.sortDirections)
         assertFalse(data.filterUserApps)
         assertEquals(20f, data.homeFontSize, 0.001f)
         assertEquals(HailData.MODE_DEFAULT, data.workingMode)
@@ -124,11 +128,14 @@ class SettingsDataStoreTest {
         val data =
             SettingsData(
                 sortBy = HailData.SORT_INSTALL,
+                sortDirections = mapOf(HailData.SORT_NAME to false, HailData.SORT_SIZE to true),
                 filterUserApps = false,
                 filterSystemApps = true,
-                filterAllApps = false,
-                filterFrozenApps = false,
-                filterUnfrozenApps = false,
+                filterEnabledApps = true,
+                filterDisabledApps = false,
+                filterSuspendedApps = true,
+                filterHiddenApps = false,
+                filterStoppedApps = true,
                 workingMode = HailData.MODE_SHIZUKU_HIDE,
                 biometricLogin = true,
                 appTheme = HailData.THEME_LIGHT,
@@ -152,10 +159,28 @@ class SettingsDataStoreTest {
 
         assertTrue(backup.hasSortBy())
         assertEquals(HailData.SORT_INSTALL, backup.sortBy)
+        assertEquals(
+            mapOf(HailData.SORT_NAME to false, HailData.SORT_SIZE to true),
+            backup.sortDirectionsMap,
+        )
+        assertBackupFields(backup)
+    }
+
+    private fun assertBackupFields(backup: SettingsBackup) {
         assertTrue(backup.hasFilterUserApps())
         assertFalse(backup.filterUserApps)
         assertTrue(backup.hasFilterSystemApps())
         assertTrue(backup.filterSystemApps)
+        assertTrue(backup.hasFilterEnabledApps())
+        assertTrue(backup.filterEnabledApps)
+        assertTrue(backup.hasFilterDisabledApps())
+        assertFalse(backup.filterDisabledApps)
+        assertTrue(backup.hasFilterSuspendedApps())
+        assertTrue(backup.filterSuspendedApps)
+        assertTrue(backup.hasFilterHiddenApps())
+        assertFalse(backup.filterHiddenApps)
+        assertTrue(backup.hasFilterStoppedApps())
+        assertTrue(backup.filterStoppedApps)
         assertTrue(backup.hasWorkingMode())
         assertEquals(HailData.MODE_SHIZUKU_HIDE, backup.workingMode)
         assertTrue(backup.hasBiometricLogin())
