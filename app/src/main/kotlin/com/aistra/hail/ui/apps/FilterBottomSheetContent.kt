@@ -24,6 +24,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MultiChoiceSegmentedButtonRow
 import androidx.compose.material3.SegmentedButton
@@ -32,6 +33,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -268,46 +270,48 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
 
     SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = CheckCircle)
 
-    FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space50)),
-        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
-        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space50)),
-    ) {
-        StatusChip(
-            label = stringResource(R.string.state_running),
-            selected = enabled,
-            onClick = {
-                toggleFilter(enabled, selectedCount, HailData.FILTER_ENABLED_APPS, onFilterChanged) { enabled = it }
-            },
-        )
-        StatusChip(
-            label = stringResource(R.string.state_disabled),
-            selected = disabled,
-            onClick = {
-                toggleFilter(disabled, selectedCount, HailData.FILTER_DISABLED_APPS, onFilterChanged) { disabled = it }
-            },
-        )
-        StatusChip(
-            label = stringResource(R.string.state_suspended),
-            selected = suspended,
-            onClick = {
-                toggleFilter(suspended, selectedCount, HailData.FILTER_SUSPENDED_APPS, onFilterChanged) { suspended = it }
-            },
-        )
-        StatusChip(
-            label = stringResource(R.string.state_hidden),
-            selected = hidden,
-            onClick = {
-                toggleFilter(hidden, selectedCount, HailData.FILTER_HIDDEN_APPS, onFilterChanged) { hidden = it }
-            },
-        )
-        StatusChip(
-            label = stringResource(R.string.state_stopped),
-            selected = stopped,
-            onClick = {
-                toggleFilter(stopped, selectedCount, HailData.FILTER_STOPPED_APPS, onFilterChanged) { stopped = it }
-            },
-        )
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space50)),
+            horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
+        ) {
+            StatusChip(
+                label = stringResource(R.string.state_running),
+                selected = enabled,
+                onClick = {
+                    toggleFilter(enabled, selectedCount, HailData.FILTER_ENABLED_APPS, onFilterChanged) { enabled = it }
+                },
+            )
+            StatusChip(
+                label = stringResource(R.string.state_disabled),
+                selected = disabled,
+                onClick = {
+                    toggleFilter(disabled, selectedCount, HailData.FILTER_DISABLED_APPS, onFilterChanged) { disabled = it }
+                },
+            )
+            StatusChip(
+                label = stringResource(R.string.state_suspended),
+                selected = suspended,
+                onClick = {
+                    toggleFilter(suspended, selectedCount, HailData.FILTER_SUSPENDED_APPS, onFilterChanged) { suspended = it }
+                },
+            )
+            StatusChip(
+                label = stringResource(R.string.state_hidden),
+                selected = hidden,
+                onClick = {
+                    toggleFilter(hidden, selectedCount, HailData.FILTER_HIDDEN_APPS, onFilterChanged) { hidden = it }
+                },
+            )
+            StatusChip(
+                label = stringResource(R.string.state_stopped),
+                selected = stopped,
+                onClick = {
+                    toggleFilter(stopped, selectedCount, HailData.FILTER_STOPPED_APPS, onFilterChanged) { stopped = it }
+                },
+            )
+        }
     }
 }
 
