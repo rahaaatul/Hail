@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -61,7 +62,7 @@ import com.aistra.hail.utils.HUI
  */
 @Composable
 fun FilterBottomSheetContent(onFilterChanged: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = dimensionResource(R.dimen.space300))) {
         SortSection(onFilterChanged = onFilterChanged)
         SectionDivider()
         TypeSection(onFilterChanged = onFilterChanged)
@@ -107,8 +108,8 @@ private fun SortSection(onFilterChanged: () -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space50)),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
     ) {
         SortItem(
             icon = SortByAlpha,
@@ -159,18 +160,18 @@ private fun SortItem(
     Column(
         modifier =
             Modifier
-                .width(72.dp)
+                .width(dimensionResource(R.dimen.space900))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(bounded = false),
                     onClick = onClick,
-                ).padding(vertical = 4.dp),
+                ).padding(vertical = dimensionResource(R.dimen.space50)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(40.dp)
+                    .size(dimensionResource(R.dimen.space500))
                     .background(
                         if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                         CircleShape,
@@ -181,10 +182,10 @@ private fun SortItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(dimensionResource(R.dimen.space300)),
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space50)))
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
@@ -199,8 +200,8 @@ private fun SortItem(
 @Composable
 private fun SectionDivider() {
     HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-        thickness = 1.dp,
+        modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space100)),
+        thickness = dimensionResource(R.dimen.divider_thickness),
         color = MaterialTheme.colorScheme.outlineVariant,
     )
 }
@@ -217,7 +218,7 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 4.dp),
+                .padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space50)),
     ) {
         SegmentedButton(
             checked = system,
@@ -268,9 +269,9 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
     SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = CheckCircle)
 
     FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space50)),
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
+        verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space50)),
     ) {
         StatusChip(
             label = stringResource(R.string.state_running),
@@ -318,7 +319,13 @@ private fun SectionTitle(
     val textStyle = MaterialTheme.typography.titleSmall
     val symbolSize = textStyle.fontSize.value.dp
     Row(
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
+        modifier =
+            Modifier.padding(
+                start = dimensionResource(R.dimen.space300),
+                end = dimensionResource(R.dimen.space300),
+                top = dimensionResource(R.dimen.space100),
+                bottom = dimensionResource(R.dimen.space75),
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -327,7 +334,7 @@ private fun SectionTitle(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(symbolSize),
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(dimensionResource(R.dimen.space125)))
         Text(
             text = text,
             style = textStyle,

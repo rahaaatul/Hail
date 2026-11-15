@@ -262,7 +262,7 @@ private fun AppIcon(
     val iconModifier =
         Modifier
             .size(iconSize)
-            .padding(dimensionResource(R.dimen.padding_small))
+            .padding(dimensionResource(R.dimen.space100))
     if (displayedIcon != null) {
         Image(
             bitmap = displayedIcon.asImageBitmap(),

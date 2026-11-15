@@ -2,8 +2,14 @@
     <dimen name="header_height">176dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="app_icon_size">64dp</dimen>
-    <dimen name="padding_extra_small">4dp</dimen>
-    <dimen name="padding_small">8dp</dimen>
-    <dimen name="padding_medium">16dp</dimen>
-    <dimen name="padding_large">24dp</dimen>
+    <dimen name="space50">4dp</dimen>
+    <dimen name="space75">6dp</dimen>
+    <dimen name="space100">8dp</dimen>
+    <dimen name="space125">10dp</dimen>
+    <dimen name="space175">14dp</dimen>
+    <dimen name="space200">16dp</dimen>
+    <dimen name="space300">24dp</dimen>
+    <dimen name="space500">40dp</dimen>
+    <dimen name="space900">72dp</dimen>
+    <dimen name="divider_thickness">1dp</dimen>
 </resources>

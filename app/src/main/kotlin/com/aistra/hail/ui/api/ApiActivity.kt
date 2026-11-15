@@ -191,8 +191,8 @@ class ApiActivity : ComponentActivity() {
                     text = HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(packageManager)?.toString() ?: pkg,
                     modifier =
                         Modifier.padding(
-                            horizontal = dimensionResource(R.dimen.padding_medium),
-                            vertical = dimensionResource(R.dimen.padding_small),
+                            horizontal = dimensionResource(R.dimen.space200),
+                            vertical = dimensionResource(R.dimen.space100),
                         ),
                     style = MaterialTheme.typography.headlineSmall,
                 )
@@ -232,7 +232,7 @@ class ApiActivity : ComponentActivity() {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+            modifier = Modifier.padding(dimensionResource(R.dimen.space200)),
         )
         Text(text = stringResource(title), style = MaterialTheme.typography.bodyLarge)
     }
