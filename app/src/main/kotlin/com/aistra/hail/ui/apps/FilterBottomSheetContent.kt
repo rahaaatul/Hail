@@ -315,6 +315,8 @@ private fun SectionTitle(
     text: String,
     icon: ImageVector,
 ) {
+    val textStyle = MaterialTheme.typography.titleSmall
+    val symbolSize = textStyle.fontSize.value.dp
     Row(
         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -323,12 +325,12 @@ private fun SectionTitle(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.height(14.dp),
+            modifier = Modifier.size(symbolSize),
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.titleSmall,
+            style = textStyle,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary,
         )
