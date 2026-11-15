@@ -48,7 +48,7 @@
     <string name="action_tag_remove">Remove tag</string>
     <string name="action_tag_set">Set tag</string>
     <string name="action_add_pin_shortcut">Add to Home screen</string>
-    <string name="action_export_clipboard">Export to Clipboard</string>
+    <string name="action_export_clipboard">Copy to clipboard</string>
     <string name="action_import_clipboard">Import from Clipboard</string>
     <string name="action_remove_home">Remove from Home</string>
     <string name="action_unfreeze_remove_home">Unfreeze and Remove from Home</string>

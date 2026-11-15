@@ -24,16 +24,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,9 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -56,12 +51,14 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
+import com.aistra.hail.ui.components.HailBottomSheet
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.AppMetaCache
@@ -107,7 +104,7 @@ fun AppsScreen(
                 apps = apps,
                 ui = ui,
                 onToggleChecked = onToggleChecked,
-                onAction = onAction,
+                onLongClick = { ui.appActionsTarget = it },
                 onLiftChange = onLiftChange,
             )
         }
@@ -120,6 +117,16 @@ fun AppsScreen(
                 },
             )
         }
+        ui.appActionsTarget?.let { target ->
+            AppActionsSheet(
+                info = target,
+                onDismissRequest = { ui.appActionsTarget = null },
+                onAction = { action ->
+                    ui.appActionsTarget = null
+                    onAction(target, action)
+                },
+            )
+        }
     }
 }
 
@@ -128,7 +135,7 @@ private fun AppsGrid(
     apps: List<ApplicationInfo>,
     ui: AppsUiState,
     onToggleChecked: (packageName: String, checked: Boolean) -> Unit,
-    onAction: (info: ApplicationInfo, action: AppAction) -> Unit,
+    onLongClick: (info: ApplicationInfo) -> Unit,
     onLiftChange: (lifted: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -161,7 +168,7 @@ private fun AppsGrid(
                     info = info,
                     revision = ui.checkedRevision,
                     onCheckedChange = { checked -> onToggleChecked(info.packageName, checked) },
-                    onAction = { action -> onAction(info, action) },
+                    onLongClick = { onLongClick(info) },
                 )
             }
         }
@@ -175,18 +182,12 @@ private fun AppsGrid(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterBottomSheet(
     onDismissRequest: () -> Unit,
     onFilterChanged: () -> Unit,
 ) {
-    val sheetState =
-        rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        )
-    ModalBottomSheet(onDismissRequest = onDismissRequest, sheetState = sheetState) {
+    HailBottomSheet(onDismissRequest = onDismissRequest) {
         FilterBottomSheetContent(onFilterChanged = onFilterChanged)
     }
 }
@@ -196,7 +197,7 @@ private fun AppItem(
     info: ApplicationInfo,
     revision: Int,
     onCheckedChange: (Boolean) -> Unit,
-    onAction: (AppAction) -> Unit,
+    onLongClick: () -> Unit,
 ) {
     val pkg = info.packageName
     val metadata = AppMetaCache.get(pkg)
@@ -205,7 +206,6 @@ private fun AppItem(
     val name = metadata?.name ?: pkg
     val isSelf = pkg == BuildConfig.APPLICATION_ID
 
-    var menuExpanded by remember { mutableStateOf(false) }
     var checked by remember(pkg, revision) { mutableStateOf(HailData.isChecked(pkg)) }
 
     Row(
@@ -214,7 +214,7 @@ private fun AppItem(
                 .fillMaxWidth()
                 .combinedClickable(
                     onClick = {},
-                    onLongClick = { menuExpanded = true },
+                    onLongClick = onLongClick,
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -234,25 +234,18 @@ private fun AppItem(
             },
             enabled = !isSelf,
         )
-        AppActionMenu(
-            title = name,
-            expanded = menuExpanded,
-            onDismissRequest = { menuExpanded = false },
-            onAction = {
-                menuExpanded = false
-                onAction(it)
-            },
-        )
     }
 }
 
 @Composable
-private fun AppIcon(
+internal fun AppIcon(
     info: ApplicationInfo,
     dimmed: Boolean,
+    shape: Shape? = null,
+    size: Dp? = null,
 ) {
     val context = LocalContext.current
-    val iconSize = dimensionResource(R.dimen.app_icon_size)
+    val iconSize = size ?: dimensionResource(R.dimen.app_icon_size)
     val iconSizePx = with(LocalDensity.current) { iconSize.roundToPx() }
     val icon by produceState<Bitmap?>(null, info.packageName, HailData.synthesizeAdaptiveIcons, iconSizePx) {
         value = AppIconCache.loadIconBitmap(context, info, HPackages.myUserId, iconSizePx)
@@ -263,6 +256,7 @@ private fun AppIcon(
         Modifier
             .size(iconSize)
             .padding(dimensionResource(R.dimen.space100))
+            .then(if (shape != null) Modifier.clip(shape) else Modifier)
     if (displayedIcon != null) {
         Image(
             bitmap = displayedIcon.asImageBitmap(),
@@ -311,37 +305,6 @@ private fun AppTexts(
     }
 }
 
-@Composable
-private fun AppActionMenu(
-    title: String,
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    onAction: (AppAction) -> Unit,
-) {
-    val actions =
-        listOf(
-            stringResource(R.string.action_details) to AppAction.DETAILS,
-            stringResource(R.string.action_export_clipboard) to AppAction.COPY,
-            stringResource(R.string.action_extract_apk) to AppAction.EXTRACT,
-            stringResource(R.string.action_uninstall) to AppAction.UNINSTALL,
-            stringResource(R.string.action_reinstall) to AppAction.REINSTALL,
-        )
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        HorizontalDivider()
-        actions.forEach { (label, action) ->
-            DropdownMenuItem(
-                text = { Text(label) },
-                onClick = { onAction(action) },
-            )
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 fun AppItemPreview() {
@@ -350,7 +313,7 @@ fun AppItemPreview() {
             info = ApplicationInfo().apply { packageName = "com.example.app" },
             revision = 0,
             onCheckedChange = {},
-            onAction = {},
+            onLongClick = {},
         )
     }
 }

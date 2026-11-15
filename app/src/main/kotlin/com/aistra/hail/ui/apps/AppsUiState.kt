@@ -1,5 +1,6 @@
 package com.aistra.hail.ui.apps
 
+import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,9 @@ class AppsUiState {
 
     // Whether the filter bottom sheet is visible; the toolbar menu opens it.
     var filterSheetVisible by mutableStateOf(false)
+
+    // The app whose long-press actions sheet is open, or null when hidden.
+    var appActionsTarget by mutableStateOf<ApplicationInfo?>(null)
 
     // Set before a user-triggered refresh so an empty result surfaces a toast.
     var showEmptyToast by mutableStateOf(false)

@@ -10,6 +10,9 @@
     <dimen name="space200">16dp</dimen>
     <dimen name="space300">24dp</dimen>
     <dimen name="space500">40dp</dimen>
+    <dimen name="space600">48dp</dimen>
+    <dimen name="space700">56dp</dimen>
+    <dimen name="space800">64dp</dimen>
     <dimen name="space900">72dp</dimen>
     <dimen name="divider_thickness">1dp</dimen>
 </resources>

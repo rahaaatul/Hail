@@ -661,3 +661,385 @@ val CheckCircle: ImageVector by lazy {
             }
         }.build()
 }
+
+/** Material Symbols info (rounded) — app info action. */
+val Info: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "info",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(10.53f, 13.78f)
+                quadToRelative(0.22f, -0.22f, 0.22f, -0.53f)
+                verticalLineTo(9.75f)
+                quadToRelative(0f, -0.32f, -0.21f, -0.53f)
+                reflectiveQuadTo(10f, 9f)
+                reflectiveQuadTo(9.47f, 9.22f)
+                reflectiveQuadTo(9.25f, 9.75f)
+                verticalLineToRelative(3.5f)
+                quadToRelative(0f, 0.32f, 0.21f, 0.53f)
+                reflectiveQuadTo(10f, 14f)
+                reflectiveQuadToRelative(0.54f, -0.22f)
+                close()
+                moveToRelative(0f, -6.5f)
+                quadTo(10.75f, 7.07f, 10.75f, 6.75f)
+                reflectiveQuadTo(10.54f, 6.22f)
+                reflectiveQuadTo(10f, 6f)
+                reflectiveQuadTo(9.47f, 6.21f)
+                reflectiveQuadTo(9.25f, 6.75f)
+                reflectiveQuadTo(9.46f, 7.28f)
+                reflectiveQuadTo(10f, 7.5f)
+                reflectiveQuadTo(10.53f, 7.29f)
+                close()
+                moveTo(10.01f, 18f)
+                quadTo(8.35f, 18f, 6.9f, 17.38f)
+                reflectiveQuadTo(4.34f, 15.66f)
+                reflectiveQuadTo(2.63f, 13.11f)
+                reflectiveQuadTo(2f, 9.99f)
+                reflectiveQuadTo(2.63f, 6.89f)
+                reflectiveQuadTo(4.34f, 4.34f)
+                reflectiveQuadTo(6.89f, 2.63f)
+                reflectiveQuadTo(10.01f, 2f)
+                reflectiveQuadToRelative(3.11f, 0.63f)
+                reflectiveQuadToRelative(2.54f, 1.72f)
+                reflectiveQuadToRelative(1.72f, 2.55f)
+                reflectiveQuadTo(18f, 9.99f)
+                reflectiveQuadTo(17.38f, 13.1f)
+                reflectiveQuadToRelative(-1.72f, 2.55f)
+                reflectiveQuadToRelative(-2.55f, 1.72f)
+                reflectiveQuadTo(10.01f, 18f)
+                close()
+            }
+        }.build()
+}
+
+/** Material Symbols assignment (rounded) — copy package name to clipboard. */
+val Assignment: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "assignment",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(4.5f, 17f)
+                quadTo(3.88f, 17f, 3.44f, 16.56f)
+                reflectiveQuadTo(3f, 15.5f)
+                verticalLineTo(4.5f)
+                quadTo(3f, 3.88f, 3.44f, 3.44f)
+                reflectiveQuadTo(4.5f, 3f)
+                horizontalLineTo(8.06f)
+                quadTo(8.23f, 2.35f, 8.76f, 1.93f)
+                reflectiveQuadTo(10f, 1.5f)
+                reflectiveQuadToRelative(1.24f, 0.43f)
+                reflectiveQuadTo(11.94f, 3f)
+                horizontalLineTo(15.5f)
+                quadToRelative(0.62f, 0f, 1.06f, 0.44f)
+                reflectiveQuadTo(17f, 4.5f)
+                verticalLineToRelative(11f)
+                quadToRelative(0f, 0.62f, -0.44f, 1.06f)
+                reflectiveQuadTo(15.5f, 17f)
+                horizontalLineTo(4.5f)
+                close()
+                moveTo(6.75f, 14f)
+                horizontalLineToRelative(4.5f)
+                quadToRelative(0.32f, 0f, 0.53f, -0.21f)
+                reflectiveQuadTo(12f, 13.25f)
+                reflectiveQuadTo(11.78f, 12.72f)
+                reflectiveQuadTo(11.25f, 12.5f)
+                horizontalLineTo(6.75f)
+                quadToRelative(-0.32f, 0f, -0.53f, 0.21f)
+                reflectiveQuadTo(6f, 13.25f)
+                reflectiveQuadToRelative(0.22f, 0.54f)
+                reflectiveQuadTo(6.75f, 14f)
+                close()
+                moveToRelative(0f, -3.25f)
+                horizontalLineToRelative(6.5f)
+                quadToRelative(0.32f, 0f, 0.53f, -0.21f)
+                reflectiveQuadTo(14f, 10f)
+                reflectiveQuadTo(13.78f, 9.47f)
+                reflectiveQuadTo(13.25f, 9.25f)
+                horizontalLineTo(6.75f)
+                quadToRelative(-0.32f, 0f, -0.53f, 0.21f)
+                reflectiveQuadTo(6f, 10f)
+                reflectiveQuadToRelative(0.22f, 0.54f)
+                reflectiveQuadToRelative(0.53f, 0.22f)
+                close()
+                moveToRelative(0f, -3.25f)
+                horizontalLineToRelative(6.5f)
+                quadToRelative(0.32f, 0f, 0.53f, -0.21f)
+                reflectiveQuadTo(14f, 6.75f)
+                reflectiveQuadTo(13.78f, 6.22f)
+                reflectiveQuadTo(13.25f, 6f)
+                horizontalLineTo(6.75f)
+                quadTo(6.43f, 6f, 6.22f, 6.21f)
+                reflectiveQuadTo(6f, 6.75f)
+                reflectiveQuadTo(6.22f, 7.28f)
+                reflectiveQuadTo(6.75f, 7.5f)
+                close()
+                moveToRelative(3.6f, -3.65f)
+                quadTo(10.5f, 3.71f, 10.5f, 3.5f)
+                reflectiveQuadTo(10.35f, 3.15f)
+                reflectiveQuadTo(10f, 3f)
+                reflectiveQuadTo(9.65f, 3.15f)
+                reflectiveQuadTo(9.5f, 3.5f)
+                reflectiveQuadTo(9.65f, 3.85f)
+                reflectiveQuadTo(10f, 4f)
+                reflectiveQuadTo(10.35f, 3.85f)
+                close()
+            }
+        }.build()
+}
+
+/** Material Symbols delete (rounded) — uninstall action. */
+val Delete: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "delete",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(6.5f, 17f)
+                quadTo(5.88f, 17f, 5.44f, 16.56f)
+                reflectiveQuadTo(5f, 15.5f)
+                verticalLineTo(5.5f)
+                horizontalLineTo(4.75f)
+                quadTo(4.43f, 5.5f, 4.22f, 5.29f)
+                reflectiveQuadTo(4f, 4.75f)
+                reflectiveQuadTo(4.22f, 4.22f)
+                reflectiveQuadTo(4.75f, 4f)
+                horizontalLineTo(8f)
+                verticalLineTo(3.75f)
+                quadTo(8f, 3.43f, 8.22f, 3.22f)
+                reflectiveQuadTo(8.75f, 3f)
+                horizontalLineToRelative(2.5f)
+                quadToRelative(0.32f, 0f, 0.53f, 0.22f)
+                reflectiveQuadTo(12f, 3.75f)
+                verticalLineTo(4f)
+                horizontalLineToRelative(3.25f)
+                quadToRelative(0.32f, 0f, 0.53f, 0.21f)
+                reflectiveQuadTo(16f, 4.75f)
+                reflectiveQuadTo(15.78f, 5.28f)
+                reflectiveQuadTo(15.25f, 5.5f)
+                horizontalLineTo(15f)
+                verticalLineToRelative(9.99f)
+                quadToRelative(0f, 0.63f, -0.44f, 1.07f)
+                reflectiveQuadTo(13.5f, 17f)
+                horizontalLineToRelative(-7f)
+                close()
+                moveTo(9.28f, 13.78f)
+                quadTo(9.5f, 13.57f, 9.5f, 13.25f)
+                verticalLineTo(7.75f)
+                quadTo(9.5f, 7.43f, 9.29f, 7.22f)
+                reflectiveQuadTo(8.75f, 7f)
+                reflectiveQuadTo(8.22f, 7.22f)
+                reflectiveQuadTo(8f, 7.75f)
+                verticalLineToRelative(5.5f)
+                quadToRelative(0f, 0.32f, 0.21f, 0.53f)
+                reflectiveQuadTo(8.75f, 14f)
+                reflectiveQuadTo(9.28f, 13.78f)
+                close()
+                moveToRelative(2.5f, 0f)
+                quadTo(12f, 13.57f, 12f, 13.25f)
+                verticalLineTo(7.75f)
+                quadTo(12f, 7.43f, 11.79f, 7.22f)
+                reflectiveQuadTo(11.25f, 7f)
+                reflectiveQuadTo(10.72f, 7.22f)
+                reflectiveQuadTo(10.5f, 7.75f)
+                verticalLineToRelative(5.5f)
+                quadToRelative(0f, 0.32f, 0.21f, 0.53f)
+                reflectiveQuadTo(11.25f, 14f)
+                reflectiveQuadToRelative(0.54f, -0.22f)
+                close()
+            }
+        }.build()
+}
+
+/** Material Symbols autorenew (rounded) — reinstall action. */
+val Autorenew: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "autorenew",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(5.5f, 10f)
+                quadToRelative(0f, 0.25f, 0.03f, 0.5f)
+                reflectiveQuadTo(5.6f, 10.98f)
+                quadToRelative(0.06f, 0.29f, -0.05f, 0.58f)
+                reflectiveQuadToRelative(-0.41f, 0.4f)
+                reflectiveQuadTo(4.57f, 11.93f)
+                reflectiveQuadTo(4.21f, 11.5f)
+                quadTo(4.1f, 11.15f, 4.05f, 10.77f)
+                reflectiveQuadTo(4f, 10f)
+                quadTo(4f, 7.48f, 5.77f, 5.71f)
+                reflectiveQuadTo(10.13f, 4f)
+                lineTo(9.46f, 3.33f)
+                quadTo(9.23f, 3.1f, 9.23f, 2.8f)
+                reflectiveQuadTo(9.46f, 2.27f)
+                reflectiveQuadTo(9.99f, 2.04f)
+                reflectiveQuadToRelative(0.53f, 0.23f)
+                lineToRelative(1.96f, 1.96f)
+                quadToRelative(0.23f, 0.23f, 0.23f, 0.52f)
+                reflectiveQuadTo(12.48f, 5.27f)
+                lineTo(10.52f, 7.23f)
+                quadTo(10.29f, 7.46f, 10f, 7.45f)
+                reflectiveQuadTo(9.48f, 7.21f)
+                reflectiveQuadTo(9.25f, 6.68f)
+                reflectiveQuadTo(9.48f, 6.15f)
+                lineTo(10.13f, 5.5f)
+                quadTo(8.17f, 5.46f, 6.83f, 6.79f)
+                reflectiveQuadTo(5.5f, 10f)
+                close()
+                moveToRelative(9f, 0f)
+                quadToRelative(0f, -0.25f, -0.03f, -0.5f)
+                reflectiveQuadTo(14.4f, 9.02f)
+                quadTo(14.33f, 8.71f, 14.45f, 8.43f)
+                reflectiveQuadTo(14.85f, 8.02f)
+                reflectiveQuadToRelative(0.56f, 0f)
+                reflectiveQuadToRelative(0.35f, 0.42f)
+                quadToRelative(0.1f, 0.38f, 0.17f, 0.76f)
+                reflectiveQuadTo(16f, 10f)
+                quadToRelative(0f, 2.5f, -1.77f, 4.28f)
+                reflectiveQuadTo(9.88f, 16f)
+                lineToRelative(0.67f, 0.67f)
+                quadToRelative(0.23f, 0.23f, 0.23f, 0.53f)
+                reflectiveQuadToRelative(-0.23f, 0.53f)
+                reflectiveQuadToRelative(-0.53f, 0.23f)
+                reflectiveQuadTo(9.48f, 17.73f)
+                lineTo(7.52f, 15.77f)
+                quadTo(7.29f, 15.54f, 7.29f, 15.25f)
+                reflectiveQuadTo(7.52f, 14.73f)
+                lineTo(9.48f, 12.77f)
+                quadToRelative(0.23f, -0.23f, 0.53f, -0.23f)
+                reflectiveQuadToRelative(0.53f, 0.23f)
+                reflectiveQuadToRelative(0.23f, 0.53f)
+                reflectiveQuadToRelative(-0.23f, 0.53f)
+                lineTo(9.88f, 14.5f)
+                quadToRelative(1.96f, 0.04f, 3.29f, -1.29f)
+                reflectiveQuadTo(14.5f, 10f)
+                close()
+            }
+        }.build()
+}
+
+/** Material Symbols download (rounded) — extract APK action. */
+val Download: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "download",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(9.71f, 12.64f)
+                quadTo(9.58f, 12.58f, 9.48f, 12.48f)
+                lineTo(6.52f, 9.52f)
+                quadTo(6.29f, 9.29f, 6.3f, 8.99f)
+                reflectiveQuadTo(6.53f, 8.46f)
+                quadTo(6.77f, 8.23f, 7.07f, 8.23f)
+                quadToRelative(0.3f, 0f, 0.53f, 0.23f)
+                lineToRelative(1.65f, 1.67f)
+                verticalLineTo(3.75f)
+                quadToRelative(0f, -0.32f, 0.21f, -0.53f)
+                reflectiveQuadTo(10f, 3f)
+                reflectiveQuadToRelative(0.54f, 0.22f)
+                reflectiveQuadToRelative(0.22f, 0.53f)
+                verticalLineToRelative(6.38f)
+                lineTo(12.42f, 8.46f)
+                quadTo(12.64f, 8.23f, 12.94f, 8.24f)
+                reflectiveQuadToRelative(0.54f, 0.24f)
+                quadToRelative(0.22f, 0.23f, 0.22f, 0.53f)
+                reflectiveQuadTo(13.48f, 9.54f)
+                lineToRelative(-2.96f, 2.94f)
+                quadToRelative(-0.11f, 0.1f, -0.24f, 0.16f)
+                reflectiveQuadTo(10f, 12.69f)
+                reflectiveQuadTo(9.71f, 12.64f)
+                close()
+                moveTo(5.49f, 16f)
+                quadTo(4.88f, 16f, 4.44f, 15.56f)
+                reflectiveQuadTo(4f, 14.5f)
+                verticalLineTo(13.75f)
+                quadTo(4f, 13.43f, 4.21f, 13.22f)
+                reflectiveQuadTo(4.75f, 13f)
+                reflectiveQuadToRelative(0.54f, 0.22f)
+                reflectiveQuadTo(5.5f, 13.75f)
+                verticalLineTo(14.5f)
+                horizontalLineToRelative(9f)
+                verticalLineTo(13.75f)
+                quadToRelative(0f, -0.32f, 0.21f, -0.53f)
+                reflectiveQuadTo(15.25f, 13f)
+                reflectiveQuadToRelative(0.54f, 0.22f)
+                reflectiveQuadTo(16f, 13.75f)
+                verticalLineTo(14.5f)
+                quadToRelative(0f, 0.62f, -0.44f, 1.06f)
+                reflectiveQuadTo(14.5f, 16f)
+                horizontalLineTo(5.49f)
+                close()
+            }
+        }.build()
+}
