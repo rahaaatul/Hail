@@ -99,7 +99,7 @@ private fun SortSection(onFilterChanged: () -> Unit) {
 
     SectionTitle(
         text = stringResource(R.string.sort_by),
-        icon = if (ascending) ArrowCircleUp else ArrowCircleDown,
+        icon = if (ascending) MoreUp else MoreDown,
     )
 
     Row(

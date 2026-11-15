@@ -400,11 +400,11 @@ val Upgrade: ImageVector by lazy {
         }.build()
 }
 
-/** Material Symbols arrow_circle_up (rounded) — ascending sort direction. */
-val ArrowCircleUp: ImageVector by lazy {
+/** Material Symbols more_up (rounded) — ascending sort direction. */
+val MoreUp: ImageVector by lazy {
     ImageVector
         .Builder(
-            name = "arrow_circle_up",
+            name = "more_up",
             defaultWidth = 20.dp,
             defaultHeight = 20.dp,
             viewportWidth = 20f,
@@ -421,55 +421,47 @@ val ArrowCircleUp: ImageVector by lazy {
                 strokeLineMiter = 1f,
                 pathFillType = PathFillType.Companion.NonZero,
             ) {
-                moveTo(9.25f, 9.88f)
-                verticalLineToRelative(2.38f)
-                quadToRelative(0f, 0.32f, 0.21f, 0.53f)
-                reflectiveQuadTo(10f, 13f)
-                reflectiveQuadToRelative(0.54f, -0.21f)
-                reflectiveQuadToRelative(0.22f, -0.53f)
-                verticalLineTo(9.88f)
-                lineToRelative(0.67f, 0.67f)
-                quadToRelative(0.23f, 0.23f, 0.53f, 0.23f)
-                reflectiveQuadToRelative(0.53f, -0.23f)
-                reflectiveQuadToRelative(0.23f, -0.53f)
-                reflectiveQuadTo(12.48f, 9.48f)
-                lineTo(10.52f, 7.52f)
-                quadTo(10.29f, 7.29f, 10f, 7.29f)
-                reflectiveQuadTo(9.48f, 7.52f)
-                lineTo(7.52f, 9.48f)
-                quadTo(7.29f, 9.71f, 7.3f, 10f)
-                reflectiveQuadToRelative(0.24f, 0.52f)
-                reflectiveQuadToRelative(0.53f, 0.23f)
-                reflectiveQuadTo(8.6f, 10.52f)
-                lineTo(9.25f, 9.88f)
+                moveTo(14.04f, 5.96f)
+                horizontalLineTo(7.67f)
+                quadToRelative(-0.42f, 0f, -0.72f, -0.3f)
+                reflectiveQuadTo(6.65f, 4.94f)
+                reflectiveQuadTo(6.94f, 4.22f)
+                reflectiveQuadTo(7.67f, 3.92f)
+                horizontalLineToRelative(7.4f)
+                quadToRelative(0.42f, 0f, 0.72f, 0.3f)
+                reflectiveQuadToRelative(0.3f, 0.72f)
+                verticalLineToRelative(7.4f)
+                quadToRelative(0f, 0.42f, -0.3f, 0.72f)
+                reflectiveQuadToRelative(-0.72f, 0.3f)
+                reflectiveQuadToRelative(-0.72f, -0.3f)
+                reflectiveQuadToRelative(-0.3f, -0.72f)
+                verticalLineTo(5.96f)
                 close()
-                moveTo(10.01f, 18f)
-                quadTo(8.35f, 18f, 6.9f, 17.38f)
-                reflectiveQuadTo(4.34f, 15.66f)
-                reflectiveQuadTo(2.63f, 13.11f)
-                reflectiveQuadTo(2f, 9.99f)
-                reflectiveQuadTo(2.63f, 6.89f)
-                reflectiveQuadTo(4.34f, 4.34f)
-                reflectiveQuadTo(6.89f, 2.63f)
-                reflectiveQuadTo(10.01f, 2f)
-                reflectiveQuadToRelative(3.11f, 0.63f)
-                reflectiveQuadToRelative(2.54f, 1.72f)
-                reflectiveQuadToRelative(1.72f, 2.55f)
-                reflectiveQuadTo(18f, 9.99f)
-                reflectiveQuadTo(17.38f, 13.1f)
-                reflectiveQuadToRelative(-1.72f, 2.55f)
-                reflectiveQuadToRelative(-2.55f, 1.72f)
-                reflectiveQuadTo(10.01f, 18f)
+                moveTo(9.73f, 10.27f)
+                horizontalLineTo(3.35f)
+                quadToRelative(-0.42f, 0f, -0.72f, -0.3f)
+                reflectiveQuadTo(2.33f, 9.25f)
+                reflectiveQuadTo(2.63f, 8.53f)
+                reflectiveQuadTo(3.35f, 8.23f)
+                horizontalLineToRelative(7.4f)
+                quadToRelative(0.42f, 0f, 0.72f, 0.3f)
+                reflectiveQuadToRelative(0.3f, 0.72f)
+                verticalLineToRelative(7.4f)
+                quadToRelative(0f, 0.42f, -0.3f, 0.72f)
+                reflectiveQuadToRelative(-0.72f, 0.3f)
+                reflectiveQuadToRelative(-0.72f, -0.3f)
+                reflectiveQuadTo(9.73f, 16.65f)
+                verticalLineTo(10.27f)
                 close()
             }
         }.build()
 }
 
-/** Material Symbols arrow_circle_down (rounded) — descending sort direction. */
-val ArrowCircleDown: ImageVector by lazy {
+/** Material Symbols more_down (rounded) — descending sort direction. */
+val MoreDown: ImageVector by lazy {
     ImageVector
         .Builder(
-            name = "arrow_circle_down",
+            name = "more_down",
             defaultWidth = 20.dp,
             defaultHeight = 20.dp,
             viewportWidth = 20f,
@@ -486,45 +478,37 @@ val ArrowCircleDown: ImageVector by lazy {
                 strokeLineMiter = 1f,
                 pathFillType = PathFillType.Companion.NonZero,
             ) {
-                moveTo(9.25f, 10.13f)
-                lineTo(8.58f, 9.46f)
-                quadTo(8.35f, 9.23f, 8.05f, 9.23f)
-                reflectiveQuadTo(7.52f, 9.46f)
-                reflectiveQuadTo(7.29f, 9.99f)
-                reflectiveQuadToRelative(0.23f, 0.53f)
-                lineToRelative(1.96f, 1.96f)
-                quadTo(9.71f, 12.71f, 10f, 12.71f)
-                reflectiveQuadToRelative(0.52f, -0.23f)
-                lineToRelative(1.96f, -1.96f)
-                quadToRelative(0.23f, -0.23f, 0.23f, -0.53f)
-                reflectiveQuadTo(12.48f, 9.46f)
-                reflectiveQuadTo(11.95f, 9.23f)
-                reflectiveQuadTo(11.42f, 9.46f)
-                lineToRelative(-0.67f, 0.67f)
-                verticalLineTo(7.74f)
-                quadToRelative(0f, -0.32f, -0.21f, -0.53f)
-                reflectiveQuadTo(10f, 7f)
-                reflectiveQuadTo(9.47f, 7.21f)
-                reflectiveQuadTo(9.25f, 7.74f)
-                verticalLineToRelative(2.38f)
+                moveTo(6.06f, 13.94f)
+                horizontalLineToRelative(6.38f)
+                quadToRelative(0.42f, 0f, 0.72f, 0.3f)
+                reflectiveQuadToRelative(0.3f, 0.72f)
+                reflectiveQuadToRelative(-0.3f, 0.72f)
+                reflectiveQuadToRelative(-0.72f, 0.3f)
+                horizontalLineTo(5.04f)
+                quadToRelative(-0.42f, 0f, -0.72f, -0.3f)
+                reflectiveQuadTo(4.02f, 14.96f)
+                verticalLineTo(7.56f)
+                quadToRelative(0f, -0.42f, 0.3f, -0.72f)
+                reflectiveQuadTo(5.04f, 6.54f)
+                reflectiveQuadToRelative(0.72f, 0.3f)
+                reflectiveQuadToRelative(0.3f, 0.72f)
+                verticalLineToRelative(6.38f)
                 close()
-                moveTo(10.01f, 18f)
-                quadTo(8.35f, 18f, 6.9f, 17.38f)
-                reflectiveQuadTo(4.34f, 15.66f)
-                reflectiveQuadTo(2.63f, 13.11f)
-                reflectiveQuadTo(2f, 9.99f)
-                reflectiveQuadTo(2.63f, 6.89f)
-                reflectiveQuadTo(4.34f, 4.34f)
-                reflectiveQuadTo(6.89f, 2.63f)
-                reflectiveQuadTo(10.01f, 2f)
-                reflectiveQuadToRelative(3.11f, 0.63f)
-                reflectiveQuadToRelative(2.54f, 1.72f)
-                reflectiveQuadToRelative(1.72f, 2.55f)
-                reflectiveQuadTo(18f, 9.99f)
-                reflectiveQuadTo(17.38f, 13.1f)
-                reflectiveQuadToRelative(-1.72f, 2.55f)
-                reflectiveQuadToRelative(-2.55f, 1.72f)
-                reflectiveQuadTo(10.01f, 18f)
+                moveTo(10.38f, 9.63f)
+                horizontalLineToRelative(6.38f)
+                quadToRelative(0.42f, 0f, 0.72f, 0.3f)
+                reflectiveQuadToRelative(0.3f, 0.72f)
+                reflectiveQuadToRelative(-0.3f, 0.72f)
+                reflectiveQuadToRelative(-0.72f, 0.3f)
+                horizontalLineTo(9.35f)
+                quadToRelative(-0.42f, 0f, -0.72f, -0.3f)
+                reflectiveQuadTo(8.33f, 10.65f)
+                verticalLineTo(3.25f)
+                quadToRelative(0f, -0.42f, 0.3f, -0.72f)
+                reflectiveQuadTo(9.35f, 2.23f)
+                reflectiveQuadToRelative(0.72f, 0.3f)
+                reflectiveQuadToRelative(0.3f, 0.72f)
+                verticalLineTo(9.63f)
                 close()
             }
         }.build()
