@@ -257,6 +257,13 @@ class AppsFragment :
         )
     }
 
+    override fun onPrepareMenu(menu: Menu) {
+        super.onPrepareMenu(menu)
+        val displayed = model.displayApps.value.orEmpty()
+        val allSelected = displayed.isNotEmpty() && displayed.all { it.packageName == BuildConfig.APPLICATION_ID || HailData.isChecked(it.packageName) }
+        menu.findItem(R.id.action_select_all).setIcon(if (allSelected) R.drawable.ic_select else R.drawable.ic_outline_select_all)
+    }
+
     override fun onMenuItemSelected(item: MenuItem): Boolean =
         when (item.itemId) {
             R.id.action_select_all -> {

@@ -20,9 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -41,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -103,8 +99,7 @@ private fun SortSection(onFilterChanged: () -> Unit) {
 
     SectionTitle(
         text = stringResource(R.string.sort_by),
-        icon = if (ascending) Stat2 else StatMinus2,
-        iconScale = 1.5f,
+        icon = if (ascending) ArrowCircleUp else ArrowCircleDown,
     )
 
     Row(
@@ -215,7 +210,7 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
     var user by remember { mutableStateOf(HailData.filterUserApps) }
     val selectedCount = (if (system) 1 else 0) + (if (user) 1 else 0)
 
-    SectionTitle(text = stringResource(R.string.filter_apps_type), icon = Icons.Rounded.Apps)
+    SectionTitle(text = stringResource(R.string.filter_apps_type), icon = Widgets)
 
     MultiChoiceSegmentedButtonRow(
         modifier =
@@ -269,7 +264,7 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
             (if (hidden) 1 else 0) +
             (if (stopped) 1 else 0)
 
-    SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = Icons.Rounded.CheckCircle)
+    SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = CheckCircle)
 
     FlowRow(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
@@ -318,7 +313,6 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
 private fun SectionTitle(
     text: String,
     icon: ImageVector,
-    iconScale: Float = 1f,
 ) {
     Row(
         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
@@ -328,13 +322,13 @@ private fun SectionTitle(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.height(16.dp).scale(iconScale),
+            modifier = Modifier.height(14.dp),
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
         )
     }

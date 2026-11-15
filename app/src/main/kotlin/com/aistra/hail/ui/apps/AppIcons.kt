@@ -400,15 +400,15 @@ val Upgrade: ImageVector by lazy {
         }.build()
 }
 
-/** Material Symbols stat_2 — ascending sort direction. */
-val Stat2: ImageVector by lazy {
+/** Material Symbols arrow_circle_up (rounded) — ascending sort direction. */
+val ArrowCircleUp: ImageVector by lazy {
     ImageVector
         .Builder(
-            name = "stat_2",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            name = "arrow_circle_up",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
         ).apply {
             path(
                 fill = SolidColor(Color.Black),
@@ -421,35 +421,59 @@ val Stat2: ImageVector by lazy {
                 strokeLineMiter = 1f,
                 pathFillType = PathFillType.Companion.NonZero,
             ) {
-                moveTo(7.4f, 18.4f)
-                lineTo(6f, 17f)
-                lineToRelative(6f, -6f)
-                lineToRelative(6f, 6f)
-                lineToRelative(-1.4f, 1.4f)
-                lineTo(12f, 13.83f)
-                lineTo(7.4f, 18.4f)
+                moveTo(9.25f, 9.88f)
+                verticalLineToRelative(2.38f)
+                quadToRelative(0f, 0.32f, 0.21f, 0.53f)
+                reflectiveQuadTo(10f, 13f)
+                reflectiveQuadToRelative(0.54f, -0.21f)
+                reflectiveQuadToRelative(0.22f, -0.53f)
+                verticalLineTo(9.88f)
+                lineToRelative(0.67f, 0.67f)
+                quadToRelative(0.23f, 0.23f, 0.53f, 0.23f)
+                reflectiveQuadToRelative(0.53f, -0.23f)
+                reflectiveQuadToRelative(0.23f, -0.53f)
+                reflectiveQuadTo(12.48f, 9.48f)
+                lineTo(10.52f, 7.52f)
+                quadTo(10.29f, 7.29f, 10f, 7.29f)
+                reflectiveQuadTo(9.48f, 7.52f)
+                lineTo(7.52f, 9.48f)
+                quadTo(7.29f, 9.71f, 7.3f, 10f)
+                reflectiveQuadToRelative(0.24f, 0.52f)
+                reflectiveQuadToRelative(0.53f, 0.23f)
+                reflectiveQuadTo(8.6f, 10.52f)
+                lineTo(9.25f, 9.88f)
                 close()
-                moveToRelative(0f, -6f)
-                lineTo(6f, 11f)
-                lineTo(12f, 5f)
-                lineToRelative(6f, 6f)
-                lineToRelative(-1.4f, 1.4f)
-                lineTo(12f, 7.82f)
-                lineTo(7.4f, 12.4f)
+                moveTo(10.01f, 18f)
+                quadTo(8.35f, 18f, 6.9f, 17.38f)
+                reflectiveQuadTo(4.34f, 15.66f)
+                reflectiveQuadTo(2.63f, 13.11f)
+                reflectiveQuadTo(2f, 9.99f)
+                reflectiveQuadTo(2.63f, 6.89f)
+                reflectiveQuadTo(4.34f, 4.34f)
+                reflectiveQuadTo(6.89f, 2.63f)
+                reflectiveQuadTo(10.01f, 2f)
+                reflectiveQuadToRelative(3.11f, 0.63f)
+                reflectiveQuadToRelative(2.54f, 1.72f)
+                reflectiveQuadToRelative(1.72f, 2.55f)
+                reflectiveQuadTo(18f, 9.99f)
+                reflectiveQuadTo(17.38f, 13.1f)
+                reflectiveQuadToRelative(-1.72f, 2.55f)
+                reflectiveQuadToRelative(-2.55f, 1.72f)
+                reflectiveQuadTo(10.01f, 18f)
                 close()
             }
         }.build()
 }
 
-/** Material Symbols stat_minus_2 — descending sort direction. */
-val StatMinus2: ImageVector by lazy {
+/** Material Symbols arrow_circle_down (rounded) — descending sort direction. */
+val ArrowCircleDown: ImageVector by lazy {
     ImageVector
         .Builder(
-            name = "stat_minus_2",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
+            name = "arrow_circle_down",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
         ).apply {
             path(
                 fill = SolidColor(Color.Black),
@@ -462,21 +486,193 @@ val StatMinus2: ImageVector by lazy {
                 strokeLineMiter = 1f,
                 pathFillType = PathFillType.Companion.NonZero,
             ) {
-                moveTo(12f, 19f)
-                lineTo(6f, 13f)
-                lineTo(7.4f, 11.6f)
-                lineTo(12f, 16.18f)
-                lineTo(16.6f, 11.6f)
-                lineTo(18f, 13f)
-                lineToRelative(-6f, 6f)
+                moveTo(9.25f, 10.13f)
+                lineTo(8.58f, 9.46f)
+                quadTo(8.35f, 9.23f, 8.05f, 9.23f)
+                reflectiveQuadTo(7.52f, 9.46f)
+                reflectiveQuadTo(7.29f, 9.99f)
+                reflectiveQuadToRelative(0.23f, 0.53f)
+                lineToRelative(1.96f, 1.96f)
+                quadTo(9.71f, 12.71f, 10f, 12.71f)
+                reflectiveQuadToRelative(0.52f, -0.23f)
+                lineToRelative(1.96f, -1.96f)
+                quadToRelative(0.23f, -0.23f, 0.23f, -0.53f)
+                reflectiveQuadTo(12.48f, 9.46f)
+                reflectiveQuadTo(11.95f, 9.23f)
+                reflectiveQuadTo(11.42f, 9.46f)
+                lineToRelative(-0.67f, 0.67f)
+                verticalLineTo(7.74f)
+                quadToRelative(0f, -0.32f, -0.21f, -0.53f)
+                reflectiveQuadTo(10f, 7f)
+                reflectiveQuadTo(9.47f, 7.21f)
+                reflectiveQuadTo(9.25f, 7.74f)
+                verticalLineToRelative(2.38f)
                 close()
-                moveToRelative(0f, -6f)
-                lineTo(6f, 7f)
-                lineTo(7.4f, 5.6f)
-                lineTo(12f, 10.17f)
-                lineTo(16.6f, 5.6f)
-                lineTo(18f, 7f)
-                lineToRelative(-6f, 6f)
+                moveTo(10.01f, 18f)
+                quadTo(8.35f, 18f, 6.9f, 17.38f)
+                reflectiveQuadTo(4.34f, 15.66f)
+                reflectiveQuadTo(2.63f, 13.11f)
+                reflectiveQuadTo(2f, 9.99f)
+                reflectiveQuadTo(2.63f, 6.89f)
+                reflectiveQuadTo(4.34f, 4.34f)
+                reflectiveQuadTo(6.89f, 2.63f)
+                reflectiveQuadTo(10.01f, 2f)
+                reflectiveQuadToRelative(3.11f, 0.63f)
+                reflectiveQuadToRelative(2.54f, 1.72f)
+                reflectiveQuadToRelative(1.72f, 2.55f)
+                reflectiveQuadTo(18f, 9.99f)
+                reflectiveQuadTo(17.38f, 13.1f)
+                reflectiveQuadToRelative(-1.72f, 2.55f)
+                reflectiveQuadToRelative(-2.55f, 1.72f)
+                reflectiveQuadTo(10.01f, 18f)
+                close()
+            }
+        }.build()
+}
+
+/** Material Symbols widgets (rounded) — Type sort field icon. */
+val Widgets: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "widgets",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(12.71f, 10.46f)
+                lineTo(9.53f, 7.27f)
+                quadTo(9.42f, 7.16f, 9.36f, 7.03f)
+                reflectiveQuadTo(9.31f, 6.75f)
+                reflectiveQuadTo(9.36f, 6.46f)
+                reflectiveQuadTo(9.52f, 6.23f)
+                lineTo(12.71f, 3.04f)
+                quadToRelative(0.1f, -0.1f, 0.25f, -0.17f)
+                reflectiveQuadToRelative(0.3f, -0.06f)
+                reflectiveQuadToRelative(0.28f, 0.06f)
+                reflectiveQuadToRelative(0.24f, 0.17f)
+                lineToRelative(3.18f, 3.19f)
+                quadToRelative(0.11f, 0.11f, 0.16f, 0.24f)
+                reflectiveQuadToRelative(0.05f, 0.28f)
+                reflectiveQuadTo(17.11f, 7.04f)
+                reflectiveQuadTo(16.96f, 7.27f)
+                lineToRelative(-3.19f, 3.19f)
+                quadToRelative(-0.1f, 0.1f, -0.24f, 0.17f)
+                reflectiveQuadToRelative(-0.28f, 0.06f)
+                reflectiveQuadToRelative(-0.3f, -0.06f)
+                reflectiveQuadTo(12.71f, 10.46f)
+                close()
+                moveTo(3f, 8.25f)
+                verticalLineTo(3.76f)
+                quadTo(3f, 3.44f, 3.22f, 3.22f)
+                reflectiveQuadTo(3.75f, 3f)
+                horizontalLineTo(8.24f)
+                quadTo(8.56f, 3f, 8.78f, 3.22f)
+                reflectiveQuadTo(9f, 3.75f)
+                verticalLineTo(8.24f)
+                quadTo(9f, 8.56f, 8.78f, 8.78f)
+                reflectiveQuadTo(8.25f, 9f)
+                horizontalLineTo(3.76f)
+                quadTo(3.44f, 9f, 3.22f, 8.78f)
+                reflectiveQuadTo(3f, 8.25f)
+                close()
+                moveToRelative(8f, 8f)
+                verticalLineTo(11.76f)
+                quadToRelative(0f, -0.32f, 0.22f, -0.54f)
+                reflectiveQuadTo(11.75f, 11f)
+                horizontalLineToRelative(4.49f)
+                quadToRelative(0.32f, 0f, 0.54f, 0.22f)
+                reflectiveQuadTo(17f, 11.75f)
+                verticalLineToRelative(4.49f)
+                quadToRelative(0f, 0.32f, -0.22f, 0.54f)
+                reflectiveQuadTo(16.25f, 17f)
+                horizontalLineTo(11.76f)
+                quadToRelative(-0.32f, 0f, -0.54f, -0.22f)
+                reflectiveQuadTo(11f, 16.25f)
+                close()
+                moveToRelative(-8f, 0f)
+                verticalLineTo(11.76f)
+                quadTo(3f, 11.44f, 3.22f, 11.22f)
+                reflectiveQuadTo(3.75f, 11f)
+                horizontalLineTo(8.24f)
+                quadToRelative(0.32f, 0f, 0.54f, 0.22f)
+                reflectiveQuadTo(9f, 11.75f)
+                verticalLineToRelative(4.49f)
+                quadToRelative(0f, 0.32f, -0.22f, 0.54f)
+                reflectiveQuadTo(8.25f, 17f)
+                horizontalLineTo(3.76f)
+                quadTo(3.44f, 17f, 3.22f, 16.78f)
+                reflectiveQuadTo(3f, 16.25f)
+                close()
+            }
+        }.build()
+}
+
+/** Material Symbols check_circle (rounded) — Status sort field icon. */
+val CheckCircle: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "check_circle",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(8.94f, 10.88f)
+                lineTo(7.69f, 9.65f)
+                quadTo(7.46f, 9.42f, 7.17f, 9.42f)
+                quadToRelative(-0.29f, 0f, -0.52f, 0.23f)
+                reflectiveQuadTo(6.42f, 10.18f)
+                reflectiveQuadToRelative(0.23f, 0.53f)
+                lineToRelative(1.77f, 1.77f)
+                quadToRelative(0.23f, 0.23f, 0.52f, 0.23f)
+                reflectiveQuadTo(9.46f, 12.48f)
+                lineToRelative(3.9f, -3.9f)
+                quadTo(13.58f, 8.35f, 13.58f, 8.05f)
+                reflectiveQuadTo(13.35f, 7.52f)
+                reflectiveQuadTo(12.83f, 7.29f)
+                reflectiveQuadTo(12.31f, 7.52f)
+                lineTo(8.94f, 10.88f)
+                close()
+                moveTo(10f, 18f)
+                quadTo(8.35f, 18f, 6.9f, 17.38f)
+                reflectiveQuadTo(4.34f, 15.66f)
+                reflectiveQuadTo(2.63f, 13.1f)
+                reflectiveQuadTo(2f, 10f)
+                quadTo(2f, 8.33f, 2.63f, 6.89f)
+                reflectiveQuadTo(4.34f, 4.34f)
+                reflectiveQuadTo(6.9f, 2.63f)
+                reflectiveQuadTo(10f, 2f)
+                quadToRelative(1.67f, 0f, 3.11f, 0.63f)
+                reflectiveQuadToRelative(2.54f, 1.72f)
+                reflectiveQuadToRelative(1.72f, 2.54f)
+                reflectiveQuadTo(18f, 10f)
+                quadToRelative(0f, 1.65f, -0.63f, 3.1f)
+                reflectiveQuadToRelative(-1.72f, 2.55f)
+                reflectiveQuadToRelative(-2.54f, 1.72f)
+                reflectiveQuadTo(10f, 18f)
                 close()
             }
         }.build()
