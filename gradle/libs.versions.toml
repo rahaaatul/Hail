@@ -27,7 +27,7 @@ room = "3.0.3"
 kover = "0.9.11"
 spotless = "8.11.0"
 detekt = "1.23.8"
-ksp = "2.3.13"
+ksp = "2.3.14"
 sqlite = "2.7.1"
 
 [libraries]
