@@ -1,7 +1,11 @@
 package com.aistra.hail.ui.apps
 
 import android.content.pm.ApplicationInfo
+import android.content.pm.LauncherApps
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.UserHandle
 import android.provider.Settings
 import android.text.InputType
 import android.view.LayoutInflater
@@ -79,6 +83,60 @@ class AppsFragment :
             }
         }
 
+    private val launcherAppsCallback =
+        object : LauncherApps.Callback() {
+            override fun onPackageAdded(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackageRemoved(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackageChanged(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackagesAvailable(
+                packageNames: Array<String>,
+                user: UserHandle,
+                available: Boolean,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesUnavailable(
+                packageNames: Array<String>,
+                user: UserHandle,
+                available: Boolean,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesSuspended(
+                packageNames: Array<String>,
+                user: UserHandle,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesUnsuspended(
+                packageNames: Array<String>,
+                user: UserHandle,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+        }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -124,6 +182,10 @@ class AppsFragment :
             }
         }
 
+        requireContext()
+            .getSystemService(LauncherApps::class.java)
+            .registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
+
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
@@ -136,6 +198,13 @@ class AppsFragment :
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        requireContext()
+            .getSystemService(LauncherApps::class.java)
+            .unregisterCallback(launcherAppsCallback)
+        super.onDestroyView()
     }
 
     private fun appsActions(): AppsActions =

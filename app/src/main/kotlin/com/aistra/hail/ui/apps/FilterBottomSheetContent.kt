@@ -35,6 +35,7 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -208,9 +209,14 @@ private fun SectionDivider() {
 
 @Composable
 private fun TypeSection(onFilterChanged: () -> Unit) {
-    var system by remember { mutableStateOf(HailData.filterSystemApps) }
-    var user by remember { mutableStateOf(HailData.filterUserApps) }
-    val selectedCount = (if (system) 1 else 0) + (if (user) 1 else 0)
+    val filters =
+        remember {
+            mutableStateMapOf(
+                HailData.FILTER_SYSTEM_APPS to HailData.filterSystemApps,
+                HailData.FILTER_USER_APPS to HailData.filterUserApps,
+            )
+        }
+    val selectedCount = filters.values.count { it }
 
     SectionTitle(text = stringResource(R.string.filter_apps_type), icon = Widgets)
 
@@ -221,9 +227,9 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
                 .padding(horizontal = dimensionResource(R.dimen.space300), vertical = dimensionResource(R.dimen.space50)),
     ) {
         SegmentedButton(
-            checked = system,
+            checked = filters[HailData.FILTER_SYSTEM_APPS] ?: false,
             onCheckedChange = {
-                toggleFilter(system, selectedCount, HailData.FILTER_SYSTEM_APPS, onFilterChanged) { system = it }
+                toggleFilter(filters, selectedCount, HailData.FILTER_SYSTEM_APPS, onFilterChanged)
             },
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             icon = {},
@@ -231,9 +237,9 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
             colors = segmentedColors(),
         )
         SegmentedButton(
-            checked = user,
+            checked = filters[HailData.FILTER_USER_APPS] ?: false,
             onCheckedChange = {
-                toggleFilter(user, selectedCount, HailData.FILTER_USER_APPS, onFilterChanged) { user = it }
+                toggleFilter(filters, selectedCount, HailData.FILTER_USER_APPS, onFilterChanged)
             },
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
             icon = {},
@@ -254,17 +260,18 @@ private fun segmentedColors(): SegmentedButtonColors =
 
 @Composable
 private fun StatusSection(onFilterChanged: () -> Unit) {
-    var enabled by remember { mutableStateOf(HailData.filterEnabledApps) }
-    var disabled by remember { mutableStateOf(HailData.filterDisabledApps) }
-    var suspended by remember { mutableStateOf(HailData.filterSuspendedApps) }
-    var hidden by remember { mutableStateOf(HailData.filterHiddenApps) }
-    var stopped by remember { mutableStateOf(HailData.filterStoppedApps) }
-    val selectedCount =
-        (if (enabled) 1 else 0) +
-            (if (disabled) 1 else 0) +
-            (if (suspended) 1 else 0) +
-            (if (hidden) 1 else 0) +
-            (if (stopped) 1 else 0)
+    val filters =
+        remember {
+            mutableStateMapOf(
+                HailData.FILTER_ENABLED_APPS to HailData.filterEnabledApps,
+                HailData.FILTER_DISABLED_APPS to HailData.filterDisabledApps,
+                HailData.FILTER_SUSPENDED_APPS to HailData.filterSuspendedApps,
+                HailData.FILTER_HIDDEN_APPS to HailData.filterHiddenApps,
+                HailData.FILTER_STOPPED_APPS to HailData.filterStoppedApps,
+                HailData.FILTER_UNINSTALLED_APPS to HailData.filterUninstalledApps,
+            )
+        }
+    val selectedCount = filters.values.count { it }
 
     SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = CheckCircle)
 
@@ -274,44 +281,26 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)),
         ) {
-            StatusChip(
-                label = stringResource(R.string.state_running),
-                selected = enabled,
-                onClick = {
-                    toggleFilter(enabled, selectedCount, HailData.FILTER_ENABLED_APPS, onFilterChanged) { enabled = it }
-                },
-            )
-            StatusChip(
-                label = stringResource(R.string.state_disabled),
-                selected = disabled,
-                onClick = {
-                    toggleFilter(disabled, selectedCount, HailData.FILTER_DISABLED_APPS, onFilterChanged) { disabled = it }
-                },
-            )
-            StatusChip(
-                label = stringResource(R.string.state_suspended),
-                selected = suspended,
-                onClick = {
-                    toggleFilter(suspended, selectedCount, HailData.FILTER_SUSPENDED_APPS, onFilterChanged) { suspended = it }
-                },
-            )
-            StatusChip(
-                label = stringResource(R.string.state_hidden),
-                selected = hidden,
-                onClick = {
-                    toggleFilter(hidden, selectedCount, HailData.FILTER_HIDDEN_APPS, onFilterChanged) { hidden = it }
-                },
-            )
-            StatusChip(
-                label = stringResource(R.string.state_stopped),
-                selected = stopped,
-                onClick = {
-                    toggleFilter(stopped, selectedCount, HailData.FILTER_STOPPED_APPS, onFilterChanged) { stopped = it }
-                },
-            )
+            StatusFilters.forEach { (labelRes, filter) ->
+                StatusChip(
+                    label = stringResource(labelRes),
+                    selected = filters[filter] ?: false,
+                    onClick = { toggleFilter(filters, selectedCount, filter, onFilterChanged) },
+                )
+            }
         }
     }
 }
+
+private val StatusFilters =
+    listOf(
+        R.string.state_running to HailData.FILTER_ENABLED_APPS,
+        R.string.state_disabled to HailData.FILTER_DISABLED_APPS,
+        R.string.state_suspended to HailData.FILTER_SUSPENDED_APPS,
+        R.string.state_hidden to HailData.FILTER_HIDDEN_APPS,
+        R.string.state_stopped to HailData.FILTER_STOPPED_APPS,
+        R.string.state_uninstalled to HailData.FILTER_UNINSTALLED_APPS,
+    )
 
 @Composable
 private fun SectionTitle(
@@ -350,15 +339,14 @@ private fun SectionTitle(
  * unselected, so a group never becomes empty.
  */
 private fun toggleFilter(
-    current: Boolean,
+    filters: MutableMap<String, Boolean>,
     selectedCount: Int,
     filter: String,
     onFilterChanged: () -> Unit,
-    onStateChange: (Boolean) -> Unit,
 ) {
-    val newSelected = !current
+    val newSelected = !(filters[filter] ?: false)
     if (newSelected || selectedCount > 1) {
-        onStateChange(newSelected)
+        filters[filter] = newSelected
         HailData.changeAppsFilter(filter, newSelected)
         onFilterChanged()
     }

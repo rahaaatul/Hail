@@ -31,6 +31,7 @@ data class SettingsData(
     val filterSuspendedApps: Boolean = true,
     val filterHiddenApps: Boolean = true,
     val filterStoppedApps: Boolean = true,
+    val filterUninstalledApps: Boolean = false,
     val workingMode: String = HailData.MODE_DEFAULT,
     val biometricLogin: Boolean = false,
     val appTheme: String = HailData.FOLLOW_SYSTEM,
@@ -76,6 +77,7 @@ fun SettingsBackup.toSettingsData(): SettingsData =
         filterSuspendedApps = valueOrDefault(hasFilterSuspendedApps(), filterSuspendedApps, true),
         filterHiddenApps = valueOrDefault(hasFilterHiddenApps(), filterHiddenApps, true),
         filterStoppedApps = valueOrDefault(hasFilterStoppedApps(), filterStoppedApps, true),
+        filterUninstalledApps = valueOrDefault(hasFilterUninstalledApps(), filterUninstalledApps, false),
         workingMode = valueOrDefault(hasWorkingMode(), workingMode, HailData.MODE_DEFAULT),
         biometricLogin = valueOrDefault(hasBiometricLogin(), biometricLogin, false),
         appTheme = valueOrDefault(hasAppTheme(), appTheme, HailData.FOLLOW_SYSTEM),
@@ -115,6 +117,7 @@ fun SettingsData.toSettingsBackup(): SettingsBackup =
         .setFilterSuspendedApps(filterSuspendedApps)
         .setFilterHiddenApps(filterHiddenApps)
         .setFilterStoppedApps(filterStoppedApps)
+        .setFilterUninstalledApps(filterUninstalledApps)
         .setBiometricLogin(biometricLogin)
         .setGrayscaleIcon(grayscaleIcon)
         .setCompactIcon(compactIcon)

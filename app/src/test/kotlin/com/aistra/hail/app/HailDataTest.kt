@@ -52,6 +52,7 @@ class HailDataTest {
         assertEquals("filter_suspended_apps", HailData.FILTER_SUSPENDED_APPS)
         assertEquals("filter_hidden_apps", HailData.FILTER_HIDDEN_APPS)
         assertEquals("filter_stopped_apps", HailData.FILTER_STOPPED_APPS)
+        assertEquals("filter_uninstalled_apps", HailData.FILTER_UNINSTALLED_APPS)
     }
 
     @Test

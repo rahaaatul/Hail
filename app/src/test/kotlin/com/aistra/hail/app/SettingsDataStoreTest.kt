@@ -52,6 +52,7 @@ class SettingsDataStoreTest {
                     .setFilterSuspendedApps(true)
                     .setFilterHiddenApps(false)
                     .setFilterStoppedApps(true)
+                    .setFilterUninstalledApps(true)
                     .setBiometricLogin(true)
                     .setGrayscaleIcon(false)
                     .setCompactIcon(true)
@@ -114,6 +115,7 @@ class SettingsDataStoreTest {
         assertEquals(HailData.SORT_INSTALL, data.sortBy)
         assertEquals(mapOf(HailData.SORT_SIZE to false), data.sortDirections)
         assertFalse(data.filterUserApps)
+        assertFalse(data.filterUninstalledApps)
         assertEquals(20f, data.homeFontSize, 0.001f)
         assertEquals(HailData.MODE_DEFAULT, data.workingMode)
         assertFalse(data.filterSystemApps)
@@ -136,6 +138,7 @@ class SettingsDataStoreTest {
                 filterSuspendedApps = true,
                 filterHiddenApps = false,
                 filterStoppedApps = true,
+                filterUninstalledApps = true,
                 workingMode = HailData.MODE_SHIZUKU_HIDE,
                 biometricLogin = true,
                 appTheme = HailData.THEME_LIGHT,
@@ -181,6 +184,8 @@ class SettingsDataStoreTest {
         assertFalse(backup.filterHiddenApps)
         assertTrue(backup.hasFilterStoppedApps())
         assertTrue(backup.filterStoppedApps)
+        assertTrue(backup.hasFilterUninstalledApps())
+        assertTrue(backup.filterUninstalledApps)
         assertTrue(backup.hasWorkingMode())
         assertEquals(HailData.MODE_SHIZUKU_HIDE, backup.workingMode)
         assertTrue(backup.hasBiometricLogin())

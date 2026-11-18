@@ -10,7 +10,7 @@ class AppInfo(
     var whitelisted: Boolean = false,
     val tagIdList: MutableList<Int> = mutableListOf(0),
 ) {
-    enum class State { NOT_FOUND, ENABLED, DISABLED, SUSPENDED, HIDDEN, STOPPED }
+    enum class State { NOT_FOUND, ENABLED, DISABLED, SUSPENDED, HIDDEN, STOPPED, UNINSTALLED }
 
     val applicationInfo: ApplicationInfo? get() = HPackages.getApplicationInfoOrNull(packageName)
     val name get() = AppMetaCache.get(packageName)?.name ?: packageName

@@ -51,6 +51,7 @@ object HailData {
     const val FILTER_SUSPENDED_APPS = "filter_suspended_apps"
     const val FILTER_HIDDEN_APPS = "filter_hidden_apps"
     const val FILTER_STOPPED_APPS = "filter_stopped_apps"
+    const val FILTER_UNINSTALLED_APPS = "filter_uninstalled_apps"
     const val OWNER = "owner_"
     const val DHIZUKU = "dhizuku_"
     const val SU = "su_"
@@ -173,6 +174,7 @@ object HailData {
     val filterSuspendedApps get() = settingsData.value.filterSuspendedApps
     val filterHiddenApps get() = settingsData.value.filterHiddenApps
     val filterStoppedApps get() = settingsData.value.filterStoppedApps
+    val filterUninstalledApps get() = settingsData.value.filterUninstalledApps
     val workingMode get() = settingsData.value.workingMode
     val biometricLogin get() = settingsData.value.biometricLogin
     val appTheme get() = settingsData.value.appTheme
@@ -337,6 +339,7 @@ object HailData {
             FILTER_SUSPENDED_APPS -> settings.copy(filterSuspendedApps = enabled)
             FILTER_HIDDEN_APPS -> settings.copy(filterHiddenApps = enabled)
             FILTER_STOPPED_APPS -> settings.copy(filterStoppedApps = enabled)
+            FILTER_UNINSTALLED_APPS -> settings.copy(filterUninstalledApps = enabled)
             else -> settings
         }
 
@@ -371,6 +374,10 @@ object HailData {
 
             FILTER_STOPPED_APPS -> {
                 setFilterStoppedApps(enabled)
+            }
+
+            FILTER_UNINSTALLED_APPS -> {
+                setFilterUninstalledApps(enabled)
             }
 
             else -> { /* unknown filter key — ignore */ }

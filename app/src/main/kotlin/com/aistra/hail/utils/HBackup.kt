@@ -406,6 +406,7 @@ private suspend fun applySettings(settings: SettingsBackup?) {
                 settings.hasFilterSuspendedApps() to { setFilterSuspendedApps(settings.filterSuspendedApps) },
                 settings.hasFilterHiddenApps() to { setFilterHiddenApps(settings.filterHiddenApps) },
                 settings.hasFilterStoppedApps() to { setFilterStoppedApps(settings.filterStoppedApps) },
+                settings.hasFilterUninstalledApps() to { setFilterUninstalledApps(settings.filterUninstalledApps) },
                 settings.hasBiometricLogin() to { setBiometricLogin(settings.biometricLogin) },
                 settings.hasGrayscaleIcon() to { setGrayscaleIcon(settings.grayscaleIcon) },
                 settings.hasCompactIcon() to { setCompactIcon(settings.compactIcon) },

@@ -164,7 +164,8 @@ class AppsViewModel(
                                 (HailData.filterDisabledApps && status == AppInfo.State.DISABLED) ||
                                 (HailData.filterSuspendedApps && status == AppInfo.State.SUSPENDED) ||
                                 (HailData.filterHiddenApps && status == AppInfo.State.HIDDEN) ||
-                                (HailData.filterStoppedApps && status == AppInfo.State.STOPPED)
+                                (HailData.filterStoppedApps && status == AppInfo.State.STOPPED) ||
+                                (HailData.filterUninstalledApps && status == AppInfo.State.UNINSTALLED)
                         ) &&
                         // Search apps
                         (

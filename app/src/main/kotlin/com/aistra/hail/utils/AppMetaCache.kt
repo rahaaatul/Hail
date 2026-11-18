@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -155,6 +156,25 @@ object AppMetaCache {
         revisionState.value++
     }
 
+    /**
+     * Targeted refresh for a single package after a package-change event (add/remove/enable/
+     * disable/suspend/hide). Updates the installed-apps map and metadata cache, then bumps the
+     * revision so the list re-filters. Unlike [invalidateState] this also re-derives the state
+     * (including UNINSTALLED) and keeps [installedApplications] in sync.
+     */
+    fun invalidatePackage(packageName: String): Job =
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                val info = HPackages.getApplicationInfoOrNull(packageName)
+                if (info == null) {
+                    installedApplications.remove(packageName)
+                } else {
+                    installedApplications[packageName] = info
+                }
+                loadIfStale(packageName, info)
+            }
+        }
+
     fun invalidateAll() {
         cache.clear()
         packageLocks.clear()
@@ -203,15 +223,18 @@ object AppMetaCache {
         }
     }
 
-    private fun readState(packageName: String): AppInfo.State =
-        when {
-            HPackages.getApplicationInfoOrNull(packageName) == null -> AppInfo.State.NOT_FOUND
+    private fun readState(packageName: String): AppInfo.State {
+        val info = HPackages.getApplicationInfoOrNull(packageName)
+        if (info == null) return AppInfo.State.NOT_FOUND
+        return when {
+            info.flags and ApplicationInfo.FLAG_INSTALLED == 0 -> AppInfo.State.UNINSTALLED
             HPackages.isAppSuspended(packageName) -> AppInfo.State.SUSPENDED
             HPackages.isAppHidden(packageName) -> AppInfo.State.HIDDEN
             HPackages.isAppStopped(packageName) -> AppInfo.State.STOPPED
             HPackages.isAppDisabled(packageName) -> AppInfo.State.DISABLED
             else -> AppInfo.State.ENABLED
         }
+    }
 
     private suspend fun persist(installedPackages: Set<String>? = null) {
         runCatching {
