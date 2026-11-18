@@ -17,7 +17,6 @@
     <string name="action_export_all">Send out all</string>
     <string name="action_export_clipboard">Send out to Clipboard</string>
     <string name="action_export_current">Send out visible</string>
-    <string name="action_extract_apk">Pull out APK</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">Freeze</string>
     <string name="action_freeze_all">Freeze all</string>

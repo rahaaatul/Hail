@@ -27,7 +27,6 @@
     <string name="action_import_clipboard">Importovat ze schránky</string>
     <string name="action_remove_home">Odebrat z domů</string>
     <string name="action_undo">Zpátky</string>
-    <string name="action_extract_apk">Extrahovat APK</string>
     <string name="msg_uninstall">Chceš odinstalovat tuto aplikaci?</string>
     <string name="working_mode">Režim fungování</string>
     <string name="mode_default">Nečinná</string>

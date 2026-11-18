@@ -38,7 +38,6 @@
     <string name="action_export_all">匯出全部</string>
     <string name="action_export_clipboard">匯出至剪貼簿</string>
     <string name="action_export_current">匯出可見項目</string>
-    <string name="action_extract_apk">提取 APK</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze_current">凍結可見項目</string>
     <string name="action_freeze_tag">凍結標籤</string>

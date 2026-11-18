@@ -57,7 +57,6 @@
     <string name="action_help">Help</string>
     <string name="action_search">Search</string>
     <string name="action_details">App info</string>
-    <string name="action_extract_apk">Extract APK</string>
     <string name="action_uninstall">Uninstall</string>
     <string name="msg_uninstall">Do you want to uninstall this app?</string>
     <string name="working_mode">Working mode</string>

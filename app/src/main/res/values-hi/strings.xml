@@ -38,7 +38,6 @@
     <string name="action_export_all">सभी निर्यात करें</string>
     <string name="action_export_clipboard">क्लिपबोर्ड में निर्यात करें</string>
     <string name="action_export_current">दिखने वाले निर्यात करें</string>
-    <string name="action_extract_apk">APK निकालें</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">फ्रीज़ करें</string>
     <string name="action_freeze_tag">टैग फ्रीज़ करें</string>

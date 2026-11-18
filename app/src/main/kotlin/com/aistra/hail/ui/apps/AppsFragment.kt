@@ -131,21 +131,35 @@ class AppsFragment :
                     AppsScreen(
                         model = model,
                         ui = ui,
-                        onToggleChecked = { pkg, checked ->
-                            if (checked) {
-                                HailData.addCheckedApp(pkg)
-                            } else {
-                                HailData.removeCheckedApp(pkg)
-                            }
-                            ui.checkedRevision++
-                        },
-                        onAction = ::onAppAction,
-                        onLiftChange = { lifted -> activity.appbar.setLifted(lifted) },
+                        actions = appsActions(),
                     )
                 }
             }
         }
     }
+
+    private fun appsActions(): AppsActions =
+        AppsActions(
+            onToggleChecked = { pkg, checked ->
+                if (checked) {
+                    HailData.addCheckedApp(pkg)
+                } else {
+                    HailData.removeCheckedApp(pkg)
+                }
+                ui.checkedRevision++
+            },
+            onAction = ::onAppAction,
+            onCopyText = { text ->
+                HUI.copyText(text)
+                HUI.showToast(R.string.msg_text_copied, text)
+            },
+            onExtractApk = { info ->
+                val pkg = info.packageName
+                exportApkPkg = pkg
+                exportApk.launch(HPackages.getUnhiddenPackageInfoOrNull(pkg)?.exportFileName ?: pkg)
+            },
+            onLiftChange = { lifted -> activity.appbar.setLifted(lifted) },
+        )
 
     override fun onResume() {
         super.onResume()
@@ -165,16 +179,6 @@ class AppsFragment :
                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                     HPackages.packageUri(pkg),
                 )
-            }
-
-            AppAction.COPY -> {
-                HUI.copyText(pkg)
-                HUI.showToast(R.string.msg_text_copied, pkg)
-            }
-
-            AppAction.EXTRACT -> {
-                exportApkPkg = pkg
-                exportApk.launch(HPackages.getUnhiddenPackageInfoOrNull(pkg)?.exportFileName ?: pkg)
             }
 
             AppAction.UNINSTALL -> {

@@ -65,7 +65,6 @@
     <string name="compact_icon">Biểu tượng nhỏ gọn</string>
     <string name="action_uninstall">Gỡ cài đặt</string>
     <string name="mode_dhizuku_hide">Dhizuku - Ẩn</string>
-    <string name="action_extract_apk">Giải nén APK</string>
     <string name="action_freeze_tag">Đóng băng nhãn</string>
     <string name="action_select_all">Chọn tất cả</string>
     <string name="action_unfreeze_remove_home">Rã băng và xóa khỏi trang chủ</string>

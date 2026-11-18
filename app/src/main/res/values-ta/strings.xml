@@ -71,7 +71,6 @@
     <string name="action_help">உதவி</string>
     <string name="action_search">தேடல்</string>
     <string name="action_details">பயன்பாட்டு தகவல்</string>
-    <string name="action_extract_apk">APK பிரித்தெடுக்கவும்</string>
     <string name="action_uninstall">நிறுவல் நீக்க</string>
     <string name="msg_uninstall">இந்த பயன்பாட்டை நிறுவல் நீக்க விரும்புகிறீர்களா?</string>
     <string name="working_mode">வேலை முறை</string>

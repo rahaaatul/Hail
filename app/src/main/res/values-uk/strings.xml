@@ -10,7 +10,6 @@
     <string name="action_export_all">Експорт всіх</string>
     <string name="action_export_clipboard">Експорт в буфер обміну</string>
     <string name="action_export_current">Експорт видимий</string>
-    <string name="action_extract_apk">Витягти APK</string>
     <string name="action_freeze">Заморозити</string>
     <string name="action_freeze_all">Заморозити все</string>
     <string name="action_freeze_current">Заморозити видимі</string>

@@ -32,7 +32,6 @@
     <string name="action_undo">Geri al</string>
     <string name="action_help">Yardım</string>
     <string name="action_search">Ara</string>
-    <string name="action_extract_apk">APK oluştur</string>
     <string name="action_uninstall">Kaldır</string>
     <string name="msg_uninstall">Bu uygulamayı kaldırmak istiyor musunuz?</string>
     <string name="working_mode">Çalışma yöntemi</string>

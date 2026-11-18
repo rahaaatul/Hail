@@ -77,7 +77,6 @@
     <string name="donate_wechat_scan">Skanuj</string>
     <string name="operation_failed">Operacja nieudana: %s</string>
     <string name="app_slogan">Mroźność!</string>
-    <string name="action_extract_apk">Ekstrakcja APK</string>
     <string name="mode_default">Bezczynne</string>
     <string name="mode_owner_hide">Właściciel urządzenia - Ukryj</string>
     <string name="mode_owner_suspend">Właściciel urządzenia - Zawieś</string>

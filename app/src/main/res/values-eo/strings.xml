@@ -39,7 +39,6 @@
     <string name="action_help">Helpo</string>
     <string name="action_search">Serĉi</string>
     <string name="action_details">Informoj pri aplikaĵo</string>
-    <string name="action_extract_apk">Elpreni APK-on</string>
     <string name="action_uninstall">Malinstali</string>
     <string name="msg_uninstall">Ĉu vi volas malinstali tiun ĉi aplikaĵon?</string>
     <string name="working_mode">Laborreĝimo</string>

@@ -4,9 +4,9 @@ import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,18 +38,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -78,13 +75,19 @@ private val grayscaleColorFilter: ColorFilter =
 /**
  * Apps list screen: pull-to-refresh + grid of installed apps with per-app actions.
  */
+data class AppsActions(
+    val onToggleChecked: (packageName: String, checked: Boolean) -> Unit,
+    val onAction: (info: ApplicationInfo, action: AppAction) -> Unit,
+    val onCopyText: (text: String) -> Unit,
+    val onExtractApk: (info: ApplicationInfo) -> Unit,
+    val onLiftChange: (lifted: Boolean) -> Unit,
+)
+
 @Composable
 fun AppsScreen(
     model: AppsViewModel,
     ui: AppsUiState,
-    onToggleChecked: (packageName: String, checked: Boolean) -> Unit,
-    onAction: (info: ApplicationInfo, action: AppAction) -> Unit,
-    onLiftChange: (lifted: Boolean) -> Unit,
+    actions: AppsActions,
 ) {
     val apps by model.displayApps.observeAsState(emptyList())
     val isRefreshing by model.isRefreshing.observeAsState(false)
@@ -103,9 +106,9 @@ fun AppsScreen(
             AppsGrid(
                 apps = apps,
                 ui = ui,
-                onToggleChecked = onToggleChecked,
+                onToggleChecked = actions.onToggleChecked,
                 onLongClick = { ui.appActionsTarget = it },
-                onLiftChange = onLiftChange,
+                onLiftChange = actions.onLiftChange,
             )
         }
         if (ui.filterSheetVisible) {
@@ -123,8 +126,10 @@ fun AppsScreen(
                 onDismissRequest = { ui.appActionsTarget = null },
                 onAction = { action ->
                     ui.appActionsTarget = null
-                    onAction(target, action)
+                    actions.onAction(target, action)
                 },
+                onCopyText = actions.onCopyText,
+                onExtractApk = { actions.onExtractApk(target) },
             )
         }
     }
@@ -237,12 +242,14 @@ private fun AppItem(
     }
 }
 
+// TODO: Home migration — reuse HailBottomSheet + sheet styling; move AppIcon to ui/components at the second use case.
 @Composable
 internal fun AppIcon(
     info: ApplicationInfo,
     dimmed: Boolean,
-    shape: Shape? = null,
     size: Dp? = null,
+    internalPadding: Dp? = null,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val iconSize = size ?: dimensionResource(R.dimen.app_icon_size)
@@ -253,10 +260,9 @@ internal fun AppIcon(
     val fallbackIcon = remember { context.packageManager.defaultActivityIcon?.toBitmap() }
     val displayedIcon = icon ?: fallbackIcon
     val iconModifier =
-        Modifier
+        modifier
             .size(iconSize)
-            .padding(dimensionResource(R.dimen.space100))
-            .then(if (shape != null) Modifier.clip(shape) else Modifier)
+            .padding(internalPadding ?: dimensionResource(R.dimen.space100))
     if (displayedIcon != null) {
         Image(
             bitmap = displayedIcon.asImageBitmap(),
@@ -284,25 +290,14 @@ private fun AppTexts(
             dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             else -> MaterialTheme.colorScheme.onSurface
         }
-    val descColor =
-        if (dimmed) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(modifier = modifier) {
-        Text(
-            text = if (!grayscale && disabled) "❄️$name" else name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = pkg,
-            style = MaterialTheme.typography.bodySmall,
-            color = descColor,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    Text(
+        text = if (!grayscale && disabled) "❄️$name" else name,
+        style = MaterialTheme.typography.bodyLarge,
+        color = textColor,
+        maxLines = 1,
+        modifier = modifier.basicMarquee(),
+    )
 }
 
 @Preview(showBackground = true)

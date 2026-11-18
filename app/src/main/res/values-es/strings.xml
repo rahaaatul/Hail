@@ -37,7 +37,6 @@
     <string name="action_help">Ayuda</string>
     <string name="action_search">Buscar</string>
     <string name="action_details">Información de la aplicación</string>
-    <string name="action_extract_apk">Extraer APK</string>
     <string name="action_uninstall">Desinstalar</string>
     <string name="msg_uninstall">¿Quieres desinstalar esta aplicación?</string>
     <string name="working_mode">Modo de trabajo</string>

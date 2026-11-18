@@ -37,7 +37,6 @@
     <string name="action_help">說明</string>
     <string name="action_search">搜尋</string>
     <string name="action_details">應用程式資訊</string>
-    <string name="action_extract_apk">擷取 APK</string>
     <string name="action_uninstall">解除安裝</string>
     <string name="msg_uninstall">要解除安裝此應用程式嗎？</string>
     <string name="working_mode">工作模式</string>

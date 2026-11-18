@@ -30,7 +30,6 @@
     <string name="action_unfreeze_remove_home">Aktifkan dan hapus dari daftar</string>
     <string name="action_undo">Batalkan</string>
     <string name="action_details">Info aplikasi</string>
-    <string name="action_extract_apk">Ekstrak APK</string>
     <string name="action_unfreeze_current">Aktifkan label ini</string>
     <string name="action_lock_freeze">Kunci &amp; Bekukan</string>
     <string name="action_deferred_task">Tangguhkan tugas</string>

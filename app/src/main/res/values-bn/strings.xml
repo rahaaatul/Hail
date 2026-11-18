@@ -39,7 +39,6 @@
     <string name="action_help">সহায়তা</string>
     <string name="action_search">অনুসন্ধান করুন</string>
     <string name="action_details">অ্যাপ সম্পর্কে</string>
-    <string name="action_extract_apk">অ্যাপ এক্সট্রাক্ট করুন</string>
     <string name="action_uninstall">আনইন্সটল করুন</string>
     <string name="msg_uninstall">আপনি কি এই অ্যাপটি আনইন্সটল করতে চান?</string>
     <string name="working_mode">কাজের ধরণ</string>

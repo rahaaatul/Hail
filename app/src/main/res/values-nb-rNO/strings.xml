@@ -3,7 +3,6 @@
     <string name="action_uninstall">Avinstaller</string>
     <string name="action_remove_home">Fjern fra hjem</string>
     <string name="action_help">Hjelp</string>
-    <string name="action_extract_apk">Pakk ut APK</string>
     <string name="title_settings">Innstillinger</string>
     <string name="action_tag_add">Legg til etikett</string>
     <string name="grayscale_icon">Gråskalaikon</string>

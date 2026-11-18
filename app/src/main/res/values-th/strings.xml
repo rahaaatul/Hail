@@ -39,7 +39,6 @@
     <string name="action_help">ช่วยเหลือ</string>
     <string name="action_search">ค้นหา</string>
     <string name="action_details">ข้อมูลแอป</string>
-    <string name="action_extract_apk">แตกไฟล์ APK</string>
     <string name="action_uninstall">ถอนการติดตั้ง</string>
     <string name="msg_uninstall">คุณต้องการถอนการติดตั้งแอปนี้หรือไม่?</string>
     <string name="working_mode">โหมดการทำงาน</string>

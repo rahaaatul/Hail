@@ -71,7 +71,6 @@
     <string name="action_remove_home">Poista Kotoa</string>
     <string name="action_search">Etsi</string>
     <string name="action_details">Sovelluksen tiedot</string>
-    <string name="action_extract_apk">Pura APK</string>
     <string name="action_uninstall">Poista asennus</string>
     <string name="msg_uninstall">Haluatko poistaa tämän sovelluksen?</string>
     <string name="working_mode">Työtila</string>

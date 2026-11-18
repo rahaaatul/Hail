@@ -17,7 +17,6 @@
     <string name="action_export_all">Exportă toate</string>
     <string name="action_export_clipboard">Exportă în clipboard</string>
     <string name="action_export_current">Exportă vizibilele</string>
-    <string name="action_extract_apk">Extrage APK</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">Îngheață</string>
     <string name="action_freeze_all">Îngheață toate</string>

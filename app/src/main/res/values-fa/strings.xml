@@ -84,7 +84,6 @@
     <string name="nothing_here">چیزی این‌جا نیست</string>
     <string name="title_shortcuts">میان‌برها</string>
     <string name="action_none">هیچ‌کدام</string>
-    <string name="action_extract_apk">استخراج APK</string>
     <string name="mode_su_disable">روت - غیرفعال کردن</string>
     <string name="action_uninstall">حذف نصب</string>
     <string name="mode_owner_suspend">مالک دستگاه - تعلیق</string>

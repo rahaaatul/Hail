@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
@@ -191,7 +190,6 @@ private fun SortItem(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Normal,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             textAlign = TextAlign.Center,
@@ -342,7 +340,6 @@ private fun SectionTitle(
         Text(
             text = text,
             style = textStyle,
-            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.primary,
         )
     }
@@ -380,7 +377,7 @@ private fun StatusChip(
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(text = label, fontWeight = FontWeight.Normal) },
+        label = { Text(text = label) },
         colors =
             FilterChipDefaults.filterChipColors(
                 containerColor = Color.Transparent,

@@ -79,7 +79,6 @@
     <string name="theme_dark">어두운</string>
     <string name="action_deselect">선택 해제</string>
     <string name="action_details">앱 정보</string>
-    <string name="action_extract_apk">APK 추출</string>
     <string name="action_tag_add">태그 추가</string>
     <string name="donate_wechat">WeChat Pay</string>
     <string name="mode_island_suspend">Island/Insular - 중지</string>
