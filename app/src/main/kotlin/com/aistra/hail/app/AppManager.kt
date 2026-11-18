@@ -112,33 +112,45 @@ object AppManager {
                 result
             }
 
-    fun uninstallApp(packageName: String): Boolean {
-        when {
-            HailData.workingMode.startsWith(HailData.OWNER) -> {
-                if (HPolicy.uninstallApp(packageName)) return true
-            }
+// TODO: replace the pm/cmd shell calls below with a libsu RootService (root) and a
+    // ShizukuBinderWrapper (Shizuku) that call IPackageManager.deletePackageAsUser /
+    // installExistingPackageAsUser and ActivityManager.getRunningAppProcesses directly, so we
+    // drop the shell parsing (ps/dumpsys) and get structured results instead of exit codes + text.
+    fun uninstallApp(packageName: String): Pair<Boolean, String?> {
+        val workingMode = HailData.workingMode
+        val result: Pair<Boolean, String?> =
+            when {
+                // SU/Shizuku own the uninstall and surface errors; OWNER/DHIZUKU fall back to
+                // the system dialog on failure; other modes always use the system dialog.
+                workingMode.startsWith(HailData.SU) || workingMode.startsWith(HailData.JAILBREAK) -> {
+                    HShell.uninstallApp(packageName)
+                }
 
-            HailData.workingMode.startsWith(HailData.DHIZUKU) -> {
-                if (HDhizuku.uninstallApp(packageName)) return true
-            }
+                workingMode.startsWith(HailData.SHIZUKU) -> {
+                    HShizuku.uninstallApp(packageName)
+                }
 
-            HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> {
-                if (HShell.uninstallApp(packageName)) return true
-            }
+                workingMode.startsWith(HailData.OWNER) && HPolicy.uninstallApp(packageName) -> {
+                    true to null
+                }
 
-            HailData.workingMode.startsWith(HailData.SHIZUKU) -> {
-                if (HShizuku.uninstallApp(packageName)) return true
+                workingMode.startsWith(HailData.DHIZUKU) && HDhizuku.uninstallApp(packageName) -> {
+                    true to null
+                }
+
+                else -> {
+                    HUI.startActivity(Intent.ACTION_DELETE, HPackages.packageUri(packageName))
+                    false to null
+                }
             }
-        }
-        HUI.startActivity(Intent.ACTION_DELETE, HPackages.packageUri(packageName))
-        return false
+        return result
     }
 
-    fun reinstallApp(packageName: String): Boolean =
+    fun reinstallApp(packageName: String): Pair<Boolean, String?> =
         when {
             HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.reinstallApp(packageName)
             HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.reinstallApp(packageName)
-            else -> false
+            else -> false to null
         }
 
     suspend fun execute(command: String): Pair<Int, String?> =

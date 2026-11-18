@@ -160,7 +160,6 @@
     <string name="sort_update">শেষ আপডেট</string>
     <string name="state_disabled">নিষ্ক্রিয়</string>
     <string name="state_hidden">লুকানো</string>
-    <string name="state_running">চলছে</string>
     <string name="state_suspended">স্থগিত</string>
     <string name="state_uninstalled">আনইন্সটল করা</string>
     <string name="summary_background_activity">Hail খোলা না থাকলেও অটো-ফ্রিজ চলতে দিন</string>

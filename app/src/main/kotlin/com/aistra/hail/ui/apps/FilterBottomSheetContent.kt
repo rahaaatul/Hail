@@ -294,7 +294,7 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
 
 private val StatusFilters =
     listOf(
-        R.string.state_running to HailData.FILTER_ENABLED_APPS,
+        R.string.state_enabled to HailData.FILTER_ENABLED_APPS,
         R.string.state_disabled to HailData.FILTER_DISABLED_APPS,
         R.string.state_suspended to HailData.FILTER_SUSPENDED_APPS,
         R.string.state_hidden to HailData.FILTER_HIDDEN_APPS,

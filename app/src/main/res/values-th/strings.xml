@@ -160,7 +160,6 @@
     <string name="sort_update">วันที่อัปเดตล่าสุด</string>
     <string name="state_disabled">ปิดใช้งาน</string>
     <string name="state_hidden">ซ่อน</string>
-    <string name="state_running">กำลังทำงานอยู่</string>
     <string name="state_suspended">ระงับ</string>
     <string name="state_uninstalled">ถอนการติดตั้งแล้ว</string>
     <string name="summary_background_activity">อนุญาตให้บริการแช่แข็งอัตโนมัติทำงานต่อไปแม้ไม่ได้เปิด Hail อยู่</string>

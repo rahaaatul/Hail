@@ -160,7 +160,6 @@
     <string name="sort_update">Poslední aktualizace</string>
     <string name="state_disabled">Deaktivováno</string>
     <string name="state_hidden">Skryté</string>
-    <string name="state_running">Běží</string>
     <string name="state_suspended">Suspendováno</string>
     <string name="state_uninstalled">Odinstalováno</string>
     <string name="summary_background_activity">Povolit pokračování automatického zmrazení, když Hail není otevřen</string>

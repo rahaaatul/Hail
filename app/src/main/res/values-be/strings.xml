@@ -175,7 +175,6 @@
     <string name="save">Захаваць</string>
     <string name="state_disabled">Адключана</string>
     <string name="state_hidden">Схавана</string>
-    <string name="state_running">Працуе</string>
     <string name="state_suspended">Прыпынена</string>
     <string name="state_uninstalled">Выдалена</string>
     <string name="summary_background_activity">Дазволіць аўтазамарожванню працягвацца, калі Hail не адкрыты</string>

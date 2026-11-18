@@ -197,7 +197,11 @@ object AppMetaCache {
                 ).joinToString(":")
             val current = cache[packageName]
             if (info != null && current?.sourceSignature == sourceSignature) {
-                cache[packageName] = current.copy(state = readState(packageName))
+                val newState = readState(packageName)
+                if (current.state != newState) {
+                    cache[packageName] = current.copy(state = newState)
+                    revisionState.value++
+                }
                 return
             }
 

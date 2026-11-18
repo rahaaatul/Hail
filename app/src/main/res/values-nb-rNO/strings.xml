@@ -169,7 +169,6 @@
     <string name="shizuku_hide_adb">Shizuku kjører som adb. For å skjule programmer, start Shizuku på nytt med superbruker.</string>
     <string name="state_disabled">Deaktivert</string>
     <string name="state_hidden">Skjult</string>
-    <string name="state_running">Kjører</string>
     <string name="state_suspended">Hviler</string>
     <string name="state_uninstalled">Avinstallert</string>
     <string name="summary_background_activity">Tillat autofrysing å fortsette når Hail ikke er åpen</string>

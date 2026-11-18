@@ -168,7 +168,6 @@
     <string name="save">Lưu</string>
     <string name="state_disabled">Đã tắt</string>
     <string name="state_hidden">Đã ẩn</string>
-    <string name="state_running">Đang chạy</string>
     <string name="state_suspended">Đã tạm ngừng</string>
     <string name="state_uninstalled">Đã gỡ cài đặt</string>
     <string name="summary_background_activity">Cho phép tự động đóng băng tiếp tục khi Hail không mở</string>

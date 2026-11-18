@@ -1,12 +1,12 @@
 package com.aistra.hail.app
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.SettingsBackup
@@ -206,7 +206,7 @@ private fun settingsFile(
  * Safe to call multiple times — DataStore writes are idempotent.
  */
 suspend fun migrateSettingsFromSharedPreferences() {
-    val sp = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val sp = PreferenceManager.getDefaultSharedPreferences(app)
     val builder = SettingsBackup.newBuilder()
 
     sp.all.forEach { key, value ->
@@ -231,6 +231,7 @@ suspend fun migrateSettingsFromSharedPreferences() {
     SettingsDataStore.updateSettings {
         mergeFrom(builder.build())
     }
+    sp.edit().clear().apply()
 }
 
 private val stringSetters: Map<String, (SettingsBackup.Builder, String) -> Unit> =
@@ -293,8 +294,3 @@ private fun setFloatField(
 ) {
     floatSetters[key]?.invoke(builder, value)
 }
-
-/**
- * SharedPreferences file name used by HailData prior to DataStore migration.
- */
-private const val PREFS_NAME = "hail_preferences"

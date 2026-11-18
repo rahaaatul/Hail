@@ -2,6 +2,7 @@ package com.aistra.hail.app
 
 import android.content.Context
 import androidx.datastore.core.CorruptionException
+import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.SettingsBackup
@@ -203,7 +204,7 @@ class SettingsDataStoreTest {
     @Test
     fun `migrateSettingsFromSharedPreferences migrates string boolean float values`() =
         runBlocking {
-            val sp = context.getSharedPreferences("hail_preferences", Context.MODE_PRIVATE)
+            val sp = PreferenceManager.getDefaultSharedPreferences(context)
             sp
                 .edit()
                 .putString(HailData.SORT_BY, HailData.SORT_INSTALL)
@@ -218,5 +219,6 @@ class SettingsDataStoreTest {
             assertEquals(HailData.SORT_INSTALL, settings.sortBy)
             assertFalse(settings.filterUserApps)
             assertEquals(18f, settings.homeFontSize, 0.001f)
+            assertTrue(sp.all.isEmpty())
         }
 }

@@ -144,7 +144,6 @@
     <string name="follow_system">Sekvi sistemon</string>
     <string name="theme_light">Hela</string>
     <string name="theme_dark">Malhela</string>
-    <string name="state_running">Funkcianta</string>
     <string name="state_disabled">Malŝaltita</string>
     <string name="state_hidden">Kaŝita</string>
     <string name="state_suspended">Paŭzigita</string>

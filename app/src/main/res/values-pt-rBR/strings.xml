@@ -174,7 +174,6 @@
     <string name="save">Guardar</string>
     <string name="state_disabled">Desativado</string>
     <string name="state_hidden">Oculto</string>
-    <string name="state_running">A correr</string>
     <string name="state_suspended">Suspenso</string>
     <string name="state_uninstalled">Desinstalado</string>
     <string name="summary_background_activity">Permitir auto-congelamento a continuar quando Hail não está aberto</string>

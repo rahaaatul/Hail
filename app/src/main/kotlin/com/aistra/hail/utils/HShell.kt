@@ -99,12 +99,21 @@ object HShell {
         suspended: Boolean,
     ): Boolean = execSU("pm ${if (suspended) "suspend" else "unsuspend"} $userArg $packageName").first == 0
 
-    fun uninstallApp(packageName: String) =
-        execSU(
-            "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName",
-        ).first == 0
+    fun uninstallApp(packageName: String): Pair<Boolean, String?> {
+        val result =
+            execSU(
+                "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName",
+            )
+        return (result.first == 0) to result.second
+    }
 
-    fun reinstallApp(packageName: String) = execSU("pm install-existing $userArg $packageName").first == 0
+    fun reinstallApp(packageName: String): Pair<Boolean, String?> {
+        val user = getCurrentUserId()
+        val cmdResult = execSU("cmd package install-existing --user $user $packageName")
+        if (cmdResult.first == 0) return true to cmdResult.second
+        val pmResult = execSU("pm install-existing --user $user $packageName")
+        return (pmResult.first == 0) to (pmResult.second ?: cmdResult.second)
+    }
 
     @RequiresApi(Build.VERSION_CODES.P)
     fun setAppRestricted(

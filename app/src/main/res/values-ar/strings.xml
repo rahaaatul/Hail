@@ -181,7 +181,6 @@
     <string name="save">حفظ</string>
     <string name="state_disabled">معطل</string>
     <string name="state_hidden">مخفي</string>
-    <string name="state_running">قيد التشغيل</string>
     <string name="state_suspended">معلّق</string>
     <string name="state_uninstalled">غير مثبت</string>
     <string name="summary_background_activity">السماح للتجميد التلقائي بالاستمرار عندما لا يكون Hail مفتوحاً</string>

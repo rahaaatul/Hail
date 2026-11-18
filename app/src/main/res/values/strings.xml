@@ -183,7 +183,7 @@
     <string name="follow_system">Follow system</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
-    <string name="state_running">Running</string>
+    <string name="state_enabled">Enabled</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
     <string name="state_suspended">Suspended</string>

@@ -255,10 +255,13 @@ class AppsFragment :
             }
 
             AppAction.REINSTALL -> {
-                if (AppManager.reinstallApp(pkg)) {
-                    updateAppList(true)
-                } else {
-                    HUI.showToast(R.string.operation_failed, name)
+                lifecycleScope.launch {
+                    val (success, error) = withContext(Dispatchers.IO) { AppManager.reinstallApp(pkg) }
+                    if (success) {
+                        updateAppList(true)
+                    } else {
+                        HUI.showToast(R.string.operation_failed, error?.takeIf { it.isNotBlank() } ?: name)
+                    }
                 }
             }
         }
@@ -300,7 +303,14 @@ class AppsFragment :
             .setTitle(name)
             .setMessage(R.string.msg_uninstall)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                if (AppManager.uninstallApp(pkg)) updateAppList(true)
+                lifecycleScope.launch {
+                    val (success, error) = withContext(Dispatchers.IO) { AppManager.uninstallApp(pkg) }
+                    if (success) {
+                        updateAppList(true)
+                    } else {
+                        HUI.showToast(R.string.operation_failed, error?.takeIf { it.isNotBlank() } ?: name)
+                    }
+                }
             }.setNegativeButton(android.R.string.cancel, null)
             .show()
     }

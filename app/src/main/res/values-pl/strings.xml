@@ -175,7 +175,6 @@
     <string name="save">Zapisz</string>
     <string name="state_disabled">Wyłączone</string>
     <string name="state_hidden">Ukryte</string>
-    <string name="state_running">Działające</string>
     <string name="state_suspended">Wstrzymane</string>
     <string name="state_uninstalled">Odinstalowane</string>
     <string name="summary_background_activity">Pozwól na kontynuację automatycznego zamrażania, gdy Hail nie jest otwarte</string>

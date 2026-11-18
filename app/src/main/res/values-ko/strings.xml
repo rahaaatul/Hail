@@ -149,7 +149,6 @@
     <string name="xposed_description">범위가 지정된 앱의 경우 일시 중단된 앱을 자동으로 다시 활성화합니다.</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="working_mode_tag">관련 앱의 동작 모드</string>
-    <string name="state_running">실행중</string>
     <string name="state_disabled">비활성화됨</string>
     <string name="state_hidden">숨겨짐</string>
     <string name="state_suspended">중지됨</string>

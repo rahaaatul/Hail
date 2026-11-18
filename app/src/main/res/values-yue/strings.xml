@@ -151,7 +151,6 @@
     <string name="sort_update">最後更新</string>
     <string name="state_disabled">已停用</string>
     <string name="state_hidden">已隱藏</string>
-    <string name="state_running">執行中</string>
     <string name="state_suspended">已暫停</string>
     <string name="state_uninstalled">已解除安裝</string>
     <string name="summary_background_activity">當 Hail 未開啟時，允許自動凍結繼續執行</string>

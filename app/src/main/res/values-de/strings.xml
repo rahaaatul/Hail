@@ -149,7 +149,6 @@
     <string name="follow_system">System folgen</string>
     <string name="theme_light">hell</string>
     <string name="theme_dark">dunkel</string>
-    <string name="state_running">läuft</string>
     <string name="state_disabled">deaktiviert</string>
     <string name="state_hidden">versteckt</string>
     <string name="state_suspended">pausiert</string>

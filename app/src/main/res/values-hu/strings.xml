@@ -170,7 +170,6 @@
     <string name="save">Mentés</string>
     <string name="state_disabled">Letiltva</string>
     <string name="state_hidden">Elrejtve</string>
-    <string name="state_running">Fut</string>
     <string name="state_suspended">Felfüggesztve</string>
     <string name="state_uninstalled">Eltávolítva</string>
     <string name="summary_background_activity">Az automatikus fagyasztás folytatása, ha a Hail nincs megnyitva</string>

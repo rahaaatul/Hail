@@ -144,7 +144,6 @@
     <string name="sort_update">Last renewal</string>
     <string name="state_disabled">Turned off</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Held up</string>
     <string name="state_uninstalled">Taken down</string>
     <string name="summary_background_activity">Let auto-freeze carry on when Hail is not open</string>

@@ -148,7 +148,6 @@
     <string name="xposed_description">Izinkan aplikasi terdaftar mengaktifkan aplikasi yang ditangguhkan</string>
     <string name="working_mode_tag">Mode kerja aplikasi terkait</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="state_running">Berjalan</string>
     <string name="state_disabled">Dinonaktifkan</string>
     <string name="state_hidden">Tersembunyi</string>
     <string name="state_suspended">Ditangguhkan</string>
