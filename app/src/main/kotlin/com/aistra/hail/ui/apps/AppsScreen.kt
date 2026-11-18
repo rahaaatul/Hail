@@ -207,6 +207,7 @@ private fun AppItem(
     val pkg = info.packageName
     val metadata = AppMetaCache.get(pkg)
     val disabled = metadata?.state == AppInfo.State.DISABLED
+    val uninstalled = metadata?.state == AppInfo.State.UNINSTALLED
     val grayscale = HailData.grayscaleIcon
     val name = metadata?.name ?: pkg
     val isSelf = pkg == BuildConfig.APPLICATION_ID
@@ -226,9 +227,9 @@ private fun AppItem(
         AppIcon(info = info, dimmed = grayscale && disabled)
         AppTexts(
             modifier = Modifier.weight(1f),
-            pkg = pkg,
             name = name,
             disabled = disabled,
+            uninstalled = uninstalled,
             grayscale = grayscale,
         )
         Checkbox(
@@ -278,15 +279,15 @@ internal fun AppIcon(
 @Composable
 private fun AppTexts(
     modifier: Modifier = Modifier,
-    pkg: String,
     name: String,
     disabled: Boolean,
+    uninstalled: Boolean,
     grayscale: Boolean,
 ) {
     val dimmed = grayscale && disabled
     val textColor =
         when {
-            HPackages.isAppUninstalled(pkg) -> MaterialTheme.colorScheme.error
+            uninstalled -> MaterialTheme.colorScheme.error
             dimmed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             else -> MaterialTheme.colorScheme.onSurface
         }
