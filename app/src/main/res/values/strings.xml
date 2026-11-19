@@ -57,6 +57,7 @@
     <string name="action_help">Help</string>
     <string name="action_search">Search</string>
     <string name="action_details">App info</string>
+    <string name="action_force_stop">Force stop</string>
     <string name="action_uninstall">Uninstall</string>
     <string name="msg_uninstall">Do you want to uninstall this app?</string>
     <string name="working_mode">Working mode</string>
@@ -120,6 +121,9 @@
     <string name="msg_extract_apk">Extracted to: %s</string>
     <string name="msg_freeze">Froze: %s</string>
     <string name="msg_unfreeze">Unfroze: %s</string>
+    <string name="msg_uninstalled">Uninstalled %s</string>
+    <string name="msg_reinstalled">Reinstalled %s</string>
+    <string name="msg_force_stopped">Stopped %s</string>
     <plurals name="deferred_task_entry">
         <item quantity="one">%d minute</item>
         <item quantity="other">%d minutes</item>

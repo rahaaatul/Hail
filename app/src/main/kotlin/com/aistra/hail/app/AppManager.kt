@@ -94,17 +94,17 @@ object AppManager {
                 HailData.MODE_OWNER_SUSPEND -> HPolicy.setAppSuspended(packageName, frozen)
                 HailData.MODE_DHIZUKU_HIDE -> HDhizuku.setAppHidden(packageName, frozen)
                 HailData.MODE_DHIZUKU_SUSPEND -> HDhizuku.setAppSuspended(packageName, frozen)
-                HailData.MODE_SU_STOP -> !frozen || HShell.forceStopApp(packageName)
+                HailData.MODE_SU_STOP -> !frozen || forceStopApp(packageName)
                 HailData.MODE_SU_DISABLE -> HShell.setAppDisabled(packageName, frozen)
                 HailData.MODE_SU_HIDE -> HShell.setAppHidden(packageName, frozen)
                 HailData.MODE_SU_SUSPEND -> HShell.setAppSuspended(packageName, frozen)
-                HailData.MODE_SHIZUKU_STOP -> !frozen || HShizuku.forceStopApp(packageName)
+                HailData.MODE_SHIZUKU_STOP -> !frozen || forceStopApp(packageName)
                 HailData.MODE_SHIZUKU_DISABLE -> HShizuku.setAppDisabled(packageName, frozen)
                 HailData.MODE_SHIZUKU_HIDE -> HShizuku.setAppHidden(packageName, frozen)
                 HailData.MODE_SHIZUKU_SUSPEND -> HShizuku.setAppSuspended(packageName, frozen)
                 HailData.MODE_ISLAND_HIDE -> HIsland.setAppHidden(packageName, frozen)
                 HailData.MODE_ISLAND_SUSPEND -> HIsland.setAppSuspended(packageName, frozen)
-                HailData.MODE_PRIVAPP_STOP -> !frozen || HPackages.forceStopApp(packageName)
+                HailData.MODE_PRIVAPP_STOP -> !frozen || forceStopApp(packageName)
                 HailData.MODE_PRIVAPP_DISABLE, HailData.MODE_JAILBREAK_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
                 else -> false
             }.let { result ->
@@ -152,6 +152,38 @@ object AppManager {
             HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.reinstallApp(packageName)
             else -> false to null
         }
+
+    val supportsForceStop: Boolean
+        get() =
+            HailData.workingMode.let {
+                it.startsWith(HailData.SU) ||
+                    it.startsWith(HailData.JAILBREAK) ||
+                    it.startsWith(HailData.SHIZUKU) ||
+                    it.startsWith(HailData.OWNER) ||
+                    it.startsWith(HailData.DHIZUKU) ||
+                    it.startsWith(HailData.PRIVAPP)
+            }
+
+    fun forceStopApp(packageName: String): Boolean {
+        val workingMode = HailData.workingMode
+        return when {
+            workingMode.startsWith(HailData.SU) || workingMode.startsWith(HailData.JAILBREAK) -> {
+                HShell.forceStopApp(packageName)
+            }
+
+            workingMode.startsWith(HailData.SHIZUKU) -> {
+                HShizuku.forceStopApp(packageName)
+            }
+
+            workingMode.startsWith(HailData.OWNER) || workingMode.startsWith(HailData.DHIZUKU) || workingMode.startsWith(HailData.PRIVAPP) -> {
+                HPackages.forceStopApp(packageName)
+            }
+
+            else -> {
+                false
+            }
+        }
+    }
 
     suspend fun execute(command: String): Pair<Int, String?> =
         withContext(Dispatchers.IO) {

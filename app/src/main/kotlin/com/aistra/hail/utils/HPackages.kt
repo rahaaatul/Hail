@@ -159,3 +159,5 @@ object HPackages {
             false
         }
 }
+
+fun Pair<Int, String?>.toSuccess(): Pair<Boolean, String?> = (first == 0) to second

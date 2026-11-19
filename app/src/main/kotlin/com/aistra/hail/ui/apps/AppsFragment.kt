@@ -62,7 +62,11 @@ class AppsFragment :
             this.exportApkPkg = null
             if (exportApkPkg == null || uri == null) return@registerForActivityResult
             lifecycleScope.launch {
-                val applicationInfo = HPackages.getApplicationInfoOrNull(exportApkPkg) ?: return@launch
+                val applicationInfo = HPackages.getApplicationInfoOrNull(exportApkPkg)
+                if (applicationInfo == null) {
+                    HUI.showToast(R.string.operation_failed, exportApkPkg)
+                    return@launch
+                }
                 val dialog =
                     MaterialAlertDialogBuilder(activity).setView(R.layout.dialog_progress).setCancelable(false).show()
                 runCatching {
@@ -254,11 +258,23 @@ class AppsFragment :
                 uninstallApp(name, pkg)
             }
 
+            AppAction.FORCE_STOP -> {
+                lifecycleScope.launch {
+                    val success = withContext(Dispatchers.IO) { AppManager.forceStopApp(pkg) }
+                    if (success) {
+                        HUI.showToast(R.string.msg_force_stopped, name)
+                    } else {
+                        HUI.showToast(R.string.operation_failed, name)
+                    }
+                }
+            }
+
             AppAction.REINSTALL -> {
                 lifecycleScope.launch {
                     val (success, error) = withContext(Dispatchers.IO) { AppManager.reinstallApp(pkg) }
                     if (success) {
                         updateAppList(true)
+                        HUI.showToast(R.string.msg_reinstalled, name)
                     } else {
                         HUI.showToast(R.string.operation_failed, error?.takeIf { it.isNotBlank() } ?: name)
                     }
@@ -307,6 +323,7 @@ class AppsFragment :
                     val (success, error) = withContext(Dispatchers.IO) { AppManager.uninstallApp(pkg) }
                     if (success) {
                         updateAppList(true)
+                        HUI.showToast(R.string.msg_uninstalled, name)
                     } else {
                         HUI.showToast(R.string.operation_failed, error?.takeIf { it.isNotBlank() } ?: name)
                     }

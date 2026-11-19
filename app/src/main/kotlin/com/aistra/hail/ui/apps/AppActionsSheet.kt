@@ -5,26 +5,34 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aistra.hail.BuildConfig
 import com.aistra.hail.R
+import com.aistra.hail.app.AppManager
 import com.aistra.hail.ui.components.HailBottomSheet
 import com.aistra.hail.utils.AppMetaCache
 
@@ -38,6 +46,10 @@ fun AppActionsSheet(
 ) {
     val pkg = info.packageName
     val name = AppMetaCache.get(pkg)?.name ?: pkg
+    val canForceStop =
+        AppManager.supportsForceStop &&
+            info.flags and ApplicationInfo.FLAG_INSTALLED != 0 &&
+            pkg != BuildConfig.APPLICATION_ID
     HailBottomSheet(
         onDismissRequest = onDismissRequest,
         dragHandle = null,
@@ -51,15 +63,17 @@ fun AppActionsSheet(
             onExtractApk = onExtractApk,
         )
         HorizontalDivider(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.space300)))
-        AppActionItems.forEach { item ->
-            AppActionRow(
-                item = item,
-                onClick = {
-                    onAction(item.action)
-                    onDismissRequest()
-                },
-            )
-        }
+        AppActionItems
+            .filter { it.action != AppAction.FORCE_STOP || canForceStop }
+            .forEach { item ->
+                AppActionRow(
+                    item = item,
+                    onClick = {
+                        onAction(item.action)
+                        onDismissRequest()
+                    },
+                )
+            }
     }
 }
 
@@ -88,7 +102,13 @@ private fun AppActionsHeader(
             info = info,
             dimmed = false,
             internalPadding = 0.dp,
-            modifier = Modifier.combinedClickable(onClick = {}, onLongClick = onExtractApk),
+            modifier =
+                Modifier.combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(bounded = false),
+                    onClick = {},
+                    onLongClick = onExtractApk,
+                ),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -132,6 +152,7 @@ private fun AppActionRow(
         Icon(
             imageVector = item.icon,
             contentDescription = null,
+            modifier = Modifier.offset(x = -dimensionResource(R.dimen.space75)),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(dimensionResource(R.dimen.space200)))
@@ -148,6 +169,7 @@ private data class AppActionItem(
 private val AppActionItems =
     listOf(
         AppActionItem(AppAction.DETAILS, R.string.action_details, Info),
+        AppActionItem(AppAction.FORCE_STOP, R.string.action_force_stop, Close),
         AppActionItem(AppAction.UNINSTALL, R.string.action_uninstall, Delete),
         AppActionItem(AppAction.REINSTALL, R.string.action_reinstall, Autorenew),
     )

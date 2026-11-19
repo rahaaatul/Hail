@@ -884,3 +884,54 @@ val Autorenew: ImageVector by lazy {
             }
         }.build()
 }
+
+/** Material Symbols close — Force stop. */
+val Close: ImageVector by lazy {
+    ImageVector
+        .Builder(
+            name = "close",
+            defaultWidth = 20.dp,
+            defaultHeight = 20.dp,
+            viewportWidth = 20f,
+            viewportHeight = 20f,
+        ).apply {
+            path(
+                fill = SolidColor(Color.Black),
+                fillAlpha = 1f,
+                stroke = null,
+                strokeAlpha = 1f,
+                strokeLineWidth = 1f,
+                strokeLineCap = StrokeCap.Butt,
+                strokeLineJoin = StrokeJoin.Bevel,
+                strokeLineMiter = 1f,
+                pathFillType = PathFillType.Companion.NonZero,
+            ) {
+                moveTo(10f, 11.06f)
+                lineTo(6.58f, 14.48f)
+                quadTo(6.35f, 14.71f, 6.06f, 14.7f)
+                reflectiveQuadTo(5.54f, 14.46f)
+                reflectiveQuadTo(5.31f, 13.93f)
+                reflectiveQuadTo(5.54f, 13.4f)
+                lineTo(8.94f, 10f)
+                lineTo(5.52f, 6.58f)
+                quadTo(5.29f, 6.35f, 5.3f, 6.05f)
+                reflectiveQuadTo(5.54f, 5.52f)
+                reflectiveQuadTo(6.07f, 5.29f)
+                quadToRelative(0.3f, 0f, 0.53f, 0.23f)
+                lineTo(10f, 8.94f)
+                lineTo(13.42f, 5.52f)
+                quadTo(13.65f, 5.29f, 13.95f, 5.29f)
+                reflectiveQuadToRelative(0.53f, 0.23f)
+                reflectiveQuadToRelative(0.23f, 0.53f)
+                reflectiveQuadTo(14.48f, 6.58f)
+                lineTo(11.06f, 10f)
+                lineToRelative(3.42f, 3.42f)
+                quadToRelative(0.23f, 0.23f, 0.23f, 0.52f)
+                reflectiveQuadToRelative(-0.23f, 0.52f)
+                reflectiveQuadToRelative(-0.53f, 0.23f)
+                reflectiveQuadTo(13.42f, 14.46f)
+                lineTo(10f, 11.06f)
+                close()
+            }
+        }.build()
+}
