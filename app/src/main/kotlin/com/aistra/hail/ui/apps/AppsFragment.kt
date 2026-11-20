@@ -51,8 +51,9 @@ class AppsFragment :
     // Hoisted UI state shared with the Compose list (checked set, filter sheet, empty toast).
     private val ui = AppsUiState()
 
-    // Prevent the same data from being filtered twice in `onCreateView`
-    private var lastAppsHash: Int = 0
+    // Tracks the app-list snapshot `displayApps` was last filtered for, so an unchanged
+    // emission is not filtered twice. Starts null so the first emission always runs.
+    private var lastAppsHash: Int? = null
     private lateinit var lastQuery: String
 
     private var exportApkPkg: String? = null
@@ -149,11 +150,14 @@ class AppsFragment :
         val menuHost = requireActivity() as MenuHost
         menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
 
-        model.apps.apply {
-            lastAppsHash = value.hashCode()
-            observe(viewLifecycleOwner) {
-                if (it.hashCode() != lastAppsHash) model.updateDisplayAppList()
-                lastAppsHash = it.hashCode()
+        // Re-filter whenever the app list changes. The hash starts null so the first emission
+        // always runs (the list can't be left stale); identical later emissions are skipped to
+        // avoid filtering the same data twice.
+        model.apps.observe(viewLifecycleOwner) { apps ->
+            val hash = apps?.hashCode()
+            if (hash != lastAppsHash) {
+                lastAppsHash = hash
+                model.updateDisplayAppList()
             }
         }
         model.query.apply {
@@ -220,6 +224,9 @@ class AppsFragment :
                     HailData.removeCheckedApp(pkg)
                 }
                 ui.checkedRevision++
+                // The select-all toolbar icon reflects the live checked set, which changes here
+                // without touching displayApps, so re-prepare the menu to refresh its glyph.
+                activity.invalidateOptionsMenu()
             },
             onAction = ::onAppAction,
             onCopyText = { text ->
@@ -392,6 +399,8 @@ class AppsFragment :
         }
         HailData.saveApps()
         ui.checkedRevision++
+        // Keep the select-all toolbar icon in sync with the new checked set.
+        activity.invalidateOptionsMenu()
     }
 
     private fun updateAppList(forceRefresh: Boolean) = model.updateAppList(forceRefresh)

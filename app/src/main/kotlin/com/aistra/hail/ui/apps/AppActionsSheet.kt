@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -152,7 +151,6 @@ private fun AppActionRow(
         Icon(
             imageVector = item.icon,
             contentDescription = null,
-            modifier = Modifier.offset(x = -dimensionResource(R.dimen.space75)),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(dimensionResource(R.dimen.space200)))
@@ -169,7 +167,7 @@ private data class AppActionItem(
 private val AppActionItems =
     listOf(
         AppActionItem(AppAction.DETAILS, R.string.action_details, Info),
-        AppActionItem(AppAction.FORCE_STOP, R.string.action_force_stop, Close),
+        AppActionItem(AppAction.FORCE_STOP, R.string.action_force_stop, Icons.Rounded.Stop),
         AppActionItem(AppAction.UNINSTALL, R.string.action_uninstall, Delete),
         AppActionItem(AppAction.REINSTALL, R.string.action_reinstall, Autorenew),
     )

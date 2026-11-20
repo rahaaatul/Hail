@@ -208,8 +208,9 @@ private fun AppItem(
 ) {
     val pkg = info.packageName
     val metadata = AppMetaCache.get(pkg)
-    val disabled = metadata?.state == AppInfo.State.DISABLED
-    val uninstalled = metadata?.state == AppInfo.State.UNINSTALLED
+    val state = metadata?.state ?: AppInfo.State.NOT_FOUND
+    val disabled = state.isFrozen
+    val uninstalled = state == AppInfo.State.UNINSTALLED
     val grayscale = HailData.grayscaleIcon
     val name = metadata?.name ?: pkg
     val isSelf = pkg == BuildConfig.APPLICATION_ID

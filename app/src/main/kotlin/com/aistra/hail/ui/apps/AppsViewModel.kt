@@ -153,20 +153,11 @@ class AppsViewModel(
                     val metadata = AppMetaCache.get(it.packageName)
                     val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
                     val name = metadata?.name ?: it.packageName
-                    val status = metadata?.state ?: AppInfo.State.NOT_FOUND
                     (
                         (HailData.filterUserApps && !isSystemApp) ||
                             (HailData.filterSystemApps && isSystemApp)
                     ) &&
-
-                        (
-                            (HailData.filterEnabledApps && status == AppInfo.State.ENABLED) ||
-                                (HailData.filterDisabledApps && status == AppInfo.State.DISABLED) ||
-                                (HailData.filterSuspendedApps && status == AppInfo.State.SUSPENDED) ||
-                                (HailData.filterHiddenApps && status == AppInfo.State.HIDDEN) ||
-                                (HailData.filterStoppedApps && status == AppInfo.State.STOPPED) ||
-                                (HailData.filterUninstalledApps && status == AppInfo.State.UNINSTALLED)
-                        ) &&
+                        matchesStatusFilter(metadata?.state) &&
                         // Search apps
                         (
                             (
@@ -205,6 +196,23 @@ class AppsViewModel(
                     if (ascending) sortedWith(comparator) else sortedWith(comparator.reversed())
                 }
         }
+    }
+
+    /**
+     * Whether an app passes the status filters.
+     *
+     * A null [status] means the metadata cache is still cold: every app would otherwise report
+     * [AppInfo.State.NOT_FOUND] and match no status filter, so keep it until its real state is
+     * known instead of flashing an empty list.
+     */
+    private fun matchesStatusFilter(status: AppInfo.State?): Boolean {
+        if (status == null) return true
+        return (HailData.filterEnabledApps && status == AppInfo.State.ENABLED) ||
+            (HailData.filterDisabledApps && status == AppInfo.State.DISABLED) ||
+            (HailData.filterSuspendedApps && status == AppInfo.State.SUSPENDED) ||
+            (HailData.filterHiddenApps && status == AppInfo.State.HIDDEN) ||
+            (HailData.filterStoppedApps && status == AppInfo.State.STOPPED) ||
+            (HailData.filterUninstalledApps && status == AppInfo.State.UNINSTALLED)
     }
 
     private fun loadUsageStats(): Map<String, android.app.usage.UsageStats> {

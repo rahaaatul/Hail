@@ -10,7 +10,24 @@ class AppInfo(
     var whitelisted: Boolean = false,
     val tagIdList: MutableList<Int> = mutableListOf(0),
 ) {
-    enum class State { NOT_FOUND, ENABLED, DISABLED, SUSPENDED, HIDDEN, STOPPED, UNINSTALLED }
+    enum class State {
+        NOT_FOUND,
+        ENABLED,
+        DISABLED,
+        SUSPENDED,
+        HIDDEN,
+        STOPPED,
+        UNINSTALLED,
+        ;
+
+        /** True when the app is present but not runnable — disabled or otherwise held by the system. */
+        val isFrozen: Boolean
+            get() =
+                when (this) {
+                    DISABLED, SUSPENDED, HIDDEN, STOPPED -> true
+                    NOT_FOUND, ENABLED, UNINSTALLED -> false
+                }
+    }
 
     val applicationInfo: ApplicationInfo? get() = HPackages.getApplicationInfoOrNull(packageName)
     val name get() = AppMetaCache.get(packageName)?.name ?: packageName
