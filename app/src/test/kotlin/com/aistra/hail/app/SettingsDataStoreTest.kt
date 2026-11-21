@@ -6,6 +6,7 @@ import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.SettingsBackup
+import com.google.protobuf.CodedOutputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -75,6 +76,37 @@ class SettingsDataStoreTest {
             val restored = SettingsSerializer.readFrom(input)
 
             assertEquals(original, restored)
+        }
+
+    @Test
+    fun `SettingsSerializer reads a stream written with the released tag numbers`() =
+        runBlocking {
+            // Tags are the released 1.12.0.x numbers. Protobuf matches by tag, so this
+            // stream only decodes correctly while they keep their original meaning.
+            val out = ByteArrayOutputStream()
+            val coded = CodedOutputStream.newInstance(out)
+            coded.writeString(1, HailData.SORT_INSTALL)
+            coded.writeBool(7, false)
+            coded.writeBool(9, true) // retired filter_all_apps: unknown, must be ignored
+            coded.writeBool(12, true)
+            coded.writeBool(13, false)
+            coded.writeFloat(22, 18f)
+            coded.writeFloat(23, 2.5f)
+            coded.flush()
+
+            val data =
+                SettingsSerializer
+                    .readFrom(ByteArrayInputStream(out.toByteArray()))
+                    .toSettingsData()
+
+            assertEquals(HailData.SORT_INSTALL, data.sortBy)
+            assertFalse(data.filterUserApps)
+            assertTrue(data.biometricLogin)
+            assertFalse(data.grayscaleIcon)
+            assertEquals(18f, data.homeFontSize, 0.001f)
+            assertEquals(2.5f, data.autoFreezeDelay, 0.001f)
+            // The retired bool at tag 9 must not surface as a status filter at tag 24.
+            assertTrue(data.filterEnabledApps)
         }
 
     @Test

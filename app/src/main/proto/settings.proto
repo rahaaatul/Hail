@@ -10,9 +10,11 @@ option java_outer_classname = "SettingsBackupProto";
 // Fields are optional so presence can be distinguished from default values,
 // enabling safe schema evolution (add/remove fields without breaking old backups).
 //
-// Tags are append-only: never reuse or renumber a tag. New fields take the next
-// free tag even when that places them out of numeric order within their group
-// (e.g. filter_uninstalled_apps = 27, added after the map at tag 26).
+// Tags are append-only: never reuse or renumber a tag, because protobuf matches
+// fields by number, so renumbering silently misreads files written by older
+// versions. New fields take the next free tag even when that places them out of
+// numeric order within their group (e.g. filter_enabled_apps = 24, appended
+// after the float fields at 22-23).
 message SettingsBackup {
   // String settings
   optional string sort_by = 1;
@@ -25,27 +27,34 @@ message SettingsBackup {
   // Boolean settings
   optional bool filter_user_apps = 7;
   optional bool filter_system_apps = 8;
-  optional bool filter_enabled_apps = 9;
-  optional bool filter_disabled_apps = 10;
-  optional bool filter_suspended_apps = 11;
-  optional bool filter_hidden_apps = 12;
-  optional bool filter_stopped_apps = 13;
-  optional bool filter_uninstalled_apps = 27;
-  optional bool biometric_login = 14;
-  optional bool grayscale_icon = 15;
-  optional bool compact_icon = 16;
-  optional bool synthesize_adaptive_icons = 17;
-  optional bool fuzzy_search = 18;
-  optional bool nine_key_search = 19;
-  optional bool auto_freeze_after_lock = 20;
-  optional bool skip_while_charging = 21;
-  optional bool skip_foreground_app = 22;
-  optional bool skip_notifying_app = 23;
+  // 9, 10 and 11 carried filter_all_apps / filter_frozen_apps / filter_unfrozen_apps,
+  // retired by the type+status filter model. The numbers stay reserved so they are
+  // never attached to a different field.
+  reserved 9, 10, 11;
+  optional bool biometric_login = 12;
+  optional bool grayscale_icon = 13;
+  optional bool compact_icon = 14;
+  optional bool synthesize_adaptive_icons = 15;
+  optional bool fuzzy_search = 16;
+  optional bool nine_key_search = 17;
+  optional bool auto_freeze_after_lock = 18;
+  optional bool skip_while_charging = 19;
+  optional bool skip_foreground_app = 20;
+  optional bool skip_notifying_app = 21;
 
   // Float settings
-  optional float home_font_size = 24;
-  optional float auto_freeze_delay = 25;
+  optional float home_font_size = 22;
+  optional float auto_freeze_delay = 23;
+
+  // Status filters appended after the released schema (tags 1-23); keep them here
+  // rather than in the boolean block so the numbers above never move.
+  optional bool filter_enabled_apps = 24;
+  optional bool filter_disabled_apps = 25;
+  optional bool filter_suspended_apps = 26;
+  optional bool filter_hidden_apps = 27;
+  optional bool filter_stopped_apps = 28;
+  optional bool filter_uninstalled_apps = 29;
 
   // Per-field sort directions (field -> ascending); absent entries use the field default
-  map<string, bool> sort_directions = 26;
+  map<string, bool> sort_directions = 30;
 }
