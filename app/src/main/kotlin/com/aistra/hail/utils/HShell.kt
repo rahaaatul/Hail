@@ -56,7 +56,7 @@ object HShell {
             executeRoot(command)
         } else {
             runCatching {
-                ProcessBuilder("sh").redirectErrorStream(true).start().run {
+                ProcessBuilder("/system/bin/sh").redirectErrorStream(true).start().run {
                     outputStream.use { it.write(command.toByteArray()) }
                     waitFor() to inputStream.bufferedReader().use { it.readText() }.also { destroy() }
                 }
