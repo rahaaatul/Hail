@@ -208,6 +208,10 @@ private fun AppItem(
 ) {
     val pkg = info.packageName
     val metadata = AppMetaCache.get(pkg)
+    // Hydrate lazily: rows served from the Room cache cost nothing, missing entries load off-main.
+    LaunchedEffect(pkg) {
+        if (AppMetaCache.get(pkg) == null) AppMetaCache.ensureLoaded(pkg, info)
+    }
     val state = metadata?.state ?: AppInfo.State.NOT_FOUND
     val disabled = state.isFrozen
     val uninstalled = state == AppInfo.State.UNINSTALLED

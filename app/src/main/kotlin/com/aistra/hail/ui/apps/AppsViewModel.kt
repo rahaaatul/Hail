@@ -20,9 +20,9 @@ import com.aistra.hail.utils.PinyinSearch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
 class AppsViewModel(
@@ -35,10 +35,9 @@ class AppsViewModel(
 
     init {
         viewModelScope.launch {
-            AppMetaCache.installedApplicationsReady.first { it }
+            withTimeoutOrNull(CACHE_READY_TIMEOUT_MS) { AppMetaCache.cacheReady.await() }
             updateAppList()
         }
-        updateAppList()
     }
 
     private var refreshJob: Job? = null
@@ -220,5 +219,10 @@ class AppsViewModel(
         return usageStatsManager
             .queryUsageStats(UsageStatsManager.INTERVAL_BEST, 0, System.currentTimeMillis())
             .associateBy { it.packageName }
+    }
+
+    companion object {
+        // Bound the wait so a slow first Room read can never block the initial list forever.
+        private const val CACHE_READY_TIMEOUT_MS = 5_000L
     }
 }
