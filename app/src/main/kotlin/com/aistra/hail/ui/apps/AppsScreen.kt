@@ -217,7 +217,7 @@ private fun AppItem(
     LaunchedEffect(pkg) {
         if (AppMetaCache.get(pkg) == null) AppMetaCache.ensureLoaded(pkg)
     }
-    val state = metadata?.state ?: AppInfo.State.NOT_FOUND
+    val state = metadata?.state ?: AppInfo.State.UNKNOWN
     val disabled = state.isFrozen
     val uninstalled = state == AppInfo.State.UNINSTALLED
     val grayscale = HailData.grayscaleIcon

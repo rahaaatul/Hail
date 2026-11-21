@@ -8,7 +8,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.aistra.hail.HailApp
-import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.AppMetaCache
@@ -147,6 +146,7 @@ class AppsViewModel(
         query: String?,
     ): List<ApplicationInfo> {
         return withContext(Dispatchers.Default) {
+            val statusFilter = currentStatusFilter()
             return@withContext appList
                 .filter {
                     val metadata = AppMetaCache.get(it.packageName)
@@ -156,7 +156,7 @@ class AppsViewModel(
                         (HailData.filterUserApps && !isSystemApp) ||
                             (HailData.filterSystemApps && isSystemApp)
                     ) &&
-                        matchesStatusFilter(metadata?.state) &&
+                        matchesStatusFilter(metadata?.state, metadata?.enabled, statusFilter) &&
                         // Search apps
                         (
                             (
@@ -198,21 +198,18 @@ class AppsViewModel(
     }
 
     /**
-     * Whether an app passes the status filters.
-     *
-     * A null [status] means the metadata cache is still cold: every app would otherwise report
-     * [AppInfo.State.NOT_FOUND] and match no status filter, so keep it until its real state is
-     * known instead of flashing an empty list.
+     * The current status-filter selection, read once per list pass so every row is judged against
+     * the same snapshot even if the settings change mid-filter.
      */
-    private fun matchesStatusFilter(status: AppInfo.State?): Boolean {
-        if (status == null) return true
-        return (HailData.filterEnabledApps && status == AppInfo.State.ENABLED) ||
-            (HailData.filterDisabledApps && status == AppInfo.State.DISABLED) ||
-            (HailData.filterSuspendedApps && status == AppInfo.State.SUSPENDED) ||
-            (HailData.filterHiddenApps && status == AppInfo.State.HIDDEN) ||
-            (HailData.filterStoppedApps && status == AppInfo.State.STOPPED) ||
-            (HailData.filterUninstalledApps && status == AppInfo.State.UNINSTALLED)
-    }
+    private fun currentStatusFilter() =
+        StatusFilter(
+            enabled = HailData.filterEnabledApps,
+            disabled = HailData.filterDisabledApps,
+            suspended = HailData.filterSuspendedApps,
+            hidden = HailData.filterHiddenApps,
+            stopped = HailData.filterStoppedApps,
+            uninstalled = HailData.filterUninstalledApps,
+        )
 
     private fun loadUsageStats(): Map<String, android.app.usage.UsageStats> {
         val usageStatsManager = HailApp.app.getSystemService<UsageStatsManager>()!!

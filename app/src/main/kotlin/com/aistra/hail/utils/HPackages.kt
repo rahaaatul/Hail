@@ -88,9 +88,11 @@ object HPackages {
             }
         } ?: false
 
-    fun isAppUninstalled(packageName: String): Boolean =
-        getApplicationInfoOrNull(packageName)?.run { flags and ApplicationInfo.FLAG_INSTALLED != ApplicationInfo.FLAG_INSTALLED }
-            ?: true
+    fun isInstalled(packageName: String): Boolean =
+        getApplicationInfoOrNull(packageName)?.run { flags and ApplicationInfo.FLAG_INSTALLED == ApplicationInfo.FLAG_INSTALLED }
+            ?: false
+
+    fun isAppUninstalled(packageName: String): Boolean = isInstalled(packageName).not()
 
     fun isPrivilegedApp(packageName: String): Boolean =
         getApplicationInfoOrNull(packageName)?.let {
