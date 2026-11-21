@@ -5,7 +5,9 @@ import android.content.Intent
 import com.aistra.hail.HailApp
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
+import com.aistra.hail.app.BatchResult
 import com.aistra.hail.app.HailData
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -46,23 +48,18 @@ object AppActions {
             Result.success(launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun freezePackages(
         frozen: Boolean,
         packages: List<String>,
-    ): Result<Unit> =
+    ): Result<BatchResult> =
         withContext(Dispatchers.IO) {
-            packages.forEach { packageName ->
-                if (HPackages.getApplicationInfoOrNull(packageName) == null) {
-                    return@withContext Result.failure(
-                        IllegalArgumentException(app().getString(R.string.action_app_unavailable, packageName)),
-                    )
-                }
-                if (!AppManager.setAppFrozen(packageName, frozen)) {
-                    return@withContext Result.failure(
-                        IllegalStateException(app().getString(R.string.action_freeze_failed, packageName)),
-                    )
-                }
+            try {
+                Result.success(AppManager.setListFrozen(frozen, packages))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                Result.failure(e)
             }
-            Result.success(Unit)
         }
 }

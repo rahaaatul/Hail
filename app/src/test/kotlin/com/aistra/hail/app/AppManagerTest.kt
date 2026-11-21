@@ -1,5 +1,6 @@
 package com.aistra.hail.app
 
+import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp
 import com.aistra.hail.utils.HPackages
 import io.mockk.every
@@ -7,7 +8,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -78,4 +78,43 @@ class AppManagerTest {
             assertEquals(0, code)
             assertEquals(null, output)
         }
+
+    @Test
+    fun `batchFreeze counts all successes`() {
+        val result = AppManager.batchFreeze(true, listOf("a", "b")) { _, _ -> true }
+
+        assertEquals(2, result.total)
+        assertEquals(2, result.succeeded)
+        assertTrue(result.failed.isEmpty())
+        assertTrue(result.allSucceeded)
+    }
+
+    @Test
+    fun `batchFreeze collects failed packages`() {
+        val result = AppManager.batchFreeze(false, listOf("a", "b", "c")) { pkg, _ -> pkg != "b" }
+
+        assertEquals(3, result.total)
+        assertEquals(2, result.succeeded)
+        assertEquals(listOf("b"), result.failed)
+        assertFalse(result.allSucceeded)
+    }
+
+    @Test
+    fun `batchFreeze reports total failure`() {
+        val result = AppManager.batchFreeze(true, listOf("a")) { _, _ -> false }
+
+        assertEquals(0, result.succeeded)
+        assertEquals(listOf("a"), result.failed)
+    }
+
+    @Test
+    fun `setListFrozen excludes own package from the batch`() {
+        every { HailData.workingMode } returns HailData.MODE_DEFAULT
+
+        val result = AppManager.setListFrozen(true, listOf(BuildConfig.APPLICATION_ID, "com.example.pkg"))
+
+        assertEquals(1, result.total)
+        assertEquals(0, result.succeeded)
+        assertEquals(listOf("com.example.pkg"), result.failed)
+    }
 }

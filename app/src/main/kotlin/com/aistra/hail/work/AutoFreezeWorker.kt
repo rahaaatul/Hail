@@ -26,8 +26,8 @@ class AutoFreezeWorker(
         // The worker will run at some point. Then we'll stop the Service
         val checkedList = HailData.checkedList.filter { !isSkipApp(applicationContext, it) }
         repeat(3) {
-            val result = AppManager.setListFrozen(true, *checkedList.toTypedArray())
-            if (result != null) {
+            val result = AppManager.setListFrozen(true, checkedList.map { it.packageName })
+            if (result.succeeded > 0) {
                 app.setAutoFreezeService()
                 return Result.success()
             }
