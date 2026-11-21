@@ -106,6 +106,7 @@ object AppMetaCache {
 
     fun prefetch(applicationInfo: Collection<ApplicationInfo>): Job =
         scope.launch {
+            // A timeout means the cache is not ready yet: proceed to load from PackageManager.
             withTimeoutOrNull(CACHE_READY_TIMEOUT_MS) { cacheReady.await() }
             val newPackageMap = applicationInfo.associateBy { it.packageName }
             newPackageMap.forEach { (packageName, info) ->
@@ -131,13 +132,12 @@ object AppMetaCache {
      * Keeps the first paint cheap: rows already served from the Room cache resolve immediately,
      * while rows whose cache entry is missing load their label off the main thread. Callers sit on
      * the main thread, so the work is forced onto IO where loadLabel() and lastModified() belong.
+     * The ApplicationInfo is deliberately not taken from the caller: cache-derived lists carry a
+     * synthetic instance, and deriving state from it would misreport hidden and disabled apps.
      */
-    suspend fun ensureLoaded(
-        packageName: String,
-        info: ApplicationInfo? = null,
-    ) {
+    suspend fun ensureLoaded(packageName: String) {
         withContext(Dispatchers.IO) {
-            labelLoadPermits.withPermit { loadIfStale(packageName, info) }
+            labelLoadPermits.withPermit { loadIfStale(packageName) }
         }
     }
 
@@ -201,7 +201,7 @@ object AppMetaCache {
                 } else {
                     installedApplications[packageName] = info
                 }
-                loadIfStale(packageName, info)
+                labelLoadPermits.withPermit { loadIfStale(packageName, info) }
             }
         }
 
@@ -227,7 +227,7 @@ object AppMetaCache {
                 ).joinToString(":")
             val current = cache[packageName]
             if (info != null && current?.sourceSignature == sourceSignature) {
-                val newState = readState(packageName)
+                val newState = readState(packageName, info)
                 if (current.state != newState) {
                     cache[packageName] = current.copy(state = newState)
                     revisionState.value++
@@ -248,7 +248,7 @@ object AppMetaCache {
                         flags = info.flags,
                         enabled = info.enabled,
                         installed = true,
-                        state = readState(packageName),
+                        state = readState(packageName, info),
                         sourceSignature = sourceSignature,
                     )
                 }
@@ -257,18 +257,31 @@ object AppMetaCache {
         }
     }
 
-    private fun readState(packageName: String): AppInfo.State {
-        val info = HPackages.getApplicationInfoOrNull(packageName)
-        if (info == null) return AppInfo.State.NOT_FOUND
+    private fun readState(
+        packageName: String,
+        info: ApplicationInfo? = null,
+    ): AppInfo.State {
+        val appInfo = info ?: HPackages.getApplicationInfoOrNull(packageName)
+        if (appInfo == null) return AppInfo.State.NOT_FOUND
         return when {
-            info.flags and ApplicationInfo.FLAG_INSTALLED == 0 -> AppInfo.State.UNINSTALLED
-            HPackages.isAppSuspended(packageName) -> AppInfo.State.SUSPENDED
-            HPackages.isAppHidden(packageName) -> AppInfo.State.HIDDEN
-            HPackages.isAppStopped(packageName) -> AppInfo.State.STOPPED
-            HPackages.isAppDisabled(packageName) -> AppInfo.State.DISABLED
+            appInfo.flags and ApplicationInfo.FLAG_INSTALLED == 0 -> AppInfo.State.UNINSTALLED
+            isSuspended(appInfo) -> AppInfo.State.SUSPENDED
+            isHidden(appInfo) -> AppInfo.State.HIDDEN
+            isStopped(appInfo) -> AppInfo.State.STOPPED
+            isDisabled(appInfo) -> AppInfo.State.DISABLED
             else -> AppInfo.State.ENABLED
         }
     }
+
+    // HPackages.isApp* re-query PackageManager for each flag; derive the same checks from a single
+    // already-fetched ApplicationInfo so one lookup serves the whole state.
+    private fun isSuspended(info: ApplicationInfo): Boolean = HTarget.N && info.flags and ApplicationInfo.FLAG_SUSPENDED == ApplicationInfo.FLAG_SUSPENDED
+
+    private fun isHidden(info: ApplicationInfo): Boolean = (ApplicationInfo::class.java.getField("privateFlags").get(info) as Int) and 1 == 1
+
+    private fun isStopped(info: ApplicationInfo): Boolean = info.flags and ApplicationInfo.FLAG_STOPPED == ApplicationInfo.FLAG_STOPPED
+
+    private fun isDisabled(info: ApplicationInfo): Boolean = info.enabled.not()
 
     private suspend fun persist(installedPackages: Set<String>? = null) {
         runCatching {

@@ -1,5 +1,6 @@
 package com.aistra.hail.ui.apps
 
+import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -62,7 +63,11 @@ import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.AppIconCache
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HPackages
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 private val grayscaleColorFilter: ColorFilter =
     ColorFilter.colorMatrix(
@@ -210,7 +215,7 @@ private fun AppItem(
     val metadata = AppMetaCache.get(pkg)
     // Hydrate lazily: rows served from the Room cache cost nothing, missing entries load off-main.
     LaunchedEffect(pkg) {
-        if (AppMetaCache.get(pkg) == null) AppMetaCache.ensureLoaded(pkg, info)
+        if (AppMetaCache.get(pkg) == null) AppMetaCache.ensureLoaded(pkg)
     }
     val state = metadata?.state ?: AppInfo.State.NOT_FOUND
     val disabled = state.isFrozen
@@ -250,6 +255,23 @@ private fun AppItem(
     }
 }
 
+// The default activity icon is process-global and never changes: load it once off the
+// main thread and share the bitmap across rows instead of converting it per composition.
+@Volatile
+private var defaultActivityIconCache: Bitmap? = null
+
+private val defaultActivityIconMutex = Mutex()
+
+private suspend fun loadDefaultActivityIcon(context: Context): Bitmap? =
+    withContext(Dispatchers.IO) {
+        defaultActivityIconMutex.withLock {
+            defaultActivityIconCache
+                ?: context.packageManager.defaultActivityIcon
+                    ?.toBitmap()
+                    ?.also { defaultActivityIconCache = it }
+        }
+    }
+
 // TODO: Home migration — reuse HailBottomSheet + sheet styling; move AppIcon to ui/components at the second use case.
 @Composable
 internal fun AppIcon(
@@ -265,7 +287,9 @@ internal fun AppIcon(
     val icon by produceState<Bitmap?>(null, info.packageName, HailData.synthesizeAdaptiveIcons, iconSizePx) {
         value = AppIconCache.loadIconBitmap(context, info, HPackages.myUserId, iconSizePx)
     }
-    val fallbackIcon = remember { context.packageManager.defaultActivityIcon?.toBitmap() }
+    val fallbackIcon by produceState<Bitmap?>(defaultActivityIconCache, context) {
+        if (value == null) value = loadDefaultActivityIcon(context)
+    }
     val displayedIcon = icon ?: fallbackIcon
     val iconModifier =
         modifier

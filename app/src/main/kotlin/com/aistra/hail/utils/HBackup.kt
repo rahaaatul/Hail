@@ -394,6 +394,8 @@ private suspend fun applySettings(settings: SettingsBackup?) {
         val appliedSettings =
             listOf(
                 settings.hasSortBy() to { setSortBy(settings.sortBy) },
+                // Map fields have no hasXxx(); an empty map means "not backed up".
+                settings.sortDirectionsMap.isNotEmpty() to { putAllSortDirections(settings.sortDirectionsMap) },
                 settings.hasWorkingMode() to { setWorkingMode(settings.workingMode) },
                 settings.hasAppTheme() to { setAppTheme(settings.appTheme) },
                 settings.hasIconPack() to { setIconPack(settings.iconPack) },

@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,9 @@ import com.aistra.hail.R
 import com.aistra.hail.app.HailData
 import com.aistra.hail.utils.HSystem
 import com.aistra.hail.utils.HUI
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Filter bottom sheet content, rendered inside a Material 3 [ModalBottomSheet].
@@ -79,26 +83,35 @@ private fun SortSection(onFilterChanged: () -> Unit) {
     var sortBy by remember { mutableStateOf(HailData.sortBy) }
     var ascending by remember { mutableStateOf(HailData.sortAscending(HailData.sortBy)) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     fun selectSort(sort: String) {
         if (sort == sortBy) {
             ascending = !ascending
             HailData.changeSort(sort, ascending)
-        } else {
-            if ((sort == HailData.SORT_LAST_USED || sort == HailData.SORT_MOST_USED) &&
-                !HSystem.checkOpUsageStats(context)
-            ) {
-                HUI.showToast(R.string.msg_usage_access_required)
-                context.startActivity(
-                    Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                )
-            }
-            sortBy = sort
-            ascending = HailData.sortAscending(sort)
-            HailData.changeSort(sort, ascending)
+            onFilterChanged()
+            return
         }
+        // The sort itself is a local, synchronous operation: apply it immediately so a
+        // quick dismiss or rapid taps cannot lose or race the selection.
+        sortBy = sort
+        ascending = HailData.sortAscending(sort)
+        HailData.changeSort(sort, ascending)
         onFilterChanged()
+        if (sort == HailData.SORT_LAST_USED || sort == HailData.SORT_MOST_USED) {
+            // checkOpUsageStats is a binder call, keep it off the main thread; the sort
+            // above stays applied even if access is missing.
+            scope.launch {
+                val granted = withContext(Dispatchers.IO) { HSystem.checkOpUsageStats(context) }
+                if (!granted) {
+                    HUI.showToast(R.string.msg_usage_access_required)
+                    context.startActivity(
+                        Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }
+            }
+        }
     }
 
     SectionTitle(
@@ -217,7 +230,6 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
                 HailData.FILTER_USER_APPS to HailData.filterUserApps,
             )
         }
-    val selectedCount = filters.values.count { it }
 
     SectionTitle(text = stringResource(R.string.filter_apps_type), icon = Widgets)
 
@@ -230,7 +242,7 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
         SegmentedButton(
             checked = filters[HailData.FILTER_SYSTEM_APPS] ?: false,
             onCheckedChange = {
-                toggleFilter(filters, selectedCount, HailData.FILTER_SYSTEM_APPS, onFilterChanged)
+                toggleFilter(filters, HailData.FILTER_SYSTEM_APPS, onFilterChanged)
             },
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             icon = {},
@@ -240,7 +252,7 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
         SegmentedButton(
             checked = filters[HailData.FILTER_USER_APPS] ?: false,
             onCheckedChange = {
-                toggleFilter(filters, selectedCount, HailData.FILTER_USER_APPS, onFilterChanged)
+                toggleFilter(filters, HailData.FILTER_USER_APPS, onFilterChanged)
             },
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
             icon = {},
@@ -272,7 +284,6 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
                 HailData.FILTER_UNINSTALLED_APPS to HailData.filterUninstalledApps,
             )
         }
-    val selectedCount = filters.values.count { it }
 
     SectionTitle(text = stringResource(R.string.filter_freeze_state), icon = CheckCircle)
 
@@ -286,7 +297,7 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
                 StatusChip(
                     label = stringResource(labelRes),
                     selected = filters[filter] ?: false,
-                    onClick = { toggleFilter(filters, selectedCount, filter, onFilterChanged) },
+                    onClick = { toggleFilter(filters, filter, onFilterChanged) },
                 )
             }
         }
@@ -337,15 +348,17 @@ private fun SectionTitle(
 
 /**
  * Toggles a filter and persists it. The last selected filter in a section cannot be
- * unselected, so a group never becomes empty.
+ * unselected, so a group never becomes empty. The selected count is read from the
+ * current map state here, not captured at composition, so rapid taps are evaluated
+ * against the live selection.
  */
 private fun toggleFilter(
     filters: MutableMap<String, Boolean>,
-    selectedCount: Int,
     filter: String,
     onFilterChanged: () -> Unit,
 ) {
     val newSelected = !(filters[filter] ?: false)
+    val selectedCount = filters.values.count { it }
     if (newSelected || selectedCount > 1) {
         filters[filter] = newSelected
         HailData.changeAppsFilter(filter, newSelected)

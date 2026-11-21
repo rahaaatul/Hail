@@ -63,7 +63,8 @@ class AppsFragment :
             this.exportApkPkg = null
             if (exportApkPkg == null || uri == null) return@registerForActivityResult
             lifecycleScope.launch {
-                val applicationInfo = HPackages.getApplicationInfoOrNull(exportApkPkg)
+                val applicationInfo =
+                    withContext(Dispatchers.IO) { HPackages.getApplicationInfoOrNull(exportApkPkg) }
                 if (applicationInfo == null) {
                     HUI.showToast(R.string.operation_failed, exportApkPkg)
                     return@launch
@@ -190,9 +191,9 @@ class AppsFragment :
             }
         }
 
-        requireContext()
-            .getSystemService(LauncherApps::class.java)
-            .registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
+        context
+            ?.getSystemService(LauncherApps::class.java)
+            ?.registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
 
         return ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -209,9 +210,9 @@ class AppsFragment :
     }
 
     override fun onDestroyView() {
-        requireContext()
-            .getSystemService(LauncherApps::class.java)
-            .unregisterCallback(launcherAppsCallback)
+        context
+            ?.getSystemService(LauncherApps::class.java)
+            ?.unregisterCallback(launcherAppsCallback)
         super.onDestroyView()
     }
 
@@ -226,7 +227,7 @@ class AppsFragment :
                 ui.checkedRevision++
                 // The select-all toolbar icon reflects the live checked set, which changes here
                 // without touching displayApps, so re-prepare the menu to refresh its glyph.
-                activity.invalidateOptionsMenu()
+                if (isAdded) activity.invalidateOptionsMenu()
             },
             onAction = ::onAppAction,
             onCopyText = { text ->
@@ -243,15 +244,14 @@ class AppsFragment :
 
     override fun onResume() {
         super.onResume()
-        ui.showEmptyToast = true
-        model.updateAppList(true)
+        model.updateAppList()
     }
 
     private fun onAppAction(
         info: ApplicationInfo,
         action: AppAction,
     ) {
-        val name = info.loadLabel(app.packageManager)
+        val name = AppMetaCache.get(info.packageName)?.name ?: info.packageName
         val pkg = info.packageName
         when (action) {
             AppAction.DETAILS -> {
@@ -400,7 +400,7 @@ class AppsFragment :
         HailData.saveApps()
         ui.checkedRevision++
         // Keep the select-all toolbar icon in sync with the new checked set.
-        activity.invalidateOptionsMenu()
+        if (isAdded) activity.invalidateOptionsMenu()
     }
 
     private fun updateAppList(forceRefresh: Boolean) = model.updateAppList(forceRefresh)

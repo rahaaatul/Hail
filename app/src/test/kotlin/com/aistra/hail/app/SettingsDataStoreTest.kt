@@ -87,7 +87,7 @@ class SettingsDataStoreTest {
             val coded = CodedOutputStream.newInstance(out)
             coded.writeString(1, HailData.SORT_INSTALL)
             coded.writeBool(7, false)
-            coded.writeBool(9, true) // retired filter_all_apps: unknown, must be ignored
+            coded.writeBool(9, false) // retired filter_all_apps: unknown, must be ignored
             coded.writeBool(12, true)
             coded.writeBool(13, false)
             coded.writeFloat(22, 18f)
@@ -105,7 +105,8 @@ class SettingsDataStoreTest {
             assertFalse(data.grayscaleIcon)
             assertEquals(18f, data.homeFontSize, 0.001f)
             assertEquals(2.5f, data.autoFreezeDelay, 0.001f)
-            // The retired bool at tag 9 must not surface as a status filter at tag 24.
+            // The retired bool at tag 9 must not become filter_enabled_apps at tag 24:
+            // a false there would otherwise flip this default-true filter to false.
             assertTrue(data.filterEnabledApps)
         }
 
