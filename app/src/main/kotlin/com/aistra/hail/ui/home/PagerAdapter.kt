@@ -72,7 +72,7 @@ class PagerAdapter(
                         )
                     }
 
-                    info.state == AppInfo.State.NOT_FOUND -> {
+                    info.state == AppInfo.State.NOT_FOUND || info.state == AppInfo.State.UNINSTALLED -> {
                         setTextColor(
                             MaterialColors.getColor(this, androidx.appcompat.R.attr.colorError),
                         )

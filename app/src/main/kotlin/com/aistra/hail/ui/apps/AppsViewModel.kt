@@ -150,6 +150,16 @@ class AppsViewModel(
             return@withContext appList
                 .filter {
                     val metadata = AppMetaCache.get(it.packageName)
+                    // Before metadata loads, hide only data-only apps when the Uninstalled filter
+                    // is off: they have no FLAG_INSTALLED and would otherwise flash in the default
+                    // list until prefetch bumps the revision. Installed apps stay visible.
+                    if (
+                        metadata == null &&
+                        !HailData.filterUninstalledApps &&
+                        it.flags and ApplicationInfo.FLAG_INSTALLED == 0
+                    ) {
+                        return@filter false
+                    }
                     val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
                     val name = metadata?.name ?: it.packageName
                     (
