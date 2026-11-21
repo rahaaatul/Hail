@@ -3,6 +3,7 @@ package com.aistra.hail.utils
 import android.content.pm.ApplicationInfo
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
+import com.aistra.hail.utils.AppMetaCache.withFreshState
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -77,5 +78,74 @@ class AppMetaCacheStateTest {
 
         assertEquals(AppInfo.State.UNINSTALLED, AppMetaCache.stateFrom(info))
         assertEquals(false, AppMetaCache.installedFrom(info))
+    }
+
+    private fun seedEntry() =
+        AppMetaCache.Entry(
+            packageName = "pkg",
+            name = "pkg",
+            isSystemApp = false,
+            firstInstallTime = 0L,
+            lastUpdateTime = 0L,
+            flags = ApplicationInfo.FLAG_INSTALLED,
+            enabled = true,
+            installed = true,
+            state = AppInfo.State.ENABLED,
+            sourceSignature = "",
+        )
+
+    @Test
+    fun `withFreshState picks up a disabled app`() {
+        val info =
+            ApplicationInfo().apply {
+                flags = ApplicationInfo.FLAG_INSTALLED
+                enabled = false
+            }
+
+        val updated = seedEntry().withFreshState(info)
+
+        assertEquals(AppInfo.State.DISABLED, updated.state)
+        assertEquals(false, updated.enabled)
+        assertEquals(true, updated.installed)
+    }
+
+    @Test
+    fun `withFreshState marks a data-only app uninstalled`() {
+        val info =
+            ApplicationInfo().apply {
+                flags = 0
+                enabled = true
+            }
+
+        val updated = seedEntry().withFreshState(info)
+
+        assertEquals(AppInfo.State.UNINSTALLED, updated.state)
+        assertEquals(false, updated.installed)
+        assertEquals(true, updated.enabled)
+    }
+
+    @Test
+    fun `withFreshState is idempotent`() {
+        val info =
+            ApplicationInfo().apply {
+                flags = ApplicationInfo.FLAG_INSTALLED
+                enabled = false
+            }
+
+        val once = seedEntry().withFreshState(info)
+        val twice = once.withFreshState(info)
+
+        assertEquals(once, twice)
+    }
+
+    @Test
+    fun `withFreshState is a no-op for an unchanged enabled app`() {
+        val info =
+            ApplicationInfo().apply {
+                flags = ApplicationInfo.FLAG_INSTALLED
+                enabled = true
+            }
+
+        assertEquals(seedEntry(), seedEntry().withFreshState(info))
     }
 }

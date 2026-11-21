@@ -182,10 +182,7 @@ object AppMetaCache {
                     packageNames.mapNotNull { packageName ->
                         val info = HPackages.getApplicationInfoOrNull(packageName)
                         cache.computeIfPresent(packageName) { _, entry ->
-                            entry.copy(
-                                installed = installedFrom(info),
-                                state = stateFrom(info),
-                            )
+                            entry.withFreshState(info)
                         }
                     }
                 }
@@ -234,10 +231,9 @@ object AppMetaCache {
                 ).joinToString(":")
             val current = cache[packageName]
             if (info != null && current?.sourceSignature == sourceSignature) {
-                val newState = stateFrom(info)
-                val newInstalled = installedFrom(info)
-                if (current.state != newState || current.installed != newInstalled) {
-                    cache[packageName] = current.copy(state = newState, installed = newInstalled)
+                val updated = current.withFreshState(info)
+                if (updated != current) {
+                    cache[packageName] = updated
                     revisionState.value++
                 }
                 return
@@ -266,6 +262,20 @@ object AppMetaCache {
     }
 
     internal fun installedFrom(info: ApplicationInfo?): Boolean = info != null && (info.flags and ApplicationInfo.FLAG_INSTALLED) != 0
+
+    /**
+     * Re-derives every flag-derived field of an entry, including `enabled`.
+     *
+     * `state` alone cannot detect an enable/disable toggle: it does not change sourceDir, APK mtime
+     * or lastUpdateTime, so the source signature still matches and a copy that only refreshes
+     * state/installed would leave `enabled` stale forever.
+     */
+    internal fun Entry.withFreshState(info: ApplicationInfo?): Entry =
+        copy(
+            installed = installedFrom(info),
+            state = stateFrom(info),
+            enabled = info?.enabled ?: false,
+        )
 
     internal fun stateFrom(info: ApplicationInfo?): AppInfo.State {
         if (info == null) return AppInfo.State.NOT_FOUND
