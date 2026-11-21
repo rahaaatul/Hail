@@ -5,8 +5,12 @@ import android.app.UiModeManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.StrictMode
+import android.os.UserHandle
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
@@ -40,6 +44,10 @@ class HailApp : Application() {
             )
         }
         AppMetaCache.warmUp()
+        // Registered for the whole process lifetime so cache invalidation happens regardless of
+        // which tab is visible (a data-only uninstall must disappear from Home even from Apps).
+        (getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps)
+            ?.registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
         DirtyDataUpdater.update(app)
         applicationScope.launch { migrateSettingsFromSharedPreferences() }
 
@@ -80,6 +88,60 @@ class HailApp : Application() {
             setAutoFreezeServiceEnabled(false)
         }
     }
+
+    private val launcherAppsCallback =
+        object : LauncherApps.Callback() {
+            override fun onPackageAdded(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackageRemoved(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackageChanged(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackagesAvailable(
+                packageNames: Array<String>,
+                user: UserHandle,
+                available: Boolean,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesUnavailable(
+                packageNames: Array<String>,
+                user: UserHandle,
+                available: Boolean,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesSuspended(
+                packageNames: Array<String>,
+                user: UserHandle,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesUnsuspended(
+                packageNames: Array<String>,
+                user: UserHandle,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+        }
 
     fun setAutoFreezeServiceEnabled(enabled: Boolean) {
         packageManager.setComponentEnabledSetting(

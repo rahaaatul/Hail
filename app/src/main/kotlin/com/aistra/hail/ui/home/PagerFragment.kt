@@ -678,14 +678,17 @@ class PagerFragment :
         return viewLifecycleOwner.lifecycleScope.launch {
             AppActions
                 .freezePackages(frozen, filtered.map { it.packageName })
-                .onSuccess {
-                    AppMetaCache.invalidateState(filtered.map { it.packageName })
+                .onSuccess { result ->
                     if (updateList) updateCurrentList()
                     pagerAdapter.refreshVisualState()
-                    HUI.showToast(
-                        if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
-                        filtered.size.toString(),
-                    )
+                    if (result.succeeded == 0 && result.failed.isNotEmpty()) {
+                        HUI.showToast(R.string.permission_denied)
+                    } else {
+                        HUI.showToast(
+                            if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
+                            result.succeeded.toString(),
+                        )
+                    }
                 }.onFailure {
                     HUI.showToast(R.string.permission_denied)
                 }
@@ -780,7 +783,7 @@ class PagerFragment :
             var i = 0
             for (index in 0 until json.length()) {
                 val pkg = json.getString(index)
-                if (HPackages.getApplicationInfoOrNull(pkg) != null && !HailData.isChecked(pkg)) {
+                if (HPackages.isInstalled(pkg) && !HailData.isChecked(pkg)) {
                     HailData.addCheckedApp(pkg, tag?.second ?: 0, false)
                     i++
                 }
