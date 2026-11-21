@@ -48,7 +48,6 @@
     <string name="action_unfreeze_remove_home">Размарозіць і выдаліць з галоўнай старонкі</string>
     <string name="action_deselect">Зняць вылучэнне</string>
     <string name="action_details">Звесткі праграмы</string>
-    <string name="action_extract_apk">Атрымаць APK</string>
     <string name="msg_uninstall">Вы хочаце выдаліць гэту праграму?</string>
     <string name="mode_default">У чаканні</string>
     <string name="mode_owner_hide">Уладальнік прылады - Схаваць</string>
@@ -176,7 +175,6 @@
     <string name="save">Захаваць</string>
     <string name="state_disabled">Адключана</string>
     <string name="state_hidden">Схавана</string>
-    <string name="state_running">Працуе</string>
     <string name="state_suspended">Прыпынена</string>
     <string name="state_uninstalled">Выдалена</string>
     <string name="summary_background_activity">Дазволіць аўтазамарожванню працягвацца, калі Hail не адкрыты</string>

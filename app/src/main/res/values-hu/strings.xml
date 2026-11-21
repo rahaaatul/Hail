@@ -116,7 +116,6 @@
     <string name="action_unfreeze_remove_home">Fagyasztás és eltávolítás a főképernyőről</string>
     <string name="title_remove_owner">Eszköztulajdonos eltávolítása</string>
     <string name="label_time">Telepítés ideje</string>
-    <string name="action_extract_apk">APK kinyerése</string>
     <string name="mode_shizuku_hide">Shizuku - Elrejtés</string>
     <string name="mode_shizuku_disable">Shizuku - Letiltás</string>
     <string name="msg_set_owner">Parancskiadás ADB-ből: \n%s</string>
@@ -171,7 +170,6 @@
     <string name="save">Mentés</string>
     <string name="state_disabled">Letiltva</string>
     <string name="state_hidden">Elrejtve</string>
-    <string name="state_running">Fut</string>
     <string name="state_suspended">Felfüggesztve</string>
     <string name="state_uninstalled">Eltávolítva</string>
     <string name="summary_background_activity">Az automatikus fagyasztás folytatása, ha a Hail nincs megnyitva</string>

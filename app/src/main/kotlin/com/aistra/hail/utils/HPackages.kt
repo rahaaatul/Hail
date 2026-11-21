@@ -97,7 +97,10 @@ object HPackages {
             (ApplicationInfo::class.java.getField("privateFlags").get(it) as Int) and 8 == 8
         } ?: false
 
-    fun canUninstallNormally(packageName: String): Boolean = getApplicationInfoOrNull(packageName)?.sourceDir?.startsWith("/data") ?: false
+    fun canUninstallNormally(packageName: String): Boolean {
+        val info = getApplicationInfoOrNull(packageName) ?: return false
+        return info.flags and ApplicationInfo.FLAG_SYSTEM == 0
+    }
 
     fun forceStopApp(packageName: String): Boolean =
         runCatching {
@@ -156,3 +159,5 @@ object HPackages {
             false
         }
 }
+
+fun Pair<Int, String?>.toSuccess(): Pair<Boolean, String?> = (first == 0) to second

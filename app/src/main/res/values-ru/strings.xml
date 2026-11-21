@@ -37,7 +37,6 @@
     <string name="action_help">Помощь</string>
     <string name="action_search">Поиск</string>
     <string name="action_details">О приложении</string>
-    <string name="action_extract_apk">Извлечь APK</string>
     <string name="action_uninstall">Удалить</string>
     <string name="msg_uninstall">Вы хотите удалить это приложение?</string>
     <string name="working_mode">Режим работы</string>
@@ -156,7 +155,6 @@
     <string name="xposed_description">Разрешить связанным приложениям запускать приостановленные приложения</string>
     <string name="working_mode_tag">Режим работы связанных приложений</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="state_running">Запущено</string>
     <string name="state_disabled">Отключено</string>
     <string name="state_hidden">Скрыто</string>
     <string name="state_suspended">Приостановлено</string>

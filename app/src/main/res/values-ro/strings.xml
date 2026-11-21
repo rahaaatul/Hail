@@ -17,7 +17,6 @@
     <string name="action_export_all">Exportă toate</string>
     <string name="action_export_clipboard">Exportă în clipboard</string>
     <string name="action_export_current">Exportă vizibilele</string>
-    <string name="action_extract_apk">Extrage APK</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">Îngheață</string>
     <string name="action_freeze_all">Îngheață toate</string>
@@ -147,7 +146,6 @@
     <string name="sort_update">Ultima actualizare</string>
     <string name="state_disabled">Dezactivată</string>
     <string name="state_hidden">Ascunsă</string>
-    <string name="state_running">În execuție</string>
     <string name="state_suspended">Suspendată</string>
     <string name="state_uninstalled">Dezinstalată</string>
     <string name="summary_background_activity">Permite înghețării automate să continue când Hail nu este deschis</string>

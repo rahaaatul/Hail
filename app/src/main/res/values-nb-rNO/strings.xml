@@ -3,7 +3,6 @@
     <string name="action_uninstall">Avinstaller</string>
     <string name="action_remove_home">Fjern fra hjem</string>
     <string name="action_help">Hjelp</string>
-    <string name="action_extract_apk">Pakk ut APK</string>
     <string name="title_settings">Innstillinger</string>
     <string name="action_tag_add">Legg til etikett</string>
     <string name="grayscale_icon">Gråskalaikon</string>
@@ -170,7 +169,6 @@
     <string name="shizuku_hide_adb">Shizuku kjører som adb. For å skjule programmer, start Shizuku på nytt med superbruker.</string>
     <string name="state_disabled">Deaktivert</string>
     <string name="state_hidden">Skjult</string>
-    <string name="state_running">Kjører</string>
     <string name="state_suspended">Hviler</string>
     <string name="state_uninstalled">Avinstallert</string>
     <string name="summary_background_activity">Tillat autofrysing å fortsette når Hail ikke er åpen</string>

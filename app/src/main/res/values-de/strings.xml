@@ -39,7 +39,6 @@
     <string name="action_help">Hilfe</string>
     <string name="action_search">Suchen</string>
     <string name="action_details">App-Informationen</string>
-    <string name="action_extract_apk">APK extrahieren</string>
     <string name="action_uninstall">Deinstallieren</string>
     <string name="msg_uninstall">Diese Anwendung deinstallieren?</string>
     <string name="working_mode">Arbeitsmodus</string>
@@ -150,7 +149,6 @@
     <string name="follow_system">System folgen</string>
     <string name="theme_light">hell</string>
     <string name="theme_dark">dunkel</string>
-    <string name="state_running">läuft</string>
     <string name="state_disabled">deaktiviert</string>
     <string name="state_hidden">versteckt</string>
     <string name="state_suspended">pausiert</string>

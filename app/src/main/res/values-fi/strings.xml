@@ -71,7 +71,6 @@
     <string name="action_remove_home">Poista Kotoa</string>
     <string name="action_search">Etsi</string>
     <string name="action_details">Sovelluksen tiedot</string>
-    <string name="action_extract_apk">Pura APK</string>
     <string name="action_uninstall">Poista asennus</string>
     <string name="msg_uninstall">Haluatko poistaa tämän sovelluksen?</string>
     <string name="working_mode">Työtila</string>
@@ -174,7 +173,6 @@
     <string name="save">Save</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>

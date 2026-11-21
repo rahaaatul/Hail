@@ -17,7 +17,6 @@
     <string name="action_export_all">Send out all</string>
     <string name="action_export_clipboard">Send out to Clipboard</string>
     <string name="action_export_current">Send out visible</string>
-    <string name="action_extract_apk">Pull out APK</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">Freeze</string>
     <string name="action_freeze_all">Freeze all</string>
@@ -145,7 +144,6 @@
     <string name="sort_update">Last renewal</string>
     <string name="state_disabled">Turned off</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Held up</string>
     <string name="state_uninstalled">Taken down</string>
     <string name="summary_background_activity">Let auto-freeze carry on when Hail is not open</string>

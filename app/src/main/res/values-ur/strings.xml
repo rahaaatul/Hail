@@ -28,7 +28,6 @@
     <string name="action_help">مدد</string>
     <string name="action_search">تلاش</string>
     <string name="action_details">ایپ کی معلومات</string>
-    <string name="action_extract_apk">APK نکالیں</string>
     <string name="action_uninstall">ان انسٹال کریں</string>
     <string name="working_mode">کام کا طریقہ کار</string>
     <string name="mode_default">بیکار</string>
@@ -170,7 +169,6 @@
     <string name="shizuku_hide_adb">Shizuku is running as adb. To hide apps, please restart Shizuku with root.</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>

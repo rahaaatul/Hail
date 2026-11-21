@@ -7,8 +7,9 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
-import com.aistra.hail.app.AppManager
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -18,7 +19,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -39,6 +44,15 @@ object AppMetaCache {
     private val cache = ConcurrentHashMap<String, Entry>()
     private val installedApplications = ConcurrentHashMap<String, ApplicationInfo>()
     private val packageLocks = ConcurrentHashMap<String, Mutex>()
+
+    // loadLabel() loads each app's APK resources while holding the process-wide
+    // ResourcesManager lock. Fanning out one coroutine per app (100+) starves the main
+    // thread on a configuration change and triggers ANRs, so cap how many load at once.
+    private const val LABEL_LOAD_CONCURRENCY = 4
+    private val labelLoadPermits = Semaphore(LABEL_LOAD_CONCURRENCY)
+
+    // A cache-ready gate that never completes must not hang prefetch indefinitely.
+    private const val CACHE_READY_TIMEOUT_MS = 5_000L
     private val database by lazy {
         Room
             .databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
@@ -51,8 +65,14 @@ object AppMetaCache {
     private val scope = HailApp.app.applicationScope
     private val revisionState = MutableStateFlow(0L)
     val revision: StateFlow<Long> = revisionState
-    private val installedApplicationsReadyState = MutableStateFlow(false)
-    val installedApplicationsReady: StateFlow<Boolean> = installedApplicationsReadyState
+
+    private val cacheReadyDeferred = CompletableDeferred<Unit>()
+
+    /**
+     * Completes once Room has been read into the in-memory cache. The UI awaits this before the
+     * first render so it paints from cache instead of falling back to PackageManager.
+     */
+    val cacheReady: Deferred<Unit> = cacheReadyDeferred
 
     fun get(packageName: String): Entry? = cache[packageName]
 
@@ -68,29 +88,26 @@ object AppMetaCache {
             }
         }
 
-    fun seedFromDatabase(): Job =
-        scope.launch {
-            runCatching {
-                database.appMetadataDao().loadAll().forEach { entity ->
-                    cache[entity.packageName] = entity.toEntry()
-                }
-                revisionState.value++
+    private suspend fun loadDatabaseIntoCache() {
+        runCatching {
+            database.appMetadataDao().loadAll().forEach { entity ->
+                cache[entity.packageName] = entity.toEntry()
             }
+            revisionState.value++
         }
+    }
 
     fun warmUp(): Job =
         scope.launch {
-            runCatching {
-                database.appMetadataDao().loadAll().forEach { entity ->
-                    cache[entity.packageName] = entity.toEntry()
-                }
-                revisionState.value++
-                prefetch(HPackages.getInstalledApplications()).join()
-            }
+            loadDatabaseIntoCache()
+            cacheReadyDeferred.complete(Unit)
+            prefetch(HPackages.getInstalledApplications()).join()
         }
 
     fun prefetch(applicationInfo: Collection<ApplicationInfo>): Job =
         scope.launch {
+            // A timeout means the cache is not ready yet: proceed to load from PackageManager.
+            withTimeoutOrNull(CACHE_READY_TIMEOUT_MS) { cacheReady.await() }
             val newPackageMap = applicationInfo.associateBy { it.packageName }
             newPackageMap.forEach { (packageName, info) ->
                 installedApplications[packageName] = info
@@ -99,16 +116,30 @@ object AppMetaCache {
             toRemove.forEach { installedApplications.remove(it) }
             applicationInfo
                 .map { info ->
-                    async { loadIfStale(info.packageName, info) }
+                    async { labelLoadPermits.withPermit { loadIfStale(info.packageName, info) } }
                 }.awaitAll()
             val toRemoveLocks = packageLocks.keys.filterNot { it in newPackageMap.keys }
             toRemoveLocks.forEach { packageLocks.remove(it) }
             persist(newPackageMap.keys)
             AppIconCache.prefetch(HailApp.app, applicationInfo)
-            installedApplicationsReadyState.value = true
         }
 
     fun refreshInstalled(): Job = prefetch(HPackages.getInstalledApplications())
+
+    /**
+     * Lazily hydrate a single app's metadata, called from the grid as rows become visible.
+     *
+     * Keeps the first paint cheap: rows already served from the Room cache resolve immediately,
+     * while rows whose cache entry is missing load their label off the main thread. Callers sit on
+     * the main thread, so the work is forced onto IO where loadLabel() and lastModified() belong.
+     * The ApplicationInfo is deliberately not taken from the caller: cache-derived lists carry a
+     * synthetic instance, and deriving state from it would misreport hidden and disabled apps.
+     */
+    suspend fun ensureLoaded(packageName: String) {
+        withContext(Dispatchers.IO) {
+            labelLoadPermits.withPermit { loadIfStale(packageName) }
+        }
+    }
 
     suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List<ApplicationInfo> {
         val cached = cachedApplications()
@@ -123,7 +154,7 @@ object AppMetaCache {
         scope.launch {
             packageNames
                 .map { packageName ->
-                    async { loadIfStale(packageName) }
+                    async { labelLoadPermits.withPermit { loadIfStale(packageName) } }
                 }.awaitAll()
             persist()
         }
@@ -138,13 +169,12 @@ object AppMetaCache {
             val installedPackages = applicationInfo.mapTo(HashSet()) { it.packageName }
             applicationInfo
                 .map { info ->
-                    async { loadIfStale(info.packageName, info) }
+                    async { labelLoadPermits.withPermit { loadIfStale(info.packageName, info) } }
                 }.awaitAll()
             val toRemove = packageLocks.keys.filterNot { it in installedPackages }
             toRemove.forEach { packageLocks.remove(it) }
             persist(installedPackages)
             AppIconCache.prefetch(HailApp.app, applicationInfo)
-            installedApplicationsReadyState.value = true
         }
 
     fun invalidateState(packageNames: Collection<String>) {
@@ -155,6 +185,25 @@ object AppMetaCache {
         }
         revisionState.value++
     }
+
+    /**
+     * Targeted refresh for a single package after a package-change event (add/remove/enable/
+     * disable/suspend/hide). Updates the installed-apps map and metadata cache, then bumps the
+     * revision so the list re-filters. Unlike [invalidateState] this also re-derives the state
+     * (including UNINSTALLED) and keeps [installedApplications] in sync.
+     */
+    fun invalidatePackage(packageName: String): Job =
+        scope.launch {
+            withContext(Dispatchers.IO) {
+                val info = HPackages.getApplicationInfoOrNull(packageName)
+                if (info == null) {
+                    installedApplications.remove(packageName)
+                } else {
+                    installedApplications[packageName] = info
+                }
+                labelLoadPermits.withPermit { loadIfStale(packageName, info) }
+            }
+        }
 
     fun invalidateAll() {
         cache.clear()
@@ -178,7 +227,11 @@ object AppMetaCache {
                 ).joinToString(":")
             val current = cache[packageName]
             if (info != null && current?.sourceSignature == sourceSignature) {
-                cache[packageName] = current.copy(state = readState(packageName))
+                val newState = readState(packageName, info)
+                if (current.state != newState) {
+                    cache[packageName] = current.copy(state = newState)
+                    revisionState.value++
+                }
                 return
             }
 
@@ -195,7 +248,7 @@ object AppMetaCache {
                         flags = info.flags,
                         enabled = info.enabled,
                         installed = true,
-                        state = readState(packageName),
+                        state = readState(packageName, info),
                         sourceSignature = sourceSignature,
                     )
                 }
@@ -204,12 +257,31 @@ object AppMetaCache {
         }
     }
 
-    private fun readState(packageName: String): AppInfo.State =
-        when {
-            HPackages.getApplicationInfoOrNull(packageName) == null -> AppInfo.State.NOT_FOUND
-            AppManager.isAppFrozen(packageName) -> AppInfo.State.FROZEN
-            else -> AppInfo.State.UNFROZEN
+    private fun readState(
+        packageName: String,
+        info: ApplicationInfo? = null,
+    ): AppInfo.State {
+        val appInfo = info ?: HPackages.getApplicationInfoOrNull(packageName)
+        if (appInfo == null) return AppInfo.State.NOT_FOUND
+        return when {
+            appInfo.flags and ApplicationInfo.FLAG_INSTALLED == 0 -> AppInfo.State.UNINSTALLED
+            isSuspended(appInfo) -> AppInfo.State.SUSPENDED
+            isHidden(appInfo) -> AppInfo.State.HIDDEN
+            isStopped(appInfo) -> AppInfo.State.STOPPED
+            isDisabled(appInfo) -> AppInfo.State.DISABLED
+            else -> AppInfo.State.ENABLED
         }
+    }
+
+    // HPackages.isApp* re-query PackageManager for each flag; derive the same checks from a single
+    // already-fetched ApplicationInfo so one lookup serves the whole state.
+    private fun isSuspended(info: ApplicationInfo): Boolean = HTarget.N && info.flags and ApplicationInfo.FLAG_SUSPENDED == ApplicationInfo.FLAG_SUSPENDED
+
+    private fun isHidden(info: ApplicationInfo): Boolean = (ApplicationInfo::class.java.getField("privateFlags").get(info) as Int) and 1 == 1
+
+    private fun isStopped(info: ApplicationInfo): Boolean = info.flags and ApplicationInfo.FLAG_STOPPED == ApplicationInfo.FLAG_STOPPED
+
+    private fun isDisabled(info: ApplicationInfo): Boolean = info.enabled.not()
 
     private suspend fun persist(installedPackages: Set<String>? = null) {
         runCatching {
@@ -233,7 +305,7 @@ object AppMetaCache {
             flags = flags,
             enabled = enabled,
             installed = installed,
-            state = if (frozen) AppInfo.State.FROZEN else AppInfo.State.UNFROZEN,
+            state = AppInfo.State.values()[frozen.coerceIn(0, AppInfo.State.values().size - 1)],
             sourceSignature = sourceSignature,
         )
 
@@ -247,7 +319,7 @@ object AppMetaCache {
             flags = flags,
             enabled = enabled,
             installed = installed,
-            frozen = state == AppInfo.State.FROZEN,
+            frozen = state.ordinal,
             sourceSignature = sourceSignature,
         )
 
@@ -306,6 +378,9 @@ object AppMetaCache {
                         "SELECT packageName, COALESCE(name, ''), systemApp, firstInstallTime, " +
                         "lastUpdateTime, flags, enabled, installed, frozen, sourceSignature " +
                         "FROM app_metadata",
+                )
+                connection.execSQL(
+                    "UPDATE app_metadata_new SET frozen = CASE frozen WHEN 1 THEN 2 ELSE 1 END",
                 )
                 connection.execSQL("DROP TABLE app_metadata")
                 connection.execSQL("ALTER TABLE app_metadata_new RENAME TO app_metadata")

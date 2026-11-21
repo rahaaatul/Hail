@@ -394,6 +394,8 @@ private suspend fun applySettings(settings: SettingsBackup?) {
         val appliedSettings =
             listOf(
                 settings.hasSortBy() to { setSortBy(settings.sortBy) },
+                // Map fields have no hasXxx(); an empty map means "not backed up".
+                settings.sortDirectionsMap.isNotEmpty() to { putAllSortDirections(settings.sortDirectionsMap) },
                 settings.hasWorkingMode() to { setWorkingMode(settings.workingMode) },
                 settings.hasAppTheme() to { setAppTheme(settings.appTheme) },
                 settings.hasIconPack() to { setIconPack(settings.iconPack) },
@@ -401,9 +403,12 @@ private suspend fun applySettings(settings: SettingsBackup?) {
                 settings.hasDynamicShortcutAction() to { setDynamicShortcutAction(settings.dynamicShortcutAction) },
                 settings.hasFilterUserApps() to { setFilterUserApps(settings.filterUserApps) },
                 settings.hasFilterSystemApps() to { setFilterSystemApps(settings.filterSystemApps) },
-                settings.hasFilterAllApps() to { setFilterAllApps(settings.filterAllApps) },
-                settings.hasFilterFrozenApps() to { setFilterFrozenApps(settings.filterFrozenApps) },
-                settings.hasFilterUnfrozenApps() to { setFilterUnfrozenApps(settings.filterUnfrozenApps) },
+                settings.hasFilterEnabledApps() to { setFilterEnabledApps(settings.filterEnabledApps) },
+                settings.hasFilterDisabledApps() to { setFilterDisabledApps(settings.filterDisabledApps) },
+                settings.hasFilterSuspendedApps() to { setFilterSuspendedApps(settings.filterSuspendedApps) },
+                settings.hasFilterHiddenApps() to { setFilterHiddenApps(settings.filterHiddenApps) },
+                settings.hasFilterStoppedApps() to { setFilterStoppedApps(settings.filterStoppedApps) },
+                settings.hasFilterUninstalledApps() to { setFilterUninstalledApps(settings.filterUninstalledApps) },
                 settings.hasBiometricLogin() to { setBiometricLogin(settings.biometricLogin) },
                 settings.hasGrayscaleIcon() to { setGrayscaleIcon(settings.grayscaleIcon) },
                 settings.hasCompactIcon() to { setCompactIcon(settings.compactIcon) },

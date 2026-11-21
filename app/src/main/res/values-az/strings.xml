@@ -46,7 +46,6 @@
     <string name="action_edit_action">Fəaliyyəti redaktə et</string>
     <string name="action_export_all">Hamısını ixrac et</string>
     <string name="action_export_current">Görünənləri ixrac et</string>
-    <string name="action_extract_apk">APK çıxar</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze_tag">Etiketi dondur</string>
     <string name="action_help">Kömək</string>
@@ -154,7 +153,6 @@ Dondurulmuş tətbiqlər silindikdən sonra dondurulmuş qalacaq, vacib tətbiql
     <string name="sort_update">Son yeniləmə</string>
     <string name="state_disabled">Deaktiv</string>
     <string name="state_hidden">Gizli</string>
-    <string name="state_running">İşləyir</string>
     <string name="state_suspended">Dayandırılıb</string>
     <string name="state_uninstalled">Silinib</string>
     <string name="summary_background_activity">Hail açıq olmadıqda avtomatik dondurmanın davam etməsinə icazə ver</string>

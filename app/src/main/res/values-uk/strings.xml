@@ -10,7 +10,6 @@
     <string name="action_export_all">Експорт всіх</string>
     <string name="action_export_clipboard">Експорт в буфер обміну</string>
     <string name="action_export_current">Експорт видимий</string>
-    <string name="action_extract_apk">Витягти APK</string>
     <string name="action_freeze">Заморозити</string>
     <string name="action_freeze_all">Заморозити все</string>
     <string name="action_freeze_current">Заморозити видимі</string>
@@ -157,7 +156,6 @@
     <string name="xposed_description">Дозволити ізольованим застосункам запускати призупинені застосунки</string>
     <string name="working_mode_tag">Режим роботи пов’язаних застосунків</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="state_running">Запущено</string>
     <string name="state_disabled">Вимкнено</string>
     <string name="state_hidden">Приховано</string>
     <string name="state_suspended">Призупинено</string>

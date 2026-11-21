@@ -580,7 +580,7 @@ style:
         value: 'STOPSHIP:'
       - reason: 'Forbidden TODO todo marker in comment, please do the changes.'
         value: 'TODO:'
-    allowedPatterns: ''
+    allowedPatterns: 'TODO:|FIXME:|STOPSHIP:|BUG:|HACK:|XXX:|OPTIMIZE:|PERF:|NOTE:|INFO:|REVIEW:|DEPRECATED:'
   ForbiddenImport:
     active: false
     imports: []

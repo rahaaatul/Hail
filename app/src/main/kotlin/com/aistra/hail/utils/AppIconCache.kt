@@ -33,6 +33,7 @@ import kotlin.coroutines.CoroutineContext
  * Source
  * https://raw.githubusercontent.com/RikkaApps/Shizuku/master/manager/src/main/java/moe/shizuku/manager/utils/AppIconCache.kt
  */
+@Suppress("TooManyFunctions")
 object AppIconCache : CoroutineScope {
     private class AppIconLruCache constructor(
         maxSize: Int,
@@ -200,6 +201,28 @@ object AppIconCache : CoroutineScope {
         put(info.packageName, userId, size, bitmap)
         writeDisk(info, userId, size, bitmap)
         return bitmap
+    }
+
+    /**
+     * Suspend variant of [loadIconBitmapAsync] for Compose callers: loads (or returns the
+     * cached) icon bitmap without binding it to an ImageView. Returns null on failure.
+     */
+    suspend fun loadIconBitmap(
+        context: Context,
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+    ): Bitmap? {
+        if (shrinkNonAdaptiveIcons != HailData.synthesizeAdaptiveIcons) {
+            lruCache.evictAll()
+        }
+        return try {
+            withContext(dispatcher) { getOrLoadBitmap(context, info, userId, size) }
+        } catch (e: CancellationException) {
+            null
+        } catch (e: Throwable) {
+            null
+        }
     }
 
     @JvmStatic

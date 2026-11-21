@@ -37,7 +37,6 @@
     <string name="action_help">ヘルプ</string>
     <string name="action_search">検索</string>
     <string name="action_details">アプリ情報</string>
-    <string name="action_extract_apk">APK ファイルを抽出</string>
     <string name="action_uninstall">アンインストール</string>
     <string name="msg_uninstall">このアプリをアンインストールしますか？</string>
     <string name="working_mode">作業モード</string>
@@ -169,7 +168,6 @@
     <string name="save">Save</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>

@@ -175,6 +175,7 @@ private fun countSettingsItems(bytes: ByteArray): Int =
         SettingsBackup.parseFrom(bytes).let { settings ->
             listOf(
                 settings.hasSortBy(),
+                settings.sortDirectionsMap.isNotEmpty(),
                 settings.hasWorkingMode(),
                 settings.hasAppTheme(),
                 settings.hasIconPack(),
@@ -182,9 +183,12 @@ private fun countSettingsItems(bytes: ByteArray): Int =
                 settings.hasDynamicShortcutAction(),
                 settings.hasFilterUserApps(),
                 settings.hasFilterSystemApps(),
-                settings.hasFilterAllApps(),
-                settings.hasFilterFrozenApps(),
-                settings.hasFilterUnfrozenApps(),
+                settings.hasFilterEnabledApps(),
+                settings.hasFilterDisabledApps(),
+                settings.hasFilterSuspendedApps(),
+                settings.hasFilterHiddenApps(),
+                settings.hasFilterStoppedApps(),
+                settings.hasFilterUninstalledApps(),
                 settings.hasBiometricLogin(),
                 settings.hasGrayscaleIcon(),
                 settings.hasCompactIcon(),

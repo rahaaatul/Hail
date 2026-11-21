@@ -1,12 +1,12 @@
 package com.aistra.hail.app
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.SettingsBackup
@@ -23,11 +23,15 @@ import java.io.OutputStream
  */
 data class SettingsData(
     val sortBy: String = HailData.SORT_NAME,
+    val sortDirections: Map<String, Boolean> = emptyMap(),
     val filterUserApps: Boolean = true,
     val filterSystemApps: Boolean = false,
-    val filterAllApps: Boolean = true,
-    val filterFrozenApps: Boolean = true,
-    val filterUnfrozenApps: Boolean = true,
+    val filterEnabledApps: Boolean = true,
+    val filterDisabledApps: Boolean = true,
+    val filterSuspendedApps: Boolean = true,
+    val filterHiddenApps: Boolean = true,
+    val filterStoppedApps: Boolean = true,
+    val filterUninstalledApps: Boolean = false,
     val workingMode: String = HailData.MODE_DEFAULT,
     val biometricLogin: Boolean = false,
     val appTheme: String = HailData.FOLLOW_SYSTEM,
@@ -65,11 +69,15 @@ private fun <T> valueOrDefault(
 fun SettingsBackup.toSettingsData(): SettingsData =
     SettingsData(
         sortBy = valueOrDefault(hasSortBy(), sortBy, HailData.SORT_NAME),
+        sortDirections = sortDirectionsMap,
         filterUserApps = valueOrDefault(hasFilterUserApps(), filterUserApps, true),
         filterSystemApps = valueOrDefault(hasFilterSystemApps(), filterSystemApps, false),
-        filterAllApps = valueOrDefault(hasFilterAllApps(), filterAllApps, true),
-        filterFrozenApps = valueOrDefault(hasFilterFrozenApps(), filterFrozenApps, true),
-        filterUnfrozenApps = valueOrDefault(hasFilterUnfrozenApps(), filterUnfrozenApps, true),
+        filterEnabledApps = valueOrDefault(hasFilterEnabledApps(), filterEnabledApps, true),
+        filterDisabledApps = valueOrDefault(hasFilterDisabledApps(), filterDisabledApps, true),
+        filterSuspendedApps = valueOrDefault(hasFilterSuspendedApps(), filterSuspendedApps, true),
+        filterHiddenApps = valueOrDefault(hasFilterHiddenApps(), filterHiddenApps, true),
+        filterStoppedApps = valueOrDefault(hasFilterStoppedApps(), filterStoppedApps, true),
+        filterUninstalledApps = valueOrDefault(hasFilterUninstalledApps(), filterUninstalledApps, false),
         workingMode = valueOrDefault(hasWorkingMode(), workingMode, HailData.MODE_DEFAULT),
         biometricLogin = valueOrDefault(hasBiometricLogin(), biometricLogin, false),
         appTheme = valueOrDefault(hasAppTheme(), appTheme, HailData.FOLLOW_SYSTEM),
@@ -96,6 +104,7 @@ fun SettingsData.toSettingsBackup(): SettingsBackup =
     SettingsBackup
         .newBuilder()
         .setSortBy(sortBy)
+        .putAllSortDirections(sortDirections)
         .setWorkingMode(workingMode)
         .setAppTheme(appTheme)
         .setIconPack(iconPack)
@@ -103,9 +112,12 @@ fun SettingsData.toSettingsBackup(): SettingsBackup =
         .setDynamicShortcutAction(dynamicShortcutAction)
         .setFilterUserApps(filterUserApps)
         .setFilterSystemApps(filterSystemApps)
-        .setFilterAllApps(filterAllApps)
-        .setFilterFrozenApps(filterFrozenApps)
-        .setFilterUnfrozenApps(filterUnfrozenApps)
+        .setFilterEnabledApps(filterEnabledApps)
+        .setFilterDisabledApps(filterDisabledApps)
+        .setFilterSuspendedApps(filterSuspendedApps)
+        .setFilterHiddenApps(filterHiddenApps)
+        .setFilterStoppedApps(filterStoppedApps)
+        .setFilterUninstalledApps(filterUninstalledApps)
         .setBiometricLogin(biometricLogin)
         .setGrayscaleIcon(grayscaleIcon)
         .setCompactIcon(compactIcon)
@@ -194,7 +206,7 @@ private fun settingsFile(
  * Safe to call multiple times — DataStore writes are idempotent.
  */
 suspend fun migrateSettingsFromSharedPreferences() {
-    val sp = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    val sp = PreferenceManager.getDefaultSharedPreferences(app)
     val builder = SettingsBackup.newBuilder()
 
     sp.all.forEach { key, value ->
@@ -219,6 +231,7 @@ suspend fun migrateSettingsFromSharedPreferences() {
     SettingsDataStore.updateSettings {
         mergeFrom(builder.build())
     }
+    sp.edit().clear().apply()
 }
 
 private val stringSetters: Map<String, (SettingsBackup.Builder, String) -> Unit> =
@@ -235,9 +248,11 @@ private val booleanSetters: Map<String, (SettingsBackup.Builder, Boolean) -> Uni
     mapOf(
         HailData.FILTER_USER_APPS to { builder, value -> builder.setFilterUserApps(value) },
         HailData.FILTER_SYSTEM_APPS to { builder, value -> builder.setFilterSystemApps(value) },
-        HailData.FILTER_ALL_APPS to { builder, value -> builder.setFilterAllApps(value) },
-        HailData.FILTER_FROZEN_APPS to { builder, value -> builder.setFilterFrozenApps(value) },
-        HailData.FILTER_UNFROZEN_APPS to { builder, value -> builder.setFilterUnfrozenApps(value) },
+        HailData.FILTER_ENABLED_APPS to { builder, value -> builder.setFilterEnabledApps(value) },
+        HailData.FILTER_DISABLED_APPS to { builder, value -> builder.setFilterDisabledApps(value) },
+        HailData.FILTER_SUSPENDED_APPS to { builder, value -> builder.setFilterSuspendedApps(value) },
+        HailData.FILTER_HIDDEN_APPS to { builder, value -> builder.setFilterHiddenApps(value) },
+        HailData.FILTER_STOPPED_APPS to { builder, value -> builder.setFilterStoppedApps(value) },
         HailData.BIOMETRIC_LOGIN to { builder, value -> builder.setBiometricLogin(value) },
         HailData.GRAYSCALE_ICON to { builder, value -> builder.setGrayscaleIcon(value) },
         HailData.COMPACT_ICON to { builder, value -> builder.setCompactIcon(value) },
@@ -279,8 +294,3 @@ private fun setFloatField(
 ) {
     floatSetters[key]?.invoke(builder, value)
 }
-
-/**
- * SharedPreferences file name used by HailData prior to DataStore migration.
- */
-private const val PREFS_NAME = "hail_preferences"

@@ -24,7 +24,6 @@
     <string name="action_export_all">全部匯出</string>
     <string name="action_export_clipboard">匯出至剪貼板</string>
     <string name="action_export_current">匯出可見</string>
-    <string name="action_extract_apk">解出 APK</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">凍結</string>
     <string name="action_freeze_all">全部凍結</string>
@@ -154,7 +153,6 @@
     <string name="sort_update">最近更新</string>
     <string name="state_disabled">已停用</string>
     <string name="state_hidden">已隱藏</string>
-    <string name="state_running">運行中</string>
     <string name="state_suspended">已暫停</string>
     <string name="state_uninstalled">已解除安裝</string>
     <string name="summary_background_activity">允許 Hail 未開啟時自動凍結繼續運行</string>

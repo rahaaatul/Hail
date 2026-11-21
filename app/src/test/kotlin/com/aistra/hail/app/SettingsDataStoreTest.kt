@@ -2,9 +2,11 @@ package com.aistra.hail.app
 
 import android.content.Context
 import androidx.datastore.core.CorruptionException
+import androidx.preference.PreferenceManager
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.SettingsBackup
+import com.google.protobuf.CodedOutputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -47,9 +49,12 @@ class SettingsDataStoreTest {
                     .setDynamicShortcutAction(HailData.ACTION_NONE)
                     .setFilterUserApps(false)
                     .setFilterSystemApps(true)
-                    .setFilterAllApps(false)
-                    .setFilterFrozenApps(true)
-                    .setFilterUnfrozenApps(false)
+                    .setFilterEnabledApps(true)
+                    .setFilterDisabledApps(false)
+                    .setFilterSuspendedApps(true)
+                    .setFilterHiddenApps(false)
+                    .setFilterStoppedApps(true)
+                    .setFilterUninstalledApps(true)
                     .setBiometricLogin(true)
                     .setGrayscaleIcon(false)
                     .setCompactIcon(true)
@@ -71,6 +76,38 @@ class SettingsDataStoreTest {
             val restored = SettingsSerializer.readFrom(input)
 
             assertEquals(original, restored)
+        }
+
+    @Test
+    fun `SettingsSerializer reads a stream written with the released tag numbers`() =
+        runBlocking {
+            // Tags are the released 1.12.0.x numbers. Protobuf matches by tag, so this
+            // stream only decodes correctly while they keep their original meaning.
+            val out = ByteArrayOutputStream()
+            val coded = CodedOutputStream.newInstance(out)
+            coded.writeString(1, HailData.SORT_INSTALL)
+            coded.writeBool(7, false)
+            coded.writeBool(9, false) // retired filter_all_apps: unknown, must be ignored
+            coded.writeBool(12, true)
+            coded.writeBool(13, false)
+            coded.writeFloat(22, 18f)
+            coded.writeFloat(23, 2.5f)
+            coded.flush()
+
+            val data =
+                SettingsSerializer
+                    .readFrom(ByteArrayInputStream(out.toByteArray()))
+                    .toSettingsData()
+
+            assertEquals(HailData.SORT_INSTALL, data.sortBy)
+            assertFalse(data.filterUserApps)
+            assertTrue(data.biometricLogin)
+            assertFalse(data.grayscaleIcon)
+            assertEquals(18f, data.homeFontSize, 0.001f)
+            assertEquals(2.5f, data.autoFreezeDelay, 0.001f)
+            // The retired bool at tag 9 must not become filter_enabled_apps at tag 24:
+            // a false there would otherwise flip this default-true filter to false.
+            assertTrue(data.filterEnabledApps)
         }
 
     @Test
@@ -102,6 +139,7 @@ class SettingsDataStoreTest {
             SettingsBackup
                 .newBuilder()
                 .setSortBy(HailData.SORT_INSTALL)
+                .putSortDirections(HailData.SORT_SIZE, false)
                 .setFilterUserApps(false)
                 .setHomeFontSize(20f)
                 .build()
@@ -109,7 +147,9 @@ class SettingsDataStoreTest {
         val data = backup.toSettingsData()
 
         assertEquals(HailData.SORT_INSTALL, data.sortBy)
+        assertEquals(mapOf(HailData.SORT_SIZE to false), data.sortDirections)
         assertFalse(data.filterUserApps)
+        assertFalse(data.filterUninstalledApps)
         assertEquals(20f, data.homeFontSize, 0.001f)
         assertEquals(HailData.MODE_DEFAULT, data.workingMode)
         assertFalse(data.filterSystemApps)
@@ -124,11 +164,15 @@ class SettingsDataStoreTest {
         val data =
             SettingsData(
                 sortBy = HailData.SORT_INSTALL,
+                sortDirections = mapOf(HailData.SORT_NAME to false, HailData.SORT_SIZE to true),
                 filterUserApps = false,
                 filterSystemApps = true,
-                filterAllApps = false,
-                filterFrozenApps = false,
-                filterUnfrozenApps = false,
+                filterEnabledApps = true,
+                filterDisabledApps = false,
+                filterSuspendedApps = true,
+                filterHiddenApps = false,
+                filterStoppedApps = true,
+                filterUninstalledApps = true,
                 workingMode = HailData.MODE_SHIZUKU_HIDE,
                 biometricLogin = true,
                 appTheme = HailData.THEME_LIGHT,
@@ -152,10 +196,30 @@ class SettingsDataStoreTest {
 
         assertTrue(backup.hasSortBy())
         assertEquals(HailData.SORT_INSTALL, backup.sortBy)
+        assertEquals(
+            mapOf(HailData.SORT_NAME to false, HailData.SORT_SIZE to true),
+            backup.sortDirectionsMap,
+        )
+        assertBackupFields(backup)
+    }
+
+    private fun assertBackupFields(backup: SettingsBackup) {
         assertTrue(backup.hasFilterUserApps())
         assertFalse(backup.filterUserApps)
         assertTrue(backup.hasFilterSystemApps())
         assertTrue(backup.filterSystemApps)
+        assertTrue(backup.hasFilterEnabledApps())
+        assertTrue(backup.filterEnabledApps)
+        assertTrue(backup.hasFilterDisabledApps())
+        assertFalse(backup.filterDisabledApps)
+        assertTrue(backup.hasFilterSuspendedApps())
+        assertTrue(backup.filterSuspendedApps)
+        assertTrue(backup.hasFilterHiddenApps())
+        assertFalse(backup.filterHiddenApps)
+        assertTrue(backup.hasFilterStoppedApps())
+        assertTrue(backup.filterStoppedApps)
+        assertTrue(backup.hasFilterUninstalledApps())
+        assertTrue(backup.filterUninstalledApps)
         assertTrue(backup.hasWorkingMode())
         assertEquals(HailData.MODE_SHIZUKU_HIDE, backup.workingMode)
         assertTrue(backup.hasBiometricLogin())
@@ -173,7 +237,7 @@ class SettingsDataStoreTest {
     @Test
     fun `migrateSettingsFromSharedPreferences migrates string boolean float values`() =
         runBlocking {
-            val sp = context.getSharedPreferences("hail_preferences", Context.MODE_PRIVATE)
+            val sp = PreferenceManager.getDefaultSharedPreferences(context)
             sp
                 .edit()
                 .putString(HailData.SORT_BY, HailData.SORT_INSTALL)
@@ -188,5 +252,6 @@ class SettingsDataStoreTest {
             assertEquals(HailData.SORT_INSTALL, settings.sortBy)
             assertFalse(settings.filterUserApps)
             assertEquals(18f, settings.homeFontSize, 0.001f)
+            assertTrue(sp.all.isEmpty())
         }
 }

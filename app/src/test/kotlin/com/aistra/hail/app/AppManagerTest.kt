@@ -61,13 +61,13 @@ class AppManagerTest {
     fun `uninstallApp returns false and starts delete intent when no handler matches`() {
         every { HailData.workingMode } returns HailData.MODE_DEFAULT
         val result = AppManager.uninstallApp("com.example.pkg")
-        assertFalse(result)
+        assertFalse(result.first)
     }
 
     @Test
     fun `reinstallApp returns false when mode not SU or SHIZUKU`() {
         every { HailData.workingMode } returns HailData.MODE_DEFAULT
-        assertFalse(AppManager.reinstallApp("com.example.pkg"))
+        assertFalse(AppManager.reinstallApp("com.example.pkg").first)
     }
 
     @Test

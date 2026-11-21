@@ -30,7 +30,6 @@
     <string name="action_unfreeze_current">Dégeler les applications sélectionnées</string>
     <string name="action_launch">Démarrer</string>
     <string name="action_tag_add">Ajouter une étiquette</string>
-    <string name="action_extract_apk">Extraire l\'APK</string>
     <string name="working_mode">Mode de travail</string>
     <string name="action_tag_remove">Retirer l\'étiquette</string>
     <string name="icon_pack">Pack d\'icônes</string>

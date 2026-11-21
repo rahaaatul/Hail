@@ -27,7 +27,6 @@
     <string name="action_import_clipboard">Importovat ze schránky</string>
     <string name="action_remove_home">Odebrat z domů</string>
     <string name="action_undo">Zpátky</string>
-    <string name="action_extract_apk">Extrahovat APK</string>
     <string name="msg_uninstall">Chceš odinstalovat tuto aplikaci?</string>
     <string name="working_mode">Režim fungování</string>
     <string name="mode_default">Nečinná</string>
@@ -161,7 +160,6 @@
     <string name="sort_update">Poslední aktualizace</string>
     <string name="state_disabled">Deaktivováno</string>
     <string name="state_hidden">Skryté</string>
-    <string name="state_running">Běží</string>
     <string name="state_suspended">Suspendováno</string>
     <string name="state_uninstalled">Odinstalováno</string>
     <string name="summary_background_activity">Povolit pokračování automatického zmrazení, když Hail není otevřen</string>
