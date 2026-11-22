@@ -240,6 +240,9 @@ object AppMetaCache {
                     installedApplications[packageName] = info
                 }
                 labelLoadPermits.withPermit { loadIfStale(packageName, info) }
+                // The icon memory LRU is keyed only by package/user/size, so a reinstall would
+                // keep serving the "missing APK" icon; the disk key already carries the signature.
+                AppIconCache.invalidate(packageName)
                 // Persist the single re-derived row: a process death must not resurrect the stale
                 // Room entry for a package that was uninstalled or changed while we were stopped.
                 cache[packageName]?.let { entry ->
