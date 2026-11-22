@@ -18,6 +18,7 @@ class AppInfo(
         HIDDEN,
         STOPPED,
         UNINSTALLED,
+        UNKNOWN,
         ;
 
         /** True when the app is present but not runnable — disabled or otherwise held by the system. */
@@ -25,18 +26,14 @@ class AppInfo(
             get() =
                 when (this) {
                     DISABLED, SUSPENDED, HIDDEN, STOPPED -> true
-                    NOT_FOUND, ENABLED, UNINSTALLED -> false
+                    NOT_FOUND, ENABLED, UNINSTALLED, UNKNOWN -> false
                 }
     }
 
     val applicationInfo: ApplicationInfo? get() = HPackages.getApplicationInfoOrNull(packageName)
-    val name get() = AppMetaCache.get(packageName)?.name ?: packageName
-    val isInstalled get() = AppMetaCache.get(packageName)?.installed ?: (applicationInfo != null)
-    val state get() =
-        AppMetaCache.get(packageName)?.state ?: when {
-            applicationInfo == null -> State.NOT_FOUND
-            else -> State.ENABLED
-        }
+    val name get() = AppMetaCache.displayName(packageName)
+    val isInstalled get() = HPackages.isInstalled(packageName)
+    val state get() = AppMetaCache.get(packageName)?.state ?: State.UNKNOWN
 
     override fun equals(other: Any?): Boolean = other is AppInfo && other.packageName == packageName
 

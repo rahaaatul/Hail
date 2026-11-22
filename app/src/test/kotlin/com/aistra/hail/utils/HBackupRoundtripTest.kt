@@ -1,15 +1,20 @@
 package com.aistra.hail.utils
 
 import android.content.Context
+import androidx.room3.Room
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailDataStore
 import com.aistra.hail.app.SettingsDataStore
 import com.aistra.hail.backup.BackupOptions
 import com.aistra.hail.backup.RestoreOptions
 import com.aistra.hail.backup.SettingsBackup
+import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.AppMetadataDatabase
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -31,6 +36,7 @@ import java.util.zip.ZipOutputStream
 @Config(application = HailApp::class)
 class HBackupRoundtripTest {
     private lateinit var context: Context
+    private lateinit var db: AppMetadataDatabase
 
     @Before
     fun setUp() {
@@ -43,8 +49,23 @@ class HBackupRoundtripTest {
         dir.mkdirs()
         File(dir, "apps.json").writeText("[]")
         File(dir, "tags.json").writeText("[]")
-        HailData.checkedList.clear()
-        HailData.tags.clear()
+        // Room is canonical for checked apps and tags, so each test gets its own in-memory store.
+        db =
+            Room
+                .inMemoryDatabaseBuilder(context, AppMetadataDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
+        AppMetaCache.useDatabaseForTest(db)
+        HailDataStore.resetForTest()
+    }
+
+    @After
+    fun tearDown() {
+        // saveApps()/saveTags() are fire-and-forget; wait for the pending write before the
+        // in-memory database is closed so a late write cannot outlive the test.
+        runBlocking { HailData.flush() }
+        AppMetaCache.useDatabaseForTest(null)
+        db.close()
     }
 
     @Test
@@ -91,6 +112,95 @@ class HBackupRoundtripTest {
             assertEquals(2, HailData.tags.size)
             assertTrue(HailData.tags.any { it.first == "Work" && it.second == 1 })
             assertTrue(HailData.tags.any { it.first == "Personal" && it.second == 3 })
+
+            outputFile.delete()
+        }
+
+    @Test
+    fun `restore writes pinned whitelisted and tag ids to room`() =
+        runTest {
+            HailData.checkedList.add(AppInfo("com.example.one", tagIdList = mutableListOf(1, 3)))
+            HailData.checkedList.add(
+                AppInfo(
+                    packageName = "com.example.two",
+                    pinned = true,
+                    whitelisted = true,
+                    tagIdList = mutableListOf(3),
+                ),
+            )
+            HailData.tags.add("Work" to 1)
+            HailData.tags.add("Play" to 3)
+            HailData.flush()
+
+            val outputFile = File(context.cacheDir, "room-${System.currentTimeMillis()}.hail")
+            assertTrue(
+                backup(
+                    context,
+                    outputFile,
+                    BackupOptions(apps = true, tags = true, actions = true, settings = true, whitelist = true),
+                ).isSuccess,
+            )
+
+            // Drop the snapshot so the restore has to come from the archive, not from memory.
+            HailDataStore.resetSnapshotForTest()
+            HailData.checkedList.clear()
+            HailData.tags.clear()
+
+            assertTrue(
+                restore(
+                    context,
+                    outputFile,
+                    RestoreOptions(apps = true, tags = true, actions = true, settings = true, whitelist = true),
+                ).isSuccess,
+            )
+            // No HailData.flush() here: restore() must persist the rows before returning success.
+
+            val apps = db.checkedAppDao().loadAll().associateBy { it.packageName }
+            assertEquals(2, apps.size)
+            assertEquals("1,3", apps.getValue("com.example.one").tagIds)
+            val two = apps.getValue("com.example.two")
+            assertTrue(two.pinned)
+            assertTrue(two.whitelisted)
+            assertEquals("3", two.tagIds)
+            assertEquals(listOf(1, 3), db.tagDao().loadAll().map { it.id })
+
+            outputFile.delete()
+        }
+
+    @Test
+    fun `restore persists checked apps and tags across a snapshot reload`() =
+        runTest {
+            HailData.checkedList.add(AppInfo("com.example.one", tagIdList = mutableListOf(1)))
+            HailData.tags.add("Work" to 1)
+            HailData.flush()
+
+            val outputFile = File(context.cacheDir, "durable-${System.currentTimeMillis()}.hail")
+            assertTrue(
+                backup(
+                    context,
+                    outputFile,
+                    BackupOptions(apps = true, tags = true, actions = true, settings = true, whitelist = true),
+                ).isSuccess,
+            )
+
+            HailDataStore.resetSnapshotForTest()
+            HailData.checkedList.clear()
+            HailData.tags.clear()
+
+            assertTrue(
+                restore(
+                    context,
+                    outputFile,
+                    RestoreOptions(apps = true, tags = true, actions = true, settings = true, whitelist = true),
+                ).isSuccess,
+            )
+
+            // No HailData.flush(): if restore() only scheduled the write, the rows would be gone
+            // once the snapshot is dropped and reloaded from Room.
+            HailDataStore.resetSnapshotForTest()
+
+            assertEquals(listOf("com.example.one"), HailData.checkedList.map { it.packageName })
+            assertEquals(listOf("Work" to 1), HailData.tags)
 
             outputFile.delete()
         }

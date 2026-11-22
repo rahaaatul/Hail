@@ -5,8 +5,12 @@ import android.app.UiModeManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.LauncherApps
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.StrictMode
+import android.os.UserHandle
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
@@ -40,13 +44,23 @@ class HailApp : Application() {
             )
         }
         AppMetaCache.warmUp()
+        HailData.warmUp()
+        // Registered for the whole process lifetime so cache invalidation happens regardless of
+        // which tab is visible (a data-only uninstall must disappear from Home even from Apps).
+        (getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps)
+            ?.registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
         DirtyDataUpdater.update(app)
         applicationScope.launch { migrateSettingsFromSharedPreferences() }
 
         // Observe working_mode changes from Proto DataStore and sync root shell.
         applicationScope.launch {
             withContext(Dispatchers.Main) {
+                var lastWorkingMode = HailData.workingMode
                 HailData.settingsData.collect { settings ->
+                    if (settings.workingMode != lastWorkingMode) {
+                        lastWorkingMode = settings.workingMode
+                        syncRootShell()
+                    }
                     if (settings.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
                 }
             }
@@ -69,7 +83,7 @@ class HailApp : Application() {
         val start =
             autoFreezeAfterLock &&
                 HailData.checkedList.any {
-                    it.packageName != packageName && it.applicationInfo != null && !AppManager.isAppFrozen(it.packageName) && !it.whitelisted
+                    it.packageName != packageName && it.isInstalled && !AppManager.isAppFrozen(it.packageName) && !it.whitelisted
                 }
         val intent = Intent(app, AutoFreezeService::class.java)
         if (start) {
@@ -80,6 +94,60 @@ class HailApp : Application() {
             setAutoFreezeServiceEnabled(false)
         }
     }
+
+    private val launcherAppsCallback =
+        object : LauncherApps.Callback() {
+            override fun onPackageAdded(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackageRemoved(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackageChanged(
+                packageName: String,
+                user: UserHandle,
+            ) {
+                AppMetaCache.invalidatePackage(packageName)
+            }
+
+            override fun onPackagesAvailable(
+                packageNames: Array<String>,
+                user: UserHandle,
+                available: Boolean,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesUnavailable(
+                packageNames: Array<String>,
+                user: UserHandle,
+                available: Boolean,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesSuspended(
+                packageNames: Array<String>,
+                user: UserHandle,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+
+            override fun onPackagesUnsuspended(
+                packageNames: Array<String>,
+                user: UserHandle,
+            ) {
+                packageNames.forEach { AppMetaCache.invalidatePackage(it) }
+            }
+        }
 
     fun setAutoFreezeServiceEnabled(enabled: Boolean) {
         packageManager.setComponentEnabledSetting(

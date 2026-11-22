@@ -334,19 +334,22 @@ class ApiActivity : ComponentActivity() {
     ) {
         val filtered =
             list.filter { AppManager.isAppFrozen(it.packageName) != frozen && !(skipWhitelisted && it.whitelisted) }
-        when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
-            null -> {
-                throw IllegalStateException(getString(R.string.permission_denied))
-            }
-
-            else -> {
-                HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
-                    result,
-                )
-                app.setAutoFreezeService()
-            }
+        val result = AppManager.setListFrozen(frozen, filtered.map { it.packageName })
+        val anyExisting = filtered.any { it.applicationInfo != null }
+        if (result.total > 0 && result.succeeded == 0 && anyExisting) {
+            throw IllegalStateException(getString(R.string.permission_denied))
         }
+        val message =
+            if (result.total == 1 && result.succeeded == 1) {
+                filtered.firstOrNull()?.name ?: result.succeeded.toString()
+            } else {
+                result.succeeded.toString()
+            }
+        HUI.showToast(
+            if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
+            message,
+        )
+        app.setAutoFreezeService()
     }
 
     private fun lockScreen(freezeAll: Boolean) {

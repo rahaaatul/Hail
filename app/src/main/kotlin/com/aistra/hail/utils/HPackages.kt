@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
 import com.aistra.hail.HailApp.Companion.app
 import org.lsposed.hiddenapibypass.HiddenApiBypass
+import java.io.File
 
 object HPackages {
     val myUserId get() =
@@ -88,9 +89,17 @@ object HPackages {
             }
         } ?: false
 
-    fun isAppUninstalled(packageName: String): Boolean =
-        getApplicationInfoOrNull(packageName)?.run { flags and ApplicationInfo.FLAG_INSTALLED != ApplicationInfo.FLAG_INSTALLED }
-            ?: true
+    fun isInstalled(packageName: String): Boolean {
+        val info = getApplicationInfoOrNull(packageName, 0)
+        // FLAG_INSTALLED alone is not enough: Android keeps reporting installed=true for the user
+        // even when the APK is gone (e.g. `pm uninstall -k` then a manual data wipe), so require
+        // the sourceDir file to still exist. A null sourceDir means a code-less package.
+        return info != null &&
+            info.flags and ApplicationInfo.FLAG_INSTALLED != 0 &&
+            (info.sourceDir == null || File(info.sourceDir).exists())
+    }
+
+    fun isAppUninstalled(packageName: String): Boolean = isInstalled(packageName).not()
 
     fun isPrivilegedApp(packageName: String): Boolean =
         getApplicationInfoOrNull(packageName)?.let {

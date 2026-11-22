@@ -161,6 +161,18 @@ object AppIconCache : CoroutineScope {
         }
     }
 
+    /**
+     * Drops the in-memory icons of [packageName] so the next load re-reads the current APK.
+     * The disk key already includes the APK source signature; only the memory key is coarse.
+     */
+    fun invalidate(packageName: String) {
+        lruCache
+            .snapshot()
+            .keys
+            .filter { it.first == packageName }
+            .forEach { lruCache.remove(it) }
+    }
+
     fun prefetch(
         context: Context,
         applications: Collection<ApplicationInfo>,

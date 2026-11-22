@@ -4,7 +4,6 @@ import android.content.Intent
 import com.aistra.hail.BuildConfig
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
-import com.aistra.hail.utils.HIsland
 import com.aistra.hail.utils.HPackages
 import com.aistra.hail.utils.HPolicy
 import com.aistra.hail.utils.HShell
@@ -49,68 +48,41 @@ object AppManager {
             }
         }
 
+    internal fun batchFreeze(
+        frozen: Boolean,
+        packages: Collection<String>,
+        freeze: (String, Boolean) -> Boolean,
+    ): BatchResult {
+        val failed = packages.filterNot { freeze(it, frozen) }
+        return BatchResult(
+            total = packages.size,
+            succeeded = packages.size - failed.size,
+            failed = failed,
+        )
+    }
+
     fun setListFrozen(
         frozen: Boolean,
-        vararg appInfo: AppInfo,
-    ): String? {
-        val excludeMe = appInfo.filter { it.packageName != BuildConfig.APPLICATION_ID }
-        var i = 0
-        var denied = false
-        var name = String()
-        when (HailData.workingMode) {
-            // call setListFrozen for some batch-style working mode here
-            // fallback to setAppFrozen otherwise
-            else -> {
-                excludeMe.forEach {
-                    when {
-                        setAppFrozen(it.packageName, frozen) -> {
-                            i++
-                            name = it.name
-                        }
-
-                        it.applicationInfo != null -> {
-                            denied = true
-                        }
-                    }
-                }
-            }
-        }
-        return if (denied && i == 0) {
-            null
-        } else if (i == 1) {
-            name
-        } else {
-            i.toString()
-        }
+        packages: Collection<String>,
+    ): BatchResult {
+        val targets = packages.filter { it != BuildConfig.APPLICATION_ID }
+        val result = batchFreeze(frozen, targets, ::setAppFrozenInternal)
+        if (result.succeeded > 0) AppMetaCache.invalidateState(targets)
+        return result
     }
 
     fun setAppFrozen(
         packageName: String,
         frozen: Boolean,
     ): Boolean =
-        packageName != BuildConfig.APPLICATION_ID &&
-            when (HailData.workingMode) {
-                HailData.MODE_OWNER_HIDE -> HPolicy.setAppHidden(packageName, frozen)
-                HailData.MODE_OWNER_SUSPEND -> HPolicy.setAppSuspended(packageName, frozen)
-                HailData.MODE_DHIZUKU_HIDE -> HDhizuku.setAppHidden(packageName, frozen)
-                HailData.MODE_DHIZUKU_SUSPEND -> HDhizuku.setAppSuspended(packageName, frozen)
-                HailData.MODE_SU_STOP -> !frozen || forceStopApp(packageName)
-                HailData.MODE_SU_DISABLE -> HShell.setAppDisabled(packageName, frozen)
-                HailData.MODE_SU_HIDE -> HShell.setAppHidden(packageName, frozen)
-                HailData.MODE_SU_SUSPEND -> HShell.setAppSuspended(packageName, frozen)
-                HailData.MODE_SHIZUKU_STOP -> !frozen || forceStopApp(packageName)
-                HailData.MODE_SHIZUKU_DISABLE -> HShizuku.setAppDisabled(packageName, frozen)
-                HailData.MODE_SHIZUKU_HIDE -> HShizuku.setAppHidden(packageName, frozen)
-                HailData.MODE_SHIZUKU_SUSPEND -> HShizuku.setAppSuspended(packageName, frozen)
-                HailData.MODE_ISLAND_HIDE -> HIsland.setAppHidden(packageName, frozen)
-                HailData.MODE_ISLAND_SUSPEND -> HIsland.setAppSuspended(packageName, frozen)
-                HailData.MODE_PRIVAPP_STOP -> !frozen || forceStopApp(packageName)
-                HailData.MODE_PRIVAPP_DISABLE, HailData.MODE_JAILBREAK_DISABLE -> HPackages.setAppDisabled(packageName, frozen)
-                else -> false
-            }.let { result ->
-                if (result) AppMetaCache.invalidateState(listOf(packageName))
-                result
-            }
+        setAppFrozenInternal(packageName, frozen).also {
+            if (it) AppMetaCache.invalidateState(listOf(packageName))
+        }
+
+    private fun setAppFrozenInternal(
+        packageName: String,
+        frozen: Boolean,
+    ): Boolean = AppFrozenDispatch.setAppFrozen(packageName, frozen)
 
 // TODO: replace the pm/cmd shell calls below with a libsu RootService (root) and a
     // ShizukuBinderWrapper (Shizuku) that call IPackageManager.deletePackageAsUser /

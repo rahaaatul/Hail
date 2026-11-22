@@ -8,11 +8,9 @@ import androidx.sqlite.execSQL
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppInfo
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,14 +51,34 @@ object AppMetaCache {
 
     // A cache-ready gate that never completes must not hang prefetch indefinitely.
     private const val CACHE_READY_TIMEOUT_MS = 5_000L
-    private val database by lazy {
+
+    // Named so the migration versions read as a version pair rather than two bare integers.
+    private const val DB_VERSION_6 = 6
+    private const val DB_VERSION_7 = 7
+
+    // Tests swap in an in-memory database; production always uses the lazy builder below.
+    private var databaseOverride: AppMetadataDatabase? = null
+
+    private val databaseDelegate by lazy {
         Room
             .databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-            .build()
+            .addMigrations(
+                MIGRATION_1_2,
+                MIGRATION_2_3,
+                MIGRATION_3_4,
+                MIGRATION_4_5,
+                MIGRATION_5_6,
+                MIGRATION_6_7,
+            ).build()
     }
 
+    private val database: AppMetadataDatabase get() = databaseOverride ?: databaseDelegate
+
     internal fun database(): AppMetadataDatabase = database
+
+    internal fun useDatabaseForTest(database: AppMetadataDatabase?) {
+        databaseOverride = database
+    }
 
     private val scope = HailApp.app.applicationScope
     private val revisionState = MutableStateFlow(0L)
@@ -76,17 +94,20 @@ object AppMetaCache {
 
     fun get(packageName: String): Entry? = cache[packageName]
 
-    fun cachedPackageNames(): List<String> = cache.values.filter { it.installed }.map { it.packageName }
+    /**
+     * The best available display name for [packageName].
+     *
+     * A broken install record can cache the application class name (or the package name itself) as
+     * its label, which renders as a developer-facing string. Fall back to the package name in that
+     * case so the row stays readable.
+     */
+    fun displayName(packageName: String): String {
+        val name = get(packageName)?.name ?: return packageName
+        return name.takeIf { it.isNotBlank() && it != packageName && !it.startsWith("$packageName.") }
+            ?: packageName
+    }
 
     fun cachedApplications(): List<ApplicationInfo> = installedApplications.values.toList()
-
-    fun cachedDisplayApplications(): List<ApplicationInfo> =
-        cache.values.filter { it.installed }.map { entry ->
-            ApplicationInfo().apply {
-                packageName = entry.packageName
-                flags = entry.flags
-            }
-        }
 
     private suspend fun loadDatabaseIntoCache() {
         runCatching {
@@ -120,11 +141,16 @@ object AppMetaCache {
                 }.awaitAll()
             val toRemoveLocks = packageLocks.keys.filterNot { it in newPackageMap.keys }
             toRemoveLocks.forEach { packageLocks.remove(it) }
-            persist(newPackageMap.keys)
+            val removed = cache.keys.filterNot { it in newPackageMap.keys }
+            removed.forEach { packageName ->
+                cache.computeIfPresent(packageName) { _, entry ->
+                    entry.copy(installed = false, state = AppInfo.State.NOT_FOUND)
+                }
+            }
+            if (removed.isNotEmpty()) revisionState.value++
+            persist()
             AppIconCache.prefetch(HailApp.app, applicationInfo)
         }
-
-    fun refreshInstalled(): Job = prefetch(HPackages.getInstalledApplications())
 
     /**
      * Lazily hydrate a single app's metadata, called from the grid as rows become visible.
@@ -142,10 +168,9 @@ object AppMetaCache {
     }
 
     suspend fun getInstalledApplicationsCacheFirst(forceRefresh: Boolean = false): List<ApplicationInfo> {
-        val cached = cachedApplications()
-        if (cached.isNotEmpty() && !forceRefresh) return cached
-        if (!forceRefresh && cache.isNotEmpty()) return cachedDisplayApplications()
-        val refreshed = HPackages.getInstalledApplications()
+        cachedApplications().takeIf { it.isNotEmpty() && !forceRefresh }?.let { return it }
+        val refreshed = withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }
+        // State is re-derived asynchronously; callers render UNKNOWN until the revision bumps.
         prefetch(refreshed)
         return refreshed
     }
@@ -173,17 +198,30 @@ object AppMetaCache {
                 }.awaitAll()
             val toRemove = packageLocks.keys.filterNot { it in installedPackages }
             toRemove.forEach { packageLocks.remove(it) }
-            persist(installedPackages)
+            persist()
             AppIconCache.prefetch(HailApp.app, applicationInfo)
         }
 
+    /**
+     * Re-derives the cached and persisted state of [packageNames] from PackageManager.
+     *
+     * Runs on [scope] because the binder queries must not block the caller, and writes the delta to
+     * Room so the corrected state survives a process death.
+     */
     fun invalidateState(packageNames: Collection<String>) {
-        packageNames.forEach { packageName ->
-            cache.computeIfPresent(packageName) { _, entry ->
-                entry.copy(state = readState(packageName))
-            }
+        scope.launch {
+            val changed =
+                withContext(Dispatchers.IO) {
+                    packageNames.mapNotNull { packageName ->
+                        val info = HPackages.getApplicationInfoOrNull(packageName)
+                        cache.computeIfPresent(packageName) { _, entry ->
+                            entry.withFreshState(info)
+                        }
+                    }
+                }
+            if (changed.isNotEmpty()) runCatching { database.appMetadataDao().upsertAll(changed.map { it.toEntity() }) }
+            revisionState.value++
         }
-        revisionState.value++
     }
 
     /**
@@ -202,14 +240,16 @@ object AppMetaCache {
                     installedApplications[packageName] = info
                 }
                 labelLoadPermits.withPermit { loadIfStale(packageName, info) }
+                // The icon memory LRU is keyed only by package/user/size, so a reinstall would
+                // keep serving the "missing APK" icon; the disk key already carries the signature.
+                AppIconCache.invalidate(packageName)
+                // Persist the single re-derived row: a process death must not resurrect the stale
+                // Room entry for a package that was uninstalled or changed while we were stopped.
+                cache[packageName]?.let { entry ->
+                    runCatching { database.appMetadataDao().upsertAll(listOf(entry.toEntity())) }
+                }
             }
         }
-
-    fun invalidateAll() {
-        cache.clear()
-        packageLocks.clear()
-        revisionState.value++
-    }
 
     private suspend fun loadIfStale(
         packageName: String,
@@ -227,9 +267,9 @@ object AppMetaCache {
                 ).joinToString(":")
             val current = cache[packageName]
             if (info != null && current?.sourceSignature == sourceSignature) {
-                val newState = readState(packageName, info)
-                if (current.state != newState) {
-                    cache[packageName] = current.copy(state = newState)
+                val updated = current.withFreshState(info)
+                if (updated != current) {
+                    cache[packageName] = updated
                     revisionState.value++
                 }
                 return
@@ -247,8 +287,8 @@ object AppMetaCache {
                         lastUpdateTime = packageInfo?.lastUpdateTime ?: 0L,
                         flags = info.flags,
                         enabled = info.enabled,
-                        installed = true,
-                        state = readState(packageName, info),
+                        installed = installedFrom(info),
+                        state = stateFrom(info),
                         sourceSignature = sourceSignature,
                     )
                 }
@@ -257,18 +297,35 @@ object AppMetaCache {
         }
     }
 
-    private fun readState(
-        packageName: String,
-        info: ApplicationInfo? = null,
-    ): AppInfo.State {
-        val appInfo = info ?: HPackages.getApplicationInfoOrNull(packageName)
-        if (appInfo == null) return AppInfo.State.NOT_FOUND
+    internal fun installedFrom(info: ApplicationInfo?): Boolean {
+        // Mirrors HPackages.isInstalled: a broken record keeps FLAG_INSTALLED but its APK is gone.
+        return info != null &&
+            info.flags and ApplicationInfo.FLAG_INSTALLED != 0 &&
+            (info.sourceDir == null || File(info.sourceDir).exists())
+    }
+
+    /**
+     * Re-derives every flag-derived field of an entry, including `enabled`.
+     *
+     * `state` alone cannot detect an enable/disable toggle: it does not change sourceDir, APK mtime
+     * or lastUpdateTime, so the source signature still matches and a copy that only refreshes
+     * state/installed would leave `enabled` stale forever.
+     */
+    internal fun Entry.withFreshState(info: ApplicationInfo?): Entry =
+        copy(
+            installed = installedFrom(info),
+            state = stateFrom(info),
+            enabled = info?.enabled ?: false,
+        )
+
+    internal fun stateFrom(info: ApplicationInfo?): AppInfo.State {
+        if (info == null) return AppInfo.State.NOT_FOUND
         return when {
-            appInfo.flags and ApplicationInfo.FLAG_INSTALLED == 0 -> AppInfo.State.UNINSTALLED
-            isSuspended(appInfo) -> AppInfo.State.SUSPENDED
-            isHidden(appInfo) -> AppInfo.State.HIDDEN
-            isStopped(appInfo) -> AppInfo.State.STOPPED
-            isDisabled(appInfo) -> AppInfo.State.DISABLED
+            !installedFrom(info) -> AppInfo.State.UNINSTALLED
+            isSuspended(info) -> AppInfo.State.SUSPENDED
+            isHidden(info) -> AppInfo.State.HIDDEN
+            isStopped(info) -> AppInfo.State.STOPPED
+            isDisabled(info) -> AppInfo.State.DISABLED
             else -> AppInfo.State.ENABLED
         }
     }
@@ -277,21 +334,20 @@ object AppMetaCache {
     // already-fetched ApplicationInfo so one lookup serves the whole state.
     private fun isSuspended(info: ApplicationInfo): Boolean = HTarget.N && info.flags and ApplicationInfo.FLAG_SUSPENDED == ApplicationInfo.FLAG_SUSPENDED
 
-    private fun isHidden(info: ApplicationInfo): Boolean = (ApplicationInfo::class.java.getField("privateFlags").get(info) as Int) and 1 == 1
+    // privateFlags is @hide and absent on some ApplicationInfo instances (test doubles, future
+    // platforms); a missing field means the hidden bit cannot be read, so treat it as not hidden.
+    private fun isHidden(info: ApplicationInfo): Boolean =
+        runCatching {
+            (ApplicationInfo::class.java.getField("privateFlags").get(info) as Int) and 1 == 1
+        }.getOrDefault(false)
 
     private fun isStopped(info: ApplicationInfo): Boolean = info.flags and ApplicationInfo.FLAG_STOPPED == ApplicationInfo.FLAG_STOPPED
 
     private fun isDisabled(info: ApplicationInfo): Boolean = info.enabled.not()
 
-    private suspend fun persist(installedPackages: Set<String>? = null) {
+    private suspend fun persist() {
         runCatching {
-            val dao = database.appMetadataDao()
-            if (installedPackages != null) {
-                cache.values.forEach { entry ->
-                    cache[entry.packageName] = entry.copy(installed = entry.packageName in installedPackages)
-                }
-            }
-            dao.upsertAll(cache.values.map { it.toEntity() })
+            database.appMetadataDao().upsertAll(cache.values.map { it.toEntity() })
         }
     }
 
@@ -384,6 +440,32 @@ object AppMetaCache {
                 )
                 connection.execSQL("DROP TABLE app_metadata")
                 connection.execSQL("ALTER TABLE app_metadata_new RENAME TO app_metadata")
+            }
+        }
+
+    internal val MIGRATION_6_7 =
+        object : Migration(DB_VERSION_6, DB_VERSION_7) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS checked_apps (" +
+                        "packageName TEXT NOT NULL, " +
+                        "pinned INTEGER NOT NULL, " +
+                        "whitelisted INTEGER NOT NULL, " +
+                        "tagIds TEXT NOT NULL, " +
+                        "PRIMARY KEY(packageName))",
+                )
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS tags (" +
+                        "id INTEGER NOT NULL, " +
+                        "name TEXT NOT NULL, " +
+                        "PRIMARY KEY(id))",
+                )
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS state_flags (" +
+                        "key TEXT NOT NULL, " +
+                        "value INTEGER NOT NULL, " +
+                        "PRIMARY KEY(key))",
+                )
             }
         }
 }

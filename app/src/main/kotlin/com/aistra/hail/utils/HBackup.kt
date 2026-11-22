@@ -62,6 +62,9 @@ suspend fun backup(
         runCatching {
             val tempFile = File(context.cacheDir, "backup-${System.currentTimeMillis()}.zip.tmp")
             try {
+                // Room is canonical for checked apps and tags; flush before reading the snapshots
+                // so the archive never contains a state that predates the latest UI change.
+                if (options.apps || options.tags) HailData.flush()
                 ZipOutputStream(FileOutputStream(tempFile)).use { zos ->
                     zos.writeManifestEntry()
                     if (options.apps) zos.writeAppsEntry()
@@ -334,6 +337,9 @@ private suspend fun applyPlan(
     if (options.actions) applyActions(plan.actions)
     if (options.settings) applySettings(plan.settings)
     // Whitelisted flags are already restored as part of APPS entries
+    // applyApps/applyTags only schedule a background write, so make the restored checked apps and
+    // tags durable before restore() reports success.
+    if (options.apps || options.tags) HailData.flush()
 }
 
 private suspend fun applyApps(apps: List<JSONObject>) {
