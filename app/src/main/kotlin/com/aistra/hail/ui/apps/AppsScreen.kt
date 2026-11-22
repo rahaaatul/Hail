@@ -284,7 +284,14 @@ internal fun AppIcon(
     val context = LocalContext.current
     val iconSize = size ?: dimensionResource(R.dimen.app_icon_size)
     val iconSizePx = with(LocalDensity.current) { iconSize.roundToPx() }
-    val icon by produceState<Bitmap?>(null, info.packageName, HailData.synthesizeAdaptiveIcons, iconSizePx) {
+    val icon by produceState<Bitmap?>(
+        null,
+        info.packageName,
+        info.sourceDir,
+        AppIconCache.apkSignature(info),
+        HailData.synthesizeAdaptiveIcons,
+        iconSizePx,
+    ) {
         value = AppIconCache.loadIconBitmap(context, info, HPackages.myUserId, iconSizePx)
     }
     val fallbackIcon by produceState<Bitmap?>(defaultActivityIconCache, context) {
