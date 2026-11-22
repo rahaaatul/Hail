@@ -51,14 +51,34 @@ object AppMetaCache {
 
     // A cache-ready gate that never completes must not hang prefetch indefinitely.
     private const val CACHE_READY_TIMEOUT_MS = 5_000L
-    private val database by lazy {
+
+    // Named so the migration versions read as a version pair rather than two bare integers.
+    private const val DB_VERSION_6 = 6
+    private const val DB_VERSION_7 = 7
+
+    // Tests swap in an in-memory database; production always uses the lazy builder below.
+    private var databaseOverride: AppMetadataDatabase? = null
+
+    private val databaseDelegate by lazy {
         Room
             .databaseBuilder(HailApp.app, AppMetadataDatabase::class.java, "app_metadata.db")
-            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-            .build()
+            .addMigrations(
+                MIGRATION_1_2,
+                MIGRATION_2_3,
+                MIGRATION_3_4,
+                MIGRATION_4_5,
+                MIGRATION_5_6,
+                MIGRATION_6_7,
+            ).build()
     }
 
+    private val database: AppMetadataDatabase get() = databaseOverride ?: databaseDelegate
+
     internal fun database(): AppMetadataDatabase = database
+
+    internal fun useDatabaseForTest(database: AppMetadataDatabase?) {
+        databaseOverride = database
+    }
 
     private val scope = HailApp.app.applicationScope
     private val revisionState = MutableStateFlow(0L)
@@ -417,6 +437,32 @@ object AppMetaCache {
                 )
                 connection.execSQL("DROP TABLE app_metadata")
                 connection.execSQL("ALTER TABLE app_metadata_new RENAME TO app_metadata")
+            }
+        }
+
+    internal val MIGRATION_6_7 =
+        object : Migration(DB_VERSION_6, DB_VERSION_7) {
+            override suspend fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS checked_apps (" +
+                        "packageName TEXT NOT NULL, " +
+                        "pinned INTEGER NOT NULL, " +
+                        "whitelisted INTEGER NOT NULL, " +
+                        "tagIds TEXT NOT NULL, " +
+                        "PRIMARY KEY(packageName))",
+                )
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS tags (" +
+                        "id INTEGER NOT NULL, " +
+                        "name TEXT NOT NULL, " +
+                        "PRIMARY KEY(id))",
+                )
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS state_flags (" +
+                        "key TEXT NOT NULL, " +
+                        "value INTEGER NOT NULL, " +
+                        "PRIMARY KEY(key))",
+                )
             }
         }
 }
