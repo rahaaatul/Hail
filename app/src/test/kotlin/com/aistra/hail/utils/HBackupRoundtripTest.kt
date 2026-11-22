@@ -266,6 +266,8 @@ class HBackupRoundtripTest {
             assertEquals("shizuku_stop", settings.workingMode)
             assertTrue(settings.hasGrayscaleIcon())
             assertTrue(settings.grayscaleIcon)
+            // The migration marker is local state and must never leave the device in a backup.
+            assertFalse(settings.hasSettingsMigratedFromSp())
 
             zipFile.close()
             outputFile.delete()

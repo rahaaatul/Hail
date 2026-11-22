@@ -33,6 +33,14 @@ class SettingsDataStoreTest {
         HailApp.setAppForTest(app)
         context = app
         File(app.filesDir, "datastore").deleteRecursively()
+        PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .edit()
+            .clear()
+            .apply()
+        // HailApp.onCreate() already ran the one-time migration during Robolectric bootstrap;
+        // reset the DataStore so every test starts from the marker-free defaults.
+        SettingsDataStore.resetForTest()
     }
 
     @Test
@@ -252,6 +260,56 @@ class SettingsDataStoreTest {
             assertEquals(HailData.SORT_INSTALL, settings.sortBy)
             assertFalse(settings.filterUserApps)
             assertEquals(18f, settings.homeFontSize, 0.001f)
+            assertTrue(settings.settingsMigratedFromSp)
             assertTrue(sp.all.isEmpty())
         }
+
+    @Test
+    fun `migration marks an empty preference file as migrated`() =
+        runBlocking {
+            migrateSettingsFromSharedPreferences()
+
+            assertTrue(SettingsDataStore.isSettingsMigrationComplete())
+            assertTrue(PreferenceManager.getDefaultSharedPreferences(context).all.isEmpty())
+        }
+
+    @Test
+    fun `migration runs once and never merges a stale preference value again`() =
+        runBlocking {
+            val sp = PreferenceManager.getDefaultSharedPreferences(context)
+            sp.edit().putString(HailData.SORT_BY, HailData.SORT_INSTALL).apply()
+
+            migrateSettingsFromSharedPreferences()
+
+            val migrated = SettingsDataStore.readSettings()
+            assertEquals(HailData.SORT_INSTALL, migrated.sortBy)
+            assertTrue(migrated.settingsMigratedFromSp)
+            assertTrue(sp.all.isEmpty())
+
+            // The user changes the setting after the migration: DataStore now owns the value.
+            SettingsDataStore.updateSettings { setSortBy(HailData.SORT_SIZE) }
+
+            // A stale value reappears in SharedPreferences (old build, restored prefs file).
+            sp.edit().putString(HailData.SORT_BY, HailData.SORT_UPDATE).apply()
+
+            migrateSettingsFromSharedPreferences()
+
+            val settings = SettingsDataStore.readSettings()
+            assertEquals(HailData.SORT_SIZE, settings.sortBy)
+            assertTrue(settings.settingsMigratedFromSp)
+            assertTrue(sp.all.isEmpty())
+        }
+
+    @Test
+    fun `toSettingsData reports the migration marker`() {
+        assertFalse(SettingsBackup.getDefaultInstance().toSettingsData().settingsMigratedFromSp)
+        assertTrue(
+            SettingsBackup
+                .newBuilder()
+                .setSettingsMigratedFromSp(true)
+                .build()
+                .toSettingsData()
+                .settingsMigratedFromSp,
+        )
+    }
 }

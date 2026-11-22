@@ -17,6 +17,8 @@ import androidx.core.content.getSystemService
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.DirtyDataUpdater
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
+import com.aistra.hail.app.SettingsDataStore
 import com.aistra.hail.app.migrateSettingsFromSharedPreferences
 import com.aistra.hail.services.AutoFreezeService
 import com.aistra.hail.utils.AppMetaCache
@@ -28,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 class HailApp : Application() {
@@ -45,18 +48,30 @@ class HailApp : Application() {
         }
         AppMetaCache.warmUp()
         HailData.warmUp()
+        // The one-time SharedPreferences import and the settings seed must complete before
+        // anything below reads settings. HailSettings.startSync() starts the DataStore collector
+        // only after the seed, so a pre-migration emission cannot overwrite it, and the collector
+        // below needs the seeded working mode so it does not fire a spurious shell restart.
+        // withContext(Dispatchers.IO) moves the SharedPreferences/DataStore reads off the main
+        // thread; runBlocking keeps the seed visible synchronously to the rest of onCreate.
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                migrateSettingsFromSharedPreferences()
+                HailSettings.seedSettings(SettingsDataStore.readSettings())
+                HailSettings.startSync()
+            }
+        }
         // Registered for the whole process lifetime so cache invalidation happens regardless of
         // which tab is visible (a data-only uninstall must disappear from Home even from Apps).
         (getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps)
             ?.registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
         DirtyDataUpdater.update(app)
-        applicationScope.launch { migrateSettingsFromSharedPreferences() }
 
         // Observe working_mode changes from Proto DataStore and sync root shell.
         applicationScope.launch {
             withContext(Dispatchers.Main) {
-                var lastWorkingMode = HailData.workingMode
-                HailData.settingsData.collect { settings ->
+                var lastWorkingMode = HailSettings.workingMode
+                HailSettings.settingsData.collect { settings ->
                     if (settings.workingMode != lastWorkingMode) {
                         lastWorkingMode = settings.workingMode
                         syncRootShell()
@@ -66,18 +81,18 @@ class HailApp : Application() {
             }
         }
 
-        if (!HTarget.S) setAppTheme(HailData.appTheme)
-        if (HailData.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
+        if (!HTarget.S) setAppTheme(HailSettings.appTheme)
+        if (HailSettings.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
     }
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun syncRootShell() {
-        if (HailData.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()
+        if (HailSettings.workingMode.startsWith(HailData.SU)) HShell.start() else HShell.stop()
     }
 
     fun setAutoFreezeService(
-        autoFreezeAfterLock: Boolean = HailData.autoFreezeAfterLock,
+        autoFreezeAfterLock: Boolean = HailSettings.autoFreezeAfterLock,
         context: Context = app,
     ) {
         val start =

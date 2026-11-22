@@ -20,7 +20,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.aistra.hail.HailApp
 import com.aistra.hail.R
-import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import com.aistra.hail.databinding.ActivityMainBinding
 import com.aistra.hail.extensions.applyDefaultInsetter
 import com.aistra.hail.extensions.isLandscape
@@ -47,7 +47,7 @@ class MainActivity :
         WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = initView()
         HailApp.app.syncRootShell()
-        if (!HailData.biometricLogin || BiometricManager
+        if (!HailSettings.biometricLogin || BiometricManager
                 .from(this)
                 .canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS
         ) {
@@ -168,7 +168,7 @@ class MainActivity :
 
     /* override fun onStop() {
         super.onStop()
-        if (HailData.biometricLogin) finishAndRemoveTask()
+        if (HailSettings.biometricLogin) finishAndRemoveTask()
     } */
 
     override fun onSupportNavigateUp(): Boolean = navController.navigateUp() || super.onSupportNavigateUp()

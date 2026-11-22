@@ -7,6 +7,7 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.BatchResult
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,7 +37,7 @@ object AppActions {
 
     suspend fun getLaunchIntent(packageName: String): Result<Intent> =
         withContext(Dispatchers.IO) {
-            if (HailData.workingMode == HailData.MODE_ISLAND_HIDE) {
+            if (HailSettings.workingMode == HailData.MODE_ISLAND_HIDE) {
                 HIsland.ensureLaunchIntentExists(packageName)
             }
             val launchIntent =

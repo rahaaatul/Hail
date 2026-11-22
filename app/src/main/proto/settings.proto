@@ -57,4 +57,8 @@ message SettingsBackup {
 
   // Per-field sort directions (field -> ascending); absent entries use the field default
   map<string, bool> sort_directions = 30;
+
+  // Set once the legacy SharedPreferences settings have been imported into DataStore. The
+  // marker is local state, never written by toSettingsBackup()/restore, so backups stay clean.
+  optional bool settings_migrated_from_sp = 31;
 }

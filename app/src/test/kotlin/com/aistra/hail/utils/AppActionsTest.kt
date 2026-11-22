@@ -6,6 +6,7 @@ import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.BatchResult
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -25,7 +26,7 @@ class AppActionsTest {
         every { mockApp.packageManager } returns mockk(relaxed = true)
         HailApp.setAppForTest(mockApp)
 
-        mockkObject(HailData)
+        mockkObject(HailSettings)
         mockkObject(AppManager)
         mockkObject(HPackages)
     }
@@ -110,7 +111,7 @@ class AppActionsTest {
     @Test
     fun `getLaunchIntent returns failure when no launch intent found`() =
         runTest {
-            every { HailData.workingMode } returns HailData.MODE_DEFAULT
+            every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
             every { HailApp.app.packageManager.getLaunchIntentForPackage("missing") } returns null
 
             val result = AppActions.getLaunchIntent("missing")
@@ -121,7 +122,7 @@ class AppActionsTest {
     @Test
     fun `getLaunchIntent returns intent when available`() =
         runTest {
-            every { HailData.workingMode } returns HailData.MODE_DEFAULT
+            every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
             val intent = mockk<Intent>(relaxed = true)
             every { HailApp.app.packageManager.getLaunchIntentForPackage("com.example.test") } returns intent
             every { HailApp.app.setAutoFreezeService() } returns Unit

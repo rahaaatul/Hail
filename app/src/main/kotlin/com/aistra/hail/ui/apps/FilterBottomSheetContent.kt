@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import com.aistra.hail.utils.HSystem
 import com.aistra.hail.utils.HUI
 import kotlinx.coroutines.Dispatchers
@@ -80,23 +81,23 @@ fun FilterBottomSheetContent(onFilterChanged: () -> Unit) {
 
 @Composable
 private fun SortSection(onFilterChanged: () -> Unit) {
-    var sortBy by remember { mutableStateOf(HailData.sortBy) }
-    var ascending by remember { mutableStateOf(HailData.sortAscending(HailData.sortBy)) }
+    var sortBy by remember { mutableStateOf(HailSettings.sortBy) }
+    var ascending by remember { mutableStateOf(HailSettings.sortAscending(HailSettings.sortBy)) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     fun selectSort(sort: String) {
         if (sort == sortBy) {
             ascending = !ascending
-            HailData.changeSort(sort, ascending)
+            HailSettings.changeSort(sort, ascending)
             onFilterChanged()
             return
         }
         // The sort itself is a local, synchronous operation: apply it immediately so a
         // quick dismiss or rapid taps cannot lose or race the selection.
         sortBy = sort
-        ascending = HailData.sortAscending(sort)
-        HailData.changeSort(sort, ascending)
+        ascending = HailSettings.sortAscending(sort)
+        HailSettings.changeSort(sort, ascending)
         onFilterChanged()
         if (sort == HailData.SORT_LAST_USED || sort == HailData.SORT_MOST_USED) {
             // checkOpUsageStats is a binder call, keep it off the main thread; the sort
@@ -226,8 +227,8 @@ private fun TypeSection(onFilterChanged: () -> Unit) {
     val filters =
         remember {
             mutableStateMapOf(
-                HailData.FILTER_SYSTEM_APPS to HailData.filterSystemApps,
-                HailData.FILTER_USER_APPS to HailData.filterUserApps,
+                HailData.FILTER_SYSTEM_APPS to HailSettings.filterSystemApps,
+                HailData.FILTER_USER_APPS to HailSettings.filterUserApps,
             )
         }
 
@@ -276,12 +277,12 @@ private fun StatusSection(onFilterChanged: () -> Unit) {
     val filters =
         remember {
             mutableStateMapOf(
-                HailData.FILTER_ENABLED_APPS to HailData.filterEnabledApps,
-                HailData.FILTER_DISABLED_APPS to HailData.filterDisabledApps,
-                HailData.FILTER_SUSPENDED_APPS to HailData.filterSuspendedApps,
-                HailData.FILTER_HIDDEN_APPS to HailData.filterHiddenApps,
-                HailData.FILTER_STOPPED_APPS to HailData.filterStoppedApps,
-                HailData.FILTER_UNINSTALLED_APPS to HailData.filterUninstalledApps,
+                HailData.FILTER_ENABLED_APPS to HailSettings.filterEnabledApps,
+                HailData.FILTER_DISABLED_APPS to HailSettings.filterDisabledApps,
+                HailData.FILTER_SUSPENDED_APPS to HailSettings.filterSuspendedApps,
+                HailData.FILTER_HIDDEN_APPS to HailSettings.filterHiddenApps,
+                HailData.FILTER_STOPPED_APPS to HailSettings.filterStoppedApps,
+                HailData.FILTER_UNINSTALLED_APPS to HailSettings.filterUninstalledApps,
             )
         }
 
@@ -361,7 +362,7 @@ private fun toggleFilter(
     val selectedCount = filters.values.count { it }
     if (newSelected || selectedCount > 1) {
         filters[filter] = newSelected
-        HailData.changeAppsFilter(filter, newSelected)
+        HailSettings.changeAppsFilter(filter, newSelected)
         onFilterChanged()
     }
 }

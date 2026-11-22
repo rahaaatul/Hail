@@ -23,7 +23,7 @@ class AppManagerTest {
         mockApp = mockk(relaxed = true)
         every { mockApp.packageManager } returns mockk(relaxed = true)
         HailApp.setAppForTest(mockApp)
-        mockkObject(HailData)
+        mockkObject(HailSettings)
         mockkObject(HPackages)
     }
 
@@ -34,14 +34,14 @@ class AppManagerTest {
 
     @Test
     fun `isAppFrozen returns true for STOP mode when app is stopped`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT + HailData.STOP
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT + HailData.STOP
         every { HPackages.isAppStopped("pkg") } returns true
         assertTrue(AppManager.isAppFrozen("pkg"))
     }
 
     @Test
     fun `isAppFrozen returns true for DISABLE mode when app is disabled`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT + HailData.DISABLE
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT + HailData.DISABLE
         every { HPackages.isAppDisabled("pkg") } returns true
         assertTrue(AppManager.isAppFrozen("pkg"))
     }
@@ -53,27 +53,27 @@ class AppManagerTest {
 
     @Test
     fun `setAppFrozen returns false when mode unknown`() {
-        every { HailData.workingMode } returns "unknown_mode"
+        every { HailSettings.workingMode } returns "unknown_mode"
         assertFalse(AppManager.setAppFrozen("other.pkg", true))
     }
 
     @Test
     fun `uninstallApp returns false and starts delete intent when no handler matches`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
         val result = AppManager.uninstallApp("com.example.pkg")
         assertFalse(result.first)
     }
 
     @Test
     fun `reinstallApp returns false when mode not SU or SHIZUKU`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
         assertFalse(AppManager.reinstallApp("com.example.pkg").first)
     }
 
     @Test
     fun `execute returns 0 to null when mode not SU or SHIZUKU`() =
         runBlocking {
-            every { HailData.workingMode } returns HailData.MODE_DEFAULT
+            every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
             val (code, output) = AppManager.execute("some command")
             assertEquals(0, code)
             assertEquals(null, output)
@@ -109,7 +109,7 @@ class AppManagerTest {
 
     @Test
     fun `setListFrozen excludes own package from the batch`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
 
         val result = AppManager.setListFrozen(true, listOf(BuildConfig.APPLICATION_ID, "com.example.pkg"))
 

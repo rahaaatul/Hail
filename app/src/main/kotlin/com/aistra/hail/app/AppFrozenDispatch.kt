@@ -9,7 +9,7 @@ import com.aistra.hail.utils.HShell
 import com.aistra.hail.utils.HShizuku
 
 /**
- * Applies the freeze/unfreeze mode selected in [HailData.workingMode] to a single package.
+ * Applies the freeze/unfreeze mode selected in [HailSettings.workingMode] to a single package.
  *
  * Kept out of [AppManager] so the mode dispatch stays a small, exhaustive mapping per working mode
  * family instead of one wide `when` over every mode.
@@ -20,7 +20,7 @@ internal object AppFrozenDispatch {
         frozen: Boolean,
     ): Boolean {
         if (packageName == BuildConfig.APPLICATION_ID) return false
-        val workingMode = HailData.workingMode
+        val workingMode = HailSettings.workingMode
         return when {
             workingMode.startsWith(HailData.OWNER) -> setOwnerFrozen(packageName, frozen, workingMode)
             workingMode.startsWith(HailData.DHIZUKU) -> setDhizukuFrozen(packageName, frozen, workingMode)

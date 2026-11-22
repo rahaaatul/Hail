@@ -1,15 +1,6 @@
 package com.aistra.hail.app
 
 import com.aistra.hail.BuildConfig
-import com.aistra.hail.app.SettingsData
-import com.aistra.hail.backup.SettingsBackup
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 object HailData {
     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
@@ -144,56 +135,30 @@ object HailData {
             ACTION_LOCK_FREEZE,
         )
 
-    // Cached settings from Proto DataStore, exposed as a hot StateFlow from startup.
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // ── Settings compatibility delegations ──
+    // HailSettings is the canonical settings facade; these delegations keep the members available
+    // on HailData for call sites outside this refactor's scope (the T7/T3 UI files). New code must
+    // use HailSettings directly.
 
-    private val _settingsData = MutableStateFlow(SettingsData())
-    val settingsData: StateFlow<SettingsData> = _settingsData.asStateFlow()
+    val sortBy get() = HailSettings.sortBy
 
-    init {
-        scope.launch {
-            SettingsDataStore.settingsFlow.collect { _settingsData.value = it }
-        }
-    }
+    fun sortAscending(sort: String): Boolean = HailSettings.sortAscending(sort)
 
-    // ── Synchronous getters (read from DataStore cache) ──
-
-    val sortBy get() = settingsData.value.sortBy
-    val sortDirections: Map<String, Boolean> get() = settingsData.value.sortDirections
-
-    fun sortAscending(sort: String): Boolean = sortDirections[sort] ?: (sort == SORT_NAME)
-
-    val filterUserApps get() = settingsData.value.filterUserApps
-    val filterSystemApps get() = settingsData.value.filterSystemApps
-    val filterEnabledApps get() = settingsData.value.filterEnabledApps
-    val filterDisabledApps get() = settingsData.value.filterDisabledApps
-    val filterSuspendedApps get() = settingsData.value.filterSuspendedApps
-    val filterHiddenApps get() = settingsData.value.filterHiddenApps
-    val filterStoppedApps get() = settingsData.value.filterStoppedApps
-    val filterUninstalledApps get() = settingsData.value.filterUninstalledApps
-    val workingMode get() = settingsData.value.workingMode
-    val biometricLogin get() = settingsData.value.biometricLogin
-    val appTheme get() = settingsData.value.appTheme
-    val iconPack get() = settingsData.value.iconPack
-    val grayscaleIcon get() = settingsData.value.grayscaleIcon
-    val compactIcon get() = settingsData.value.compactIcon
-    val synthesizeAdaptiveIcons get() = settingsData.value.synthesizeAdaptiveIcons
-    val homeFontSize get() = settingsData.value.homeFontSize
-    val fuzzySearch get() = settingsData.value.fuzzySearch
-    val nineKeySearch get() = settingsData.value.nineKeySearch
-    val tileAction get() = settingsData.value.tileAction
-    var autoFreezeAfterLock: Boolean
-        get() = settingsData.value.autoFreezeAfterLock
-        set(value) {
-            scope.launch {
-                SettingsDataStore.updateSettings { setAutoFreezeAfterLock(value) }
-            }
-        }
-    val autoFreezeDelay get() = settingsData.value.autoFreezeDelay
-    val skipWhileCharging get() = settingsData.value.skipWhileCharging
-    val skipForegroundApp get() = settingsData.value.skipForegroundApp
-    val skipNotifyingApp get() = settingsData.value.skipNotifyingApp
-    val dynamicShortcutAction get() = settingsData.value.dynamicShortcutAction
+    val filterUserApps get() = HailSettings.filterUserApps
+    val filterSystemApps get() = HailSettings.filterSystemApps
+    val filterEnabledApps get() = HailSettings.filterEnabledApps
+    val filterDisabledApps get() = HailSettings.filterDisabledApps
+    val filterSuspendedApps get() = HailSettings.filterSuspendedApps
+    val filterHiddenApps get() = HailSettings.filterHiddenApps
+    val filterStoppedApps get() = HailSettings.filterStoppedApps
+    val filterUninstalledApps get() = HailSettings.filterUninstalledApps
+    val workingMode get() = HailSettings.workingMode
+    val iconPack get() = HailSettings.iconPack
+    val grayscaleIcon get() = HailSettings.grayscaleIcon
+    val compactIcon get() = HailSettings.compactIcon
+    val synthesizeAdaptiveIcons get() = HailSettings.synthesizeAdaptiveIcons
+    val homeFontSize get() = HailSettings.homeFontSize
+    val nineKeySearch get() = HailSettings.nineKeySearch
 
     // ── Room-backed state (checked apps + tags) ──
 
@@ -232,91 +197,4 @@ object HailData {
     suspend fun flush() = HailDataStore.flush()
 
     fun warmUp() = HailDataStore.warmUp()
-
-    // ── Async setters (write to Proto DataStore) ──
-
-    fun changeSort(
-        sort: String,
-        ascending: Boolean,
-    ) {
-        _settingsData.value =
-            _settingsData.value.copy(sortBy = sort, sortDirections = sortDirections + (sort to ascending))
-        scope.launch {
-            SettingsDataStore.updateSettings {
-                setSortBy(sort)
-                putSortDirections(sort, ascending)
-            }
-        }
-    }
-
-    fun changeAppsFilter(
-        filter: String,
-        enabled: Boolean,
-    ) {
-        // Optimistically update the in-memory state so the UI reflects the filter change
-        // immediately instead of waiting for the async Proto DataStore write to complete.
-        _settingsData.value = applyFilterToSettings(_settingsData.value, filter, enabled)
-        // Persist to Proto DataStore in the background.
-        scope.launch {
-            SettingsDataStore.updateSettings { persistFilter(filter, enabled) }
-        }
-    }
-}
-
-private fun applyFilterToSettings(
-    settings: SettingsData,
-    filter: String,
-    enabled: Boolean,
-): SettingsData =
-    when (filter) {
-        HailData.FILTER_USER_APPS -> settings.copy(filterUserApps = enabled)
-        HailData.FILTER_SYSTEM_APPS -> settings.copy(filterSystemApps = enabled)
-        HailData.FILTER_ENABLED_APPS -> settings.copy(filterEnabledApps = enabled)
-        HailData.FILTER_DISABLED_APPS -> settings.copy(filterDisabledApps = enabled)
-        HailData.FILTER_SUSPENDED_APPS -> settings.copy(filterSuspendedApps = enabled)
-        HailData.FILTER_HIDDEN_APPS -> settings.copy(filterHiddenApps = enabled)
-        HailData.FILTER_STOPPED_APPS -> settings.copy(filterStoppedApps = enabled)
-        HailData.FILTER_UNINSTALLED_APPS -> settings.copy(filterUninstalledApps = enabled)
-        else -> settings
-    }
-
-private fun SettingsBackup.Builder.persistFilter(
-    filter: String,
-    enabled: Boolean,
-) {
-    when (filter) {
-        HailData.FILTER_USER_APPS -> {
-            setFilterUserApps(enabled)
-        }
-
-        HailData.FILTER_SYSTEM_APPS -> {
-            setFilterSystemApps(enabled)
-        }
-
-        HailData.FILTER_ENABLED_APPS -> {
-            setFilterEnabledApps(enabled)
-        }
-
-        HailData.FILTER_DISABLED_APPS -> {
-            setFilterDisabledApps(enabled)
-        }
-
-        HailData.FILTER_SUSPENDED_APPS -> {
-            setFilterSuspendedApps(enabled)
-        }
-
-        HailData.FILTER_HIDDEN_APPS -> {
-            setFilterHiddenApps(enabled)
-        }
-
-        HailData.FILTER_STOPPED_APPS -> {
-            setFilterStoppedApps(enabled)
-        }
-
-        HailData.FILTER_UNINSTALLED_APPS -> {
-            setFilterUninstalledApps(enabled)
-        }
-
-        else -> { /* unknown filter key — ignore */ }
-    }
 }

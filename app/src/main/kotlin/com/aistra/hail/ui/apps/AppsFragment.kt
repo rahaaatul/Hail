@@ -25,6 +25,7 @@ import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.R
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import com.aistra.hail.extensions.exportFileName
 import com.aistra.hail.ui.main.MainFragment
 import com.aistra.hail.ui.theme.AppTheme
@@ -239,7 +240,7 @@ class AppsFragment :
                 }
             }
 
-            HailData.workingMode == HailData.MODE_DEFAULT -> {
+            HailSettings.workingMode == HailData.MODE_DEFAULT -> {
                 AppManager.uninstallApp(pkg)
             }
 
@@ -276,7 +277,7 @@ class AppsFragment :
     ) {
         inflater.inflate(R.menu.menu_apps, menu)
         val searchView = menu.findItem(R.id.action_search).actionView as SearchView
-        if (HailData.nineKeySearch) {
+        if (HailSettings.nineKeySearch) {
             val editText = searchView.findViewById<EditText>(androidx.appcompat.R.id.search_src_text)
             editText.inputType = InputType.TYPE_CLASS_PHONE
         }
