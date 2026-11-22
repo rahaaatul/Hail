@@ -153,7 +153,12 @@ class PagerFragment :
         }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                AppMetaCache.revision.collect { updateCurrentList() }
+                AppMetaCache.revision.collect {
+                    updateCurrentList()
+                    // Rebind visible rows even when the list is unchanged: a reinstall swaps the
+                    // ApplicationInfo (new sourceDir/lastUpdateTime) under the same package name.
+                    pagerAdapter.refreshVisualState()
+                }
             }
         }
         return binding.root

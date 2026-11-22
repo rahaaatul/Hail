@@ -12,6 +12,7 @@ import com.aistra.hail.app.HailData
 import com.aistra.hail.backup.SettingsBackup
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -49,6 +50,7 @@ data class SettingsData(
     val skipForegroundApp: Boolean = false,
     val skipNotifyingApp: Boolean = false,
     val dynamicShortcutAction: String = HailData.ACTION_NONE,
+    val settingsMigratedFromSp: Boolean = false,
 )
 
 /**
@@ -95,6 +97,7 @@ fun SettingsBackup.toSettingsData(): SettingsData =
         skipForegroundApp = valueOrDefault(hasSkipForegroundApp(), skipForegroundApp, false),
         skipNotifyingApp = valueOrDefault(hasSkipNotifyingApp(), skipNotifyingApp, false),
         dynamicShortcutAction = valueOrDefault(hasDynamicShortcutAction(), dynamicShortcutAction, HailData.ACTION_NONE),
+        settingsMigratedFromSp = valueOrDefault(hasSettingsMigratedFromSp(), settingsMigratedFromSp, false),
     )
 
 /**
@@ -189,6 +192,24 @@ object SettingsDataStore {
      * Reads current settings from DataStore (suspends until DataStore is ready).
      */
     suspend fun readSettings(): SettingsData = dataStore.data.first().toSettingsData()
+
+    /**
+     * Whether the one-time SharedPreferences import has already run.
+     *
+     * The marker is stored in the DataStore itself, so it survives process death and cannot be
+     * lost when the preferences file is cleared.
+     */
+    suspend fun isSettingsMigrationComplete(): Boolean = dataStore.data.first().hasSettingsMigratedFromSp()
+
+    /**
+     * Restores the default settings for tests. DataStore has no public reset API, so the default
+     * proto is written through the same single instance production code uses.
+     */
+    internal fun resetForTest() {
+        runBlocking {
+            dataStore.updateData { SettingsBackup.getDefaultInstance() }
+        }
+    }
 }
 
 /**
@@ -200,13 +221,30 @@ private fun settingsFile(
 ): File = File(context.filesDir, "datastore/$name")
 
 /**
- * Migrates all settings from SharedPreferences to Proto DataStore.
+ * Migrates all settings from SharedPreferences to Proto DataStore, exactly once.
  *
- * Should be called once at app startup (from [HailApp.onCreate]) before DataStore is first read.
- * Safe to call multiple times — DataStore writes are idempotent.
+ * Called once at app startup (from [HailApp.onCreate]) before anything reads settings. The
+ * [SettingsBackup] `settings_migrated_from_sp` marker is written in the same atomic DataStore
+ * update as the imported values, so a crash can never cause a second, partial import. Once the
+ * marker is set the preferences file is only ever cleared, never merged again: a stale value that
+ * reappears (old build, restored prefs file) must not override what the user changed in DataStore.
  */
 suspend fun migrateSettingsFromSharedPreferences() {
     val sp = PreferenceManager.getDefaultSharedPreferences(app)
+
+    if (SettingsDataStore.isSettingsMigrationComplete()) {
+        // Already migrated: drop leftovers without merging them.
+        if (sp.all.isNotEmpty()) sp.edit().clear().apply()
+        return
+    }
+
+    if (sp.all.isEmpty()) {
+        // Nothing to import, but record that the migration ran so an empty file is never
+        // re-examined on the next launch.
+        SettingsDataStore.updateSettings { setSettingsMigratedFromSp(true) }
+        return
+    }
+
     val builder = SettingsBackup.newBuilder()
 
     sp.all.forEach { key, value ->
@@ -228,8 +266,10 @@ suspend fun migrateSettingsFromSharedPreferences() {
         }
     }
 
+    // Single atomic write: import the legacy values and mark the migration complete together.
     SettingsDataStore.updateSettings {
         mergeFrom(builder.build())
+        setSettingsMigratedFromSp(true)
     }
     sp.edit().clear().apply()
 }

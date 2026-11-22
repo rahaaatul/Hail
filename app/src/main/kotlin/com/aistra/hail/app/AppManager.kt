@@ -16,28 +16,28 @@ object AppManager {
     val lockScreen: Boolean
         get() =
             when {
-                HailData.workingMode.startsWith(HailData.OWNER) -> HPolicy.lockScreen
-                HailData.workingMode.startsWith(HailData.DHIZUKU) -> HDhizuku.lockScreen
-                HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.lockScreen
-                HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.lockScreen
+                HailSettings.workingMode.startsWith(HailData.OWNER) -> HPolicy.lockScreen
+                HailSettings.workingMode.startsWith(HailData.DHIZUKU) -> HDhizuku.lockScreen
+                HailSettings.workingMode.startsWith(HailData.SU) || HailSettings.workingMode.startsWith(HailData.JAILBREAK) -> HShell.lockScreen
+                HailSettings.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.lockScreen
                 else -> false
             }
 
     fun isAppFrozen(packageName: String): Boolean =
         when {
-            HailData.workingMode.endsWith(HailData.STOP) -> {
+            HailSettings.workingMode.endsWith(HailData.STOP) -> {
                 HPackages.isAppStopped(packageName)
             }
 
-            HailData.workingMode.endsWith(HailData.DISABLE) -> {
+            HailSettings.workingMode.endsWith(HailData.DISABLE) -> {
                 HPackages.isAppDisabled(packageName)
             }
 
-            HailData.workingMode.endsWith(HailData.HIDE) -> {
+            HailSettings.workingMode.endsWith(HailData.HIDE) -> {
                 HPackages.isAppHidden(packageName)
             }
 
-            HailData.workingMode.endsWith(HailData.SUSPEND) -> {
+            HailSettings.workingMode.endsWith(HailData.SUSPEND) -> {
                 HPackages.isAppSuspended(packageName)
             }
 
@@ -89,7 +89,7 @@ object AppManager {
     // installExistingPackageAsUser and ActivityManager.getRunningAppProcesses directly, so we
     // drop the shell parsing (ps/dumpsys) and get structured results instead of exit codes + text.
     fun uninstallApp(packageName: String): Pair<Boolean, String?> {
-        val workingMode = HailData.workingMode
+        val workingMode = HailSettings.workingMode
         val result: Pair<Boolean, String?> =
             when {
                 // SU/Shizuku own the uninstall and surface errors; OWNER/DHIZUKU fall back to
@@ -120,14 +120,14 @@ object AppManager {
 
     fun reinstallApp(packageName: String): Pair<Boolean, String?> =
         when {
-            HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.reinstallApp(packageName)
-            HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.reinstallApp(packageName)
+            HailSettings.workingMode.startsWith(HailData.SU) || HailSettings.workingMode.startsWith(HailData.JAILBREAK) -> HShell.reinstallApp(packageName)
+            HailSettings.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.reinstallApp(packageName)
             else -> false to null
         }
 
     val supportsForceStop: Boolean
         get() =
-            HailData.workingMode.let {
+            HailSettings.workingMode.let {
                 it.startsWith(HailData.SU) ||
                     it.startsWith(HailData.JAILBREAK) ||
                     it.startsWith(HailData.SHIZUKU) ||
@@ -137,7 +137,7 @@ object AppManager {
             }
 
     fun forceStopApp(packageName: String): Boolean {
-        val workingMode = HailData.workingMode
+        val workingMode = HailSettings.workingMode
         return when {
             workingMode.startsWith(HailData.SU) || workingMode.startsWith(HailData.JAILBREAK) -> {
                 HShell.forceStopApp(packageName)
@@ -160,8 +160,8 @@ object AppManager {
     suspend fun execute(command: String): Pair<Int, String?> =
         withContext(Dispatchers.IO) {
             when {
-                HailData.workingMode.startsWith(HailData.SU) || HailData.workingMode.startsWith(HailData.JAILBREAK) -> HShell.execute(command, true)
-                HailData.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.execute(command)
+                HailSettings.workingMode.startsWith(HailData.SU) || HailSettings.workingMode.startsWith(HailData.JAILBREAK) -> HShell.execute(command, true)
+                HailSettings.workingMode.startsWith(HailData.SHIZUKU) -> HShizuku.execute(command)
                 else -> 0 to null
             }
         }

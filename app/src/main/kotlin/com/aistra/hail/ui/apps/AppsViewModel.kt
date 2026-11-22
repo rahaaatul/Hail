@@ -110,9 +110,23 @@ class AppsViewModel(
                 appListRefreshJob =
                     viewModelScope.launch {
                         withContext(Dispatchers.IO) { HPackages.getInstalledApplications() }.let { refreshed ->
+                            // Reinstall/update keeps the package set identical but swaps the
+                            // ApplicationInfo (new sourceDir/APK modification time); the publish
+                            // is gated on that APK identity so the list rebinds and the icon
+                            // reloads. A changed identity makes this converge — it cannot loop on
+                            // an unchanged install, and a full ApplicationInfo compare would
+                            // never settle because label/resource ids differ across PM queries.
                             val currentPackages = apps.value?.map { it.packageName }?.toSet() ?: emptySet()
                             val newPackages = refreshed.map { it.packageName }.toSet()
-                            if (currentPackages != newPackages) {
+                            val stalePackageInfo =
+                                refreshed.any { fresh ->
+                                    apps.value
+                                        ?.firstOrNull { it.packageName == fresh.packageName }
+                                        ?.let { current ->
+                                            AppIconCache.apkSignature(fresh) != AppIconCache.apkSignature(current)
+                                        } ?: false
+                                }
+                            if (currentPackages != newPackages || stalePackageInfo) {
                                 apps.postValue(refreshed)
                                 updateDisplayAppList()
                             }

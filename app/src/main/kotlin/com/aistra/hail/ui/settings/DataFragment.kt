@@ -41,7 +41,6 @@ import com.aistra.hail.ui.backup.BackupUiState
 import com.aistra.hail.ui.backup.RestoreDialog
 import com.aistra.hail.ui.backup.RestoreUiState
 import com.aistra.hail.ui.theme.AppTheme
-import me.zhanghai.compose.preference.ProvidePreferenceLocals
 
 class DataFragment : Fragment() {
     private val viewModel: BackupRestoreViewModel by viewModels()
@@ -81,23 +80,21 @@ class DataFragment : Fragment() {
                 )
                 setContent {
                     AppTheme {
-                        ProvidePreferenceLocals {
-                            DataScreen(
-                                viewModel = viewModel,
-                                onCreateBackupClick = {
-                                    val appName = requireContext().getString(R.string.app_name).lowercase()
-                                    val versionName =
-                                        requireContext()
-                                            .packageManager
-                                            .getPackageInfo(requireContext().packageName, 0)
-                                            .versionName
-                                            ?.substringBefore("-g")
-                                            ?: "unknown"
-                                    createBackupLauncher.launch("$appName-$versionName-${System.currentTimeMillis()}.hail")
-                                },
-                                onChooseArchive = { chooseArchiveLauncher.launch(arrayOf("application/zip")) },
-                            )
-                        }
+                        DataScreen(
+                            viewModel = viewModel,
+                            onCreateBackupClick = {
+                                val appName = requireContext().getString(R.string.app_name).lowercase()
+                                val versionName =
+                                    requireContext()
+                                        .packageManager
+                                        .getPackageInfo(requireContext().packageName, 0)
+                                        .versionName
+                                        ?.substringBefore("-g")
+                                        ?: "unknown"
+                                createBackupLauncher.launch("$appName-$versionName-${System.currentTimeMillis()}.hail")
+                            },
+                            onChooseArchive = { chooseArchiveLauncher.launch(arrayOf("application/zip")) },
+                        )
                     }
                 }
             }

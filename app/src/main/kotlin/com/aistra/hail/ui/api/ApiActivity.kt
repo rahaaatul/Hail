@@ -39,6 +39,7 @@ import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.ActionExecutor
 import com.aistra.hail.utils.ActionsRepository
@@ -292,7 +293,7 @@ class ApiActivity : ComponentActivity() {
         if (AppManager.isAppFrozen(pkg) && AppManager.setAppFrozen(pkg, false)) {
             app.setAutoFreezeService()
         }
-        if (HailData.workingMode == HailData.MODE_ISLAND_HIDE) {
+        if (HailSettings.workingMode == HailData.MODE_ISLAND_HIDE) {
             HIsland.ensureLaunchIntentExists(packageName)
         }
         packageManager.getLaunchIntentForPackage(pkg)?.let {

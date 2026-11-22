@@ -33,6 +33,8 @@ class HailDataTest {
                 .build()
         AppMetaCache.useDatabaseForTest(db)
         HailDataStore.resetForTest()
+        SettingsDataStore.resetForTest()
+        HailSettings.resetSettingsForTest()
     }
 
     @After
@@ -145,6 +147,56 @@ class HailDataTest {
             assertEquals(listOf(1), db.tagDao().loadAll().map { it.id })
             assertEquals(listOf("Work"), db.tagDao().loadAll().map { it.name })
         }
+
+    @Test
+    fun `optimistic boolean setters update the cache synchronously`() {
+        HailSettings.autoFreezeAfterLock = true
+        assertTrue(HailSettings.autoFreezeAfterLock)
+        assertTrue(HailSettings.settingsData.value.autoFreezeAfterLock)
+
+        HailSettings.grayscaleIcon = false
+        assertFalse(HailSettings.grayscaleIcon)
+        assertFalse(HailSettings.settingsData.value.grayscaleIcon)
+    }
+
+    @Test
+    fun `optimistic string setters update the cache synchronously`() {
+        HailSettings.appTheme = HailData.THEME_DARK
+        assertEquals(HailData.THEME_DARK, HailSettings.appTheme)
+        assertEquals(HailData.THEME_DARK, HailSettings.settingsData.value.appTheme)
+
+        HailSettings.tileAction = HailData.ACTION_LOCK
+        assertEquals(HailData.ACTION_LOCK, HailSettings.tileAction)
+        assertEquals(HailData.ACTION_LOCK, HailSettings.settingsData.value.tileAction)
+    }
+
+    @Test
+    fun `optimistic float setters update the cache synchronously`() {
+        HailSettings.homeFontSize = 20f
+        assertEquals(20f, HailSettings.homeFontSize, 0.001f)
+        assertEquals(20f, HailSettings.settingsData.value.homeFontSize, 0.001f)
+
+        HailSettings.autoFreezeDelay = 1.5f
+        assertEquals(1.5f, HailSettings.autoFreezeDelay, 0.001f)
+        assertEquals(1.5f, HailSettings.settingsData.value.autoFreezeDelay, 0.001f)
+    }
+
+    @Test
+    fun `seedSettings replaces the synchronous cache`() {
+        HailSettings.seedSettings(
+            SettingsData(
+                sortBy = HailData.SORT_SIZE,
+                workingMode = HailData.MODE_ISLAND_HIDE,
+                homeFontSize = 22f,
+                settingsMigratedFromSp = true,
+            ),
+        )
+
+        assertEquals(HailData.SORT_SIZE, HailSettings.sortBy)
+        assertEquals(HailData.MODE_ISLAND_HIDE, HailSettings.workingMode)
+        assertEquals(22f, HailSettings.homeFontSize, 0.001f)
+        assertTrue(HailSettings.settingsData.value.settingsMigratedFromSp)
+    }
 
     @Test
     fun `snapshot lists are copy on write and stay mutable`() =

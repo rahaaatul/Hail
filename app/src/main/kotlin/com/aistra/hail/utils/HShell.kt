@@ -10,6 +10,22 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/**
+ * Builds the `pm suspend` / `pm unsuspend` command.
+ *
+ * The command must run as the shell user (uid 2000, `AID_SHELL`) instead of root: with root as
+ * the calling uid AOSP records the suspending package as "root", then cannot resolve it on
+ * unsuspend, so the app stays suspended (and can look disabled).
+ */
+internal fun pmSuspendCommand(
+    packageName: String,
+    suspended: Boolean,
+    userId: Int,
+): String {
+    val operation = if (suspended) "suspend" else "unsuspend"
+    return "su shell -c 'pm $operation --user $userId $packageName'"
+}
+
 object HShell {
     init {
         Shell.enableLegacyStderrRedirection = true
@@ -97,7 +113,7 @@ object HShell {
     fun setAppSuspended(
         packageName: String,
         suspended: Boolean,
-    ): Boolean = execSU("pm ${if (suspended) "suspend" else "unsuspend"} $userArg $packageName").first == 0
+    ): Boolean = execSU(pmSuspendCommand(packageName, suspended, getCurrentUserId())).first == 0
 
     fun uninstallApp(packageName: String): Pair<Boolean, String?> {
         val result =
