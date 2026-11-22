@@ -23,6 +23,7 @@ import com.aistra.hail.app.migrateSettingsFromSharedPreferences
 import com.aistra.hail.services.AutoFreezeService
 import com.aistra.hail.utils.AppMetaCache
 import com.aistra.hail.utils.HDhizuku
+import com.aistra.hail.utils.HLog
 import com.aistra.hail.utils.HShell
 import com.aistra.hail.utils.HTarget
 import kotlinx.coroutines.CoroutineScope
@@ -103,7 +104,10 @@ class HailApp : Application() {
         val intent = Intent(app, AutoFreezeService::class.java)
         if (start) {
             setAutoFreezeServiceEnabled(true)
-            ContextCompat.startForegroundService(context, intent)
+            // Background start limits (Android 12+) can reject this; a rejected start must not crash
+            // the caller, and the next lifecycle event retries it.
+            runCatching { ContextCompat.startForegroundService(context, intent) }
+                .onFailure { HLog.e(it) }
         } else {
             stopService(intent)
             setAutoFreezeServiceEnabled(false)

@@ -7,10 +7,15 @@ import androidx.work.workDataOf
 import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import java.util.concurrent.TimeUnit
 
 object HWork {
-    fun cancelWork(name: String) = WorkManager.getInstance(app).cancelUniqueWork(name)
+    fun cancelWork(name: String) {
+        if (WorkManager.isInitialized()) {
+            WorkManager.getInstance(app).cancelUniqueWork(name)
+        }
+    }
 
     fun setDeferredFrozen(
         packageName: String,
@@ -36,7 +41,11 @@ object HWork {
             HailApi.ACTION_FREEZE_ALL,
             ExistingWorkPolicy.REPLACE, // in case the old task has not been executed...
             OneTimeWorkRequestBuilder<AutoFreezeWorker>().run {
-                if (screenOff) setInitialDelay(HailData.autoFreezeDelay.toLong(), TimeUnit.MINUTES)
+                // A positive delay means "wait for the user to leave the device alone": only then
+                // is the worker postponed. A zero delay (or a screen-on trigger) runs immediately.
+                if (screenOff && HailSettings.autoFreezeDelay > 0f) {
+                    setInitialDelay(HailSettings.autoFreezeDelay.toLong(), TimeUnit.MINUTES)
+                }
                 setInputData(workDataOf(HailData.ACTION_LOCK to screenOff))
                 build()
             },
