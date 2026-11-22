@@ -55,7 +55,12 @@ class HailApp : Application() {
         // Observe working_mode changes from Proto DataStore and sync root shell.
         applicationScope.launch {
             withContext(Dispatchers.Main) {
+                var lastWorkingMode = HailData.workingMode
                 HailData.settingsData.collect { settings ->
+                    if (settings.workingMode != lastWorkingMode) {
+                        lastWorkingMode = settings.workingMode
+                        syncRootShell()
+                    }
                     if (settings.workingMode.startsWith(HailData.DHIZUKU)) HDhizuku.init()
                 }
             }
