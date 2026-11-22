@@ -98,8 +98,17 @@ class AppInfoTest {
     }
 
     @Test
-    fun `isInstalled reads the cache entry`() {
+    fun `isInstalled trusts the live predicate over a stale cache entry`() {
         every { AppMetaCache.get("pkg") } returns entry(installed = true, state = AppInfo.State.ENABLED)
+        every { HPackages.isInstalled("pkg") } returns false
+
+        assertFalse(AppInfo("pkg").isInstalled)
+    }
+
+    @Test
+    fun `isInstalled is true when the live predicate says so`() {
+        every { AppMetaCache.get("pkg") } returns null
+        every { HPackages.isInstalled("pkg") } returns true
 
         assertTrue(AppInfo("pkg").isInstalled)
     }
@@ -107,15 +116,8 @@ class AppInfoTest {
     @Test
     fun `isInstalled is false when the cache entry is not installed`() {
         every { AppMetaCache.get("pkg") } returns entry(installed = false, state = AppInfo.State.NOT_FOUND)
+        every { HPackages.isInstalled("pkg") } returns false
 
         assertFalse(AppInfo("pkg").isInstalled)
-    }
-
-    @Test
-    fun `isInstalled falls back to HPackages on cache miss`() {
-        every { AppMetaCache.get("pkg") } returns null
-        every { HPackages.isInstalled("pkg") } returns true
-
-        assertTrue(AppInfo("pkg").isInstalled)
     }
 }

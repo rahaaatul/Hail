@@ -221,7 +221,7 @@ private fun AppItem(
     val disabled = state.isFrozen
     val uninstalled = state == AppInfo.State.UNINSTALLED
     val grayscale = HailData.grayscaleIcon
-    val name = metadata?.name ?: pkg
+    val name = AppMetaCache.displayName(pkg)
     val isSelf = pkg == BuildConfig.APPLICATION_ID
 
     var checked by remember(pkg, revision) { mutableStateOf(HailData.isChecked(pkg)) }

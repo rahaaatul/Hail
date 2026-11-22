@@ -46,13 +46,8 @@ class HailApp : Application() {
         AppMetaCache.warmUp()
         // Registered for the whole process lifetime so cache invalidation happens regardless of
         // which tab is visible (a data-only uninstall must disappear from Home even from Apps).
-        // The Handler overload requires API 26; older releases use the plain callback.
-        val launcherApps = getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
-        if (HTarget.O) {
-            launcherApps?.registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
-        } else {
-            launcherApps?.registerCallback(launcherAppsCallback)
-        }
+        (getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps)
+            ?.registerCallback(launcherAppsCallback, Handler(Looper.getMainLooper()))
         DirtyDataUpdater.update(app)
         applicationScope.launch { migrateSettingsFromSharedPreferences() }
 
@@ -82,7 +77,7 @@ class HailApp : Application() {
         val start =
             autoFreezeAfterLock &&
                 HailData.checkedList.any {
-                    it.packageName != packageName && it.applicationInfo != null && !AppManager.isAppFrozen(it.packageName) && !it.whitelisted
+                    it.packageName != packageName && it.isInstalled && !AppManager.isAppFrozen(it.packageName) && !it.whitelisted
                 }
         val intent = Intent(app, AutoFreezeService::class.java)
         if (start) {

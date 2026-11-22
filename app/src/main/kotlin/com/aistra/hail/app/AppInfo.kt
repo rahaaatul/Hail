@@ -31,8 +31,8 @@ class AppInfo(
     }
 
     val applicationInfo: ApplicationInfo? get() = HPackages.getApplicationInfoOrNull(packageName)
-    val name get() = AppMetaCache.get(packageName)?.name ?: packageName
-    val isInstalled get() = AppMetaCache.get(packageName)?.installed ?: HPackages.isInstalled(packageName)
+    val name get() = AppMetaCache.displayName(packageName)
+    val isInstalled get() = HPackages.isInstalled(packageName)
     val state get() = AppMetaCache.get(packageName)?.state ?: State.UNKNOWN
 
     override fun equals(other: Any?): Boolean = other is AppInfo && other.packageName == packageName

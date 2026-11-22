@@ -150,23 +150,22 @@ class AppsViewModel(
             return@withContext appList
                 .filter {
                     val metadata = AppMetaCache.get(it.packageName)
-                    // Before metadata loads, hide only data-only apps when the Uninstalled filter
-                    // is off: they have no FLAG_INSTALLED and would otherwise flash in the default
-                    // list until prefetch bumps the revision. Installed apps stay visible.
-                    if (
-                        metadata == null &&
-                        !HailData.filterUninstalledApps &&
-                        it.flags and ApplicationInfo.FLAG_INSTALLED == 0
-                    ) {
-                        return@filter false
-                    }
                     val isSystemApp = metadata?.isSystemApp ?: it.isSystemApp
-                    val name = metadata?.name ?: it.packageName
+                    // Before metadata loads, hide apps that are not really installed (data-only or
+                    // broken records whose APK is gone). A user app is hidden unconditionally, a
+                    // system app only while the Uninstalled filter is off; installed apps stay.
+                    if (metadata == null) {
+                        val installed = AppMetaCache.installedFrom(it)
+                        if (!installed && (!isSystemApp || !HailData.filterUninstalledApps)) {
+                            return@filter false
+                        }
+                    }
+                    val name = AppMetaCache.displayName(it.packageName)
                     (
                         (HailData.filterUserApps && !isSystemApp) ||
                             (HailData.filterSystemApps && isSystemApp)
                     ) &&
-                        matchesStatusFilter(metadata?.state, metadata?.enabled, statusFilter) &&
+                        matchesStatusFilter(metadata?.state, metadata?.enabled, isSystemApp, statusFilter) &&
                         // Search apps
                         (
                             (

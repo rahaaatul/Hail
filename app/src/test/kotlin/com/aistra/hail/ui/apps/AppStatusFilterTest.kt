@@ -20,72 +20,79 @@ class AppStatusFilterTest {
     fun `stopped but enabled app matches the enabled filter`() {
         val filter = StatusFilter(enabled = true, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.STOPPED, enabled = true, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.STOPPED, enabled = true, isSystemApp = true, filter))
     }
 
     @Test
     fun `stopped but enabled app matches the stopped filter`() {
         val filter = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = true, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.STOPPED, enabled = true, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.STOPPED, enabled = true, isSystemApp = true, filter))
     }
 
     @Test
     fun `disabled app matches the disabled filter`() {
         val filter = StatusFilter(enabled = false, disabled = true, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.DISABLED, enabled = false, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.DISABLED, enabled = false, isSystemApp = true, filter))
     }
 
     @Test
     fun `disabled app does not match the enabled filter`() {
         val filter = StatusFilter(enabled = true, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertFalse(matchesStatusFilter(AppInfo.State.DISABLED, enabled = false, filter))
+        assertFalse(matchesStatusFilter(AppInfo.State.DISABLED, enabled = false, isSystemApp = true, filter))
     }
 
     @Test
     fun `suspended and enabled app matches the enabled filter`() {
         val filter = StatusFilter(enabled = true, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.SUSPENDED, enabled = true, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.SUSPENDED, enabled = true, isSystemApp = true, filter))
     }
 
     @Test
     fun `suspended and enabled app matches the suspended filter`() {
         val filter = StatusFilter(enabled = false, disabled = false, suspended = true, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.SUSPENDED, enabled = true, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.SUSPENDED, enabled = true, isSystemApp = true, filter))
     }
 
     @Test
     fun `hidden and enabled app matches the enabled filter`() {
         val filter = StatusFilter(enabled = true, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.HIDDEN, enabled = true, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.HIDDEN, enabled = true, isSystemApp = true, filter))
     }
 
     @Test
     fun `hidden and enabled app matches the hidden filter`() {
         val filter = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = true, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.HIDDEN, enabled = true, filter))
+        assertTrue(matchesStatusFilter(AppInfo.State.HIDDEN, enabled = true, isSystemApp = true, filter))
     }
 
     @Test
-    fun `uninstalled app matches only the uninstalled filter`() {
+    fun `uninstalled system app matches only the uninstalled filter`() {
         val uninstalled = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = true)
         val enabled = StatusFilter(enabled = true, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
         val disabled = StatusFilter(enabled = false, disabled = true, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, uninstalled))
-        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, enabled))
-        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, disabled))
+        assertTrue(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, isSystemApp = true, uninstalled))
+        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, isSystemApp = true, enabled))
+        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, isSystemApp = true, disabled))
+    }
+
+    @Test
+    fun `uninstalled user app is hidden even with the uninstalled filter`() {
+        val uninstalled = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = true)
+
+        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = true, isSystemApp = false, uninstalled))
     }
 
     @Test
     fun `not found app matches no filter`() {
-        assertFalse(matchesStatusFilter(AppInfo.State.NOT_FOUND, enabled = true, all))
+        assertFalse(matchesStatusFilter(AppInfo.State.NOT_FOUND, enabled = true, isSystemApp = true, all))
     }
 
     @Test
@@ -93,8 +100,8 @@ class AppStatusFilterTest {
         val stopped = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = true, uninstalled = false)
         val none = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(null, enabled = true, stopped))
-        assertTrue(matchesStatusFilter(null, enabled = true, none))
+        assertTrue(matchesStatusFilter(null, enabled = true, isSystemApp = true, stopped))
+        assertTrue(matchesStatusFilter(null, enabled = true, isSystemApp = true, none))
     }
 
     @Test
@@ -102,16 +109,16 @@ class AppStatusFilterTest {
         val stopped = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = true, uninstalled = false)
         val none = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertTrue(matchesStatusFilter(AppInfo.State.UNKNOWN, enabled = true, stopped))
-        assertTrue(matchesStatusFilter(AppInfo.State.UNKNOWN, enabled = true, none))
+        assertTrue(matchesStatusFilter(AppInfo.State.UNKNOWN, enabled = true, isSystemApp = true, stopped))
+        assertTrue(matchesStatusFilter(AppInfo.State.UNKNOWN, enabled = true, isSystemApp = true, none))
     }
 
     @Test
     fun `no filter selected hides every known state`() {
         val none = StatusFilter(enabled = false, disabled = false, suspended = false, hidden = false, stopped = false, uninstalled = false)
 
-        assertFalse(matchesStatusFilter(AppInfo.State.ENABLED, enabled = true, none))
-        assertFalse(matchesStatusFilter(AppInfo.State.STOPPED, enabled = true, none))
-        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = false, none))
+        assertFalse(matchesStatusFilter(AppInfo.State.ENABLED, enabled = true, isSystemApp = true, none))
+        assertFalse(matchesStatusFilter(AppInfo.State.STOPPED, enabled = true, isSystemApp = true, none))
+        assertFalse(matchesStatusFilter(AppInfo.State.UNINSTALLED, enabled = false, isSystemApp = true, none))
     }
 }

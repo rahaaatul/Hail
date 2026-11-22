@@ -16,20 +16,24 @@ internal data class StatusFilter(
 internal fun matchesStatusFilter(
     status: AppInfo.State?,
     enabled: Boolean?,
+    isSystemApp: Boolean,
     filter: StatusFilter,
 ): Boolean {
     if (status == null || status == AppInfo.State.UNKNOWN) return true
-    return matchesKnownState(status, enabled, filter)
+    return matchesKnownState(status, enabled, isSystemApp, filter)
 }
 
 private fun matchesKnownState(
     status: AppInfo.State,
     enabled: Boolean?,
+    isSystemApp: Boolean,
     filter: StatusFilter,
 ): Boolean =
     when (status) {
+        // A user app cannot be reinstalled once its APK is gone, so it is hidden entirely; a
+        // system app can come back with `pm install-existing` and is only shown on request.
         AppInfo.State.UNINSTALLED -> {
-            filter.uninstalled
+            filter.uninstalled && isSystemApp
         }
 
         AppInfo.State.NOT_FOUND -> {
