@@ -1,10 +1,8 @@
 package com.aistra.hail.app
 
 import com.aistra.hail.BuildConfig
-import com.aistra.hail.HailApp.Companion.app
 import com.aistra.hail.app.SettingsData
 import com.aistra.hail.backup.SettingsBackup
-import com.aistra.hail.utils.HFiles
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -12,8 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
-import org.json.JSONObject
 
 object HailData {
     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
@@ -30,11 +26,11 @@ object HailData {
     const val URL_PAYPAL = "https://www.paypal.me/aistra0528"
     const val URL_TRANSLATE = "https://hosted.weblate.org/engage/hail/"
     const val VERSION = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
-    private const val KEY_ID = "id"
+    internal const val KEY_ID = "id"
     const val KEY_TAG = "tag"
-    private const val KEY_TAGS = "tags"
-    private const val KEY_PINNED = "pinned"
-    private const val KEY_WHITELISTED = "whitelisted"
+    internal const val KEY_TAGS = "tags"
+    internal const val KEY_PINNED = "pinned"
+    internal const val KEY_WHITELISTED = "whitelisted"
     const val KEY_PACKAGE = "package"
     const val KEY_FROZEN = "frozen"
     const val SORT_BY = "sort_by"
@@ -199,34 +195,9 @@ object HailData {
     val skipNotifyingApp get() = settingsData.value.skipNotifyingApp
     val dynamicShortcutAction get() = settingsData.value.dynamicShortcutAction
 
-    // ── File-backed state (unchanged — still JSON on disk) ──
+    // ── Room-backed state (checked apps + tags) ──
 
-    private val dir = "${app.filesDir.path}/v1"
-    private val appsPath = "$dir/apps.json"
-    private val tagsPath = "$dir/tags.json"
-
-    val checkedList: MutableList<AppInfo> by lazy {
-        mutableListOf<AppInfo>().apply {
-            runCatching {
-                val json = JSONArray(HFiles.read(appsPath))
-                for (i in 0 until json.length()) {
-                    add(
-                        with(json.getJSONObject(i)) {
-                            AppInfo(
-                                packageName = getString(KEY_PACKAGE),
-                                pinned = optBoolean(KEY_PINNED),
-                                whitelisted = optBoolean(KEY_WHITELISTED),
-                                tagIdList =
-                                    optJSONArray(KEY_TAGS)?.let {
-                                        MutableList(it.length()) { index -> it.getInt(index) }
-                                    } ?: mutableListOf(optInt(KEY_TAG)),
-                            )
-                        },
-                    )
-                }
-            }
-        }
-    }
+    val checkedList: MutableList<AppInfo> get() = HailDataStore.checkedList
 
     fun isChecked(packageName: String): Boolean {
         if (packageName == BuildConfig.APPLICATION_ID) return false
@@ -252,50 +223,15 @@ object HailData {
         if (saveApps) saveApps()
     }
 
-    fun saveApps() {
-        if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(
-            appsPath,
-            JSONArray().run {
-                checkedList.forEach {
-                    put(
-                        JSONObject()
-                            .put(KEY_PACKAGE, it.packageName)
-                            .put(KEY_PINNED, it.pinned)
-                            .put(KEY_WHITELISTED, it.whitelisted)
-                            .put(KEY_TAGS, JSONArray(it.tagIdList)),
-                    )
-                }
-                toString()
-            },
-        )
-    }
+    fun saveApps() = HailDataStore.save()
 
-    val tags: MutableList<Pair<String, Int>> by lazy {
-        mutableListOf<Pair<String, Int>>().apply {
-            runCatching {
-                val json = JSONArray(HFiles.read(tagsPath))
-                for (i in 0 until json.length()) {
-                    add(with(json.getJSONObject(i)) { getString(KEY_TAG) to getInt(KEY_ID) })
-                }
-            }.onFailure {
-                add("Default" to 0)
-            }
-        }
-    }
+    val tags: MutableList<Pair<String, Int>> get() = HailDataStore.tags
 
-    fun saveTags() {
-        if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(
-            tagsPath,
-            JSONArray().run {
-                tags.forEach {
-                    put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
-                }
-                toString()
-            },
-        )
-    }
+    fun saveTags() = HailDataStore.save()
+
+    suspend fun flush() = HailDataStore.flush()
+
+    fun warmUp() = HailDataStore.warmUp()
 
     // ── Async setters (write to Proto DataStore) ──
 
@@ -325,62 +261,62 @@ object HailData {
             SettingsDataStore.updateSettings { persistFilter(filter, enabled) }
         }
     }
+}
 
-    private fun applyFilterToSettings(
-        settings: SettingsData,
-        filter: String,
-        enabled: Boolean,
-    ): SettingsData =
-        when (filter) {
-            FILTER_USER_APPS -> settings.copy(filterUserApps = enabled)
-            FILTER_SYSTEM_APPS -> settings.copy(filterSystemApps = enabled)
-            FILTER_ENABLED_APPS -> settings.copy(filterEnabledApps = enabled)
-            FILTER_DISABLED_APPS -> settings.copy(filterDisabledApps = enabled)
-            FILTER_SUSPENDED_APPS -> settings.copy(filterSuspendedApps = enabled)
-            FILTER_HIDDEN_APPS -> settings.copy(filterHiddenApps = enabled)
-            FILTER_STOPPED_APPS -> settings.copy(filterStoppedApps = enabled)
-            FILTER_UNINSTALLED_APPS -> settings.copy(filterUninstalledApps = enabled)
-            else -> settings
+private fun applyFilterToSettings(
+    settings: SettingsData,
+    filter: String,
+    enabled: Boolean,
+): SettingsData =
+    when (filter) {
+        HailData.FILTER_USER_APPS -> settings.copy(filterUserApps = enabled)
+        HailData.FILTER_SYSTEM_APPS -> settings.copy(filterSystemApps = enabled)
+        HailData.FILTER_ENABLED_APPS -> settings.copy(filterEnabledApps = enabled)
+        HailData.FILTER_DISABLED_APPS -> settings.copy(filterDisabledApps = enabled)
+        HailData.FILTER_SUSPENDED_APPS -> settings.copy(filterSuspendedApps = enabled)
+        HailData.FILTER_HIDDEN_APPS -> settings.copy(filterHiddenApps = enabled)
+        HailData.FILTER_STOPPED_APPS -> settings.copy(filterStoppedApps = enabled)
+        HailData.FILTER_UNINSTALLED_APPS -> settings.copy(filterUninstalledApps = enabled)
+        else -> settings
+    }
+
+private fun SettingsBackup.Builder.persistFilter(
+    filter: String,
+    enabled: Boolean,
+) {
+    when (filter) {
+        HailData.FILTER_USER_APPS -> {
+            setFilterUserApps(enabled)
         }
 
-    private fun SettingsBackup.Builder.persistFilter(
-        filter: String,
-        enabled: Boolean,
-    ) {
-        when (filter) {
-            FILTER_USER_APPS -> {
-                setFilterUserApps(enabled)
-            }
-
-            FILTER_SYSTEM_APPS -> {
-                setFilterSystemApps(enabled)
-            }
-
-            FILTER_ENABLED_APPS -> {
-                setFilterEnabledApps(enabled)
-            }
-
-            FILTER_DISABLED_APPS -> {
-                setFilterDisabledApps(enabled)
-            }
-
-            FILTER_SUSPENDED_APPS -> {
-                setFilterSuspendedApps(enabled)
-            }
-
-            FILTER_HIDDEN_APPS -> {
-                setFilterHiddenApps(enabled)
-            }
-
-            FILTER_STOPPED_APPS -> {
-                setFilterStoppedApps(enabled)
-            }
-
-            FILTER_UNINSTALLED_APPS -> {
-                setFilterUninstalledApps(enabled)
-            }
-
-            else -> { /* unknown filter key — ignore */ }
+        HailData.FILTER_SYSTEM_APPS -> {
+            setFilterSystemApps(enabled)
         }
+
+        HailData.FILTER_ENABLED_APPS -> {
+            setFilterEnabledApps(enabled)
+        }
+
+        HailData.FILTER_DISABLED_APPS -> {
+            setFilterDisabledApps(enabled)
+        }
+
+        HailData.FILTER_SUSPENDED_APPS -> {
+            setFilterSuspendedApps(enabled)
+        }
+
+        HailData.FILTER_HIDDEN_APPS -> {
+            setFilterHiddenApps(enabled)
+        }
+
+        HailData.FILTER_STOPPED_APPS -> {
+            setFilterStoppedApps(enabled)
+        }
+
+        HailData.FILTER_UNINSTALLED_APPS -> {
+            setFilterUninstalledApps(enabled)
+        }
+
+        else -> { /* unknown filter key — ignore */ }
     }
 }

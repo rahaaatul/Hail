@@ -1,11 +1,46 @@
 package com.aistra.hail.app
 
+import androidx.room3.Room
+import com.aistra.hail.HailApp
+import com.aistra.hail.utils.AppMetaCache
+import com.aistra.hail.utils.AppMetadataDatabase
+import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+import java.util.concurrent.CopyOnWriteArrayList
 
+@RunWith(RobolectricTestRunner::class)
+@Config(application = HailApp::class)
 class HailDataTest {
+    private lateinit var db: AppMetadataDatabase
+
+    @Before
+    fun setUp() {
+        val app = RuntimeEnvironment.application as HailApp
+        HailApp.setAppForTest(app)
+        db =
+            Room
+                .inMemoryDatabaseBuilder(app, AppMetadataDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
+        AppMetaCache.useDatabaseForTest(db)
+        HailDataStore.resetForTest()
+    }
+
+    @After
+    fun tearDown() {
+        AppMetaCache.useDatabaseForTest(null)
+        db.close()
+    }
+
     @Test
     fun `working mode default is correct`() {
         assertEquals("default", HailData.MODE_DEFAULT)
@@ -61,4 +96,73 @@ class HailDataTest {
         assertEquals("tag", HailData.KEY_TAG)
         assertEquals("frozen", HailData.KEY_FROZEN)
     }
+
+    @Test
+    fun `add and remove checked apps go through room`() =
+        runBlocking {
+            assertFalse(HailData.isChecked("com.example.pkg"))
+
+            HailData.addCheckedApp("com.example.pkg", tagId = 2)
+            HailData.flush()
+
+            assertTrue(HailData.isChecked("com.example.pkg"))
+            assertEquals(1, db.checkedAppDao().loadAll().size)
+            assertEquals(
+                "2",
+                db
+                    .checkedAppDao()
+                    .loadAll()
+                    .single()
+                    .tagIds,
+            )
+
+            HailData.removeCheckedApp("com.example.pkg")
+            HailData.flush()
+
+            assertFalse(HailData.isChecked("com.example.pkg"))
+            assertTrue(db.checkedAppDao().loadAll().isEmpty())
+        }
+
+    @Test
+    fun `hails own package is never checked`() =
+        runBlocking {
+            val own = com.aistra.hail.BuildConfig.APPLICATION_ID
+            HailData.addCheckedApp(own)
+            HailData.flush()
+
+            assertFalse(HailData.isChecked(own))
+            assertTrue(db.checkedAppDao().loadAll().isEmpty())
+        }
+
+    @Test
+    fun `tags are persisted to room`() =
+        runBlocking {
+            HailData.tags.clear()
+            HailData.tags.add("Work" to 1)
+            HailData.saveTags()
+            HailData.flush()
+
+            assertEquals(listOf(1), db.tagDao().loadAll().map { it.id })
+            assertEquals(listOf("Work"), db.tagDao().loadAll().map { it.name })
+        }
+
+    @Test
+    fun `snapshot lists are copy on write and stay mutable`() =
+        runBlocking {
+            HailData.addCheckedApp("com.example.pkg", tagId = 1)
+            HailData.tags.clear()
+            HailData.tags.add("Work" to 1)
+
+            assertTrue(HailData.checkedList is CopyOnWriteArrayList<*>)
+            assertTrue(HailData.tags is CopyOnWriteArrayList<*>)
+
+            // The UI keeps mutating the live lists; add/remove must still work and persist.
+            HailData.checkedList.add(AppInfo("com.example.extra"))
+            HailData.removeCheckedApp("com.example.pkg")
+            HailData.flush()
+
+            assertEquals(listOf("com.example.extra"), HailData.checkedList.map { it.packageName })
+            assertEquals(listOf("Work" to 1), HailData.tags)
+            assertEquals(listOf("com.example.extra"), db.checkedAppDao().loadAll().map { it.packageName })
+        }
 }

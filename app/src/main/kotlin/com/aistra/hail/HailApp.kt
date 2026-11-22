@@ -44,6 +44,7 @@ class HailApp : Application() {
             )
         }
         AppMetaCache.warmUp()
+        HailData.warmUp()
         // Registered for the whole process lifetime so cache invalidation happens regardless of
         // which tab is visible (a data-only uninstall must disappear from Home even from Apps).
         (getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps)
