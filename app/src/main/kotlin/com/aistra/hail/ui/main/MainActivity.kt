@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Menu
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -49,29 +50,40 @@ class MainActivity :
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
 
+    private var isAuthenticated = false
+    private var isPromptShowing = false
+    private var biometricUnavailableDialog: AlertDialog? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = initView()
         HailApp.app.syncRootShell()
-        startBiometricAuthenticationIfEnabled()
+        authenticateIfNeeded()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        authenticateIfNeeded()
     }
 
     // TODO: biometric-compose (rememberAuthenticationLauncher) is not applicable here; MainActivity is AppCompat/Fragments.
-    private fun startBiometricAuthenticationIfEnabled() {
-        if (!HailSettings.biometricLogin) return
+    // Re-entering the activity (for example, coming back from the biometric settings) re-runs the
+    // check so the content never stays hidden behind a dismissed prompt or dialog.
+    private fun authenticateIfNeeded() {
+        if (isAuthenticated || isPromptShowing || !HailSettings.biometricLogin) return
 
         val biometricManager = BiometricManager.from(this)
         val strongResult = biometricManager.canAuthenticate(BIOMETRIC_STRONG)
         val deviceCredentialResult = biometricManager.canAuthenticate(DEVICE_CREDENTIAL)
 
-        if (!BiometricGate.shouldAuthenticate(HailSettings.biometricLogin, strongResult, deviceCredentialResult)) {
+        if (BiometricGate.shouldAuthenticate(HailSettings.biometricLogin, strongResult, deviceCredentialResult)) {
+            isPromptShowing = true
+            binding.root.isVisible = false
+            startBiometricPrompt(BiometricGate.allowedAuthenticators(strongResult, deviceCredentialResult))
+        } else {
             showBiometricUnavailableDialog()
-            return
         }
-
-        binding.root.isVisible = false
-        startBiometricPrompt(BiometricGate.allowedAuthenticators(strongResult, deviceCredentialResult))
     }
 
     // TODO: setInvalidatedByBiometricEnrollment is a Keystore-only property; it requires a biometric-only CryptoObject path and is incompatible with the device-credential fallback.
@@ -111,12 +123,15 @@ class MainActivity :
                         errString: CharSequence,
                     ) {
                         super.onAuthenticationError(errorCode, errString)
+                        isPromptShowing = false
                         HUI.showToast(errString)
                         finishAndRemoveTask()
                     }
 
                     override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                         super.onAuthenticationSucceeded(result)
+                        isPromptShowing = false
+                        isAuthenticated = true
                         binding.root.isVisible = true
                     }
                 },
@@ -136,17 +151,22 @@ class MainActivity :
     }
 
     private fun showBiometricUnavailableDialog() {
+        isPromptShowing = false
         binding.root.isVisible = false
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.title_biometric_unavailable)
-            .setMessage(R.string.msg_biometric_unavailable)
-            .setPositiveButton(R.string.action_biometric_settings) { _, _ -> openBiometricSettings() }
-            .setNegativeButton(R.string.action_cancel) { _, _ -> finishAndRemoveTask() }
-            .setOnCancelListener { finishAndRemoveTask() }
-            .show()
+        if (biometricUnavailableDialog?.isShowing == true) return
+        biometricUnavailableDialog =
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.title_biometric_unavailable)
+                .setMessage(R.string.msg_biometric_unavailable)
+                .setPositiveButton(R.string.action_biometric_settings) { _, _ -> openBiometricSettings() }
+                .setNegativeButton(R.string.action_cancel) { _, _ -> finishAndRemoveTask() }
+                .setOnCancelListener { finishAndRemoveTask() }
+                .show()
     }
 
     private fun openBiometricSettings() {
+        biometricUnavailableDialog?.dismiss()
+        biometricUnavailableDialog = null
         val intent =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Intent(Settings.ACTION_BIOMETRIC_ENROLL).takeIf { it.resolveActivity(packageManager) != null }
