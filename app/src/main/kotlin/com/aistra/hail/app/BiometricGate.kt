@@ -11,7 +11,6 @@ object BiometricGate {
         val title: String,
         val subtitle: String,
         val description: String?,
-        val negativeButtonText: String,
         val logoRes: Int?,
         val canUseAdvanced: Boolean,
     )
@@ -47,7 +46,6 @@ object BiometricGate {
                 .setTitle(spec.title)
                 .setSubtitle(spec.subtitle)
                 .setAllowedAuthenticators(spec.allowedAuthenticators)
-                .setNegativeButtonText(spec.negativeButtonText)
         if (spec.canUseAdvanced) {
             spec.description?.let { builder.setDescription(it) }
             spec.logoRes?.let { builder.setLogoRes(it) }

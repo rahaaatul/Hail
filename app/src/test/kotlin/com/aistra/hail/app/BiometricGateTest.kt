@@ -123,7 +123,6 @@ class BiometricGateTest {
                     title = "title",
                     subtitle = "subtitle",
                     description = null,
-                    negativeButtonText = "cancel",
                     logoRes = null,
                     canUseAdvanced = false,
                 ),
@@ -132,7 +131,6 @@ class BiometricGateTest {
         assertEquals(BIOMETRIC_STRONG or DEVICE_CREDENTIAL, promptInfo.allowedAuthenticators)
         assertEquals("title", promptInfo.title)
         assertEquals("subtitle", promptInfo.subtitle)
-        assertEquals("cancel", promptInfo.negativeButtonText)
     }
 
     @Test
@@ -144,7 +142,6 @@ class BiometricGateTest {
                     title = "title",
                     subtitle = "subtitle",
                     description = "description",
-                    negativeButtonText = "cancel",
                     logoRes = android.R.drawable.ic_dialog_info,
                     canUseAdvanced = true,
                 ),
@@ -163,7 +160,6 @@ class BiometricGateTest {
                     title = "title",
                     subtitle = "subtitle",
                     description = "description",
-                    negativeButtonText = "cancel",
                     logoRes = android.R.drawable.ic_dialog_info,
                     canUseAdvanced = false,
                 ),
