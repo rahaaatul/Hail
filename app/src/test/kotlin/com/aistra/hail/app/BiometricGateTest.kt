@@ -71,6 +71,50 @@ class BiometricGateTest {
     }
 
     @Test
+    fun `should not authenticate when neither authenticator is enrolled`() {
+        assertFalse(
+            BiometricGate.shouldAuthenticate(
+                biometricLogin = true,
+                strongResult = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
+                deviceCredentialResult = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
+            ),
+        )
+    }
+
+    @Test
+    fun `should authenticate with device credential when strong biometric has none enrolled`() {
+        assertTrue(
+            BiometricGate.shouldAuthenticate(
+                biometricLogin = true,
+                strongResult = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
+                deviceCredentialResult = BiometricManager.BIOMETRIC_SUCCESS,
+            ),
+        )
+    }
+
+    @Test
+    fun `allowed authenticators is zero when neither authenticator is enrolled`() {
+        assertEquals(
+            0,
+            BiometricGate.allowedAuthenticators(
+                strongResult = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
+                deviceCredentialResult = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
+            ),
+        )
+    }
+
+    @Test
+    fun `allowed authenticators falls back to device credential when strong biometric has none enrolled`() {
+        assertEquals(
+            DEVICE_CREDENTIAL,
+            BiometricGate.allowedAuthenticators(
+                strongResult = BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
+                deviceCredentialResult = BiometricManager.BIOMETRIC_SUCCESS,
+            ),
+        )
+    }
+
+    @Test
     fun `allowed authenticators selects strong biometric only`() {
         assertEquals(
             BIOMETRIC_STRONG,
