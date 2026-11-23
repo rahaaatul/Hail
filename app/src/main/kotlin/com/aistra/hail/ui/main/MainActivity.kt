@@ -1,6 +1,12 @@
 package com.aistra.hail.ui.main
 
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
@@ -20,6 +26,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.aistra.hail.HailApp
 import com.aistra.hail.R
+import com.aistra.hail.app.BiometricGate
 import com.aistra.hail.app.HailSettings
 import com.aistra.hail.databinding.ActivityMainBinding
 import com.aistra.hail.extensions.applyDefaultInsetter
@@ -47,13 +54,53 @@ class MainActivity :
         WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = initView()
         HailApp.app.syncRootShell()
-        if (!HailSettings.biometricLogin || BiometricManager
-                .from(this)
-                .canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) != BiometricManager.BIOMETRIC_SUCCESS
-        ) {
+        startBiometricAuthenticationIfEnabled()
+    }
+
+    // TODO: biometric-compose (rememberAuthenticationLauncher) is not applicable here; MainActivity is AppCompat/Fragments.
+    private fun startBiometricAuthenticationIfEnabled() {
+        if (!HailSettings.biometricLogin) return
+
+        val biometricManager = BiometricManager.from(this)
+        val strongResult = biometricManager.canAuthenticate(BIOMETRIC_STRONG)
+        val deviceCredentialResult = biometricManager.canAuthenticate(DEVICE_CREDENTIAL)
+
+        if (!BiometricGate.shouldAuthenticate(HailSettings.biometricLogin, strongResult, deviceCredentialResult)) {
+            showBiometricUnavailableDialog()
             return
         }
+
         binding.root.isVisible = false
+        startBiometricPrompt(BiometricGate.allowedAuthenticators(strongResult, deviceCredentialResult))
+    }
+
+    // TODO: setInvalidatedByBiometricEnrollment is a Keystore-only property; it requires a biometric-only CryptoObject path and is incompatible with the device-credential fallback.
+    private fun startBiometricPrompt(allowedAuthenticators: Int) {
+        val canUseAdvanced =
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.SET_BIOMETRIC_DIALOG_ADVANCED,
+            ) == PackageManager.PERMISSION_GRANTED
+
+        try {
+            launchBiometricPrompt(allowedAuthenticators, canUseAdvanced)
+        } catch (_: SecurityException) {
+            if (!canUseAdvanced) {
+                showBiometricUnavailableDialog()
+                return
+            }
+            try {
+                launchBiometricPrompt(allowedAuthenticators, canUseAdvanced = false)
+            } catch (_: SecurityException) {
+                showBiometricUnavailableDialog()
+            }
+        }
+    }
+
+    private fun launchBiometricPrompt(
+        allowedAuthenticators: Int,
+        canUseAdvanced: Boolean,
+    ) {
         val biometricPrompt =
             BiometricPrompt(
                 this,
@@ -75,13 +122,44 @@ class MainActivity :
                 },
             )
         val promptInfo =
-            BiometricPrompt.PromptInfo
-                .Builder()
-                .setTitle(getString(R.string.action_biometric))
-                .setSubtitle(getString(R.string.msg_biometric))
-                .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-                .build()
+            BiometricGate.buildPromptInfo(
+                BiometricGate.PromptInfoSpec(
+                    allowedAuthenticators = allowedAuthenticators,
+                    title = getString(R.string.action_biometric),
+                    subtitle = getString(R.string.msg_biometric),
+                    description = getString(R.string.msg_biometric_prompt),
+                    negativeButtonText = getString(R.string.action_cancel),
+                    logoRes = R.mipmap.ic_launcher,
+                    canUseAdvanced = canUseAdvanced,
+                ),
+            )
         biometricPrompt.authenticate(promptInfo)
+    }
+
+    private fun showBiometricUnavailableDialog() {
+        binding.root.isVisible = false
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.title_biometric_unavailable)
+            .setMessage(R.string.msg_biometric_unavailable)
+            .setPositiveButton(R.string.action_biometric_settings) { _, _ -> openBiometricSettings() }
+            .setNegativeButton(R.string.action_cancel) { _, _ -> finishAndRemoveTask() }
+            .setOnCancelListener { finishAndRemoveTask() }
+            .show()
+    }
+
+    private fun openBiometricSettings() {
+        val intent =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                Intent(Settings.ACTION_BIOMETRIC_ENROLL).takeIf { it.resolveActivity(packageManager) != null }
+            } else {
+                null
+            } ?: Intent(Settings.ACTION_SECURITY_SETTINGS)
+        try {
+            startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            HUI.showToast(getString(R.string.msg_biometric_settings_not_found))
+            finishAndRemoveTask()
+        }
     }
 
     private fun initView() =

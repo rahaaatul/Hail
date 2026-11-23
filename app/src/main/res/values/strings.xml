@@ -144,6 +144,11 @@
     <string name="compact_icon">Compact icon</string>
     <string name="action_biometric">Biometric login</string>
     <string name="msg_biometric">Login using your biometric credential</string>
+    <string name="title_biometric_unavailable">Biometric login unavailable</string>
+    <string name="msg_biometric_unavailable">Biometric login is enabled, but this device has no usable biometric or device credential. Enroll a biometric or set a screen lock, then try again.</string>
+    <string name="action_biometric_settings">Open settings</string>
+    <string name="msg_biometric_prompt">Use your biometric or device credential to continue</string>
+    <string name="msg_biometric_settings_not_found">Could not open settings</string>
     <string name="action_pin">Pin</string>
     <string name="action_unpin">Unpin</string>
     <string name="action_whitelist">Add to Whitelist</string>

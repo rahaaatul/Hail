@@ -27,6 +27,9 @@
             android:name="android.permission.MANAGE_APP_OPS_MODES"
             tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission
+            android:name="android.permission.SET_BIOMETRIC_DIALOG_ADVANCED"
+            tools:ignore="ProtectedPermissions"/>
     <uses-permission android:name="com.oasisfeng.island.permission.FREEZE_PACKAGE"/>
     <uses-permission android:name="com.oasisfeng.island.permission.SUSPEND_PACKAGE"/>
 
