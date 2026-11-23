@@ -143,6 +143,7 @@ class MainActivity :
                     title = getString(R.string.action_biometric),
                     subtitle = getString(R.string.msg_biometric),
                     description = getString(R.string.msg_biometric_prompt),
+                    negativeButtonText = getString(R.string.action_cancel),
                     logoRes = R.mipmap.ic_launcher,
                     canUseAdvanced = canUseAdvanced,
                 ),

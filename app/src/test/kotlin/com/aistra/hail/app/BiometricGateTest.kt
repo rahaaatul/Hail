@@ -3,6 +3,7 @@ package com.aistra.hail.app
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+import androidx.biometric.BiometricPrompt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -167,6 +168,7 @@ class BiometricGateTest {
                     title = "title",
                     subtitle = "subtitle",
                     description = null,
+                    negativeButtonText = "cancel",
                     logoRes = null,
                     canUseAdvanced = false,
                 ),
@@ -175,6 +177,7 @@ class BiometricGateTest {
         assertEquals(BIOMETRIC_STRONG or DEVICE_CREDENTIAL, promptInfo.allowedAuthenticators)
         assertEquals("title", promptInfo.title)
         assertEquals("subtitle", promptInfo.subtitle)
+        assertEquals("", promptInfo.negativeButtonText.toString())
     }
 
     @Test
@@ -186,6 +189,7 @@ class BiometricGateTest {
                     title = "title",
                     subtitle = "subtitle",
                     description = "description",
+                    negativeButtonText = "cancel",
                     logoRes = android.R.drawable.ic_dialog_info,
                     canUseAdvanced = true,
                 ),
@@ -204,6 +208,7 @@ class BiometricGateTest {
                     title = "title",
                     subtitle = "subtitle",
                     description = "description",
+                    negativeButtonText = "cancel",
                     logoRes = android.R.drawable.ic_dialog_info,
                     canUseAdvanced = false,
                 ),
@@ -212,4 +217,55 @@ class BiometricGateTest {
         assertNull(promptInfo.description)
         assertEquals(-1, promptInfo.logoRes)
     }
+
+    @Test
+    fun `build prompt info sets the negative button for a strong only prompt`() {
+        val promptInfo = promptInfoWith(BIOMETRIC_STRONG, "cancel")
+
+        assertEquals("cancel", promptInfo.negativeButtonText.toString())
+    }
+
+    @Test
+    fun `build prompt info omits the negative button for a device credential prompt`() {
+        val promptInfo = promptInfoWith(DEVICE_CREDENTIAL, "cancel")
+
+        assertEquals("", promptInfo.negativeButtonText.toString())
+    }
+
+    @Test
+    fun `build prompt info omits the negative button when both authenticators are allowed`() {
+        val promptInfo = promptInfoWith(BIOMETRIC_STRONG or DEVICE_CREDENTIAL, "cancel")
+
+        assertEquals("", promptInfo.negativeButtonText.toString())
+    }
+
+    @Test
+    fun `build prompt info omits the negative button for a strong only prompt without text`() {
+        val promptInfo = promptInfoWith(BIOMETRIC_STRONG, null)
+
+        assertEquals("", promptInfo.negativeButtonText.toString())
+    }
+
+    @Test
+    fun `build prompt info omits the negative button for a strong only prompt with empty text`() {
+        val promptInfo = promptInfoWith(BIOMETRIC_STRONG, "")
+
+        assertEquals("", promptInfo.negativeButtonText.toString())
+    }
+
+    private fun promptInfoWith(
+        allowedAuthenticators: Int,
+        negativeButtonText: String?,
+    ): BiometricPrompt.PromptInfo =
+        BiometricGate.buildPromptInfo(
+            BiometricGate.PromptInfoSpec(
+                allowedAuthenticators = allowedAuthenticators,
+                title = "title",
+                subtitle = "subtitle",
+                description = null,
+                negativeButtonText = negativeButtonText,
+                logoRes = null,
+                canUseAdvanced = false,
+            ),
+        )
 }
