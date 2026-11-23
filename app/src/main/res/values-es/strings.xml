@@ -96,6 +96,11 @@
     <string name="compact_icon">Iconos compactos</string>
     <string name="action_biometric">Inicio de sesión biométrico</string>
     <string name="msg_biometric">Inicia sesión con tu credencial biométrica</string>
+    <string name="title_biometric_unavailable">El inicio de sesión biométrico no está disponible</string>
+    <string name="msg_biometric_unavailable">El inicio de sesión biométrico está activado, pero este dispositivo no tiene ninguna credencial biométrica o de dispositivo que se pueda usar. Registra una credencial biométrica o configura un bloqueo de pantalla y vuelve a intentarlo.</string>
+    <string name="action_biometric_settings">Abrir ajustes</string>
+    <string name="msg_biometric_prompt">Usa tu credencial biométrica o de dispositivo para continuar</string>
+    <string name="msg_biometric_settings_not_found">No se pudieron abrir los ajustes</string>
     <string name="action_pin">Anclar</string>
     <string name="action_unpin">Desanclar</string>
     <string name="nothing_here">Nada por aquí</string>

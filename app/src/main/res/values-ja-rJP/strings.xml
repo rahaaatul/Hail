@@ -94,6 +94,11 @@
     <string name="grayscale_icon">グレースケールアイコン</string>
     <string name="action_biometric">生体認証ログイン</string>
     <string name="msg_biometric">生体認証情報を使用して認証する</string>
+    <string name="title_biometric_unavailable">生体認証ログインを利用できません</string>
+    <string name="msg_biometric_unavailable">生体認証ログインが有効ですが、この端末には使用できる生体認証情報または端末の認証情報がありません。生体認証を登録するか、画面ロックを設定してから再試行してください。</string>
+    <string name="action_biometric_settings">設定を開く</string>
+    <string name="msg_biometric_prompt">続行するには生体認証または端末の認証情報を使用してください</string>
+    <string name="msg_biometric_settings_not_found">設定を開けませんでした</string>
     <string name="action_pin">ピン留めする</string>
     <string name="action_unpin">ピン留め解除</string>
     <string name="nothing_here">何もありません</string>

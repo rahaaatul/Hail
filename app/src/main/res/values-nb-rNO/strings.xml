@@ -107,6 +107,11 @@
     <string name="auto_freeze_after_lock">Etter skjermlås</string>
     <string name="skip_while_charging">Hopp over ved lading</string>
     <string name="msg_biometric">Logg inn med ditt biometriske kjennetegn</string>
+    <string name="title_biometric_unavailable">Biometrisk innlogging er ikke tilgjengelig</string>
+    <string name="msg_biometric_unavailable">Biometrisk innlogging er aktivert, men denne enheten har ingen brukbar biometri eller enhetslegitimasjon. Registrer biometri eller sett en skjermlås, og prøv igjen.</string>
+    <string name="action_biometric_settings">Åpne innstillinger</string>
+    <string name="msg_biometric_prompt">Bruk biometrien eller enhetslegitimasjonen din for å fortsette</string>
+    <string name="msg_biometric_settings_not_found">Kunne ikke åpne innstillinger</string>
     <string name="action_whitelist">Legg til på hvitliste</string>
     <string name="msg_unfreeze">Tint: %s</string>
     <string name="action_clear_dynamic_shortcuts">Tøm alle dynamiske snarveier</string>

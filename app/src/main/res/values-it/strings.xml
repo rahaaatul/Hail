@@ -100,6 +100,11 @@
     <string name="compact_icon">Icona compatta</string>
     <string name="action_biometric">Accesso biometrico</string>
     <string name="msg_biometric">Log in using your biometric credential</string>
+    <string name="title_biometric_unavailable">Accesso biometrico non disponibile</string>
+    <string name="msg_biometric_unavailable">L\'accesso biometrico è attivo, ma questo dispositivo non dispone di credenziali biometriche o del dispositivo utilizzabili. Registra una credenziale biometrica o imposta un blocco schermo, poi riprova.</string>
+    <string name="action_biometric_settings">Apri impostazioni</string>
+    <string name="msg_biometric_prompt">Usa la tua credenziale biometrica o del dispositivo per continuare</string>
+    <string name="msg_biometric_settings_not_found">Impossibile aprire le impostazioni</string>
     <string name="action_pin">Pin</string>
     <string name="action_unpin">Sblocca</string>
     <string name="nothing_here">Niente qui</string>

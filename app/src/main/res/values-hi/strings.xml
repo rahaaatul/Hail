@@ -121,6 +121,11 @@
     <string name="mode_su_stop">Root - फोर्स स्टॉप</string>
     <string name="mode_su_suspend">Root - निलंबित करें</string>
     <string name="msg_biometric">अपने बायोमेट्रिक क्रेडेंशियल से लॉगिन करें</string>
+    <string name="title_biometric_unavailable">बायोमेट्रिक लॉगिन उपलब्ध नहीं है</string>
+    <string name="msg_biometric_unavailable">बायोमेट्रिक लॉगिन चालू है, लेकिन इस डिवाइस पर कोई उपयोगी बायोमेट्रिक या डिवाइस क्रेडेंशियल नहीं है। बायोमेट्रिक पंजीकृत करें या स्क्रीन लॉक सेट करें, फिर पुनः प्रयास करें।</string>
+    <string name="action_biometric_settings">सेटिंग्स खोलें</string>
+    <string name="msg_biometric_prompt">जारी रखने के लिए अपने बायोमेट्रिक या डिवाइस क्रेडेंशियल का उपयोग करें</string>
+    <string name="msg_biometric_settings_not_found">सेटिंग्स खोली नहीं जा सकी</string>
     <string name="msg_confirm_rebuild_cache">यह मेटाडेटा और आइकन साफ़ करता है, फिर हर इंस्टॉल ऐप पुनः लोड होता है। जारी रखें?</string>
     <string name="msg_exported">निर्यातित: %s</string>
     <string name="msg_extract_apk">निकाला गया: %s</string>

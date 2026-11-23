@@ -123,6 +123,11 @@
     <string name="mode_su_stop">রুট - ফোর্স স্টপ</string>
     <string name="mode_su_suspend">রুট - স্থগিত করুন</string>
     <string name="msg_biometric">আপনার বায়োমেট্রিক ক্রিডেনশিয়াল দিয়ে লগইন করুন</string>
+    <string name="title_biometric_unavailable">বায়োমেট্রিক লগইন অনুপলব্ধ</string>
+    <string name="msg_biometric_unavailable">বায়োমেট্রিক লগইন চালু আছে, তবে এই ডিভাইসে কোনো ব্যবহারযোগ্য বায়োমেট্রিক বা ডিভাইস ক্রেডেনশিয়াল নেই। একটি বায়োমেট্রিক নিবন্ধন করুন বা স্ক্রিন লক সেট করুন, তারপর আবার চেষ্টা করুন।</string>
+    <string name="action_biometric_settings">সেটিংস খুলুন</string>
+    <string name="msg_biometric_prompt">চালিয়ে যেতে আপনার বায়োমেট্রিক বা ডিভাইস ক্রেডেনশিয়াল ব্যবহার করুন</string>
+    <string name="msg_biometric_settings_not_found">সেটিংস খোলা যায়নি</string>
     <string name="msg_confirm_rebuild_cache">এটি মেটাডেটা ও আইকন মুছে প্রতিটি ইন্সটল করা অ্যাপ পুনরায় লোড করবে। চালিয়ে যাবেন?</string>
     <string name="msg_exported">এক্সপোর্ট করা হয়েছে: %s</string>
     <string name="msg_extract_apk">এক্সট্রাক্ট করা হয়েছে: %s</string>

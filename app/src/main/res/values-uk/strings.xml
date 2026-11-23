@@ -72,6 +72,11 @@
     <string name="mode_su_disable">Root - Вимкнути</string>
     <string name="mode_su_suspend">Root - Призупинити</string>
     <string name="msg_biometric">Вхід за допомогою біометричних даних</string>
+    <string name="title_biometric_unavailable">Біометричний вхід недоступний</string>
+    <string name="msg_biometric_unavailable">Біометричний вхід увімкнено, але на цьому пристрої немає придатних біометричних даних чи облікових даних пристрою. Додайте біометричні дані або налаштуйте блокування екрана, потім спробуйте ще раз.</string>
+    <string name="action_biometric_settings">Відкрити налаштування</string>
+    <string name="msg_biometric_prompt">Використовуйте біометричні дані або облікові дані пристрою, щоб продовжити</string>
+    <string name="msg_biometric_settings_not_found">Не вдалося відкрити налаштування</string>
     <string name="msg_exported">Експортовано: %s</string>
     <string name="msg_extract_apk">Розпаковано до: %s</string>
     <string name="msg_freeze">Заморожено: %s</string>

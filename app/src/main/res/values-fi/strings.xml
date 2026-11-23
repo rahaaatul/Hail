@@ -111,6 +111,11 @@
     <string name="skip_foreground_app">Ohita etualan sovellus</string>
     <string name="grayscale_icon">Harmaasävy-kuvake</string>
     <string name="msg_biometric">Kirjaudu sisään biometrisilla tunnistetiedoillasi</string>
+    <string name="title_biometric_unavailable">Biometrinen kirjautuminen ei ole käytettävissä</string>
+    <string name="msg_biometric_unavailable">Biometrinen kirjautuminen on käytössä, mutta tässä laitteessa ei ole käyttökelpoisia biometrisia tietoja tai laitteen kirjautumistietoja. Lisää biometriset tiedot tai määritä näytön lukitus ja yritä uudelleen.</string>
+    <string name="action_biometric_settings">Avaa asetukset</string>
+    <string name="msg_biometric_prompt">Jatka käyttämällä biometrisiä tietojasi tai laitteen kirjautumistietoja</string>
+    <string name="msg_biometric_settings_not_found">Asetuksia ei voitu avata</string>
     <string name="action_pin">Kiinnitä</string>
     <string name="action_unpin">Irrota</string>
     <string name="action_import_frozen">Tuo jäädytetty sovellus</string>

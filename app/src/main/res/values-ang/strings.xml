@@ -116,6 +116,11 @@
     <string name="mode_su_stop">Root - Force Stop</string>
     <string name="mode_su_suspend">Root - Suspend</string>
     <string name="msg_biometric">Sign in using your life-print</string>
+    <string name="title_biometric_unavailable">Life-print sign-in is not at hand</string>
+    <string name="msg_biometric_unavailable">Life-print sign-in is turned on, but this device has no life-print or device token to use. Enroll a life-print or set a screen lock, then try again.</string>
+    <string name="action_biometric_settings">Open settings</string>
+    <string name="msg_biometric_prompt">Use your life-print or device token to go on</string>
+    <string name="msg_biometric_settings_not_found">Could not open settings</string>
     <string name="msg_confirm_rebuild_cache">This clears stored info and icons, then loads up every set-up app again. Go on?</string>
     <string name="msg_exported">Sent out: %s</string>
     <string name="msg_extract_apk">Pulled out to: %s</string>

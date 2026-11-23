@@ -128,6 +128,11 @@
     <string name="mode_su_hide">รูท - ซ่อน</string>
     <string name="mode_su_suspend">รูท - ระงับการทำงาน</string>
     <string name="msg_biometric">ยืนยันตัวตนด้วยข้อมูลชีวมิติ</string>
+    <string name="title_biometric_unavailable">การล็อกอินด้วยไบโอเมตริกไม่พร้อมใช้งาน</string>
+    <string name="msg_biometric_unavailable">การล็อกอินด้วยไบโอเมตริกเปิดใช้งานอยู่ แต่อุปกรณ์นี้ไม่มีข้อมูลชีวมิติหรือข้อมูลรับรองอุปกรณ์ที่ใช้ได้ ลงทะเบียนข้อมูลชีวมิติหรือตั้งค่าล็อกหน้าจอ แล้วลองอีกครั้ง</string>
+    <string name="action_biometric_settings">เปิดการตั้งค่า</string>
+    <string name="msg_biometric_prompt">ใช้ข้อมูลชีวมิติหรือข้อมูลรับรองอุปกรณ์ของคุณเพื่อดำเนินการต่อ</string>
+    <string name="msg_biometric_settings_not_found">ไม่สามารถเปิดการตั้งค่าได้</string>
     <string name="msg_confirm_rebuild_cache">การดำเนินการนี้จะลบข้อมูลเมตาและไอคอน แล้วโหลดแอปที่ติดตั้งทั้งหมดใหม่ ดำเนินการต่อหรือไม่?</string>
     <plurals name="msg_deferred_task">
         <item quantity="one">%2$s หลังจาก %1$d นาที: %3$s</item>

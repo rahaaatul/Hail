@@ -91,6 +91,11 @@
     <string name="sort_update">Cập nhật gần nhất</string>
     <string name="action_unfreeze">Rã băng</string>
     <string name="msg_biometric">Đăng nhập bằng thông tin sinh trắc học của bạn</string>
+    <string name="title_biometric_unavailable">Đăng nhập sinh trắc học không khả dụng</string>
+    <string name="msg_biometric_unavailable">Đăng nhập sinh trắc học đang được bật, nhưng thiết bị này không có thông tin sinh trắc học hoặc thông tin xác thực thiết bị nào có thể sử dụng. Hãy đăng ký sinh trắc học hoặc đặt khóa màn hình, rồi thử lại.</string>
+    <string name="action_biometric_settings">Mở cài đặt</string>
+    <string name="msg_biometric_prompt">Dùng thông tin sinh trắc học hoặc thông tin xác thực thiết bị của bạn để tiếp tục</string>
+    <string name="msg_biometric_settings_not_found">Không thể mở cài đặt</string>
     <string name="permission_denied">Quyền bị từ chối</string>
     <string name="action_help">Trợ giúp</string>
     <string name="action_qq">Nhóm QQ</string>

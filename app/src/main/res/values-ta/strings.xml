@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="msg_biometric">உங்கள் பயோமெட்ரிக் நற்சான்றிதழைப் பயன்படுத்தி உள்நுழைக</string>
+    <string name="title_biometric_unavailable">பயோமெட்ரிக் உள்நுழைவு கிடைக்கவில்லை</string>
+    <string name="msg_biometric_unavailable">பயோமெட்ரிக் உள்நுழைவு இயக்கத்தில் உள்ளது, ஆனால் இந்தச் சாதனத்தில் பயன்படுத்தக்கூடிய பயோமெட்ரிக் அல்லது சாதன நற்சான்றிதழ் இல்லை. பயோமெட்ரிக் பதிவு செய்யவும் அல்லது திரை பூட்டை அமைக்கவும், பிறகு மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="action_biometric_settings">அமைப்புகளைத் திற</string>
+    <string name="msg_biometric_prompt">தொடர உங்கள் பயோமெட்ரிக் அல்லது சாதன நற்சான்றிதழைப் பயன்படுத்தவும்</string>
+    <string name="msg_biometric_settings_not_found">அமைப்புகளைத் திறக்க முடியவில்லை</string>
     <string name="action_pin">முள்</string>
     <string name="action_whitelist">அனுமதிப்பட்டியலில் சேர்க்கவும்</string>
     <string name="action_remove_whitelist">அனுமதிப்பட்டியிலிருந்து அகற்று</string>

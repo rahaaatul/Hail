@@ -96,6 +96,11 @@
     <string name="compact_icon">紧凑图标</string>
     <string name="action_biometric">生物识别登录</string>
     <string name="msg_biometric">使用您的生物识别凭证登录</string>
+    <string name="title_biometric_unavailable">生物识别登录不可用</string>
+    <string name="msg_biometric_unavailable">生物识别登录已启用，但此设备没有可用的生物识别或设备凭据。请录入生物识别或设置屏幕锁定，然后重试。</string>
+    <string name="action_biometric_settings">打开设置</string>
+    <string name="msg_biometric_prompt">使用您的生物识别或设备凭据以继续</string>
+    <string name="msg_biometric_settings_not_found">无法打开设置</string>
     <string name="action_pin">置顶</string>
     <string name="action_unpin">取消置顶</string>
     <string name="action_whitelist">添加到白名单</string>

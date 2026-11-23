@@ -108,6 +108,11 @@
     <string name="action_unfreeze">إلغاء التجميد</string>
     <string name="donate_wechat">WeChat Pay</string>
     <string name="msg_biometric">تسجيل الدخول باستخدام بيانات الاعتماد البيومترية الخاصة بك</string>
+    <string name="title_biometric_unavailable">تسجيل الدخول البيومتري غير متاح</string>
+    <string name="msg_biometric_unavailable">تسجيل الدخول البيومتري مفعّل، لكن هذا الجهاز لا تتوفر فيه أي بيانات اعتماد بيومترية أو بيانات اعتماد جهاز قابلة للاستخدام. سجّل بياناتك البيومترية أو اضبط قفل الشاشة، ثم أعد المحاولة.</string>
+    <string name="action_biometric_settings">فتح الإعدادات</string>
+    <string name="msg_biometric_prompt">استخدم بياناتك البيومترية أو بيانات اعتماد الجهاز للمتابعة</string>
+    <string name="msg_biometric_settings_not_found">تعذّر فتح الإعدادات</string>
     <string name="permission_denied">تم رفض الإذن</string>
     <string name="action_help">مساعدة</string>
     <string name="action_qq">مجموعة QQ</string>

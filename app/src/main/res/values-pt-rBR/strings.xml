@@ -102,6 +102,11 @@
     <string name="action_unfreeze">Descongelar</string>
     <string name="donate_wechat">WeChat Pay</string>
     <string name="msg_biometric">Faça login usando sua credencial biométrica</string>
+    <string name="title_biometric_unavailable">Login biométrico indisponível</string>
+    <string name="msg_biometric_unavailable">O login biométrico está ativado, mas este dispositivo não tem nenhuma credencial biométrica ou de dispositivo utilizável. Registre uma credencial biométrica ou configure um bloqueio de tela e tente novamente.</string>
+    <string name="action_biometric_settings">Abrir configurações</string>
+    <string name="msg_biometric_prompt">Use sua credencial biométrica ou de dispositivo para continuar</string>
+    <string name="msg_biometric_settings_not_found">Não foi possível abrir as configurações</string>
     <string name="permission_denied">Permissão negada</string>
     <string name="action_help">Ajuda</string>
     <string name="action_qq">Grupo do QQ</string>

@@ -141,6 +141,11 @@
     <string name="donate_wechat_scan">Vizsgálat</string>
     <string name="action_unfreeze_tag">Címke kiolvasztás</string>
     <string name="msg_biometric">Bejelentkezés a biometrikus azonosítással</string>
+    <string name="title_biometric_unavailable">A biometrikus azonosítás nem érhető el</string>
+    <string name="msg_biometric_unavailable">A biometrikus azonosítás be van kapcsolva, de ezen az eszközön nincs használható biometrikus vagy eszközazonosító adat. Regisztrálj biometrikus adatot, vagy állíts be képernyőzárat, majd próbáld újra.</string>
+    <string name="action_biometric_settings">Beállítások megnyitása</string>
+    <string name="msg_biometric_prompt">A folytatáshoz használd a biometrikus vagy eszközazonosító adataidat</string>
+    <string name="msg_biometric_settings_not_found">A beállításokat nem sikerült megnyitni</string>
     <string name="donate_paypal">PayPal</string>
     <string name="compact_icon">Kompakt ikon</string>
     <string name="auto_freeze_notification_title">Automatikus fagyasztási szolgáltatás fut</string>

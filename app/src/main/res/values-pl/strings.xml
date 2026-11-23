@@ -151,6 +151,11 @@
     <string name="compact_icon">Kompaktowe ikony</string>
     <string name="action_biometric">Odblokowywanie biometryczne</string>
     <string name="msg_biometric">Zaloguj się używając swoich danych biometrycznych</string>
+    <string name="title_biometric_unavailable">Logowanie biometryczne jest niedostępne</string>
+    <string name="msg_biometric_unavailable">Logowanie biometryczne jest włączone, ale to urządzenie nie ma użytecznych danych biometrycznych ani danych uwierzytelniających urządzenia. Zarejestruj dane biometryczne lub ustaw blokadę ekranu, a następnie spróbuj ponownie.</string>
+    <string name="action_biometric_settings">Otwórz ustawienia</string>
+    <string name="msg_biometric_prompt">Użyj danych biometrycznych lub danych uwierzytelniających urządzenia, aby kontynuować</string>
+    <string name="msg_biometric_settings_not_found">Nie udało się otworzyć ustawień</string>
     <string name="xposed_description">Automatycznie odmroź aplikacje w określonym zakresie</string>
     <string name="action_freeze_failed">Nie udało się zamrozić: %s</string>
     <string name="action_app_unavailable">Brak aplikacji: %s</string>

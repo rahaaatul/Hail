@@ -86,6 +86,11 @@
     <string name="action_none">Kosong</string>
     <string name="grayscale_icon">Ikon hitam-putih</string>
     <string name="msg_biometric">Masuk dengan pemindaian biometrik</string>
+    <string name="title_biometric_unavailable">Login biometrik tidak tersedia</string>
+    <string name="msg_biometric_unavailable">Login biometrik aktif, tetapi perangkat ini tidak memiliki biometrik atau kredensial perangkat yang dapat digunakan. Daftarkan biometrik atau atur kunci layar, lalu coba lagi.</string>
+    <string name="action_biometric_settings">Buka pengaturan</string>
+    <string name="msg_biometric_prompt">Gunakan biometrik atau kredensial perangkat Anda untuk melanjutkan</string>
+    <string name="msg_biometric_settings_not_found">Tidak dapat membuka pengaturan</string>
     <string name="action_pin">Sematkan</string>
     <string name="action_remove_whitelist">Hapus dari daftar putih</string>
     <string name="action_import_frozen">Impor aplikasi dibekukan</string>
