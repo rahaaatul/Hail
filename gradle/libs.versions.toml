@@ -1,11 +1,11 @@
 [versions]
-androidGradlePlugin = "9.5.1"
+androidGradlePlugin = "9.5.2"
 kotlin = "2.4.21"
 appcompat = "1.8.0"
 appiconloader = "1.5.0"
 biometricKtx = "1.4.0-alpha02"
 commonsText = "1.15.0"
-composeBom = "2026.09.00"
+composeBom = "2026.11.01"
 composePreference = "2.2.0"
 constraintlayout = "2.2.2"
 coreKtx = "1.19.1"
@@ -27,7 +27,7 @@ room = "3.0.3"
 kover = "0.9.11"
 spotless = "8.11.0"
 detekt = "1.23.8"
-ksp = "2.3.13"
+ksp = "2.3.14"
 sqlite = "2.7.1"
 
 [libraries]
