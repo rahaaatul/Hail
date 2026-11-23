@@ -126,6 +126,11 @@
     <string name="activity_not_found">فعالیت راه اندازی یافت نشد</string>
     <string name="skip_while_charging">رد کردن هنگام شارژ</string>
     <string name="msg_biometric">با استفاده از بیومتریک خود وارد شوید</string>
+    <string name="title_biometric_unavailable">ورود بیومتریک در دسترس نیست</string>
+    <string name="msg_biometric_unavailable">ورود بیومتریک فعال است، اما این دستگاه هیچ داده بیومتریک یا اطلاعات دستگاه قابل استفاده‌ای ندارد. یک داده بیومتریک ثبت کنید یا قفل صفحه را تنظیم کنید، سپس دوباره تلاش کنید.</string>
+    <string name="action_biometric_settings">باز کردن تنظیمات</string>
+    <string name="msg_biometric_prompt">برای ادامه از داده بیومتریک یا اطلاعات دستگاه خود استفاده کنید</string>
+    <string name="msg_biometric_settings_not_found">تنظیمات باز نشد</string>
     <string name="action_import_frozen">درون ریزی برنامه یخ زده</string>
     <string name="auto_freeze_delay">تاخیر یخ زدن (دقیقه)</string>
     <string name="mode_dhizuku_suspend">دیزوکو - تعلیق</string>

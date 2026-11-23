@@ -102,6 +102,11 @@
     <string name="compact_icon">Kompaktes Symbol</string>
     <string name="action_biometric">Biometrische Anmeldung</string>
     <string name="msg_biometric">Mit biometrischer Prüfung anmelden</string>
+    <string name="title_biometric_unavailable">Biometrische Anmeldung nicht verfügbar</string>
+    <string name="msg_biometric_unavailable">Die biometrische Anmeldung ist aktiviert, aber auf diesem Gerät sind keine nutzbaren biometrischen Daten oder Anmeldedaten des Geräts vorhanden. Richten Sie eine Biometrie ein oder legen Sie eine Bildschirmsperre fest und versuchen Sie es erneut.</string>
+    <string name="action_biometric_settings">Einstellungen öffnen</string>
+    <string name="msg_biometric_prompt">Verwenden Sie Ihre Biometrie oder die Anmeldedaten des Geräts, um fortzufahren</string>
+    <string name="msg_biometric_settings_not_found">Einstellungen konnten nicht geöffnet werden</string>
     <string name="action_pin">Anpinnen</string>
     <string name="action_unpin">Abpinnen</string>
     <string name="action_whitelist">Auf die Whitelist setzen</string>

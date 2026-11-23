@@ -61,6 +61,11 @@
     <string name="action_biometric">Authentification biométrique</string>
     <string name="donate_alipay">Alipay</string>
     <string name="msg_biometric">Se connecter à l\'aide de votre identifiant biométrique</string>
+    <string name="title_biometric_unavailable">Authentification biométrique indisponible</string>
+    <string name="msg_biometric_unavailable">L\'authentification biométrique est activée, mais cet appareil ne possède aucune donnée biométrique ou d\'identification de l\'appareil utilisable. Enregistrez une donnée biométrique ou définissez un verrouillage d\'écran, puis réessayez.</string>
+    <string name="action_biometric_settings">Ouvrir les paramètres</string>
+    <string name="msg_biometric_prompt">Utilisez votre biométrie ou les identifiants de l\'appareil pour continuer</string>
+    <string name="msg_biometric_settings_not_found">Impossible d\'ouvrir les paramètres</string>
     <string name="title_customize">Personnaliser</string>
     <string name="msg_imported">Importée : %s</string>
     <string name="msg_text_copied">Copiée : %s</string>

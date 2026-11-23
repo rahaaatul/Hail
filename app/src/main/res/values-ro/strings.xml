@@ -116,6 +116,11 @@
     <string name="mode_su_stop">Root - Forțează oprirea</string>
     <string name="mode_su_suspend">Root - Suspendă</string>
     <string name="msg_biometric">Autentificați-vă folosind datele biometrice</string>
+    <string name="title_biometric_unavailable">Autentificarea biometrică nu este disponibilă</string>
+    <string name="msg_biometric_unavailable">Autentificarea biometrică este activată, dar acest dispozitiv nu are nicio credențială biometrică sau de dispozitiv utilizabilă. Înregistrați o credențială biometrică sau setați blocarea ecranului, apoi încercați din nou.</string>
+    <string name="action_biometric_settings">Deschideți setările</string>
+    <string name="msg_biometric_prompt">Folosiți credențialele biometrice sau de dispozitiv pentru a continua</string>
+    <string name="msg_biometric_settings_not_found">Setările nu au putut fi deschise</string>
     <string name="msg_confirm_rebuild_cache">Aceasta șterge metadatele și pictogramele, apoi reîncarcă toate aplicațiile instalate. Continuați?</string>
     <string name="msg_exported">Exportate: %s</string>
     <string name="msg_extract_apk">Extras în: %s</string>

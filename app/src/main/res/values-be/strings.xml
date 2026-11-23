@@ -90,6 +90,11 @@
     <string name="action_freeze_tag">Замарозіць тэг</string>
     <string name="action_biometric">Біяметрычны ўваход</string>
     <string name="msg_biometric">Уваход з дапамогай біяметрычных даных</string>
+    <string name="title_biometric_unavailable">Біяметрычны ўваход недаступны</string>
+    <string name="msg_biometric_unavailable">Біяметрычны ўваход уключаны, але на гэтай прыладзе няма прыдатных біяметрычных даных або даных прылады. Дадайце біяметрычныя даныя або наладзьце блакіроўку экрана, пасля чаго паўтарыце спробу.</string>
+    <string name="action_biometric_settings">Адкрыць налады</string>
+    <string name="msg_biometric_prompt">Выкарыстоўвайце біяметрычныя даныя або даныя прылады, каб працягнуць</string>
+    <string name="msg_biometric_settings_not_found">Не ўдалося адкрыць налады</string>
     <string name="action_whitelist">Дадаць у белы спіс</string>
     <string name="action_remove_whitelist">Выдаліць з белага спісу</string>
     <string name="nothing_here">Тут нічога няма</string>

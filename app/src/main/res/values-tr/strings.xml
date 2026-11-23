@@ -93,6 +93,11 @@
     <string name="compact_icon">Kompakt ikon</string>
     <string name="action_biometric">Biyometrik giriş</string>
     <string name="msg_biometric">Biyometrik kimlik bilgilerinizi kullanarak giriş yapın</string>
+    <string name="title_biometric_unavailable">Biyometrik giriş kullanılamıyor</string>
+    <string name="msg_biometric_unavailable">Biyometrik giriş açık, ancak bu cihazda kullanılabilir bir biyometrik veya cihaz kimlik bilgisi yok. Biyometrik kaydedin veya ekran kilidi ayarlayın, ardından tekrar deneyin.</string>
+    <string name="action_biometric_settings">Ayarları aç</string>
+    <string name="msg_biometric_prompt">Devam etmek için biyometrik veya cihaz kimlik bilgilerinizi kullanın</string>
+    <string name="msg_biometric_settings_not_found">Ayarlar açılamadı</string>
     <string name="action_pin">Sabitle</string>
     <string name="action_unpin">Sabitlemeyi kaldır</string>
     <string name="action_whitelist">Beyaz listeye ekle</string>

@@ -61,4 +61,10 @@
     <string name="summary_backup">ଆପ୍, ଟ୍ୟାଗ୍, ଆକ୍ସନ, ସେଟିଂ ଏବଂ ୱାଇଟଲିଷ୍ଟର ବ୍ୟାକଅପ୍ ନିଅନ୍ତୁ</string>
     <string name="summary_restore">ଆର୍କାଇଭ୍ ରୁ ଆପ୍, ଟ୍ୟାଗ୍, ଆକ୍ସନ, ସେଟିଂ ଏବଂ ୱାଇଟଲିଷ୍ଟ ପୁନରୁଦ୍ଧାର କରନ୍ତୁ</string>
 
-    <string name="action_data">ଡାଟା</string></resources>
+    <string name="action_data">ଡାଟା</string>
+    <string name="title_biometric_unavailable">ବାଇଓମେଟ୍ରିକ ଲଗଇନ ଉପଲ୍ବ୍ଧ ନାହିଁ</string>
+    <string name="msg_biometric_unavailable">ବାଇଓମେଟ୍ରିକ ଲଗଇନ ସକ୍ରିୟ ଅଛି, କିନ୍ତୁ ଏହି ଡିଵାଇସ୍ରେ କୌଣସି ବ୍ୟବହାର ଯୋଗ୍ୟ ବାଇଓମେଟ୍ରିକ କିମ୍ବା ଡିଵାଇସ୍ କ୍ରେଡେନିଆଲ୍ ନାହିଁ। ବାଇଓମେଟ୍ରିକ ଯୋଡ଼ନ୍ତୁ କିମ୍ବା ସ୍କ୍ରିନ୍ ଲକ୍ ସେଟ୍ କରନ୍ତୁ, ପରେ ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।</string>
+    <string name="action_biometric_settings">ସେଟିଂ ଖୋଲନ୍ତୁ</string>
+    <string name="msg_biometric_prompt">ଏହି ଡିଵାଇସ୍ ର ବାଇଓମେଟ୍ରିକ କିମ୍ବା କ୍ରେଡେନିଆଲ୍ ବ୍ୟବହାର କରନ୍ତୁ</string>
+    <string name="msg_biometric_settings_not_found">ସେଟିଂ ଖୋଲାଯାଇ ନାହିଁ</string>
+</resources>

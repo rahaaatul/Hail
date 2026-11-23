@@ -101,6 +101,11 @@
     <string name="compact_icon">Компактные иконки</string>
     <string name="action_biometric">Биометрический вход</string>
     <string name="msg_biometric">Вход с использованием своих биометрических данных</string>
+    <string name="title_biometric_unavailable">Биометрический вход недоступен</string>
+    <string name="msg_biometric_unavailable">Биометрический вход включён, но на этом устройстве нет пригодных биометрических данных или учётных данных устройства. Зарегистрируйте биометрические данные или настройте блокировку экрана и повторите попытку.</string>
+    <string name="action_biometric_settings">Открыть настройки</string>
+    <string name="msg_biometric_prompt">Используйте биометрические данные или учётные данные устройства, чтобы продолжить</string>
+    <string name="msg_biometric_settings_not_found">Не удалось открыть настройки</string>
     <string name="action_pin">Закрепить</string>
     <string name="action_unpin">Открепить</string>
     <string name="nothing_here">Здесь ничего нет</string>

@@ -121,6 +121,11 @@
     <string name="mode_su_stop">Root - Məcburi dayandır</string>
     <string name="mode_su_suspend">Root - Dayandır</string>
     <string name="msg_biometric">Biometrik məlumatınızla daxil olun</string>
+    <string name="title_biometric_unavailable">Biometrik giriş əlçatan deyil</string>
+    <string name="msg_biometric_unavailable">Biometrik giriş aktivdir, lakin bu cihazda istifadə oluna bilən biometrik və ya cihaz etibarı yoxdur. Biometrik məlumat əlavə edin və ya ekran kilidi təyin edin, sonra yenidən cəhd edin.</string>
+    <string name="action_biometric_settings">Tənzimləmələri aç</string>
+    <string name="msg_biometric_prompt">Davam etmək üçün biometrik və ya cihaz etibarınızı istifadə edin</string>
+    <string name="msg_biometric_settings_not_found">Tənzimləmələri açmaq mümkün olmadı</string>
     <string name="msg_confirm_rebuild_cache">Bu, metadata və ikonları təmizləyir, sonra bütün quraşdırılmış tətbiqləri yenidən yükləyir. Davam et?</string>
     <string name="msg_exported">İxrac edildi: %s</string>
     <string name="msg_extract_apk">Çıxarıldığı yer: %s</string>

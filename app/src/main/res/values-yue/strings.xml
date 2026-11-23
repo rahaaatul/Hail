@@ -121,6 +121,11 @@
     <string name="mode_su_stop">Root - 強制停止</string>
     <string name="mode_su_suspend">Root - 暫停</string>
     <string name="msg_biometric">使用生物辨識憑證登入</string>
+    <string name="title_biometric_unavailable">生物辨識登入未能使用</string>
+    <string name="msg_biometric_unavailable">生物辨識登入已啟用，但呢部裝置冇可用嘅生物辨識或裝置憑證。請登記生物辨識或設定螢幕鎖，然後再試多次。</string>
+    <string name="action_biometric_settings">打開設定</string>
+    <string name="msg_biometric_prompt">使用你嘅生物辨識或裝置憑證以繼續</string>
+    <string name="msg_biometric_settings_not_found">未能打開設定</string>
     <string name="msg_confirm_rebuild_cache">這會清除中繼資料與圖示，然後重新載入所有已安裝應用程式。繼續嗎？</string>
     <string name="msg_exported">已匯出：%s</string>
     <string name="msg_extract_apk">已提取至：%s</string>

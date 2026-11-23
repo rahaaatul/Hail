@@ -124,6 +124,11 @@
     <string name="compact_icon">کومپیکٹ آئیکن</string>
     <string name="action_biometric">بائیو میٹرک لاگ ان</string>
     <string name="msg_biometric">اپنے بائیو میٹرک اسناد کا استعمال کرتے ہوئے لاگ ان کریں</string>
+    <string name="title_biometric_unavailable">بائیو میٹرک لاگ ان دستیاب نہیں</string>
+    <string name="msg_biometric_unavailable">بائیو میٹرک لاگ ان فعال ہے، لیکن اس آلے پر کوئی قابلِ استعمال بائیو میٹرک یا ڈیوائس اسناد موجود نہیں۔ بائیو میٹرک رجسٹر کریں یا اسکرین لاک سیٹ کریں، پھر دوبارہ کوشش کریں۔</string>
+    <string name="action_biometric_settings">ترتیبات کھولیں</string>
+    <string name="msg_biometric_prompt">جاری رکھنے کے لیے اپنی بائیو میٹرک یا ڈیوائس اسناد استعمال کریں</string>
+    <string name="msg_biometric_settings_not_found">ترتیبات کھولی نہیں جا سکیں</string>
     <string name="action_pin">پن</string>
     <string name="action_unpin">ان پن</string>
     <string name="action_import_frozen">منجمد ایپ درآمد کریں</string>

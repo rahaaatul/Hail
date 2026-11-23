@@ -116,6 +116,11 @@
     <string name="compact_icon">콤팩트 아이콘</string>
     <string name="action_biometric">지문으로 로그인</string>
     <string name="msg_biometric">지문으로 사용하여 ­로그인</string>
+    <string name="title_biometric_unavailable">지문으로 로그인을 사용할 수 없음</string>
+    <string name="msg_biometric_unavailable">지문 로그인이 켜져 있지만 이 기기에 사용할 수 있는 지문이나 기기 자격 증명이 없습니다. 지문을 등록하거나 화면 잠금을 설정한 후 다시 시도하세요.</string>
+    <string name="action_biometric_settings">설정 열기</string>
+    <string name="msg_biometric_prompt">계속하려면 지문이나 기기 자격 증명을 사용하세요</string>
+    <string name="msg_biometric_settings_not_found">설정을 열 수 없습니다</string>
     <string name="action_pin">고정</string>
     <string name="action_unpin">고정해제</string>
     <string name="action_whitelist">화이트리스트에 추가</string>

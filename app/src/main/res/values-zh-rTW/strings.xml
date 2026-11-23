@@ -95,6 +95,11 @@
     <string name="compact_icon">精簡圖示</string>
     <string name="action_biometric">生物特徵辨識登入</string>
     <string name="msg_biometric">使用您的生物特徵辨識認證登入</string>
+    <string name="title_biometric_unavailable">生物特徵辨識登入無法使用</string>
+    <string name="msg_biometric_unavailable">生物特徵辨識登入已啟用，但此裝置沒有可用的生物特徵辨識或裝置認證。請登錄生物特徵或設定螢幕鎖定，然後再試一次。</string>
+    <string name="action_biometric_settings">開啟設定</string>
+    <string name="msg_biometric_prompt">使用您的生物特徵辨識或裝置認證以繼續</string>
+    <string name="msg_biometric_settings_not_found">無法開啟設定</string>
     <string name="action_pin">釘選</string>
     <string name="action_unpin">取消釘選</string>
     <string name="action_whitelist">新增至白名單</string>

@@ -104,6 +104,11 @@
     <string name="compact_icon">Kompakta ikono</string>
     <string name="action_biometric">Biometrika ensaluto</string>
     <string name="msg_biometric">Ensaluti per via biometrika identigilo</string>
+    <string name="title_biometric_unavailable">Biometrika ensaluto ne disponeblas</string>
+    <string name="msg_biometric_unavailable">Biometrika ensaluto estas ŝaltita, sed ĉi tiu aparato ne havas uzeblan biometrikan aŭ aparatan identigilon. Enigu biometrikan identigilon aŭ agordu ekranŝloson, poste reprovu.</string>
+    <string name="action_biometric_settings">Malfermi agordon</string>
+    <string name="msg_biometric_prompt">Uzu vian biometrikan aŭ aparatan identigilon por daŭrigi</string>
+    <string name="msg_biometric_settings_not_found">Ne eblis malfermi agordon</string>
     <string name="action_pin">PIN</string>
     <string name="action_unpin">Malpingli</string>
     <string name="action_whitelist">Aldoni al blanklisto</string>
