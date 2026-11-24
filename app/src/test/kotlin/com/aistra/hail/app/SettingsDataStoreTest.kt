@@ -29,7 +29,7 @@ class SettingsDataStoreTest {
 
     @Before
     fun setUp() {
-        val app = RuntimeEnvironment.application as HailApp
+        val app = RuntimeEnvironment.getApplication() as HailApp
         HailApp.setAppForTest(app)
         context = app
         File(app.filesDir, "datastore").deleteRecursively()

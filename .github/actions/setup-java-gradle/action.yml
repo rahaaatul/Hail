@@ -53,7 +53,7 @@ runs:
         fetch-depth: 0
         persist-credentials: ${{ inputs.persist-credentials }}
     - name: Setup Java
-      uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+      uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880
       with:
         distribution: '${{ inputs.distribution }}'
         java-version: '${{ inputs.java-version }}'

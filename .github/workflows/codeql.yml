@@ -69,7 +69,7 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
         with:
           languages: java-kotlin
           # The default suite is the most precise one and returns few results.
@@ -101,12 +101,19 @@ jobs:
           gradle-args: '--no-build-cache'
 
       - name: Build APKs for CodeQL analysis
+        id: build
         uses: ./.github/actions/build-apk
         with:
           gradle-args: '--no-build-cache'
           variants: 'assembleRelease'
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea
         with:
           category: "/language:java-kotlin"
+      - name: Upload release mapping.txt as artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-mapping-${{ github.sha }}
+          path: ${{ steps.build.outputs.releaseMappingPath }}
+          retention-days: 1

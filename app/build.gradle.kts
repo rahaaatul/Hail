@@ -20,7 +20,11 @@ android {
     }.standardOutput.asText.get().trim()
 
     namespace = "com.aistra.hail"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     val versionCodeProperties = rootProject.file("versionCode.properties")
     val versionCodeFromProperties = versionCodeProperties.readText().lines()
@@ -78,7 +82,18 @@ android {
     }
     testOptions {
         unitTests.all {
-            it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+            it.jvmArgs(
+                "-Dnet.bytebuddy.experimental=true",
+                "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                "--add-opens=java.base/java.util=ALL-UNNAMED",
+                "--add-opens=java.base/java.io=ALL-UNNAMED",
+                "--add-opens=java.base/java.net=ALL-UNNAMED",
+                "--add-opens=java.base/java.security=ALL-UNNAMED",
+                "--add-opens=java.base/java.text=ALL-UNNAMED",
+                "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+                "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
+                "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+            )
         }
     }
     androidComponents {
@@ -121,7 +136,7 @@ detekt {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.32.1"
+        artifact = "com.google.protobuf:protoc:4.36.2"
     }
     generateProtoTasks {
         all().forEach { task ->
@@ -177,20 +192,20 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test:core:1.7.0")
-    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("androidx.test:core-ktx:1.7.0")
     testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("androidx.test.ext:truth:1.7.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("androidx.room3:room3-testing:3.0.1")
-    testImplementation("io.mockk:mockk:1.14.11")
+    testImplementation("androidx.room3:room3-testing:3.0.3")
+    testImplementation("io.mockk:mockk:1.14.12")
     testImplementation(libs.robolectric)
 
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.test.espresso:espresso-intents:3.7.0")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    androidTestImplementation("io.mockk:mockk-android:1.14.11")
-    androidTestImplementation("androidx.room3:room3-testing:3.0.1")
+    androidTestImplementation("io.mockk:mockk-android:1.14.12")
+    androidTestImplementation("androidx.room3:room3-testing:3.0.3")
 }
 
