@@ -69,7 +69,7 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26
         with:
           languages: java-kotlin
           # The default suite is the most precise one and returns few results.
@@ -108,7 +108,7 @@ jobs:
           variants: 'assembleRelease'
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370
+        uses: github/codeql-action/analyze@1fc58d04a4d4374f921bdac573c3811c240f9c26
         with:
           category: "/language:java-kotlin"
       - name: Upload release mapping.txt as artifact
