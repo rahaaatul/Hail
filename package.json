@@ -15,6 +15,5 @@
   },
   "scripts": {
     "prepare": "husky"
-  },
-  "overrides": {}
+  }
 }
