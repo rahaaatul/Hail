@@ -1,13 +1,6 @@
 package com.aistra.hail.app
 
-import androidx.core.content.edit
-import androidx.preference.PreferenceManager
 import com.aistra.hail.BuildConfig
-import com.aistra.hail.HailApp.Companion.app
-import com.aistra.hail.R
-import com.aistra.hail.utils.HFiles
-import org.json.JSONArray
-import org.json.JSONObject
 
 object HailData {
     const val URL_WHY_FREE_SOFTWARE = "https://www.gnu.org/philosophy/free-software-even-more-important.html"
@@ -24,22 +17,28 @@ object HailData {
     const val URL_PAYPAL = "https://www.paypal.me/aistra0528"
     const val URL_TRANSLATE = "https://hosted.weblate.org/engage/hail/"
     const val VERSION = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
-    private const val KEY_ID = "id"
+    internal const val KEY_ID = "id"
     const val KEY_TAG = "tag"
-    private const val KEY_TAGS = "tags"
-    private const val KEY_PINNED = "pinned"
-    private const val KEY_WHITELISTED = "whitelisted"
+    internal const val KEY_TAGS = "tags"
+    internal const val KEY_PINNED = "pinned"
+    internal const val KEY_WHITELISTED = "whitelisted"
     const val KEY_PACKAGE = "package"
     const val KEY_FROZEN = "frozen"
-    private const val SORT_BY = "sort_by"
+    const val SORT_BY = "sort_by"
     const val SORT_NAME = "name"
     const val SORT_INSTALL = "install"
     const val SORT_UPDATE = "update"
+    const val SORT_SIZE = "size"
+    const val SORT_LAST_USED = "last_used"
+    const val SORT_MOST_USED = "most_used"
     const val FILTER_USER_APPS = "filter_user_apps"
     const val FILTER_SYSTEM_APPS = "filter_system_apps"
-    const val FILTER_ALL_APPS = "filter_all_apps"
-    const val FILTER_FROZEN_APPS = "filter_frozen_apps"
-    const val FILTER_UNFROZEN_APPS = "filter_unfrozen_apps"
+    const val FILTER_ENABLED_APPS = "filter_enabled_apps"
+    const val FILTER_DISABLED_APPS = "filter_disabled_apps"
+    const val FILTER_SUSPENDED_APPS = "filter_suspended_apps"
+    const val FILTER_HIDDEN_APPS = "filter_hidden_apps"
+    const val FILTER_STOPPED_APPS = "filter_stopped_apps"
+    const val FILTER_UNINSTALLED_APPS = "filter_uninstalled_apps"
     const val OWNER = "owner_"
     const val DHIZUKU = "dhizuku_"
     const val SU = "su_"
@@ -136,59 +135,34 @@ object HailData {
             ACTION_LOCK_FREEZE,
         )
 
-    private val sp by lazy { PreferenceManager.getDefaultSharedPreferences(app) }
-    val sortBy get() = sp.getString(SORT_BY, SORT_NAME)
-    val filterUserApps get() = sp.getBoolean(FILTER_USER_APPS, true)
-    val filterSystemApps get() = sp.getBoolean(FILTER_SYSTEM_APPS, false)
-    val filterAllApps get() = sp.getBoolean(FILTER_ALL_APPS, true)
-    val filterFrozenApps get() = sp.getBoolean(FILTER_FROZEN_APPS, true)
-    val filterUnfrozenApps get() = sp.getBoolean(FILTER_UNFROZEN_APPS, true)
-    val workingMode get() = sp.getString(WORKING_MODE, MODE_DEFAULT)!!
-    val biometricLogin get() = sp.getBoolean(BIOMETRIC_LOGIN, false)
-    val appTheme get() = sp.getString(APP_THEME, FOLLOW_SYSTEM)!!
-    val iconPack get() = sp.getString(ICON_PACK, ACTION_NONE)!!
-    val grayscaleIcon get() = sp.getBoolean(GRAYSCALE_ICON, true)
-    val compactIcon get() = sp.getBoolean(COMPACT_ICON, false)
-    val synthesizeAdaptiveIcons get() = sp.getBoolean(SYNTHESIZE_ADAPTIVE_ICONS, false)
-    val homeFontSize get() = sp.getFloat(HOME_FONT_SIZE, 14f)
-    val fuzzySearch get() = sp.getBoolean(FUZZY_SEARCH, false)
-    val nineKeySearch get() = sp.getBoolean(NINE_KEY_SEARCH, false)
-    val tileAction get() = sp.getString(TILE_ACTION, AUTO_FREEZE_AFTER_LOCK)!!
-    var autoFreezeAfterLock
-        get() = sp.getBoolean(AUTO_FREEZE_AFTER_LOCK, false)
-        set(value) = sp.edit { putBoolean(AUTO_FREEZE_AFTER_LOCK, value) }
-    val autoFreezeDelay get() = sp.getFloat(AUTO_FREEZE_DELAY, 0f).toLong()
-    val skipWhileCharging get() = sp.getBoolean(SKIP_WHILE_CHARGING, false)
-    val skipForegroundApp get() = sp.getBoolean(SKIP_FOREGROUND_APP, false)
-    val skipNotifyingApp get() = sp.getBoolean(SKIP_NOTIFYING_APP, false)
-    val dynamicShortcutAction get() = sp.getString(DYNAMIC_SHORTCUT_ACTION, ACTION_NONE)!!
+    // ── Settings compatibility delegations ──
+    // HailSettings is the canonical settings facade; these delegations keep the members available
+    // on HailData for call sites outside this refactor's scope (the T7/T3 UI files). New code must
+    // use HailSettings directly.
 
-    private val dir = "${app.filesDir.path}/v1"
-    private val appsPath = "$dir/apps.json"
-    private val tagsPath = "$dir/tags.json"
+    val sortBy get() = HailSettings.sortBy
 
-    val checkedList: MutableList<AppInfo> by lazy {
-        mutableListOf<AppInfo>().apply {
-            runCatching {
-                val json = JSONArray(HFiles.read(appsPath))
-                for (i in 0 until json.length()) {
-                    add(
-                        with(json.getJSONObject(i)) {
-                            AppInfo(
-                                packageName = getString(KEY_PACKAGE),
-                                pinned = optBoolean(KEY_PINNED),
-                                whitelisted = optBoolean(KEY_WHITELISTED),
-                                tagIdList =
-                                    optJSONArray(KEY_TAGS)?.let {
-                                        MutableList(it.length()) { index -> it.getInt(index) }
-                                    } ?: mutableListOf(optInt(KEY_TAG)),
-                            )
-                        },
-                    )
-                }
-            }
-        }
-    }
+    fun sortAscending(sort: String): Boolean = HailSettings.sortAscending(sort)
+
+    val filterUserApps get() = HailSettings.filterUserApps
+    val filterSystemApps get() = HailSettings.filterSystemApps
+    val filterEnabledApps get() = HailSettings.filterEnabledApps
+    val filterDisabledApps get() = HailSettings.filterDisabledApps
+    val filterSuspendedApps get() = HailSettings.filterSuspendedApps
+    val filterHiddenApps get() = HailSettings.filterHiddenApps
+    val filterStoppedApps get() = HailSettings.filterStoppedApps
+    val filterUninstalledApps get() = HailSettings.filterUninstalledApps
+    val workingMode get() = HailSettings.workingMode
+    val iconPack get() = HailSettings.iconPack
+    val grayscaleIcon get() = HailSettings.grayscaleIcon
+    val compactIcon get() = HailSettings.compactIcon
+    val synthesizeAdaptiveIcons get() = HailSettings.synthesizeAdaptiveIcons
+    val homeFontSize get() = HailSettings.homeFontSize
+    val nineKeySearch get() = HailSettings.nineKeySearch
+
+    // ── Room-backed state (checked apps + tags) ──
+
+    val checkedList: MutableList<AppInfo> get() = HailDataStore.checkedList
 
     fun isChecked(packageName: String): Boolean {
         if (packageName == BuildConfig.APPLICATION_ID) return false
@@ -209,59 +183,18 @@ object HailData {
         packageName: String,
         saveApps: Boolean = true,
     ) {
+        if (packageName == BuildConfig.APPLICATION_ID) return
         checkedList.removeAll { it.packageName == packageName }
         if (saveApps) saveApps()
     }
 
-    fun saveApps() {
-        if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(
-            appsPath,
-            JSONArray().run {
-                checkedList.forEach {
-                    put(
-                        JSONObject()
-                            .put(KEY_PACKAGE, it.packageName)
-                            .put(KEY_PINNED, it.pinned)
-                            .put(KEY_WHITELISTED, it.whitelisted)
-                            .put(KEY_TAGS, JSONArray(it.tagIdList)),
-                    )
-                }
-                toString()
-            },
-        )
-    }
+    fun saveApps() = HailDataStore.save()
 
-    val tags: MutableList<Pair<String, Int>> by lazy {
-        mutableListOf<Pair<String, Int>>().apply {
-            runCatching {
-                val json = JSONArray(HFiles.read(tagsPath))
-                for (i in 0 until json.length()) {
-                    add(with(json.getJSONObject(i)) { getString(KEY_TAG) to getInt(KEY_ID) })
-                }
-            }.onFailure {
-                add(app.getString(R.string.label_default) to 0)
-            }
-        }
-    }
+    val tags: MutableList<Pair<String, Int>> get() = HailDataStore.tags
 
-    fun saveTags() {
-        if (!HFiles.exists(dir)) HFiles.createDirectories(dir)
-        HFiles.write(
-            tagsPath,
-            JSONArray().run {
-                tags.forEach {
-                    put(JSONObject().put(KEY_TAG, it.first).put(KEY_ID, it.second))
-                }
-                toString()
-            },
-        )
-    }
+    fun saveTags() = HailDataStore.save()
 
-    fun changeAppsSort(sort: String) = sp.edit { putString(SORT_BY, sort) }
+    suspend fun flush() = HailDataStore.flush()
 
-    fun changeAppsFilter(
-        filter: String,
-        enabled: Boolean,
-    ) = sp.edit { putBoolean(filter, enabled) }
+    fun warmUp() = HailDataStore.warmUp()
 }

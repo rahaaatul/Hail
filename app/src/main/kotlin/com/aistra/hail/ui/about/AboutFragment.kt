@@ -97,19 +97,19 @@ class AboutFragment : MainFragment() {
         Column(
             modifier = Modifier.verticalScroll(state = rememberScrollState()),
         ) {
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space200)))
             Card(
                 onClick = { HUI.openLink(HailData.URL_WHY_FREE_SOFTWARE) },
                 modifier =
                     Modifier
                         .height(dimensionResource(R.dimen.header_height))
-                        .padding(horizontal = dimensionResource(R.dimen.padding_medium)),
+                        .padding(horizontal = dimensionResource(R.dimen.space200)),
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement =
                         Arrangement.spacedBy(
-                            dimensionResource(R.dimen.padding_extra_small),
+                            dimensionResource(R.dimen.space50),
                             Alignment.CenterVertically,
                         ),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -130,8 +130,8 @@ class AboutFragment : MainFragment() {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space200)))
+            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.space200))) {
                 ClickableItem(
                     icon = Icons.Outlined.Update,
                     title = R.string.label_version,
@@ -143,8 +143,8 @@ class AboutFragment : MainFragment() {
                     desc = SimpleDateFormat.getDateInstance().format(installTime),
                 ) { HUI.showToast("\uD83E\uDD76\uD83D\uDCA8\uD83D\uDC09") }
             }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space200)))
+            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.space200))) {
                 ClickableItem(
                     icon = Icons.AutoMirrored.Filled.Send,
                     title = R.string.action_telegram,
@@ -163,8 +163,8 @@ class AboutFragment : MainFragment() {
                     onClick = ::openDonateDialog,
                 )
             }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
-            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.padding_medium))) {
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space200)))
+            OutlinedCard(modifier = Modifier.padding(horizontal = dimensionResource(R.dimen.space200))) {
                 ClickableItem(
                     icon = Icons.Outlined.Code,
                     title = R.string.action_github,
@@ -178,7 +178,7 @@ class AboutFragment : MainFragment() {
                     title = R.string.action_licenses,
                 ) { openLicenseDialog = true }
             }
-            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.padding_medium)))
+            Spacer(modifier = Modifier.height(dimensionResource(R.dimen.space200)))
         }
     }
 
@@ -197,8 +197,8 @@ class AboutFragment : MainFragment() {
             contentDescription = null,
             modifier =
                 Modifier.padding(
-                    horizontal = dimensionResource(R.dimen.padding_medium),
-                    vertical = dimensionResource(if (desc == null) R.dimen.padding_medium else R.dimen.padding_large),
+                    horizontal = dimensionResource(R.dimen.space200),
+                    vertical = dimensionResource(if (desc == null) R.dimen.space200 else R.dimen.space300),
                 ),
         )
         Column {
@@ -256,7 +256,7 @@ class AboutFragment : MainFragment() {
                             .setTitle(R.string.title_donate)
                             .setView(
                                 ShapeableImageView(activity).apply {
-                                    val padding = resources.getDimensionPixelOffset(R.dimen.padding_large)
+                                    val padding = resources.getDimensionPixelOffset(R.dimen.space300)
                                     setPadding(0, padding, 0, padding)
                                     setImageResource(R.mipmap.qr_wechat)
                                 },

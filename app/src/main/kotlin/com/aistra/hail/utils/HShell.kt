@@ -10,6 +10,22 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/**
+ * Builds the `pm suspend` / `pm unsuspend` command.
+ *
+ * The command must run as the shell user (uid 2000, `AID_SHELL`) instead of root: with root as
+ * the calling uid AOSP records the suspending package as "root", then cannot resolve it on
+ * unsuspend, so the app stays suspended (and can look disabled).
+ */
+internal fun pmSuspendCommand(
+    packageName: String,
+    suspended: Boolean,
+    userId: Int,
+): String {
+    val operation = if (suspended) "suspend" else "unsuspend"
+    return "su shell -c 'pm $operation --user $userId $packageName'"
+}
+
 object HShell {
     init {
         Shell.enableLegacyStderrRedirection = true
@@ -97,14 +113,23 @@ object HShell {
     fun setAppSuspended(
         packageName: String,
         suspended: Boolean,
-    ): Boolean = execSU("pm ${if (suspended) "suspend" else "unsuspend"} $userArg $packageName").first == 0
+    ): Boolean = execSU(pmSuspendCommand(packageName, suspended, getCurrentUserId())).first == 0
 
-    fun uninstallApp(packageName: String) =
-        execSU(
-            "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName",
-        ).first == 0
+    fun uninstallApp(packageName: String): Pair<Boolean, String?> {
+        val result =
+            execSU(
+                "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall $userArg"} $packageName",
+            )
+        return (result.first == 0) to result.second
+    }
 
-    fun reinstallApp(packageName: String) = execSU("pm install-existing $userArg $packageName").first == 0
+    fun reinstallApp(packageName: String): Pair<Boolean, String?> {
+        val user = getCurrentUserId()
+        val cmdResult = execSU("cmd package install-existing --user $user $packageName")
+        if (cmdResult.first == 0) return true to cmdResult.second
+        val pmResult = execSU("pm install-existing --user $user $packageName")
+        return (pmResult.first == 0) to (pmResult.second ?: cmdResult.second)
+    }
 
     @RequiresApi(Build.VERSION_CODES.P)
     fun setAppRestricted(

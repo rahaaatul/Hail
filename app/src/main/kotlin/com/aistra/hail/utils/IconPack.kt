@@ -6,7 +6,7 @@ import android.content.res.XmlResourceParser
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.aistra.hail.HailApp.Companion.app
-import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -15,11 +15,11 @@ object IconPack {
     suspend fun loadIcon(packageName: String): Bitmap? =
         withContext(Dispatchers.IO) {
             runCatching {
-                val resources = app.packageManager.getResourcesForApplication(HailData.iconPack)
-                getResourceName(resources, HailData.iconPack, packageName)?.let {
+                val resources = app.packageManager.getResourcesForApplication(HailSettings.iconPack)
+                getResourceName(resources, HailSettings.iconPack, packageName)?.let {
                     BitmapFactory.decodeResource(
                         resources,
-                        resources.getIdentifier(it, "drawable", HailData.iconPack),
+                        resources.getIdentifier(it, "drawable", HailSettings.iconPack),
                     )
                 }
             }.getOrNull()

@@ -13,6 +13,7 @@ import com.aistra.hail.R
 import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,7 +27,7 @@ object HShortcuts : CoroutineScope {
     private val iconLoader by lazy {
         AppIconLoader(
             app.resources.getDimensionPixelSize(R.dimen.app_icon_size),
-            HailData.synthesizeAdaptiveIcons,
+            HailSettings.synthesizeAdaptiveIcons,
             app,
         )
     }
@@ -120,7 +121,7 @@ object HShortcuts : CoroutineScope {
     }
 
     fun addDynamicShortcut(packageName: String) {
-        if (HailData.biometricLogin) return
+        if (HailSettings.biometricLogin) return
         val applicationInfo = HPackages.getApplicationInfoOrNull(packageName)
         launch {
             val shortcut =
@@ -141,7 +142,7 @@ object HShortcuts : CoroutineScope {
                     ).setIntent(HailApi.getIntentForPackage(HailApi.ACTION_LAUNCH, packageName))
                     .build()
             ShortcutManagerCompat.pushDynamicShortcut(app, shortcut)
-            addDynamicShortcutAction(HailData.dynamicShortcutAction)
+            addDynamicShortcutAction(HailSettings.dynamicShortcutAction)
         }
     }
 

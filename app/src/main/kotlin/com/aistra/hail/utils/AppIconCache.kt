@@ -33,6 +33,7 @@ import kotlin.coroutines.CoroutineContext
  * Source
  * https://raw.githubusercontent.com/RikkaApps/Shizuku/master/manager/src/main/java/moe/shizuku/manager/utils/AppIconCache.kt
  */
+@Suppress("TooManyFunctions")
 object AppIconCache : CoroutineScope {
     private class AppIconLruCache constructor(
         maxSize: Int,
@@ -95,21 +96,26 @@ object AppIconCache : CoroutineScope {
         }
     }
 
+    /**
+     * Identifies the APK backing [info]. An update or reinstall keeps the package name but swaps
+     * the source directory or its modification time, so this is the signature that must change
+     * before a cached icon may be reused.
+     */
+    internal fun apkSignature(info: ApplicationInfo): String =
+        runCatching { "${info.sourceDir}:${info.sourceDir?.let { File(it).lastModified() } ?: 0L}" }
+            .getOrDefault(info.sourceDir ?: "")
+
     private fun diskKey(
         info: ApplicationInfo,
         userId: Int,
         size: Int,
     ): String {
-        val sourceSignature =
-            runCatching {
-                "${info.sourceDir}:${File(info.sourceDir).lastModified()}"
-            }.getOrDefault(info.sourceDir ?: "")
         val value =
             listOf(
                 info.packageName,
                 userId,
                 size,
-                sourceSignature,
+                apkSignature(info),
                 HailData.iconPack,
                 HailData.synthesizeAdaptiveIcons,
             ).joinToString("|")
@@ -160,6 +166,18 @@ object AppIconCache : CoroutineScope {
         }
     }
 
+    /**
+     * Drops the in-memory icons of [packageName] so the next load re-reads the current APK.
+     * The disk key already includes the APK source signature; only the memory key is coarse.
+     */
+    fun invalidate(packageName: String) {
+        lruCache
+            .snapshot()
+            .keys
+            .filter { it.first == packageName }
+            .forEach { lruCache.remove(it) }
+    }
+
     fun prefetch(
         context: Context,
         applications: Collection<ApplicationInfo>,
@@ -174,6 +192,26 @@ object AppIconCache : CoroutineScope {
                     }.awaitAll()
             }
         }
+
+    /**
+     * Loads the icon bitmap for [info] through the icon loader.
+     *
+     * This is the single seam the unit tests swap for a fake, so the caching contract can be
+     * exercised without a real [AppIconLoader] or PackageManager. Production keeps the original
+     * behaviour: cache the loader per size, reload it when the adaptive-icon setting changes.
+     */
+    internal fun loadBitmap(
+        context: Context,
+        info: ApplicationInfo,
+        size: Int,
+    ): Bitmap {
+        val loader =
+            appIconLoaders[size]?.takeIf { shrinkNonAdaptiveIcons == HailData.synthesizeAdaptiveIcons } ?: run {
+                shrinkNonAdaptiveIcons = HailData.synthesizeAdaptiveIcons
+                AppIconLoader(size, shrinkNonAdaptiveIcons, context).also { appIconLoaders[size] = it }
+            }
+        return loader.loadIcon(info, false)
+    }
 
     @SuppressLint("NewApi")
     suspend fun getOrLoadBitmap(
@@ -190,16 +228,43 @@ object AppIconCache : CoroutineScope {
             put(info.packageName, userId, size, it)
             return it
         }
-        var loader = appIconLoaders[size]
-        if (loader == null || shrinkNonAdaptiveIcons != HailData.synthesizeAdaptiveIcons) {
-            shrinkNonAdaptiveIcons = HailData.synthesizeAdaptiveIcons
-            loader = AppIconLoader(size, shrinkNonAdaptiveIcons, context)
-            appIconLoaders[size] = loader
+        val bitmap = IconPack.loadIcon(info.packageName) ?: loadBitmap(context, info, size)
+        if (!hasApk(info)) {
+            // The APK is missing (data-only record, uninstall in progress): the loader can only
+            // return the default/fallback icon. Never cache it — a reinstall must reload the real
+            // icon instead of being served the fallback forever.
+            return bitmap
         }
-        val bitmap = IconPack.loadIcon(info.packageName) ?: loader.loadIcon(info, false)
         put(info.packageName, userId, size, bitmap)
         writeDisk(info, userId, size, bitmap)
         return bitmap
+    }
+
+    private fun hasApk(info: ApplicationInfo): Boolean {
+        val dir = info.sourceDir ?: return false
+        return File(dir).exists()
+    }
+
+    /**
+     * Suspend variant of [loadIconBitmapAsync] for Compose callers: loads (or returns the
+     * cached) icon bitmap without binding it to an ImageView. Returns null on failure.
+     */
+    suspend fun loadIconBitmap(
+        context: Context,
+        info: ApplicationInfo,
+        userId: Int,
+        size: Int,
+    ): Bitmap? {
+        if (shrinkNonAdaptiveIcons != HailData.synthesizeAdaptiveIcons) {
+            lruCache.evictAll()
+        }
+        return try {
+            withContext(dispatcher) { getOrLoadBitmap(context, info, userId, size) }
+        } catch (e: CancellationException) {
+            null
+        } catch (e: Throwable) {
+            null
+        }
     }
 
     @JvmStatic
