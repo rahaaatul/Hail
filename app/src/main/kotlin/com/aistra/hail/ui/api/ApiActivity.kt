@@ -22,9 +22,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import com.aistra.hail.app.AppInfo
 import com.aistra.hail.app.AppManager
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import com.aistra.hail.ui.theme.AppTheme
 import com.aistra.hail.utils.ActionExecutor
 import com.aistra.hail.utils.ActionsRepository
@@ -183,15 +185,15 @@ class ApiActivity : ComponentActivity() {
     private fun RedirectBottomSheet(pkg: String) =
         ModalBottomSheet(
             onDismissRequest = ::finish,
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden),
         ) {
             Column {
                 Text(
                     text = HPackages.getApplicationInfoOrNull(pkg)?.loadLabel(packageManager)?.toString() ?: pkg,
                     modifier =
                         Modifier.padding(
-                            horizontal = dimensionResource(R.dimen.padding_medium),
-                            vertical = dimensionResource(R.dimen.padding_small),
+                            horizontal = dimensionResource(R.dimen.space200),
+                            vertical = dimensionResource(R.dimen.space100),
                         ),
                     style = MaterialTheme.typography.headlineSmall,
                 )
@@ -231,7 +233,7 @@ class ApiActivity : ComponentActivity() {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.padding(dimensionResource(R.dimen.padding_medium)),
+            modifier = Modifier.padding(dimensionResource(R.dimen.space200)),
         )
         Text(text = stringResource(title), style = MaterialTheme.typography.bodyLarge)
     }
@@ -291,7 +293,7 @@ class ApiActivity : ComponentActivity() {
         if (AppManager.isAppFrozen(pkg) && AppManager.setAppFrozen(pkg, false)) {
             app.setAutoFreezeService()
         }
-        if (HailData.workingMode == HailData.MODE_ISLAND_HIDE) {
+        if (HailSettings.workingMode == HailData.MODE_ISLAND_HIDE) {
             HIsland.ensureLaunchIntentExists(packageName)
         }
         packageManager.getLaunchIntentForPackage(pkg)?.let {
@@ -333,19 +335,22 @@ class ApiActivity : ComponentActivity() {
     ) {
         val filtered =
             list.filter { AppManager.isAppFrozen(it.packageName) != frozen && !(skipWhitelisted && it.whitelisted) }
-        when (val result = AppManager.setListFrozen(frozen, *filtered.toTypedArray())) {
-            null -> {
-                throw IllegalStateException(getString(R.string.permission_denied))
-            }
-
-            else -> {
-                HUI.showToast(
-                    if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
-                    result,
-                )
-                app.setAutoFreezeService()
-            }
+        val result = AppManager.setListFrozen(frozen, filtered.map { it.packageName })
+        val anyExisting = filtered.any { it.applicationInfo != null }
+        if (result.total > 0 && result.succeeded == 0 && anyExisting) {
+            throw IllegalStateException(getString(R.string.permission_denied))
         }
+        val message =
+            if (result.total == 1 && result.succeeded == 1) {
+                filtered.firstOrNull()?.name ?: result.succeeded.toString()
+            } else {
+                result.succeeded.toString()
+            }
+        HUI.showToast(
+            if (frozen) R.string.msg_freeze else R.string.msg_unfreeze,
+            message,
+        )
+        app.setAutoFreezeService()
     }
 
     private fun lockScreen(freezeAll: Boolean) {

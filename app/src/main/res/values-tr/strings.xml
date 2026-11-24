@@ -32,7 +32,6 @@
     <string name="action_undo">Geri al</string>
     <string name="action_help">Yardım</string>
     <string name="action_search">Ara</string>
-    <string name="action_extract_apk">APK oluştur</string>
     <string name="action_uninstall">Kaldır</string>
     <string name="msg_uninstall">Bu uygulamayı kaldırmak istiyor musunuz?</string>
     <string name="working_mode">Çalışma yöntemi</string>
@@ -94,6 +93,11 @@
     <string name="compact_icon">Kompakt ikon</string>
     <string name="action_biometric">Biyometrik giriş</string>
     <string name="msg_biometric">Biyometrik kimlik bilgilerinizi kullanarak giriş yapın</string>
+    <string name="title_biometric_unavailable">Biyometrik giriş kullanılamıyor</string>
+    <string name="msg_biometric_unavailable">Biyometrik giriş açık, ancak bu cihazda kullanılabilir bir biyometrik veya cihaz kimlik bilgisi yok. Biyometrik kaydedin veya ekran kilidi ayarlayın, ardından tekrar deneyin.</string>
+    <string name="action_biometric_settings">Ayarları aç</string>
+    <string name="msg_biometric_prompt">Devam etmek için biyometrik veya cihaz kimlik bilgilerinizi kullanın</string>
+    <string name="msg_biometric_settings_not_found">Ayarlar açılamadı</string>
     <string name="action_pin">Sabitle</string>
     <string name="action_unpin">Sabitlemeyi kaldır</string>
     <string name="action_whitelist">Beyaz listeye ekle</string>
@@ -174,7 +178,6 @@
     <string name="save">Save</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>
@@ -183,4 +186,26 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Devre Dışı Bırak</string>
-</resources>
+    <string name="title_backup">Yedek / Geri Yükleme</string>
+    <string name="title_backup_restore">Yedek / Geri Yükleme</string>
+    <string name="section_backup">Yedek</string>
+    <string name="action_create_backup">Yedek</string>
+    <string name="action_choose_archive">Arşiv Seçin</string>
+    <string name="action_restore">Geri Yükle</string>
+    <string name="action_cancel">İptal Et</string>
+    <string name="restore_no_archive">Arşiv seçilmedi</string>
+    <string name="restore_from">Yedekten geri yükle</string>
+    <string name="restore_backup">Yedeği geri yükle</string>
+    <string name="backup_category_apps">Uygulamalar</string>
+    <string name="backup_category_tags">Etiketler</string>
+    <string name="backup_category_actions">İşlemler</string>
+    <string name="backup_category_settings">Ayarlar</string>
+    <string name="backup_category_whitelist">Beyaz Liste</string>
+    <string name="dialog_confirm_restore_title">Geri Yüklemeyi Onayla</string>
+    <string name="dialog_confirm_restore_message">Bu, geçerli verileri yedeğin içeriğiyle değiştirecektir. Devam etmek istiyor musunuz?</string>
+
+    <string name="summary_biometric_login">Biyometrik kimlik doğrulama ile uygulamaya güvenli erişim</string>
+    <string name="summary_backup">Uygulamaları, etiketleri, işlemleri, ayarları ve beyaz listeyi yedekle</string>
+    <string name="summary_restore">Uygulamaları, etiketleri, işlemleri, ayarları ve beyaz listeyi yedekten geri yükle</string>
+
+    <string name="action_data">Veriler</string></resources>

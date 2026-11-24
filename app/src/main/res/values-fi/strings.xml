@@ -71,7 +71,6 @@
     <string name="action_remove_home">Poista Kotoa</string>
     <string name="action_search">Etsi</string>
     <string name="action_details">Sovelluksen tiedot</string>
-    <string name="action_extract_apk">Pura APK</string>
     <string name="action_uninstall">Poista asennus</string>
     <string name="msg_uninstall">Haluatko poistaa tämän sovelluksen?</string>
     <string name="working_mode">Työtila</string>
@@ -112,6 +111,11 @@
     <string name="skip_foreground_app">Ohita etualan sovellus</string>
     <string name="grayscale_icon">Harmaasävy-kuvake</string>
     <string name="msg_biometric">Kirjaudu sisään biometrisilla tunnistetiedoillasi</string>
+    <string name="title_biometric_unavailable">Biometrinen kirjautuminen ei ole käytettävissä</string>
+    <string name="msg_biometric_unavailable">Biometrinen kirjautuminen on käytössä, mutta tässä laitteessa ei ole käyttökelpoisia biometrisia tietoja tai laitteen kirjautumistietoja. Lisää biometriset tiedot tai määritä näytön lukitus ja yritä uudelleen.</string>
+    <string name="action_biometric_settings">Avaa asetukset</string>
+    <string name="msg_biometric_prompt">Jatka käyttämällä biometrisiä tietojasi tai laitteen kirjautumistietoja</string>
+    <string name="msg_biometric_settings_not_found">Asetuksia ei voitu avata</string>
     <string name="action_pin">Kiinnitä</string>
     <string name="action_unpin">Irrota</string>
     <string name="action_import_frozen">Tuo jäädytetty sovellus</string>
@@ -174,7 +178,6 @@
     <string name="save">Save</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>
@@ -183,4 +186,26 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Poista käytöstä</string>
-</resources>
+    <string name="title_backup">Varmuuskopiointi / Palautus</string>
+    <string name="title_backup_restore">Varmuuskopiointi / Palautus</string>
+    <string name="section_backup">Varmuuskopiointi</string>
+    <string name="action_create_backup">Varmuuskopio</string>
+    <string name="action_choose_archive">Valitse arkisto</string>
+    <string name="action_restore">Palauta</string>
+    <string name="action_cancel">Peruuta</string>
+    <string name="restore_no_archive">Arkistoa ei valittu</string>
+    <string name="restore_from">Palauta kohteesta: %1$s</string>
+    <string name="restore_backup">Palauta varmuuskopiosta</string>
+    <string name="backup_category_apps">Sovellukset</string>
+    <string name="backup_category_tags">Tunnisteet</string>
+    <string name="backup_category_actions">Toiminnot</string>
+    <string name="backup_category_settings">Asetukset</string>
+    <string name="backup_category_whitelist">Sallittujen sovellusten lista</string>
+    <string name="dialog_confirm_restore_title">Vahvista palautus</string>
+    <string name="dialog_confirm_restore_message">Tämä korvaa nykyiset tiedot varmuuskopion sisällöllä. Jatketaanko?</string>
+
+    <string name="summary_biometric_login">Turvallinen sovelluksen pääsy biometrisellä todennuksella</string>
+    <string name="summary_backup">Varmuuskopioi sovellukset, tagit, toiminnot, asetukset ja sallittujen sovellusten lista</string>
+    <string name="summary_restore">Palauta sovellukset, tagit, toiminnot, asetukset ja sallittujen sovellusten lista varmuuskopiosta</string>
+
+    <string name="action_data">Tiedot</string></resources>

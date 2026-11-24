@@ -37,7 +37,6 @@
     <string name="action_help">Помощь</string>
     <string name="action_search">Поиск</string>
     <string name="action_details">О приложении</string>
-    <string name="action_extract_apk">Извлечь APK</string>
     <string name="action_uninstall">Удалить</string>
     <string name="msg_uninstall">Вы хотите удалить это приложение?</string>
     <string name="working_mode">Режим работы</string>
@@ -102,6 +101,11 @@
     <string name="compact_icon">Компактные иконки</string>
     <string name="action_biometric">Биометрический вход</string>
     <string name="msg_biometric">Вход с использованием своих биометрических данных</string>
+    <string name="title_biometric_unavailable">Биометрический вход недоступен</string>
+    <string name="msg_biometric_unavailable">Биометрический вход включён, но на этом устройстве нет пригодных биометрических данных или учётных данных устройства. Зарегистрируйте биометрические данные или настройте блокировку экрана и повторите попытку.</string>
+    <string name="action_biometric_settings">Открыть настройки</string>
+    <string name="msg_biometric_prompt">Используйте биометрические данные или учётные данные устройства, чтобы продолжить</string>
+    <string name="msg_biometric_settings_not_found">Не удалось открыть настройки</string>
     <string name="action_pin">Закрепить</string>
     <string name="action_unpin">Открепить</string>
     <string name="nothing_here">Здесь ничего нет</string>
@@ -156,7 +160,6 @@
     <string name="xposed_description">Разрешить связанным приложениям запускать приостановленные приложения</string>
     <string name="working_mode_tag">Режим работы связанных приложений</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="state_running">Запущено</string>
     <string name="state_disabled">Отключено</string>
     <string name="state_hidden">Скрыто</string>
     <string name="state_suspended">Приостановлено</string>
@@ -186,4 +189,26 @@
     <string name="summary_rebuild_cache">Удалить кэшированные данные приложений и перестроить их в фоновом режиме</string>
     <string name="title_actions">Действия</string>
     <string name="title_cache">Кэш</string>
-</resources>
+    <string name="title_backup">Резервное копирование / Восстановление</string>
+    <string name="title_backup_restore">Резервное копирование / Восстановление</string>
+    <string name="section_backup">Резервное копирование</string>
+    <string name="action_create_backup">Резервная копия</string>
+    <string name="action_choose_archive">Выберите архив</string>
+    <string name="action_restore">Восстановить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="restore_no_archive">Архив не выбран</string>
+    <string name="restore_from">Восстановить из: %1$s</string>
+    <string name="restore_backup">Восстановить из резервной копии</string>
+    <string name="backup_category_apps">Приложения</string>
+    <string name="backup_category_tags">Теги</string>
+    <string name="backup_category_actions">Действия</string>
+    <string name="backup_category_settings">Настройки</string>
+    <string name="backup_category_whitelist">Белый список</string>
+    <string name="dialog_confirm_restore_title">Подтвердить восстановление</string>
+    <string name="dialog_confirm_restore_message">Это заменит текущие данные содержимым резервной копии. Продолжить?</string>
+
+    <string name="summary_biometric_login">Безопасный доступ к приложению через биометрическую аутентификацию</string>
+    <string name="summary_backup">Создайте резервную копию приложений, тегов, действий, настроек и белого списка</string>
+    <string name="summary_restore">Восстановите приложения, теги, действия, настройки и белый список из резервной копии</string>
+
+    <string name="action_data">Данные</string></resources>

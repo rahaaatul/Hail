@@ -292,12 +292,18 @@ object HShizuku {
             false
         }
 
-    fun uninstallApp(packageName: String): Boolean =
-        execute(
-            "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall --user current"} $packageName",
-        ).first == 0
+    fun uninstallApp(packageName: String): Pair<Boolean, String?> {
+        val result =
+            execute(
+                "pm ${if (HPackages.canUninstallNormally(packageName)) "uninstall" else "uninstall --user current"} $packageName",
+            )
+        return (result.first == 0) to result.second
+    }
 
-    fun reinstallApp(packageName: String): Boolean = execute("pm install-existing --user current $packageName").first == 0
+    fun reinstallApp(packageName: String): Pair<Boolean, String?> {
+        val result = execute("cmd package install-existing --user current $packageName")
+        return (result.first == 0) to result.second
+    }
 
     fun execute(
         command: String,
@@ -311,7 +317,11 @@ object HShizuku {
                     ParcelFileDescriptor.AutoCloseOutputStream(outputStream).use {
                         it.write(command.toByteArray())
                     }
-                    waitFor() to inputStream.text.ifBlank { errorStream.text }.also { destroy() }
+                    val stdout = inputStream.text
+                    val code = waitFor()
+                    val stderr = errorStream.text
+                    destroy()
+                    code to stdout.ifBlank { stderr }
                 }
         }.getOrElse { 1 to it.stackTraceToString() }
 
