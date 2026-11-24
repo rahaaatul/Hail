@@ -37,7 +37,6 @@
     <string name="action_help">ヘルプ</string>
     <string name="action_search">検索</string>
     <string name="action_details">アプリ情報</string>
-    <string name="action_extract_apk">APK ファイルを抽出</string>
     <string name="action_uninstall">アンインストール</string>
     <string name="msg_uninstall">このアプリをアンインストールしますか？</string>
     <string name="working_mode">作業モード</string>
@@ -95,6 +94,11 @@
     <string name="grayscale_icon">グレースケールアイコン</string>
     <string name="action_biometric">生体認証ログイン</string>
     <string name="msg_biometric">生体認証情報を使用して認証する</string>
+    <string name="title_biometric_unavailable">生体認証ログインを利用できません</string>
+    <string name="msg_biometric_unavailable">生体認証ログインが有効ですが、この端末には使用できる生体認証情報または端末の認証情報がありません。生体認証を登録するか、画面ロックを設定してから再試行してください。</string>
+    <string name="action_biometric_settings">設定を開く</string>
+    <string name="msg_biometric_prompt">続行するには生体認証または端末の認証情報を使用してください</string>
+    <string name="msg_biometric_settings_not_found">設定を開けませんでした</string>
     <string name="action_pin">ピン留めする</string>
     <string name="action_unpin">ピン留め解除</string>
     <string name="nothing_here">何もありません</string>
@@ -169,7 +173,6 @@
     <string name="save">Save</string>
     <string name="state_disabled">Disabled</string>
     <string name="state_hidden">Hidden</string>
-    <string name="state_running">Running</string>
     <string name="state_suspended">Suspended</string>
     <string name="state_uninstalled">Uninstalled</string>
     <string name="summary_background_activity">Allow auto-freeze to continue when Hail is not open</string>
@@ -179,4 +182,26 @@
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="xposed_description">Allow scoped apps to launch suspended apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - 無効化</string>
-</resources>
+    <string name="title_backup">バックアップ / 復元</string>
+    <string name="title_backup_restore">バックアップ / 復元</string>
+    <string name="section_backup">バックアップ</string>
+    <string name="action_create_backup">バックアップ</string>
+    <string name="action_choose_archive">アーカイブを選択</string>
+    <string name="action_restore">復元</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="restore_no_archive">アーカイブが選択されていません</string>
+    <string name="restore_from">復元元: %1$s</string>
+    <string name="restore_backup">バックアップを復元</string>
+    <string name="backup_category_apps">アプリ</string>
+    <string name="backup_category_tags">タグ</string>
+    <string name="backup_category_actions">アクション</string>
+    <string name="backup_category_settings">設定</string>
+    <string name="backup_category_whitelist">ホワイトリスト</string>
+    <string name="dialog_confirm_restore_title">復元を確認</string>
+    <string name="dialog_confirm_restore_message">現在のデータをバックアップの内容で置き換えます。続行しますか?</string>
+
+    <string name="summary_biometric_login">生体認証によるアプリへの安全なアクセス</string>
+    <string name="summary_backup">アプリ、タグ、アクション、設定、ホワイトリストをバックアップ</string>
+    <string name="summary_restore">アプリ、タグ、アクション、設定、ホワイトリストをアーカイブから復元</string>
+
+    <string name="action_data">データ</string></resources>

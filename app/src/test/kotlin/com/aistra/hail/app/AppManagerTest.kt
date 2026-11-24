@@ -1,12 +1,13 @@
 package com.aistra.hail.app
 
+import com.aistra.hail.BuildConfig
 import com.aistra.hail.HailApp
 import com.aistra.hail.utils.HPackages
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -22,7 +23,7 @@ class AppManagerTest {
         mockApp = mockk(relaxed = true)
         every { mockApp.packageManager } returns mockk(relaxed = true)
         HailApp.setAppForTest(mockApp)
-        mockkObject(HailData)
+        mockkObject(HailSettings)
         mockkObject(HPackages)
     }
 
@@ -33,14 +34,14 @@ class AppManagerTest {
 
     @Test
     fun `isAppFrozen returns true for STOP mode when app is stopped`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT + HailData.STOP
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT + HailData.STOP
         every { HPackages.isAppStopped("pkg") } returns true
         assertTrue(AppManager.isAppFrozen("pkg"))
     }
 
     @Test
     fun `isAppFrozen returns true for DISABLE mode when app is disabled`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT + HailData.DISABLE
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT + HailData.DISABLE
         every { HPackages.isAppDisabled("pkg") } returns true
         assertTrue(AppManager.isAppFrozen("pkg"))
     }
@@ -52,29 +53,68 @@ class AppManagerTest {
 
     @Test
     fun `setAppFrozen returns false when mode unknown`() {
-        every { HailData.workingMode } returns "unknown_mode"
+        every { HailSettings.workingMode } returns "unknown_mode"
         assertFalse(AppManager.setAppFrozen("other.pkg", true))
     }
 
     @Test
     fun `uninstallApp returns false and starts delete intent when no handler matches`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
         val result = AppManager.uninstallApp("com.example.pkg")
-        assertFalse(result)
+        assertFalse(result.first)
     }
 
     @Test
     fun `reinstallApp returns false when mode not SU or SHIZUKU`() {
-        every { HailData.workingMode } returns HailData.MODE_DEFAULT
-        assertFalse(AppManager.reinstallApp("com.example.pkg"))
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
+        assertFalse(AppManager.reinstallApp("com.example.pkg").first)
     }
 
     @Test
     fun `execute returns 0 to null when mode not SU or SHIZUKU`() =
-        runTest {
-            every { HailData.workingMode } returns HailData.MODE_DEFAULT
+        runBlocking {
+            every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
             val (code, output) = AppManager.execute("some command")
             assertEquals(0, code)
             assertEquals(null, output)
         }
+
+    @Test
+    fun `batchFreeze counts all successes`() {
+        val result = AppManager.batchFreeze(true, listOf("a", "b")) { _, _ -> true }
+
+        assertEquals(2, result.total)
+        assertEquals(2, result.succeeded)
+        assertTrue(result.failed.isEmpty())
+        assertTrue(result.allSucceeded)
+    }
+
+    @Test
+    fun `batchFreeze collects failed packages`() {
+        val result = AppManager.batchFreeze(false, listOf("a", "b", "c")) { pkg, _ -> pkg != "b" }
+
+        assertEquals(3, result.total)
+        assertEquals(2, result.succeeded)
+        assertEquals(listOf("b"), result.failed)
+        assertFalse(result.allSucceeded)
+    }
+
+    @Test
+    fun `batchFreeze reports total failure`() {
+        val result = AppManager.batchFreeze(true, listOf("a")) { _, _ -> false }
+
+        assertEquals(0, result.succeeded)
+        assertEquals(listOf("a"), result.failed)
+    }
+
+    @Test
+    fun `setListFrozen excludes own package from the batch`() {
+        every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
+
+        val result = AppManager.setListFrozen(true, listOf(BuildConfig.APPLICATION_ID, "com.example.pkg"))
+
+        assertEquals(1, result.total)
+        assertEquals(0, result.succeeded)
+        assertEquals(listOf("com.example.pkg"), result.failed)
+    }
 }

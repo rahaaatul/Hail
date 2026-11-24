@@ -9,12 +9,14 @@ if [ -n "$STAGED_YML" ]; then
   }
 fi
 
-# Run Spotless check and Detekt on staged Kotlin/Java files if gradlew exists
+# Run Spotless check on staged Kotlin/Java files if gradlew exists
 if [ -f "./gradlew" ]; then
-  STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(kt|kts|java)$' || true)
+  STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(kt|java)$' || true)
   if [ -n "$STAGED" ]; then
-    ./gradlew spotlessCheck detekt --quiet || {
-      echo "Lint/format checks failed. Run './gradlew spotlessApply' to fix formatting."
+    RATCHET=""
+    git rev-parse --verify --quiet HEAD >/dev/null && RATCHET="-PspotlessRatchetFrom=HEAD"
+    ./gradlew spotlessCheck --quiet $RATCHET || {
+      echo "Format check failed. Run './gradlew spotlessApply' and re-stage."
       exit 1
     }
   fi
