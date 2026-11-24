@@ -185,7 +185,7 @@ dependencies {
     testImplementation("androidx.test.ext:junit:1.3.0")
     testImplementation("androidx.test.ext:truth:1.7.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    testImplementation("androidx.room3:room3-testing:3.0.1")
+    testImplementation("androidx.room3:room3-testing:3.0.3")
     testImplementation("io.mockk:mockk:1.14.12")
     testImplementation(libs.robolectric)
 
@@ -195,6 +195,6 @@ dependencies {
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     androidTestImplementation("io.mockk:mockk-android:1.14.12")
-    androidTestImplementation("androidx.room3:room3-testing:3.0.1")
+    androidTestImplementation("androidx.room3:room3-testing:3.0.3")
 }
 
