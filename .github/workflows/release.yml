@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'app/**'
+      - 'app/src/**'
   workflow_dispatch:
 
 concurrency:
@@ -108,6 +108,20 @@ jobs:
           done
           gh release upload "$RELEASE_TAG" "$RELEASE_APK" "$DEBUG_APK" --clobber
         shell: bash
+      - name: Upload mapping.txt to Release
+        if: steps.release_step.outputs.new_release_published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release_step.outputs.new_release_git_tag }}
+          MAPPING_TXT: ${{ steps.build.outputs.releaseMappingPath }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MAPPING_TXT" ] || [ ! -f "$MAPPING_TXT" ]; then
+            echo "Release mapping.txt not found: $MAPPING_TXT" >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "$MAPPING_TXT" --clobber
+        shell: bash
       - name: Upload APK attestations to Release
         if: steps.release_step.outputs.new_release_published == 'true'
         uses: ./.github/actions/upload-release-attestations
@@ -115,3 +129,17 @@ jobs:
           release-tag: ${{ steps.release_step.outputs.new_release_git_tag }}
           release-bundle: ${{ steps.attest-release.outputs.bundle-path }}
           debug-bundle: ${{ steps.attest-debug.outputs.bundle-path }}
+      - name: Back-merge main into dev
+        if: steps.release_step.outputs.new_release_published == 'true'
+        continue-on-error: true
+        run: bash .github/scripts/backmerge.sh main dev
+        shell: bash
+      - name: Delete the release when a later step failed
+        if: failure() && steps.release_step.outputs.new_release_published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release_step.outputs.new_release_git_tag }}
+        run: |
+          set -euo pipefail
+          gh release delete "$RELEASE_TAG" --yes --cleanup-tag || echo "release $RELEASE_TAG is already gone"
+        shell: bash
