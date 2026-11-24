@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
 class AppMetaCacheStateTest {
     @Before
     fun setUp() {
-        HailApp.setAppForTest(RuntimeEnvironment.application as HailApp)
+        HailApp.setAppForTest(RuntimeEnvironment.getApplication() as HailApp)
     }
 
     // ApplicationInfo exposes flags/enabled as public Java fields, which MockK cannot stub, so the

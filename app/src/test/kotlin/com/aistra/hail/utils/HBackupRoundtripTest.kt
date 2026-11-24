@@ -40,7 +40,7 @@ class HBackupRoundtripTest {
 
     @Before
     fun setUp() {
-        val app = RuntimeEnvironment.application as HailApp
+        val app = RuntimeEnvironment.getApplication() as HailApp
         HailApp.setAppForTest(app)
         context = app
         // Seed empty app/tag files so the lazy collections initialize without touching

@@ -24,7 +24,7 @@ class HailDataTest {
 
     @Before
     fun setUp() {
-        val app = RuntimeEnvironment.application as HailApp
+        val app = RuntimeEnvironment.getApplication() as HailApp
         HailApp.setAppForTest(app)
         db =
             Room

@@ -20,9 +20,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-// The app targets SDK 36, which Robolectric 4.14 does not ship yet; the fallback SDK has no
-// `Context.getSystemService(Class)` (API 23+), so HPolicy's static initialiser crashes. Pin a
-// supported SDK for this test class.
+// The app targets SDK 36 and Robolectric 4.18.1 can emulate it, but this test keeps the original
+// SDK 34 pin to preserve its shadow behaviour. HPolicy's static initialiser needs
+// `Context.getSystemService(Class)` (API 23+), which the fallback SDK lacks.
 @Config(application = HailApp::class, sdk = [34])
 class AppFrozenDispatchTest {
     private val packageName = "com.example.frozen"
