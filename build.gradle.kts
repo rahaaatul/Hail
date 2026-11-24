@@ -21,6 +21,5 @@ buildscript.configurations.named("classpath").configure {
         force("org.bitbucket.b_c:jose4j:0.9.7")
         force("org.jdom:jdom2:2.0.6.1")
         force("org.apache.httpcomponents:httpclient:4.5.14")
-        force("org.freemarker:freemarker:2.3.35")
     }
 }

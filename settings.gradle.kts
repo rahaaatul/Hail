@@ -23,7 +23,11 @@ gradle.beforeProject {
         resolutionStrategy.force("org.freemarker:freemarker:2.3.35")
     }
     configurations.configureEach {
-        resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
+        // Guava is transitive; force patched 33.7.2-jre on classpaths only
+        // (Dependabot #35, GHSA-xxph-c9ww-hj94). No Hail API usage.
+        if (name == "runtimeClasspath" || name == "compileClasspath") {
+            resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
+        }
     }
 }
 rootProject.name = "Hail"
