@@ -20,7 +20,11 @@ android {
     }.standardOutput.asText.get().trim()
 
     namespace = "com.aistra.hail"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     val versionCodeProperties = rootProject.file("versionCode.properties")
     val versionCodeFromProperties = versionCodeProperties.readText().lines()
