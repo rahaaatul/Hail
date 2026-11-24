@@ -38,7 +38,6 @@
     <string name="action_export_all">सभी निर्यात करें</string>
     <string name="action_export_clipboard">क्लिपबोर्ड में निर्यात करें</string>
     <string name="action_export_current">दिखने वाले निर्यात करें</string>
-    <string name="action_extract_apk">APK निकालें</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze">फ्रीज़ करें</string>
     <string name="action_freeze_tag">टैग फ्रीज़ करें</string>
@@ -122,6 +121,11 @@
     <string name="mode_su_stop">Root - फोर्स स्टॉप</string>
     <string name="mode_su_suspend">Root - निलंबित करें</string>
     <string name="msg_biometric">अपने बायोमेट्रिक क्रेडेंशियल से लॉगिन करें</string>
+    <string name="title_biometric_unavailable">बायोमेट्रिक लॉगिन उपलब्ध नहीं है</string>
+    <string name="msg_biometric_unavailable">बायोमेट्रिक लॉगिन चालू है, लेकिन इस डिवाइस पर कोई उपयोगी बायोमेट्रिक या डिवाइस क्रेडेंशियल नहीं है। बायोमेट्रिक पंजीकृत करें या स्क्रीन लॉक सेट करें, फिर पुनः प्रयास करें।</string>
+    <string name="action_biometric_settings">सेटिंग्स खोलें</string>
+    <string name="msg_biometric_prompt">जारी रखने के लिए अपने बायोमेट्रिक या डिवाइस क्रेडेंशियल का उपयोग करें</string>
+    <string name="msg_biometric_settings_not_found">सेटिंग्स खोली नहीं जा सकी</string>
     <string name="msg_confirm_rebuild_cache">यह मेटाडेटा और आइकन साफ़ करता है, फिर हर इंस्टॉल ऐप पुनः लोड होता है। जारी रखें?</string>
     <string name="msg_exported">निर्यातित: %s</string>
     <string name="msg_extract_apk">निकाला गया: %s</string>
@@ -153,7 +157,6 @@
     <string name="sort_update">अंतिम अपडेट</string>
     <string name="state_disabled">अक्षम</string>
     <string name="state_hidden">छिपा हुआ</string>
-    <string name="state_running">चल रहा है</string>
     <string name="state_suspended">निलंबित</string>
     <string name="state_uninstalled">अनइंस्टॉल</string>
     <string name="summary_background_activity">Hail खुला न होने पर ऑटो-फ्रीज़ जारी रखने की अनुमति दें</string>
@@ -175,4 +178,26 @@
     <string name="working_mode_tag">संबंधित ऐप्स का वर्किंग मोड</string>
     <string name="xposed_description">स्कोप्ड ऐप्स को निलंबित ऐप्स लॉन्च करने दें</string>
     <string name="mode_jailbreak_disable">जेलब्रेक - अक्षम</string>
-</resources>
+    <string name="title_backup">बैकअप / पुनर्स्थापना</string>
+    <string name="title_backup_restore">बैकअप / पुनर्स्थापना</string>
+    <string name="section_backup">बैकअप</string>
+    <string name="action_create_backup">बैकअप</string>
+    <string name="action_choose_archive">संग्रह चुनें</string>
+    <string name="action_restore">पुनर्स्थापित करें</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="restore_no_archive">कोई संग्रह नहीं चुना गया</string>
+    <string name="restore_from">से पुनर्स्थापित करें: %1$s</string>
+    <string name="restore_backup">बैकअप पुनर्स्थापित करें</string>
+    <string name="backup_category_apps">ऐप्स</string>
+    <string name="backup_category_tags">टैग</string>
+    <string name="backup_category_actions">क्रियाएं</string>
+    <string name="backup_category_settings">सेटिंग्ज़</string>
+    <string name="backup_category_whitelist">व्हाइटलिस्ट</string>
+    <string name="dialog_confirm_restore_title">पुनर्स्थापना की पुष्टि करें</string>
+    <string name="dialog_confirm_restore_message">यह वर्तमान डेटा को बैकअप की सामग्री से बदल देगा। जारी रखें?</string>
+
+    <string name="summary_biometric_login">बायोमीट्रिक प्रमाणीकरण के माध्यम से ऐप तक सुरक्षित पहुंच</string>
+    <string name="summary_backup">ऐप्स, टैग, क्रियाएं, सेटिंग्स और व्हाइटलिस्ट का बैकअप लें</string>
+    <string name="summary_restore">ऐप्स, टैग, क्रियाएं, सेटिंग्स और व्हाइटलिस्ट को एक आर्काइव से पुनर्स्थापित करें</string>
+
+    <string name="action_data">डेटा</string></resources>

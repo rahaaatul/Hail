@@ -71,7 +71,6 @@
     <string name="compact_icon">Ícone compacto</string>
     <string name="action_uninstall">Desinstalar</string>
     <string name="mode_dhizuku_hide">Dhizuku - Oculto</string>
-    <string name="action_extract_apk">Extrair APK</string>
     <string name="action_freeze_tag">Tag de congelamento</string>
     <string name="action_select_all">Selecionar tudo</string>
     <string name="action_unfreeze_remove_home">Descongelar e remover da tela inicial</string>
@@ -103,6 +102,11 @@
     <string name="action_unfreeze">Descongelar</string>
     <string name="donate_wechat">WeChat Pay</string>
     <string name="msg_biometric">Faça login usando sua credencial biométrica</string>
+    <string name="title_biometric_unavailable">Login biométrico indisponível</string>
+    <string name="msg_biometric_unavailable">O login biométrico está ativado, mas este dispositivo não tem nenhuma credencial biométrica ou de dispositivo utilizável. Registre uma credencial biométrica ou configure um bloqueio de tela e tente novamente.</string>
+    <string name="action_biometric_settings">Abrir configurações</string>
+    <string name="msg_biometric_prompt">Use sua credencial biométrica ou de dispositivo para continuar</string>
+    <string name="msg_biometric_settings_not_found">Não foi possível abrir as configurações</string>
     <string name="permission_denied">Permissão negada</string>
     <string name="action_help">Ajuda</string>
     <string name="action_qq">Grupo do QQ</string>
@@ -175,7 +179,6 @@
     <string name="save">Guardar</string>
     <string name="state_disabled">Desativado</string>
     <string name="state_hidden">Oculto</string>
-    <string name="state_running">A correr</string>
     <string name="state_suspended">Suspenso</string>
     <string name="state_uninstalled">Desinstalado</string>
     <string name="summary_background_activity">Permitir auto-congelamento a continuar quando Hail não está aberto</string>
@@ -185,4 +188,26 @@
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="xposed_description">Allow scoped apps to launch suspended apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Desativar</string>
-</resources>
+    <string name="title_backup">Backup / Restaurar</string>
+    <string name="title_backup_restore">Backup / Restaurar</string>
+    <string name="section_backup">Backup</string>
+    <string name="action_create_backup">Backup</string>
+    <string name="action_choose_archive">Escolher arquivo</string>
+    <string name="action_restore">Restaurar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="restore_no_archive">Nenhum arquivo selecionado</string>
+    <string name="restore_from">Restaurar de: %1$s</string>
+    <string name="restore_backup">Restaurar backup</string>
+    <string name="backup_category_apps">Aplicativos</string>
+    <string name="backup_category_tags">Tags</string>
+    <string name="backup_category_actions">Ações</string>
+    <string name="backup_category_settings">Configurações</string>
+    <string name="backup_category_whitelist">Lista de permissões</string>
+    <string name="dialog_confirm_restore_title">Confirmar restauração</string>
+    <string name="dialog_confirm_restore_message">Isso substituirá os dados atuais pelo conteúdo do backup. Continuar?</string>
+
+    <string name="summary_biometric_login">Acesso seguro ao aplicativo por autenticação biométrica</string>
+    <string name="summary_backup">Faça backup de aplicativos, tags, ações, configurações e lista de permissões</string>
+    <string name="summary_restore">Restaure aplicativos, tags, ações, configurações e lista de permissões de um arquivo</string>
+
+    <string name="action_data">Dados</string></resources>

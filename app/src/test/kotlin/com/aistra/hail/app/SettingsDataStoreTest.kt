@@ -1,0 +1,315 @@
+package com.aistra.hail.app
+
+import android.content.Context
+import androidx.datastore.core.CorruptionException
+import androidx.preference.PreferenceManager
+import com.aistra.hail.HailApp
+import com.aistra.hail.app.HailData
+import com.aistra.hail.backup.SettingsBackup
+import com.google.protobuf.CodedOutputStream
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+
+@RunWith(RobolectricTestRunner::class)
+@Config(application = HailApp::class)
+class SettingsDataStoreTest {
+    private lateinit var context: Context
+
+    @Before
+    fun setUp() {
+        val app = RuntimeEnvironment.application as HailApp
+        HailApp.setAppForTest(app)
+        context = app
+        File(app.filesDir, "datastore").deleteRecursively()
+        PreferenceManager
+            .getDefaultSharedPreferences(context)
+            .edit()
+            .clear()
+            .apply()
+        // HailApp.onCreate() already ran the one-time migration during Robolectric bootstrap;
+        // reset the DataStore so every test starts from the marker-free defaults.
+        SettingsDataStore.resetForTest()
+    }
+
+    @Test
+    fun `SettingsSerializer round-trips a SettingsBackup`() =
+        runBlocking {
+            val original =
+                SettingsBackup
+                    .newBuilder()
+                    .setSortBy(HailData.SORT_INSTALL)
+                    .setWorkingMode(HailData.MODE_SHIZUKU_STOP)
+                    .setAppTheme(HailData.THEME_DARK)
+                    .setIconPack(HailData.ACTION_FREEZE_ALL)
+                    .setTileAction(HailData.ACTION_LOCK)
+                    .setDynamicShortcutAction(HailData.ACTION_NONE)
+                    .setFilterUserApps(false)
+                    .setFilterSystemApps(true)
+                    .setFilterEnabledApps(true)
+                    .setFilterDisabledApps(false)
+                    .setFilterSuspendedApps(true)
+                    .setFilterHiddenApps(false)
+                    .setFilterStoppedApps(true)
+                    .setFilterUninstalledApps(true)
+                    .setBiometricLogin(true)
+                    .setGrayscaleIcon(false)
+                    .setCompactIcon(true)
+                    .setSynthesizeAdaptiveIcons(true)
+                    .setFuzzySearch(true)
+                    .setNineKeySearch(true)
+                    .setAutoFreezeAfterLock(true)
+                    .setSkipWhileCharging(true)
+                    .setSkipForegroundApp(false)
+                    .setSkipNotifyingApp(true)
+                    .setHomeFontSize(18f)
+                    .setAutoFreezeDelay(2.5f)
+                    .build()
+
+            val output = ByteArrayOutputStream()
+            SettingsSerializer.writeTo(original, output)
+
+            val input = ByteArrayInputStream(output.toByteArray())
+            val restored = SettingsSerializer.readFrom(input)
+
+            assertEquals(original, restored)
+        }
+
+    @Test
+    fun `SettingsSerializer reads a stream written with the released tag numbers`() =
+        runBlocking {
+            // Tags are the released 1.12.0.x numbers. Protobuf matches by tag, so this
+            // stream only decodes correctly while they keep their original meaning.
+            val out = ByteArrayOutputStream()
+            val coded = CodedOutputStream.newInstance(out)
+            coded.writeString(1, HailData.SORT_INSTALL)
+            coded.writeBool(7, false)
+            coded.writeBool(9, false) // retired filter_all_apps: unknown, must be ignored
+            coded.writeBool(12, true)
+            coded.writeBool(13, false)
+            coded.writeFloat(22, 18f)
+            coded.writeFloat(23, 2.5f)
+            coded.flush()
+
+            val data =
+                SettingsSerializer
+                    .readFrom(ByteArrayInputStream(out.toByteArray()))
+                    .toSettingsData()
+
+            assertEquals(HailData.SORT_INSTALL, data.sortBy)
+            assertFalse(data.filterUserApps)
+            assertTrue(data.biometricLogin)
+            assertFalse(data.grayscaleIcon)
+            assertEquals(18f, data.homeFontSize, 0.001f)
+            assertEquals(2.5f, data.autoFreezeDelay, 0.001f)
+            // The retired bool at tag 9 must not become filter_enabled_apps at tag 24:
+            // a false there would otherwise flip this default-true filter to false.
+            assertTrue(data.filterEnabledApps)
+        }
+
+    @Test
+    fun `SettingsSerializer throws CorruptionException on corrupt input`() =
+        runBlocking {
+            val valid =
+                SettingsBackup
+                    .newBuilder()
+                    .setSortBy("test")
+                    .build()
+                    .toByteArray()
+            val corrupted = valid.copyOf(valid.size)
+            corrupted[corrupted.size / 2] = (corrupted[corrupted.size / 2].toInt() xor 0xFF).toByte()
+
+            val input = ByteArrayInputStream(corrupted)
+            var exception: Throwable? = null
+            try {
+                SettingsSerializer.readFrom(input)
+            } catch (e: Throwable) {
+                exception = e
+            }
+            assertTrue(exception != null)
+            assertTrue(exception is CorruptionException)
+        }
+
+    @Test
+    fun `toSettingsData uses present field values and defaults for absent fields`() {
+        val backup =
+            SettingsBackup
+                .newBuilder()
+                .setSortBy(HailData.SORT_INSTALL)
+                .putSortDirections(HailData.SORT_SIZE, false)
+                .setFilterUserApps(false)
+                .setHomeFontSize(20f)
+                .build()
+
+        val data = backup.toSettingsData()
+
+        assertEquals(HailData.SORT_INSTALL, data.sortBy)
+        assertEquals(mapOf(HailData.SORT_SIZE to false), data.sortDirections)
+        assertFalse(data.filterUserApps)
+        assertFalse(data.filterUninstalledApps)
+        assertEquals(20f, data.homeFontSize, 0.001f)
+        assertEquals(HailData.MODE_DEFAULT, data.workingMode)
+        assertFalse(data.filterSystemApps)
+        assertEquals(HailData.FOLLOW_SYSTEM, data.appTheme)
+        assertEquals(HailData.ACTION_NONE, data.iconPack)
+        assertEquals(HailData.AUTO_FREEZE_AFTER_LOCK, data.tileAction)
+        assertEquals(HailData.ACTION_NONE, data.dynamicShortcutAction)
+    }
+
+    @Test
+    fun `toSettingsBackup sets all fields from SettingsData`() {
+        val data =
+            SettingsData(
+                sortBy = HailData.SORT_INSTALL,
+                sortDirections = mapOf(HailData.SORT_NAME to false, HailData.SORT_SIZE to true),
+                filterUserApps = false,
+                filterSystemApps = true,
+                filterEnabledApps = true,
+                filterDisabledApps = false,
+                filterSuspendedApps = true,
+                filterHiddenApps = false,
+                filterStoppedApps = true,
+                filterUninstalledApps = true,
+                workingMode = HailData.MODE_SHIZUKU_HIDE,
+                biometricLogin = true,
+                appTheme = HailData.THEME_LIGHT,
+                iconPack = HailData.ACTION_FREEZE_ALL,
+                grayscaleIcon = false,
+                compactIcon = true,
+                synthesizeAdaptiveIcons = true,
+                homeFontSize = 22f,
+                fuzzySearch = true,
+                nineKeySearch = true,
+                tileAction = HailData.ACTION_UNFREEZE_ALL,
+                autoFreezeAfterLock = true,
+                autoFreezeDelay = 3.5f,
+                skipWhileCharging = true,
+                skipForegroundApp = true,
+                skipNotifyingApp = true,
+                dynamicShortcutAction = HailData.ACTION_LOCK_FREEZE,
+            )
+
+        val backup = data.toSettingsBackup()
+
+        assertTrue(backup.hasSortBy())
+        assertEquals(HailData.SORT_INSTALL, backup.sortBy)
+        assertEquals(
+            mapOf(HailData.SORT_NAME to false, HailData.SORT_SIZE to true),
+            backup.sortDirectionsMap,
+        )
+        assertBackupFields(backup)
+    }
+
+    private fun assertBackupFields(backup: SettingsBackup) {
+        assertTrue(backup.hasFilterUserApps())
+        assertFalse(backup.filterUserApps)
+        assertTrue(backup.hasFilterSystemApps())
+        assertTrue(backup.filterSystemApps)
+        assertTrue(backup.hasFilterEnabledApps())
+        assertTrue(backup.filterEnabledApps)
+        assertTrue(backup.hasFilterDisabledApps())
+        assertFalse(backup.filterDisabledApps)
+        assertTrue(backup.hasFilterSuspendedApps())
+        assertTrue(backup.filterSuspendedApps)
+        assertTrue(backup.hasFilterHiddenApps())
+        assertFalse(backup.filterHiddenApps)
+        assertTrue(backup.hasFilterStoppedApps())
+        assertTrue(backup.filterStoppedApps)
+        assertTrue(backup.hasFilterUninstalledApps())
+        assertTrue(backup.filterUninstalledApps)
+        assertTrue(backup.hasWorkingMode())
+        assertEquals(HailData.MODE_SHIZUKU_HIDE, backup.workingMode)
+        assertTrue(backup.hasBiometricLogin())
+        assertTrue(backup.biometricLogin)
+        assertTrue(backup.hasAppTheme())
+        assertEquals(HailData.THEME_LIGHT, backup.appTheme)
+        assertTrue(backup.hasIconPack())
+        assertEquals(HailData.ACTION_FREEZE_ALL, backup.iconPack)
+        assertTrue(backup.hasHomeFontSize())
+        assertEquals(22f, backup.homeFontSize, 0.001f)
+        assertTrue(backup.hasAutoFreezeDelay())
+        assertEquals(3.5f, backup.autoFreezeDelay, 0.001f)
+    }
+
+    @Test
+    fun `migrateSettingsFromSharedPreferences migrates string boolean float values`() =
+        runBlocking {
+            val sp = PreferenceManager.getDefaultSharedPreferences(context)
+            sp
+                .edit()
+                .putString(HailData.SORT_BY, HailData.SORT_INSTALL)
+                .putBoolean(HailData.FILTER_USER_APPS, false)
+                .putFloat(HailData.HOME_FONT_SIZE, 18f)
+                .apply()
+
+            migrateSettingsFromSharedPreferences()
+
+            val settings = SettingsDataStore.readSettings()
+
+            assertEquals(HailData.SORT_INSTALL, settings.sortBy)
+            assertFalse(settings.filterUserApps)
+            assertEquals(18f, settings.homeFontSize, 0.001f)
+            assertTrue(settings.settingsMigratedFromSp)
+            assertTrue(sp.all.isEmpty())
+        }
+
+    @Test
+    fun `migration marks an empty preference file as migrated`() =
+        runBlocking {
+            migrateSettingsFromSharedPreferences()
+
+            assertTrue(SettingsDataStore.isSettingsMigrationComplete())
+            assertTrue(PreferenceManager.getDefaultSharedPreferences(context).all.isEmpty())
+        }
+
+    @Test
+    fun `migration runs once and never merges a stale preference value again`() =
+        runBlocking {
+            val sp = PreferenceManager.getDefaultSharedPreferences(context)
+            sp.edit().putString(HailData.SORT_BY, HailData.SORT_INSTALL).apply()
+
+            migrateSettingsFromSharedPreferences()
+
+            val migrated = SettingsDataStore.readSettings()
+            assertEquals(HailData.SORT_INSTALL, migrated.sortBy)
+            assertTrue(migrated.settingsMigratedFromSp)
+            assertTrue(sp.all.isEmpty())
+
+            // The user changes the setting after the migration: DataStore now owns the value.
+            SettingsDataStore.updateSettings { setSortBy(HailData.SORT_SIZE) }
+
+            // A stale value reappears in SharedPreferences (old build, restored prefs file).
+            sp.edit().putString(HailData.SORT_BY, HailData.SORT_UPDATE).apply()
+
+            migrateSettingsFromSharedPreferences()
+
+            val settings = SettingsDataStore.readSettings()
+            assertEquals(HailData.SORT_SIZE, settings.sortBy)
+            assertTrue(settings.settingsMigratedFromSp)
+            assertTrue(sp.all.isEmpty())
+        }
+
+    @Test
+    fun `toSettingsData reports the migration marker`() {
+        assertFalse(SettingsBackup.getDefaultInstance().toSettingsData().settingsMigratedFromSp)
+        assertTrue(
+            SettingsBackup
+                .newBuilder()
+                .setSettingsMigratedFromSp(true)
+                .build()
+                .toSettingsData()
+                .settingsMigratedFromSp,
+        )
+    }
+}

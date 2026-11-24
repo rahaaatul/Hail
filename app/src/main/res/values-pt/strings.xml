@@ -69,7 +69,6 @@
     <string name="compact_icon">Ícone compacto</string>
     <string name="action_uninstall">Desinstalar</string>
     <string name="mode_dhizuku_hide">Dhizuku - Oculto</string>
-    <string name="action_extract_apk">Extrair APK</string>
     <string name="action_freeze_tag">Tag de congelamento</string>
     <string name="action_select_all">Selecionar tudo</string>
     <string name="action_unfreeze_remove_home">Descongelar e remover do ecrã inicial</string>
@@ -101,6 +100,11 @@
     <string name="sort_update">Última atualização</string>
     <string name="action_unfreeze">Descongelar</string>
     <string name="msg_biometric">Faça login usando a sua credencial biométrica</string>
+    <string name="title_biometric_unavailable">Login biométrico indisponível</string>
+    <string name="msg_biometric_unavailable">O login biométrico está ativado, mas este dispositivo não tem nenhuma credencial biométrica ou de dispositivo utilizável. Registe uma credencial biométrica ou configure um bloqueio de ecrã e tente novamente.</string>
+    <string name="action_biometric_settings">Abrir configurações</string>
+    <string name="msg_biometric_prompt">Utilize a sua credencial biométrica ou de dispositivo para continuar</string>
+    <string name="msg_biometric_settings_not_found">Não foi possível abrir as configurações</string>
     <string name="permission_denied">Permissão negada</string>
     <string name="action_help">Ajuda</string>
     <string name="action_qq">Grupo do QQ</string>
@@ -174,7 +178,6 @@
     <string name="save">Guardar</string>
     <string name="state_disabled">Desativada</string>
     <string name="state_hidden">Oculta</string>
-    <string name="state_running">A correr</string>
     <string name="state_suspended">Suspensa</string>
     <string name="state_uninstalled">Desinstalada</string>
     <string name="summary_background_activity">Permitir auto-congelamento a continuar quando Hail não está aberto</string>
@@ -183,4 +186,26 @@
     <string name="title_cache">Cache</string>
     <string name="working_mode_tag">Working mode of related apps</string>
     <string name="mode_jailbreak_disable">Jailbreak - Desativar</string>
-</resources>
+    <string name="title_backup">Backup / Restaurar</string>
+    <string name="title_backup_restore">Backup / Restaurar</string>
+    <string name="section_backup">Backup</string>
+    <string name="action_create_backup">Cópia de segurança</string>
+    <string name="action_choose_archive">Escolher ficheiro</string>
+    <string name="action_restore">Restaurar</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="restore_no_archive">Nenhum ficheiro selecionado</string>
+    <string name="restore_from">Restaurar a partir de: %1$s</string>
+    <string name="restore_backup">Restaurar cópia de segurança</string>
+    <string name="backup_category_apps">Aplicações</string>
+    <string name="backup_category_tags">Etiquetas</string>
+    <string name="backup_category_actions">Ações</string>
+    <string name="backup_category_settings">Definições</string>
+    <string name="backup_category_whitelist">Lista branca</string>
+    <string name="dialog_confirm_restore_title">Confirmar restauração</string>
+    <string name="dialog_confirm_restore_message">Isto vai substituir os dados atuais pelo conteúdo da cópia de segurança. Continuar?</string>
+
+    <string name="summary_biometric_login">Acesso seguro à aplicação através de autenticação biométrica</string>
+    <string name="summary_backup">Faça cópia de segurança de aplicações, etiquetas, ações, definições e lista branca</string>
+    <string name="summary_restore">Restaure aplicações, etiquetas, ações, definições e lista branca de um arquivo</string>
+
+    <string name="action_data">Dados</string></resources>

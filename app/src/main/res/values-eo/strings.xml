@@ -39,7 +39,6 @@
     <string name="action_help">Helpo</string>
     <string name="action_search">Serĉi</string>
     <string name="action_details">Informoj pri aplikaĵo</string>
-    <string name="action_extract_apk">Elpreni APK-on</string>
     <string name="action_uninstall">Malinstali</string>
     <string name="msg_uninstall">Ĉu vi volas malinstali tiun ĉi aplikaĵon?</string>
     <string name="working_mode">Laborreĝimo</string>
@@ -105,6 +104,11 @@
     <string name="compact_icon">Kompakta ikono</string>
     <string name="action_biometric">Biometrika ensaluto</string>
     <string name="msg_biometric">Ensaluti per via biometrika identigilo</string>
+    <string name="title_biometric_unavailable">Biometrika ensaluto ne disponeblas</string>
+    <string name="msg_biometric_unavailable">Biometrika ensaluto estas ŝaltita, sed ĉi tiu aparato ne havas uzeblan biometrikan aŭ aparatan identigilon. Enigu biometrikan identigilon aŭ agordu ekranŝloson, poste reprovu.</string>
+    <string name="action_biometric_settings">Malfermi agordon</string>
+    <string name="msg_biometric_prompt">Uzu vian biometrikan aŭ aparatan identigilon por daŭrigi</string>
+    <string name="msg_biometric_settings_not_found">Ne eblis malfermi agordon</string>
     <string name="action_pin">PIN</string>
     <string name="action_unpin">Malpingli</string>
     <string name="action_whitelist">Aldoni al blanklisto</string>
@@ -145,7 +149,6 @@
     <string name="follow_system">Sekvi sistemon</string>
     <string name="theme_light">Hela</string>
     <string name="theme_dark">Malhela</string>
-    <string name="state_running">Funkcianta</string>
     <string name="state_disabled">Malŝaltita</string>
     <string name="state_hidden">Kaŝita</string>
     <string name="state_suspended">Paŭzigita</string>
@@ -181,4 +184,26 @@
     <string name="title_actions">Agoj</string>
     <string name="title_cache">Keŝo</string>
     <string name="mode_jailbreak_disable">Jailbreak - Malŝalti</string>
-</resources>
+    <string name="title_backup">Kopiigo / Restaurado</string>
+    <string name="title_backup_restore">Kopiigo / Restaurado</string>
+    <string name="section_backup">Kopiigo</string>
+    <string name="action_create_backup">Kopio</string>
+    <string name="action_choose_archive">Elekti arkevon</string>
+    <string name="action_restore">Restaurado</string>
+    <string name="action_cancel">Nuligi</string>
+    <string name="restore_no_archive">Nenia arkevo elektita</string>
+    <string name="restore_from">Restaurado el: %1$s</string>
+    <string name="restore_backup">Restaradon kopion</string>
+    <string name="backup_category_apps">Aplikaĵoj</string>
+    <string name="backup_category_tags">Markoj</string>
+    <string name="backup_category_actions">Agoj</string>
+    <string name="backup_category_settings">Agordoj</string>
+    <string name="backup_category_whitelist">Blanklisto</string>
+    <string name="dialog_confirm_restore_title">Konfirmi restauradon</string>
+    <string name="dialog_confirm_restore_message">Ĉi tiu anstataŭigos nunajn datumojn per kopiiga enhavo. Daŭrigi?</string>
+
+    <string name="summary_biometric_login">Sekura alirejo al aplikacio per biometria aŭtentigado</string>
+    <string name="summary_backup">Konservi aplikaĵojn, markojn, agojn, agordojn kaj blankliston</string>
+    <string name="summary_restore">Restaurigi aplikaĵojn, markojn, agojn, agordojn kaj blankliston el arkivo</string>
+
+    <string name="action_data">Daten</string></resources>

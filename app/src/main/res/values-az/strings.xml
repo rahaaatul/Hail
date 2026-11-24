@@ -46,7 +46,6 @@
     <string name="action_edit_action">Fəaliyyəti redaktə et</string>
     <string name="action_export_all">Hamısını ixrac et</string>
     <string name="action_export_current">Görünənləri ixrac et</string>
-    <string name="action_extract_apk">APK çıxar</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="action_freeze_tag">Etiketi dondur</string>
     <string name="action_help">Kömək</string>
@@ -122,6 +121,11 @@
     <string name="mode_su_stop">Root - Məcburi dayandır</string>
     <string name="mode_su_suspend">Root - Dayandır</string>
     <string name="msg_biometric">Biometrik məlumatınızla daxil olun</string>
+    <string name="title_biometric_unavailable">Biometrik giriş əlçatan deyil</string>
+    <string name="msg_biometric_unavailable">Biometrik giriş aktivdir, lakin bu cihazda istifadə oluna bilən biometrik və ya cihaz etibarı yoxdur. Biometrik məlumat əlavə edin və ya ekran kilidi təyin edin, sonra yenidən cəhd edin.</string>
+    <string name="action_biometric_settings">Tənzimləmələri aç</string>
+    <string name="msg_biometric_prompt">Davam etmək üçün biometrik və ya cihaz etibarınızı istifadə edin</string>
+    <string name="msg_biometric_settings_not_found">Tənzimləmələri açmaq mümkün olmadı</string>
     <string name="msg_confirm_rebuild_cache">Bu, metadata və ikonları təmizləyir, sonra bütün quraşdırılmış tətbiqləri yenidən yükləyir. Davam et?</string>
     <string name="msg_exported">İxrac edildi: %s</string>
     <string name="msg_extract_apk">Çıxarıldığı yer: %s</string>
@@ -154,7 +158,6 @@ Dondurulmuş tətbiqlər silindikdən sonra dondurulmuş qalacaq, vacib tətbiql
     <string name="sort_update">Son yeniləmə</string>
     <string name="state_disabled">Deaktiv</string>
     <string name="state_hidden">Gizli</string>
-    <string name="state_running">İşləyir</string>
     <string name="state_suspended">Dayandırılıb</string>
     <string name="state_uninstalled">Silinib</string>
     <string name="summary_background_activity">Hail açıq olmadıqda avtomatik dondurmanın davam etməsinə icazə ver</string>
@@ -176,4 +179,26 @@ Dondurulmuş tətbiqlər silindikdən sonra dondurulmuş qalacaq, vacib tətbiql
     <string name="working_mode_tag">Əlaqəli tətbiqlərin iş rejimi</string>
     <string name="xposed_description">Məhdud tətbiqlərə dayandırılmış tətbiqləri başlatmağa icazə ver</string>
     <string name="mode_jailbreak_disable">Jailbreak - Deaktiv et</string>
-</resources>
+    <string name="title_backup">Yedək / Bərpalama</string>
+    <string name="title_backup_restore">Yedək / Bərpalama</string>
+    <string name="section_backup">Yedək</string>
+    <string name="action_create_backup">Yedək</string>
+    <string name="action_choose_archive">Arxivi seçin</string>
+    <string name="action_restore">Bərpalama</string>
+    <string name="action_cancel">Ləğv et</string>
+    <string name="restore_no_archive">Arxiv seçilməyib</string>
+    <string name="restore_from">Arxivdən bərpalama: %1$s</string>
+    <string name="restore_backup">Yedəkdən bərpalama</string>
+    <string name="backup_category_apps">Proqramlar</string>
+    <string name="backup_category_tags">Etiketlər</string>
+    <string name="backup_category_actions">Əməliyyatlar</string>
+    <string name="backup_category_settings">Təyinatlar</string>
+    <string name="backup_category_whitelist">Məcburi siyahı</string>
+    <string name="dialog_confirm_restore_title">Bərpalamağı təsdiq edin</string>
+    <string name="dialog_confirm_restore_message">Bu cari məlumatları yedəkin məzmunu ilə dəyişəcək. Davam etmək istəyirsiniz?</string>
+
+    <string name="summary_biometric_login">Biometriyə təsdiqləşmə ilə tətbiqli girişə təhlükəsizlik</string>
+    <string name="summary_backup">Tətbiqləri, etiketləri, əməliyyatları, tədbirləri və bəcləni yedəklə</string>
+    <string name="summary_restore">Yedəkdən tətbiqləri, etiketləri, əməliyyatları, tədbirləri və bəcləni geri əldə et</string>
+
+    <string name="action_data">Məlumatlar</string></resources>

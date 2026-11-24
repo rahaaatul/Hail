@@ -1,7 +1,7 @@
 package com.aistra.hail.utils
 
 import com.aistra.hail.HailApp
-import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -20,7 +20,7 @@ class FuzzySearchTest {
         mockApp = mockk(relaxed = true)
         every { mockApp.packageManager } returns mockk(relaxed = true)
         HailApp.setAppForTest(mockApp)
-        mockkObject(HailData)
+        mockkObject(HailSettings)
     }
 
     @After
@@ -42,27 +42,27 @@ class FuzzySearchTest {
 
     @Test
     fun `search returns true when raw contains query case-insensitive`() {
-        every { HailData.fuzzySearch } returns false
+        every { HailSettings.fuzzySearch } returns false
         assertTrue(FuzzySearch.search("Hello World", "world"))
         assertTrue(FuzzySearch.search("Hello World", "hello"))
     }
 
     @Test
     fun `search returns false when fuzzySearch disabled and no direct match`() {
-        every { HailData.fuzzySearch } returns false
+        every { HailSettings.fuzzySearch } returns false
         assertFalse(FuzzySearch.search("abcdef", "xyz"))
     }
 
     @Test
     fun `search uses levenshtein when fuzzySearch enabled`() {
-        every { HailData.fuzzySearch } returns true
+        every { HailSettings.fuzzySearch } returns true
         assertTrue(FuzzySearch.search("abcdef", "ace"))
         assertFalse(FuzzySearch.search("aaaaaaaaaa", "bbbbbbbbbb"))
     }
 
     @Test
     fun `search requires containsInOrder when fuzzy enabled`() {
-        every { HailData.fuzzySearch } returns true
+        every { HailSettings.fuzzySearch } returns true
         assertFalse(FuzzySearch.search("abc", "cba"))
     }
 }

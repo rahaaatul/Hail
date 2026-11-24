@@ -79,7 +79,6 @@
     <string name="theme_dark">어두운</string>
     <string name="action_deselect">선택 해제</string>
     <string name="action_details">앱 정보</string>
-    <string name="action_extract_apk">APK 추출</string>
     <string name="action_tag_add">태그 추가</string>
     <string name="donate_wechat">WeChat Pay</string>
     <string name="mode_island_suspend">Island/Insular - 중지</string>
@@ -117,6 +116,11 @@
     <string name="compact_icon">콤팩트 아이콘</string>
     <string name="action_biometric">지문으로 로그인</string>
     <string name="msg_biometric">지문으로 사용하여 ­로그인</string>
+    <string name="title_biometric_unavailable">지문으로 로그인을 사용할 수 없음</string>
+    <string name="msg_biometric_unavailable">지문 로그인이 켜져 있지만 이 기기에 사용할 수 있는 지문이나 기기 자격 증명이 없습니다. 지문을 등록하거나 화면 잠금을 설정한 후 다시 시도하세요.</string>
+    <string name="action_biometric_settings">설정 열기</string>
+    <string name="msg_biometric_prompt">계속하려면 지문이나 기기 자격 증명을 사용하세요</string>
+    <string name="msg_biometric_settings_not_found">설정을 열 수 없습니다</string>
     <string name="action_pin">고정</string>
     <string name="action_unpin">고정해제</string>
     <string name="action_whitelist">화이트리스트에 추가</string>
@@ -150,7 +154,6 @@
     <string name="xposed_description">범위가 지정된 앱의 경우 일시 중단된 앱을 자동으로 다시 활성화합니다.</string>
     <string name="action_fdroid">F-Droid</string>
     <string name="working_mode_tag">관련 앱의 동작 모드</string>
-    <string name="state_running">실행중</string>
     <string name="state_disabled">비활성화됨</string>
     <string name="state_hidden">숨겨짐</string>
     <string name="state_suspended">중지됨</string>
@@ -181,4 +184,26 @@
     <string name="title_actions">작업</string>
     <string name="title_cache">캐시</string>
     <string name="mode_jailbreak_disable">Jailbreak - 비활성화</string>
-</resources>
+    <string name="title_backup">백업 / 복원</string>
+    <string name="title_backup_restore">백업 / 복원</string>
+    <string name="section_backup">백업</string>
+    <string name="action_create_backup">백업</string>
+    <string name="action_choose_archive">아카이브 선택</string>
+    <string name="action_restore">복원</string>
+    <string name="action_cancel">취소</string>
+    <string name="restore_no_archive">선택된 아카이브가 없습니다</string>
+    <string name="restore_from">%1$s에서 복원</string>
+    <string name="restore_backup">백업 복원</string>
+    <string name="backup_category_apps">앱</string>
+    <string name="backup_category_tags">태그</string>
+    <string name="backup_category_actions">작업</string>
+    <string name="backup_category_settings">설정</string>
+    <string name="backup_category_whitelist">화이트리스트</string>
+    <string name="dialog_confirm_restore_title">복원 확인</string>
+    <string name="dialog_confirm_restore_message">현재 데이터를 백업 내용으로 대체합니다. 계속하시겠습니까?</string>
+
+    <string name="summary_biometric_login">생체 인증을 통한 앱 안전 접근</string>
+    <string name="summary_backup">앱, 태그, 작업, 설정, 화이트리스트 백업</string>
+    <string name="summary_restore">아카이브에서 앱, 태그, 작업, 설정, 화이트리스트 복원</string>
+
+    <string name="action_data">데이터</string></resources>

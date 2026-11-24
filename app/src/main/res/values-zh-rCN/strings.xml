@@ -38,7 +38,6 @@
     <string name="action_help">帮助</string>
     <string name="action_search">搜索</string>
     <string name="action_details">应用信息</string>
-    <string name="action_extract_apk">提取安装包</string>
     <string name="action_uninstall">卸载</string>
     <string name="msg_uninstall">要卸载此应用吗？</string>
     <string name="working_mode">工作模式</string>
@@ -97,6 +96,11 @@
     <string name="compact_icon">紧凑图标</string>
     <string name="action_biometric">生物识别登录</string>
     <string name="msg_biometric">使用您的生物识别凭证登录</string>
+    <string name="title_biometric_unavailable">生物识别登录不可用</string>
+    <string name="msg_biometric_unavailable">生物识别登录已启用，但此设备没有可用的生物识别或设备凭据。请录入生物识别或设置屏幕锁定，然后重试。</string>
+    <string name="action_biometric_settings">打开设置</string>
+    <string name="msg_biometric_prompt">使用您的生物识别或设备凭据以继续</string>
+    <string name="msg_biometric_settings_not_found">无法打开设置</string>
     <string name="action_pin">置顶</string>
     <string name="action_unpin">取消置顶</string>
     <string name="action_whitelist">添加到白名单</string>
@@ -149,7 +153,6 @@
     <string name="app_theme">应用主题</string>
     <string name="follow_system">跟随系统</string>
     <string name="working_mode_tag">相关应用的工作模式</string>
-    <string name="state_running">正在运行</string>
     <string name="state_disabled">已停用</string>
     <string name="state_hidden">已隐藏</string>
     <string name="state_suspended">已暂停</string>
@@ -180,4 +183,26 @@
     <string name="summary_rebuild_cache">删除缓存的应用数据并在后台重建</string>
     <string name="title_actions">操作</string>
     <string name="title_cache">缓存</string>
-</resources>
+    <string name="title_backup">备份 / 恢复</string>
+    <string name="title_backup_restore">备份 / 恢复</string>
+    <string name="section_backup">备份</string>
+    <string name="action_create_backup">备份</string>
+    <string name="action_choose_archive">选择归档</string>
+    <string name="action_restore">恢复</string>
+    <string name="action_cancel">取消</string>
+    <string name="restore_no_archive">未选择归档</string>
+    <string name="restore_from">从 %1$s 恢复</string>
+    <string name="restore_backup">从备份恢复</string>
+    <string name="backup_category_apps">应用</string>
+    <string name="backup_category_tags">标签</string>
+    <string name="backup_category_actions">操作</string>
+    <string name="backup_category_settings">设置</string>
+    <string name="backup_category_whitelist">白名单</string>
+    <string name="dialog_confirm_restore_title">确认恢复</string>
+    <string name="dialog_confirm_restore_message">这将用备份内容替换当前数据。继续?</string>
+
+    <string name="summary_biometric_login">通过生物识别安全访问应用</string>
+    <string name="summary_backup">备份应用、标签、操作、设置和白名单</string>
+    <string name="summary_restore">从备份中恢复应用、标签、操作、设置和白名单</string>
+
+    <string name="action_data">数据</string></resources>
