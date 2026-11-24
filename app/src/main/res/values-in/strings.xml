@@ -30,7 +30,6 @@
     <string name="action_unfreeze_remove_home">Aktifkan dan hapus dari daftar</string>
     <string name="action_undo">Batalkan</string>
     <string name="action_details">Info aplikasi</string>
-    <string name="action_extract_apk">Ekstrak APK</string>
     <string name="action_unfreeze_current">Aktifkan label ini</string>
     <string name="action_lock_freeze">Kunci &amp; Bekukan</string>
     <string name="action_deferred_task">Tangguhkan tugas</string>
@@ -87,6 +86,11 @@
     <string name="action_none">Kosong</string>
     <string name="grayscale_icon">Ikon hitam-putih</string>
     <string name="msg_biometric">Masuk dengan pemindaian biometrik</string>
+    <string name="title_biometric_unavailable">Login biometrik tidak tersedia</string>
+    <string name="msg_biometric_unavailable">Login biometrik aktif, tetapi perangkat ini tidak memiliki biometrik atau kredensial perangkat yang dapat digunakan. Daftarkan biometrik atau atur kunci layar, lalu coba lagi.</string>
+    <string name="action_biometric_settings">Buka pengaturan</string>
+    <string name="msg_biometric_prompt">Gunakan biometrik atau kredensial perangkat Anda untuk melanjutkan</string>
+    <string name="msg_biometric_settings_not_found">Tidak dapat membuka pengaturan</string>
     <string name="action_pin">Sematkan</string>
     <string name="action_remove_whitelist">Hapus dari daftar putih</string>
     <string name="action_import_frozen">Impor aplikasi dibekukan</string>
@@ -149,7 +153,6 @@
     <string name="xposed_description">Izinkan aplikasi terdaftar mengaktifkan aplikasi yang ditangguhkan</string>
     <string name="working_mode_tag">Mode kerja aplikasi terkait</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="state_running">Berjalan</string>
     <string name="state_disabled">Dinonaktifkan</string>
     <string name="state_hidden">Tersembunyi</string>
     <string name="state_suspended">Ditangguhkan</string>
@@ -179,4 +182,26 @@
     <string name="summary_rebuild_cache">Hapus data aplikasi yang di-cache dan bangun ulang di latar belakang</string>
     <string name="title_actions">Tindakan</string>
     <string name="title_cache">Cache</string>
-</resources>
+    <string name="title_backup">Cadangan / Pemulihan</string>
+    <string name="title_backup_restore">Cadangan / Pemulihan</string>
+    <string name="section_backup">Cadangan</string>
+    <string name="action_create_backup">Cadangan</string>
+    <string name="action_choose_archive">Pilih Arsip</string>
+    <string name="action_restore">Pulihkan</string>
+    <string name="action_cancel">Batalkan</string>
+    <string name="restore_no_archive">Tidak ada arsip yang dipilih</string>
+    <string name="restore_from">Pulihkan dari: %1$s</string>
+    <string name="restore_backup">Pulihkan cadangan</string>
+    <string name="backup_category_apps">Aplikasi</string>
+    <string name="backup_category_tags">Tag</string>
+    <string name="backup_category_actions">Tindakan</string>
+    <string name="backup_category_settings">Pengaturan</string>
+    <string name="backup_category_whitelist">Daftar putih</string>
+    <string name="dialog_confirm_restore_title">Konfirmasi Pemulihan</string>
+    <string name="dialog_confirm_restore_message">Ini akan mengganti data saat ini dengan isi cadangan. Lanjutkan?</string>
+
+    <string name="summary_biometric_login">Akses aman ke aplikasi dengan otentikasi biometrik</string>
+    <string name="summary_backup">Cadangkan aplikasi, tag, tindakan, pengaturan dan daftar putih</string>
+    <string name="summary_restore">Pulihkan aplikasi, tag, tindakan, pengaturan dan daftar putih dari arsip</string>
+
+    <string name="action_data">Data</string></resources>

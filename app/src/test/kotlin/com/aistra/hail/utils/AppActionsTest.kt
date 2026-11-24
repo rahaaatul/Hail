@@ -1,11 +1,12 @@
 package com.aistra.hail.utils
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import com.aistra.hail.HailApp
 import com.aistra.hail.app.AppManager
+import com.aistra.hail.app.BatchResult
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -25,7 +26,7 @@ class AppActionsTest {
         every { mockApp.packageManager } returns mockk(relaxed = true)
         HailApp.setAppForTest(mockApp)
 
-        mockkObject(HailData)
+        mockkObject(HailSettings)
         mockkObject(AppManager)
         mockkObject(HPackages)
     }
@@ -72,43 +73,45 @@ class AppActionsTest {
         }
 
     @Test
-    fun `freezePackages returns failure when app unavailable`() =
-        runTest {
-            every { HPackages.getApplicationInfoOrNull("missing") } returns null
-
-            val result = AppActions.freezePackages(true, listOf("missing"))
-
-            assertTrue(result.isFailure)
-        }
-
-    @Test
-    fun `freezePackages returns failure when freeze fails`() =
+    fun `freezePackages returns the batch result of setListFrozen`() =
         runTest {
             val pkg = "com.example.test"
-            every { HPackages.getApplicationInfoOrNull(pkg) } returns mockk<ApplicationInfo>()
-            coEvery { AppManager.setAppFrozen(pkg, true) } returns false
+            val batch = BatchResult(total = 1, succeeded = 1, failed = emptyList())
+            every { AppManager.setListFrozen(true, listOf(pkg)) } returns batch
 
             val result = AppActions.freezePackages(true, listOf(pkg))
 
-            assertTrue(result.isFailure)
+            assertEquals(batch, result.getOrThrow())
         }
 
     @Test
-    fun `freezePackages returns success when all frozen`() =
+    fun `freezePackages reports partial failure`() =
         runTest {
-            val pkg = "com.example.test"
-            every { HPackages.getApplicationInfoOrNull(pkg) } returns mockk<ApplicationInfo>()
-            coEvery { AppManager.setAppFrozen(pkg, true) } returns true
+            val packages = listOf("a", "b")
+            every { AppManager.setListFrozen(false, packages) } returns
+                BatchResult(total = 2, succeeded = 1, failed = listOf("b"))
 
-            val result = AppActions.freezePackages(true, listOf(pkg))
+            val result = AppActions.freezePackages(false, packages).getOrThrow()
 
-            assertTrue(result.isSuccess)
+            assertEquals(1, result.succeeded)
+            assertEquals(listOf("b"), result.failed)
+            assertEquals(2, result.total)
+        }
+
+    @Test
+    fun `freezePackages returns failure when setListFrozen throws`() =
+        runTest {
+            every { AppManager.setListFrozen(true, listOf("a")) } throws IllegalStateException("denied")
+
+            val result = AppActions.freezePackages(true, listOf("a"))
+
+            assertTrue(result.isFailure)
         }
 
     @Test
     fun `getLaunchIntent returns failure when no launch intent found`() =
         runTest {
-            every { HailData.workingMode } returns HailData.MODE_DEFAULT
+            every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
             every { HailApp.app.packageManager.getLaunchIntentForPackage("missing") } returns null
 
             val result = AppActions.getLaunchIntent("missing")
@@ -119,7 +122,7 @@ class AppActionsTest {
     @Test
     fun `getLaunchIntent returns intent when available`() =
         runTest {
-            every { HailData.workingMode } returns HailData.MODE_DEFAULT
+            every { HailSettings.workingMode } returns HailData.MODE_DEFAULT
             val intent = mockk<Intent>(relaxed = true)
             every { HailApp.app.packageManager.getLaunchIntentForPackage("com.example.test") } returns intent
             every { HailApp.app.setAutoFreezeService() } returns Unit

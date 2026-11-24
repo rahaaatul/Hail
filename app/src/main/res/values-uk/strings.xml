@@ -10,7 +10,6 @@
     <string name="action_export_all">Експорт всіх</string>
     <string name="action_export_clipboard">Експорт в буфер обміну</string>
     <string name="action_export_current">Експорт видимий</string>
-    <string name="action_extract_apk">Витягти APK</string>
     <string name="action_freeze">Заморозити</string>
     <string name="action_freeze_all">Заморозити все</string>
     <string name="action_freeze_current">Заморозити видимі</string>
@@ -73,6 +72,11 @@
     <string name="mode_su_disable">Root - Вимкнути</string>
     <string name="mode_su_suspend">Root - Призупинити</string>
     <string name="msg_biometric">Вхід за допомогою біометричних даних</string>
+    <string name="title_biometric_unavailable">Біометричний вхід недоступний</string>
+    <string name="msg_biometric_unavailable">Біометричний вхід увімкнено, але на цьому пристрої немає придатних біометричних даних чи облікових даних пристрою. Додайте біометричні дані або налаштуйте блокування екрана, потім спробуйте ще раз.</string>
+    <string name="action_biometric_settings">Відкрити налаштування</string>
+    <string name="msg_biometric_prompt">Використовуйте біометричні дані або облікові дані пристрою, щоб продовжити</string>
+    <string name="msg_biometric_settings_not_found">Не вдалося відкрити налаштування</string>
     <string name="msg_exported">Експортовано: %s</string>
     <string name="msg_extract_apk">Розпаковано до: %s</string>
     <string name="msg_freeze">Заморожено: %s</string>
@@ -157,7 +161,6 @@
     <string name="xposed_description">Дозволити ізольованим застосункам запускати призупинені застосунки</string>
     <string name="working_mode_tag">Режим роботи пов’язаних застосунків</string>
     <string name="donate_kofi">Ko-fi</string>
-    <string name="state_running">Запущено</string>
     <string name="state_disabled">Вимкнено</string>
     <string name="state_hidden">Приховано</string>
     <string name="state_suspended">Призупинено</string>
@@ -188,4 +191,26 @@
     <string name="title_actions">Дії</string>
     <string name="title_cache">Кеш</string>
     <string name="mode_jailbreak_disable">Джейлбрейк - Вимкнути</string>
-</resources>
+    <string name="title_backup">Резервне копіювання / Відновлення</string>
+    <string name="title_backup_restore">Резервне копіювання / Відновлення</string>
+    <string name="section_backup">Резервне копіювання</string>
+    <string name="action_create_backup">Резервна копія</string>
+    <string name="action_choose_archive">Оберіть архів</string>
+    <string name="action_restore">Відновити</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="restore_no_archive">Архів не обрано</string>
+    <string name="restore_from">Відновити з: %1$s</string>
+    <string name="restore_backup">Відновити з резервної копії</string>
+    <string name="backup_category_apps">Додатки</string>
+    <string name="backup_category_tags">Теги</string>
+    <string name="backup_category_actions">Дії</string>
+    <string name="backup_category_settings">Налаштування</string>
+    <string name="backup_category_whitelist">Білий список</string>
+    <string name="dialog_confirm_restore_title">Підтвердити відновлення</string>
+    <string name="dialog_confirm_restore_message">Це замінить поточні дані вмістом резервної копії. Продовжити?</string>
+
+    <string name="summary_biometric_login">Безпечний доступ до програми через біометричну аутентифікацію</string>
+    <string name="summary_backup">Створіть резервну копію програм, тегів, дій, налаштувань та білого списку</string>
+    <string name="summary_restore">Відновіть програми, теги, дії, налаштування та білого списку з резервної копії</string>
+
+    <string name="action_data">Дані</string></resources>

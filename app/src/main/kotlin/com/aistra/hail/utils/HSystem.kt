@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.PowerManager
 import androidx.core.content.getSystemService
-import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 
 object HSystem {
     fun isInteractive(context: Context): Boolean {
@@ -47,7 +47,7 @@ object HSystem {
             usageStatsManager
                 .queryUsageStats(
                     UsageStatsManager.INTERVAL_BEST,
-                    now - 1000 * 60 * (HailData.autoFreezeDelay + 1),
+                    now - 1000 * 60 * (HailSettings.autoFreezeDelay + 1).toLong(),
                     now, // to ensure that we can get the last app used
                 )?.sortedBy { it.lastTimeUsed }
         val foregroundPackageName =

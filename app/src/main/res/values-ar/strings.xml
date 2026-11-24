@@ -74,7 +74,6 @@
     <string name="compact_icon">أيقونة مضغوطة</string>
     <string name="action_uninstall">إلغاء التثبيت</string>
     <string name="mode_dhizuku_hide">Dhizuku - إخفاء</string>
-    <string name="action_extract_apk">استخراج APK</string>
     <string name="action_freeze_tag">علامة التجميد</string>
     <string name="action_select_all">تحديد الكل</string>
     <string name="action_unfreeze_remove_home">إلغاء التجميد وإزالة من الصفحة الرئيسية</string>
@@ -109,6 +108,11 @@
     <string name="action_unfreeze">إلغاء التجميد</string>
     <string name="donate_wechat">WeChat Pay</string>
     <string name="msg_biometric">تسجيل الدخول باستخدام بيانات الاعتماد البيومترية الخاصة بك</string>
+    <string name="title_biometric_unavailable">تسجيل الدخول البيومتري غير متاح</string>
+    <string name="msg_biometric_unavailable">تسجيل الدخول البيومتري مفعّل، لكن هذا الجهاز لا تتوفر فيه أي بيانات اعتماد بيومترية أو بيانات اعتماد جهاز قابلة للاستخدام. سجّل بياناتك البيومترية أو اضبط قفل الشاشة، ثم أعد المحاولة.</string>
+    <string name="action_biometric_settings">فتح الإعدادات</string>
+    <string name="msg_biometric_prompt">استخدم بياناتك البيومترية أو بيانات اعتماد الجهاز للمتابعة</string>
+    <string name="msg_biometric_settings_not_found">تعذّر فتح الإعدادات</string>
     <string name="permission_denied">تم رفض الإذن</string>
     <string name="action_help">مساعدة</string>
     <string name="action_qq">مجموعة QQ</string>
@@ -182,7 +186,6 @@
     <string name="save">حفظ</string>
     <string name="state_disabled">معطل</string>
     <string name="state_hidden">مخفي</string>
-    <string name="state_running">قيد التشغيل</string>
     <string name="state_suspended">معلّق</string>
     <string name="state_uninstalled">غير مثبت</string>
     <string name="summary_background_activity">السماح للتجميد التلقائي بالاستمرار عندما لا يكون Hail مفتوحاً</string>
@@ -191,4 +194,26 @@
     <string name="title_cache">التخزين المؤقت</string>
     <string name="working_mode_tag">وضع العمل للتطبيقات ذات الصلة</string>
     <string name="mode_jailbreak_disable">جيلبريك - تعطيل</string>
-</resources>
+    <string name="title_backup">النسخ الاحتياطي / الاستعادة</string>
+    <string name="title_backup_restore">النسخ الاحتياطي / الاستعادة</string>
+    <string name="section_backup">النسخ الاحتياطي</string>
+    <string name="action_create_backup">نسخة احتياطية</string>
+    <string name="action_choose_archive">اختر الأرشيف</string>
+    <string name="action_restore">استعادة</string>
+    <string name="action_cancel">إلغاء</string>
+    <string name="restore_no_archive">لم يتم تحديد أرشيف</string>
+    <string name="restore_from">الاستعادة من: %1$s</string>
+    <string name="restore_backup">استعادة نسخة احتياطية</string>
+    <string name="backup_category_apps">تطبيقات</string>
+    <string name="backup_category_tags">التصنيفات</string>
+    <string name="backup_category_actions">إجراءات</string>
+    <string name="backup_category_settings">الإعدادات</string>
+    <string name="backup_category_whitelist">قائمة بيضاء</string>
+    <string name="dialog_confirm_restore_title">تأكيد الاستعادة</string>
+    <string name="dialog_confirm_restore_message">سيستبدل هذا البيانات الحالية بمحتويات النسخة الاحتياطية. متابعة؟</string>
+
+    <string name="summary_biometric_login">تأمين الوصول إلى التطبيق باستخدام المصادقة البيومترية</string>
+    <string name="summary_backup">نسخ احتياطي للتطبيقات والعلامات والإجراءات والإعدادات والقائمة البيضاء</string>
+    <string name="summary_restore">استعادة التطبيقات والعلامات والإجراءات والإعدادات والقائمة البيضاء من النسخة الاحتياطية</string>
+
+    <string name="action_data">البيانات</string></resources>
