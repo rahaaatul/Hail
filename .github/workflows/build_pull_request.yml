@@ -78,3 +78,10 @@ jobs:
           name: debug-apk-${{ github.sha }}
           path: ${{ steps.build.outputs.debugApkPath }}
           retention-days: 1
+      - name: Upload release mapping.txt as artifact
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: release-mapping-${{ github.sha }}
+          path: ${{ steps.build.outputs.releaseMappingPath }}
+          retention-days: 1

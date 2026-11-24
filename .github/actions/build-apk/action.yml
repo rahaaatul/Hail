@@ -16,6 +16,9 @@ outputs:
   debugApkPath:
     description: Path to the built debug APK
     value: ${{ steps.find_debug.outputs.debugApkPath }}
+  releaseMappingPath:
+    description: Path to the release R8 mapping.txt
+    value: ${{ steps.find_mapping.outputs.releaseMappingPath }}
 runs:
   using: composite
   steps:
@@ -54,3 +57,10 @@ runs:
       run: |
         APK=$(find app/build/outputs/apk -name "*-debug.apk" | head -n 1)
         echo "debugApkPath=$APK" >> "$GITHUB_OUTPUT"
+
+    - name: Find release mapping
+      id: find_mapping
+      shell: bash
+      run: |
+        MAPPING=$(find app/build/outputs/mapping -name "mapping.txt" | head -n 1)
+        echo "releaseMappingPath=$MAPPING" >> "$GITHUB_OUTPUT"
