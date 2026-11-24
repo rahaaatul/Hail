@@ -39,7 +39,6 @@
     <string name="action_help">ช่วยเหลือ</string>
     <string name="action_search">ค้นหา</string>
     <string name="action_details">ข้อมูลแอป</string>
-    <string name="action_extract_apk">แตกไฟล์ APK</string>
     <string name="action_uninstall">ถอนการติดตั้ง</string>
     <string name="msg_uninstall">คุณต้องการถอนการติดตั้งแอปนี้หรือไม่?</string>
     <string name="working_mode">โหมดการทำงาน</string>
@@ -129,6 +128,11 @@
     <string name="mode_su_hide">รูท - ซ่อน</string>
     <string name="mode_su_suspend">รูท - ระงับการทำงาน</string>
     <string name="msg_biometric">ยืนยันตัวตนด้วยข้อมูลชีวมิติ</string>
+    <string name="title_biometric_unavailable">การล็อกอินด้วยไบโอเมตริกไม่พร้อมใช้งาน</string>
+    <string name="msg_biometric_unavailable">การล็อกอินด้วยไบโอเมตริกเปิดใช้งานอยู่ แต่อุปกรณ์นี้ไม่มีข้อมูลชีวมิติหรือข้อมูลรับรองอุปกรณ์ที่ใช้ได้ ลงทะเบียนข้อมูลชีวมิติหรือตั้งค่าล็อกหน้าจอ แล้วลองอีกครั้ง</string>
+    <string name="action_biometric_settings">เปิดการตั้งค่า</string>
+    <string name="msg_biometric_prompt">ใช้ข้อมูลชีวมิติหรือข้อมูลรับรองอุปกรณ์ของคุณเพื่อดำเนินการต่อ</string>
+    <string name="msg_biometric_settings_not_found">ไม่สามารถเปิดการตั้งค่าได้</string>
     <string name="msg_confirm_rebuild_cache">การดำเนินการนี้จะลบข้อมูลเมตาและไอคอน แล้วโหลดแอปที่ติดตั้งทั้งหมดใหม่ ดำเนินการต่อหรือไม่?</string>
     <plurals name="msg_deferred_task">
         <item quantity="one">%2$s หลังจาก %1$d นาที: %3$s</item>
@@ -161,7 +165,6 @@
     <string name="sort_update">วันที่อัปเดตล่าสุด</string>
     <string name="state_disabled">ปิดใช้งาน</string>
     <string name="state_hidden">ซ่อน</string>
-    <string name="state_running">กำลังทำงานอยู่</string>
     <string name="state_suspended">ระงับ</string>
     <string name="state_uninstalled">ถอนการติดตั้งแล้ว</string>
     <string name="summary_background_activity">อนุญาตให้บริการแช่แข็งอัตโนมัติทำงานต่อไปแม้ไม่ได้เปิด Hail อยู่</string>
@@ -181,4 +184,26 @@
     <string name="title_shortcuts">ทางลัด</string>
     <string name="xposed_description">อนุญาตให้แอปที่ถูกจำกัดเปิดแอปที่ถูกระงับได้</string>
     <string name="mode_jailbreak_disable">Jailbreak - ปิดใช้งาน</string>
-</resources>
+    <string name="title_backup">สำรองข้อมูล / กู้คืน</string>
+    <string name="title_backup_restore">สำรองข้อมูล / กู้คืน</string>
+    <string name="section_backup">สำรองข้อมูล</string>
+    <string name="action_create_backup">แอปที่จัดการ</string>
+    <string name="action_choose_archive">เลือกไฟล์สำรอง</string>
+    <string name="action_restore">กู้คืน</string>
+    <string name="action_cancel">ยกเลิก</string>
+    <string name="restore_no_archive">ยังไม่ได้เลือกไฟล์สำรอง</string>
+    <string name="restore_from">กู้คืนจาก: %1$s</string>
+    <string name="restore_backup">กู้คืนสำรองข้อมูล</string>
+    <string name="backup_category_apps">แอป</string>
+    <string name="backup_category_tags">แท็ก</string>
+    <string name="backup_category_actions">การดำเนินการ</string>
+    <string name="backup_category_settings">การตั้งค่า</string>
+    <string name="backup_category_whitelist">รายการขาว</string>
+    <string name="dialog_confirm_restore_title">ยืนยันการกู้คืน</string>
+    <string name="dialog_confirm_restore_message">สิ่งนี้จะแทนที่ข้อมูลปัจจุบันด้วยเนื้อหาของการสำรองข้อมูล ต้องการดำเนินการต่อหรือไม่?</string>
+
+    <string name="summary_biometric_login">เข้าถึงแอปอย่างปลอดภัยด้วยการยืนยันตัวตนทางชีวภาพ</string>
+    <string name="summary_backup">สำรองข้อมูลแอป, แท็ก, การดำเนินการ, การตั้งค่า และรายการขาว</string>
+    <string name="summary_restore">กู้คืนแอป, แท็ก, การดำเนินการ, การตั้งค่า และรายการขาวจากไฟล์สำรอง</string>
+
+    <string name="action_data">ข้อมูล</string></resources>

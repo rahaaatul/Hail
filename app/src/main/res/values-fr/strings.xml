@@ -30,7 +30,6 @@
     <string name="action_unfreeze_current">Dégeler les applications sélectionnées</string>
     <string name="action_launch">Démarrer</string>
     <string name="action_tag_add">Ajouter une étiquette</string>
-    <string name="action_extract_apk">Extraire l\'APK</string>
     <string name="working_mode">Mode de travail</string>
     <string name="action_tag_remove">Retirer l\'étiquette</string>
     <string name="icon_pack">Pack d\'icônes</string>
@@ -62,6 +61,11 @@
     <string name="action_biometric">Authentification biométrique</string>
     <string name="donate_alipay">Alipay</string>
     <string name="msg_biometric">Se connecter à l\'aide de votre identifiant biométrique</string>
+    <string name="title_biometric_unavailable">Authentification biométrique indisponible</string>
+    <string name="msg_biometric_unavailable">L\'authentification biométrique est activée, mais cet appareil ne possède aucune donnée biométrique ou d\'identification de l\'appareil utilisable. Enregistrez une donnée biométrique ou définissez un verrouillage d\'écran, puis réessayez.</string>
+    <string name="action_biometric_settings">Ouvrir les paramètres</string>
+    <string name="msg_biometric_prompt">Utilisez votre biométrie ou les identifiants de l\'appareil pour continuer</string>
+    <string name="msg_biometric_settings_not_found">Impossible d\'ouvrir les paramètres</string>
     <string name="title_customize">Personnaliser</string>
     <string name="msg_imported">Importée : %s</string>
     <string name="msg_text_copied">Copiée : %s</string>
@@ -152,4 +156,8 @@
     <string name="theme_dark">Sombre</string>
     <string name="xposed_description">Automatiquement dégeler l\'application suspendue pour les applicationss avec portée limitée</string>
     <string name="action_freeze_failed">Could not freeze: %s</string>
-</resources>
+
+    <string name="summary_biometric_login">Sécuriser l’accès à l’application par authentification biométrique</string>
+    <string name="summary_backup">Sauvegarder applis, étiquettes, actions, réglages et liste blanche</string>
+    <string name="summary_restore">Restaurer applis, étiquettes, actions, réglages et liste blanche depuis une archive</string>
+    <string name="action_data">Données</string></resources>

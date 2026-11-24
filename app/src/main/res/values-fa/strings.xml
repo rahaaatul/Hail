@@ -84,7 +84,6 @@
     <string name="nothing_here">چیزی این‌جا نیست</string>
     <string name="title_shortcuts">میان‌برها</string>
     <string name="action_none">هیچ‌کدام</string>
-    <string name="action_extract_apk">استخراج APK</string>
     <string name="mode_su_disable">روت - غیرفعال کردن</string>
     <string name="action_uninstall">حذف نصب</string>
     <string name="mode_owner_suspend">مالک دستگاه - تعلیق</string>
@@ -127,6 +126,11 @@
     <string name="activity_not_found">فعالیت راه اندازی یافت نشد</string>
     <string name="skip_while_charging">رد کردن هنگام شارژ</string>
     <string name="msg_biometric">با استفاده از بیومتریک خود وارد شوید</string>
+    <string name="title_biometric_unavailable">ورود بیومتریک در دسترس نیست</string>
+    <string name="msg_biometric_unavailable">ورود بیومتریک فعال است، اما این دستگاه هیچ داده بیومتریک یا اطلاعات دستگاه قابل استفاده‌ای ندارد. یک داده بیومتریک ثبت کنید یا قفل صفحه را تنظیم کنید، سپس دوباره تلاش کنید.</string>
+    <string name="action_biometric_settings">باز کردن تنظیمات</string>
+    <string name="msg_biometric_prompt">برای ادامه از داده بیومتریک یا اطلاعات دستگاه خود استفاده کنید</string>
+    <string name="msg_biometric_settings_not_found">تنظیمات باز نشد</string>
     <string name="action_import_frozen">درون ریزی برنامه یخ زده</string>
     <string name="auto_freeze_delay">تاخیر یخ زدن (دقیقه)</string>
     <string name="mode_dhizuku_suspend">دیزوکو - تعلیق</string>
@@ -173,7 +177,6 @@
     <string name="save">ذخیره</string>
     <string name="state_disabled">غیرفعال</string>
     <string name="state_hidden">پنهان</string>
-    <string name="state_running">در حال اجرا</string>
     <string name="state_suspended">متوقف</string>
     <string name="state_uninstalled">حذف نصب</string>
     <string name="summary_background_activity">اجازه دهید یخ‌زدن خودکار وقتی هایل باز نیست ادامه یابد</string>
@@ -182,4 +185,26 @@
     <string name="title_cache">کش</string>
     <string name="working_mode_tag">حالت کاری برنامه‌های وابسته</string>
     <string name="mode_jailbreak_disable">جیلبریک - غیرفعال</string>
-</resources>
+    <string name="title_backup">نسخه پشتیبانی / بازگردانی</string>
+    <string name="title_backup_restore">نسخه پشتیبانی / بازگردانی</string>
+    <string name="section_backup">نسخه پشتیبانی</string>
+    <string name="action_create_backup">نسخه پشتیبانی</string>
+    <string name="action_choose_archive">انتخاب بایگانی</string>
+    <string name="action_restore">بازگردانی</string>
+    <string name="action_cancel">لغو</string>
+    <string name="restore_no_archive">هیچ بایگانی انتخاب نشده است</string>
+    <string name="restore_from">بازگردانی از: %1$s</string>
+    <string name="restore_backup">بازگردانی نسخه پشتیبانی</string>
+    <string name="backup_category_apps">برنامه‌ها</string>
+    <string name="backup_category_tags">برچسب‌ها</string>
+    <string name="backup_category_actions">اقدامات</string>
+    <string name="backup_category_settings">تنظیمات</string>
+    <string name="backup_category_whitelist">لیست سفید</string>
+    <string name="dialog_confirm_restore_title">تایید بازگردانی</string>
+    <string name="dialog_confirm_restore_message">این داده‌های فعلی را با محتوای نسخه پشتیبانی جایگزین می‌کند. ادامه دهید؟</string>
+
+    <string name="summary_biometric_login">دسترسی ایمن به برنامه با احراز هویت بیومتریک</string>
+    <string name="summary_backup">پشتیبان‌گیری از برنامه‌ها، برچسب‌ها، اقدامات، تنظیمات و لیست سفید</string>
+    <string name="summary_restore">بازگردانی برنامه‌ها، برچسب‌ها، اقدامات، تنظیمات و لیست سفید از یک نسخه پشتیبان</string>
+
+    <string name="action_data">داده‌ها</string></resources>

@@ -39,7 +39,6 @@
     <string name="action_help">Hilfe</string>
     <string name="action_search">Suchen</string>
     <string name="action_details">App-Informationen</string>
-    <string name="action_extract_apk">APK extrahieren</string>
     <string name="action_uninstall">Deinstallieren</string>
     <string name="msg_uninstall">Diese Anwendung deinstallieren?</string>
     <string name="working_mode">Arbeitsmodus</string>
@@ -103,6 +102,11 @@
     <string name="compact_icon">Kompaktes Symbol</string>
     <string name="action_biometric">Biometrische Anmeldung</string>
     <string name="msg_biometric">Mit biometrischer Prüfung anmelden</string>
+    <string name="title_biometric_unavailable">Biometrische Anmeldung nicht verfügbar</string>
+    <string name="msg_biometric_unavailable">Die biometrische Anmeldung ist aktiviert, aber auf diesem Gerät sind keine nutzbaren biometrischen Daten oder Anmeldedaten des Geräts vorhanden. Richten Sie eine Biometrie ein oder legen Sie eine Bildschirmsperre fest und versuchen Sie es erneut.</string>
+    <string name="action_biometric_settings">Einstellungen öffnen</string>
+    <string name="msg_biometric_prompt">Verwenden Sie Ihre Biometrie oder die Anmeldedaten des Geräts, um fortzufahren</string>
+    <string name="msg_biometric_settings_not_found">Einstellungen konnten nicht geöffnet werden</string>
     <string name="action_pin">Anpinnen</string>
     <string name="action_unpin">Abpinnen</string>
     <string name="action_whitelist">Auf die Whitelist setzen</string>
@@ -150,7 +154,6 @@
     <string name="follow_system">System folgen</string>
     <string name="theme_light">hell</string>
     <string name="theme_dark">dunkel</string>
-    <string name="state_running">läuft</string>
     <string name="state_disabled">deaktiviert</string>
     <string name="state_hidden">versteckt</string>
     <string name="state_suspended">pausiert</string>
@@ -182,4 +185,15 @@
     <string name="title_actions">Aktionen</string>
     <string name="title_cache">Cache</string>
     <string name="mode_jailbreak_disable">Jailbreak - Deaktivieren</string>
-</resources>
+
+    <string name="action_create_backup">Backup</string>
+    <string name="backup_category_apps">Apps</string>
+    <string name="backup_category_actions">Aktionen</string>
+    <string name="backup_category_whitelist">Whitelist</string>
+    <string name="restore_backup">Backup wiederherstellen</string>
+
+    <string name="summary_biometric_login">Sicherer Zugriff auf die App über biometrische Authentifizierung</string>
+    <string name="summary_backup">Apps, Tags, Aktionen, Einstellungen und Whitelist sichern</string>
+    <string name="summary_restore">Apps, Tags, Aktionen, Einstellungen und Whitelist aus einem Archiv wiederherstellen</string>
+
+    <string name="action_data">Daten</string></resources>

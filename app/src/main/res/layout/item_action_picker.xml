@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="@dimen/padding_small">
+    android:padding="@dimen/space100">
     <FrameLayout
         android:layout_width="48dp"
         android:layout_height="48dp">
@@ -13,7 +13,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:contentDescription="@null"
-            android:padding="@dimen/padding_extra_small" />
+            android:padding="@dimen/space50" />
         <View
             android:id="@+id/selected_tint"
             android:layout_width="match_parent"

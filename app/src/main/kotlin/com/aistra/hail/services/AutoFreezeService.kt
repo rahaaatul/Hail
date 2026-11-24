@@ -11,6 +11,7 @@ import androidx.core.app.ServiceCompat
 import com.aistra.hail.R
 import com.aistra.hail.app.HailApi
 import com.aistra.hail.app.HailData
+import com.aistra.hail.app.HailSettings
 import com.aistra.hail.receiver.ScreenOffReceiver
 
 class AutoFreezeService : NotificationListenerService() {
@@ -22,6 +23,10 @@ class AutoFreezeService : NotificationListenerService() {
         flags: Int,
         startId: Int,
     ): Int {
+        if (!HailSettings.autoFreezeAfterLock) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         createNotificationChannel()
         val freezeAuto =
             PendingIntent.getActivity(
@@ -74,11 +79,14 @@ class AutoFreezeService : NotificationListenerService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        instance = null
         unregisterReceiver(lockReceiver)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 
     companion object {
-        lateinit var instance: AutoFreezeService private set
+        @Volatile
+        var instance: AutoFreezeService? = null
+            private set
     }
 }
