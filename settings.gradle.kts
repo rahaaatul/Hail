@@ -22,6 +22,9 @@ gradle.beforeProject {
     buildscript.configurations.configureEach {
         resolutionStrategy.force("org.freemarker:freemarker:2.3.35")
     }
+    configurations.configureEach {
+        resolutionStrategy.force("com.google.guava:guava:33.7.2-jre")
+    }
 }
 rootProject.name = "Hail"
 include(":app")
