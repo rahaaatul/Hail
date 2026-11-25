@@ -125,7 +125,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.appcompat)
-    implementation("androidx.biometric:biometric:1.4.0-alpha07")
+    implementation("androidx.biometric:biometric:1.4.0-rc01")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
