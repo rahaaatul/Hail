@@ -3,6 +3,7 @@ updates:
   # npm dependencies in the root directory
   - package-ecosystem: "npm"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
       time: "00:00"
@@ -34,6 +35,7 @@ updates:
   # Gradle dependencies in the root directory
   - package-ecosystem: "gradle"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
       time: "00:00"
@@ -55,6 +57,7 @@ updates:
   # Gradle dependencies in the app module (subproject build.gradle.kts)
   - package-ecosystem: "gradle"
     directory: "/app"
+    target-branch: "dev"
     schedule:
       interval: "daily"
       time: "00:00"
@@ -76,6 +79,7 @@ updates:
   # GitHub Actions in the root directory
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
       time: "00:00"
