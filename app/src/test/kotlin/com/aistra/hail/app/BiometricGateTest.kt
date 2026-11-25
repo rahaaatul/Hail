@@ -224,13 +224,6 @@ class BiometricGateTest {
     }
 
     @Test
-    fun `build prompt info omits the negative button for a device credential prompt`() {
-        val promptInfo = promptInfoWith(BIOMETRIC_STRONG or DEVICE_CREDENTIAL, "cancel")
-
-        assertEquals("", promptInfo.negativeButtonText.toString())
-    }
-
-    @Test
     fun `build prompt info omits the negative button when both authenticators are allowed`() {
         val promptInfo = promptInfoWith(BIOMETRIC_STRONG or DEVICE_CREDENTIAL, "cancel")
 
