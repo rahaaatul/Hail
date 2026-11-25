@@ -45,13 +45,16 @@ object BiometricGate {
             BiometricPrompt.PromptInfo
                 .Builder()
                 .setTitle(spec.title)
-                .setSubtitle(spec.subtitle)
                 .setAllowedAuthenticators(spec.allowedAuthenticators)
-        // PromptInfo.Builder.setNegativeButtonText is incompatible with DEVICE_CREDENTIAL: the
-        // system supplies its own button when the device credential is allowed. Without it a
-        // strong-only prompt on API 24-29 has no button and the framework prompt fails to build.
-        if (!spec.allowedAuthenticators.hasDeviceCredential() && !spec.negativeButtonText.isNullOrEmpty()) {
-            builder.setNegativeButtonText(spec.negativeButtonText)
+        // The system supplies its own subtitle and button when the device credential is allowed;
+        // setting them is incompatible with DEVICE_CREDENTIAL. A strong-only prompt on API 24-29
+        // needs the negative button to build.
+        val hasStrong = spec.allowedAuthenticators and BIOMETRIC_STRONG != 0
+        if (hasStrong) {
+            builder.setSubtitle(spec.subtitle)
+            if (!spec.allowedAuthenticators.hasDeviceCredential() && !spec.negativeButtonText.isNullOrEmpty()) {
+                builder.setNegativeButtonText(spec.negativeButtonText)
+            }
         }
         if (spec.canUseAdvanced) {
             spec.description?.let { builder.setDescription(it) }
