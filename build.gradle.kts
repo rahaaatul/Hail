@@ -13,7 +13,7 @@ buildscript {
             // Force patched versions of AGP buildscript-classpath transitives
             // flagged by Dependabot (#22-#29). Build-time only — not packaged
             // in the APK — but the graph still reports them.
-            force("org.apache.commons:commons-lang3:3.21.0")
+            force("org.apache.commons:commons-lang3:3.22.0")
             force("org.bouncycastle:bcprov-jdk18on:1.86")
             force("org.bouncycastle:bcpkix-jdk18on:1.86")
             force("org.bitbucket.b_c:jose4j:0.9.7")
