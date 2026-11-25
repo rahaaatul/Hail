@@ -49,7 +49,6 @@ fun AppActionsSheet(
             pkg != BuildConfig.APPLICATION_ID
     HailBottomSheet(
         onDismissRequest = onDismissRequest,
-        dragHandle = null,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         AppActionsHeader(
