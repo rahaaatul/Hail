@@ -15,7 +15,7 @@ buildscript {
             // in the APK — but the graph still reports them.
             force("org.apache.commons:commons-lang3:3.21.0")
             force("org.bouncycastle:bcprov-jdk18on:1.86")
-            force("org.bouncycastle:bcpkix-jdk18on:1.86")
+            force("org.bouncycastle:bcpkix-jdk18on:1.87")
             force("org.bitbucket.b_c:jose4j:0.9.7")
             force("org.jdom:jdom2:2.0.6.1")
             force("org.apache.httpcomponents:httpclient:4.5.14")
