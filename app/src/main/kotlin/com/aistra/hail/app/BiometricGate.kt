@@ -49,9 +49,10 @@ object BiometricGate {
         // The system supplies its own subtitle and button when the device credential is allowed;
         // setting them is incompatible with DEVICE_CREDENTIAL. A strong-only prompt on API 24-29
         // needs the negative button to build.
-        if (!spec.allowedAuthenticators.hasDeviceCredential()) {
+        val hasStrong = spec.allowedAuthenticators and BIOMETRIC_STRONG != 0
+        if (hasStrong) {
             builder.setSubtitle(spec.subtitle)
-            if (!spec.negativeButtonText.isNullOrEmpty()) {
+            if (!spec.allowedAuthenticators.hasDeviceCredential() && !spec.negativeButtonText.isNullOrEmpty()) {
                 builder.setNegativeButtonText(spec.negativeButtonText)
             }
         }
