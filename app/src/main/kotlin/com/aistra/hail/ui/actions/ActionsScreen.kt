@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -120,15 +121,11 @@ fun ActionsScreen(
                             ui.pickerTarget = null
                         }
 
-                        ui.editorTarget?.existing != null -> {
+                        else -> {
                             ui.editorLaunch = ""
                             ui.editorUnfreeze = emptyList()
                             ui.editorTarget = null
                         }
-
-                        else -> {
-                            ui.editorTarget = null
-                        } // create: KEEP draft
                     }
                 },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -140,7 +137,6 @@ fun ActionsScreen(
                     AppPickerContent(
                         target = picker,
                         apps = ui.pickerApps,
-                        onDismiss = { ui.pickerTarget = null },
                         onConfirm = { selected ->
                             when (picker) {
                                 is PickerTarget.Single -> ui.editorLaunch = selected.firstOrNull() ?: ""
@@ -154,11 +150,6 @@ fun ActionsScreen(
                         target = target,
                         launchPackage = ui.editorLaunch,
                         unfreezePackages = ui.editorUnfreeze,
-                        onDismiss = {
-                            ui.editorLaunch = ""
-                            ui.editorUnfreeze = emptyList()
-                            ui.editorTarget = null
-                        },
                         onSave = {
                             if (!editorDraftValid(ui)) {
                                 HUI.showToast(R.string.action_required_unfreeze)
@@ -187,7 +178,7 @@ fun ActionsScreen(
                         onPickLaunch = {
                             ui.pickerTarget =
                                 PickerTarget.Single(
-                                    selected = setOfNotNull(ui.editorLaunch).filter { it.isNotEmpty() }.toSet(),
+                                    selected = if (ui.editorLaunch.isNotEmpty()) setOf(ui.editorLaunch) else emptySet(),
                                     exclude = ui.editorUnfreeze.toSet(),
                                 )
                         },
@@ -329,7 +320,7 @@ fun ActionsScreen(
                                 },
                                 shapes = IconButtonDefaults.shapes(),
                                 colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
-                            ) { Icon(DeleteIcon, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300))) }
+                            ) { Icon(DeleteIcon, contentDescription = stringResource(R.string.action_delete), modifier = Modifier.size(dimensionResource(R.dimen.space300))) }
                         }
                     }
                     Spacer(Modifier.height(dimensionResource(R.dimen.space100)))
@@ -345,11 +336,15 @@ fun ActionsScreen(
                                     bottom = dimensionResource(R.dimen.space200),
                                 ),
                             content = {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100))) {
-                                    Text(stringResource(R.string.action_delete_prerequisites), style = MaterialTheme.typography.bodyLarge)
-                                    target.unfreezePackages.forEach { pkg ->
-                                        remember(pkg) { AppInfo(pkg).applicationInfo }?.let { info ->
-                                            AppIcon(info = info, dimmed = false, size = dimensionResource(R.dimen.space400), internalPadding = 0.dp)
+                                if (target.unfreezePackages.isEmpty()) {
+                                    Text(stringResource(R.string.action_no_dependencies), style = MaterialTheme.typography.bodyLarge)
+                                } else {
+                                    FlowRow(horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100)), verticalArrangement = Arrangement.Center) {
+                                        Text(stringResource(R.string.action_delete_prerequisites), style = MaterialTheme.typography.bodyLarge)
+                                        target.unfreezePackages.forEach { pkg ->
+                                            remember(pkg) { AppInfo(pkg).applicationInfo }?.let { info ->
+                                                AppIcon(info = info, dimmed = false, size = dimensionResource(R.dimen.space400), internalPadding = 0.dp, contentDescription = AppInfo(pkg).name)
+                                            }
                                         }
                                     }
                                 }
@@ -369,7 +364,13 @@ fun ActionsScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space100))) {
                                     Text(stringResource(R.string.action_delete_main), style = MaterialTheme.typography.bodyLarge)
                                     remember(target.launchPackage) { AppInfo(target.launchPackage).applicationInfo }?.let { info ->
-                                        AppIcon(info = info, dimmed = false, size = dimensionResource(R.dimen.space400), internalPadding = 0.dp)
+                                        AppIcon(
+                                            info = info,
+                                            dimmed = false,
+                                            size = dimensionResource(R.dimen.space400),
+                                            internalPadding = 0.dp,
+                                            contentDescription = AppInfo(target.launchPackage).name,
+                                        )
                                     }
                                 }
                             },
@@ -410,7 +411,15 @@ private fun ActionsList(
                     ),
                 modifier = Modifier.heightIn(min = dimensionResource(R.dimen.space900)),
                 leadingContent = {
-                    appInfo?.let { AppIcon(info = it, dimmed = false, size = dimensionResource(R.dimen.space700), internalPadding = dimensionResource(R.dimen.space100)) }
+                    appInfo?.let {
+                        AppIcon(
+                            info = it,
+                            dimmed = false,
+                            size = dimensionResource(R.dimen.space700),
+                            internalPadding = dimensionResource(R.dimen.space100),
+                            contentDescription = info.name,
+                        )
+                    }
                 },
                 content = {
                     Column(
@@ -431,13 +440,12 @@ private fun ActionsList(
     }
 }
 
-@Suppress("LongParameterList", "UnusedParameter")
+@Suppress("LongParameterList")
 @Composable
 fun ActionEditorContent(
     target: EditorTarget,
     launchPackage: String,
     unfreezePackages: List<String>,
-    onDismiss: () -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
     onPickUnfreeze: () -> Unit,
@@ -466,14 +474,14 @@ fun ActionEditorContent(
                     shapes = IconButtonDefaults.shapes(),
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError),
                 ) {
-                    Icon(DeleteIcon, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300)))
+                    Icon(DeleteIcon, contentDescription = stringResource(R.string.action_delete), modifier = Modifier.size(dimensionResource(R.dimen.space300)))
                 }
                 FilledIconButton(
                     onClick = onSave,
                     shapes = IconButtonDefaults.shapes(),
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                 ) {
-                    Icon(CheckIcon, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300)))
+                    Icon(CheckIcon, contentDescription = stringResource(R.string.save), modifier = Modifier.size(dimensionResource(R.dimen.space300)))
                 }
             }
         }
@@ -501,6 +509,8 @@ fun ActionEditorContent(
                     Text(
                         text = stringResource(R.string.action_select_unfreeze),
                         style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 trailingContent = {
@@ -532,6 +542,8 @@ fun ActionEditorContent(
                     Text(
                         text = stringResource(R.string.action_select_launch),
                         style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 trailingContent = {
@@ -570,13 +582,12 @@ private fun CountBadge(count: Int) {
     }
 }
 
-@Suppress("LongParameterList", "UnusedParameter")
+@Suppress("LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppPickerContent(
     target: PickerTarget,
     apps: List<ApplicationInfo>,
-    onDismiss: () -> Unit,
     onConfirm: (Set<String>) -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -619,7 +630,7 @@ fun AppPickerContent(
                     Modifier
                         .weight(1f)
                         .focusRequester(focusRequester)
-                        .onFocusChanged { if (it.isFocused) searchExpanded = true }
+                        .onFocusChanged { searchExpanded = it.isFocused }
                         .height(dimensionResource(R.dimen.space700)),
                 placeholder = { Text(stringResource(R.string.action_search_apps)) },
                 leadingIcon = {
@@ -628,7 +639,11 @@ fun AppPickerContent(
                             searchExpanded = false
                             focusManager.clearFocus()
                         }) {
-                            Icon(ChevronLeftIcon, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300)).padding(start = dimensionResource(R.dimen.space100)))
+                            Icon(
+                                ChevronLeftIcon,
+                                contentDescription = stringResource(R.string.action_back),
+                                modifier = Modifier.size(dimensionResource(R.dimen.space300)).padding(start = dimensionResource(R.dimen.space100)),
+                            )
                         }
                     } else {
                         Icon(SearchIcon, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300)).padding(start = dimensionResource(R.dimen.space100)))
@@ -637,7 +652,11 @@ fun AppPickerContent(
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { query = "" }) {
-                            Icon(CloseIcon24, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300)).padding(end = dimensionResource(R.dimen.space100)))
+                            Icon(
+                                CloseIcon24,
+                                contentDescription = stringResource(R.string.action_clear),
+                                modifier = Modifier.size(dimensionResource(R.dimen.space300)).padding(end = dimensionResource(R.dimen.space100)),
+                            )
                         }
                     }
                 },
@@ -652,7 +671,7 @@ fun AppPickerContent(
                         disabledIndicatorColor = Color.Transparent,
                     ),
             )
-            if (!searchExpanded) {
+            if (!searchExpanded || selected.isNotEmpty()) {
                 Spacer(Modifier.width(dimensionResource(R.dimen.space150)))
                 FilledIconButton(
                     onClick = { onConfirm(selected.toSet()) },
@@ -660,7 +679,7 @@ fun AppPickerContent(
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.size(dimensionResource(R.dimen.space700)),
                 ) {
-                    Icon(CheckIcon24, contentDescription = null, modifier = Modifier.size(dimensionResource(R.dimen.space300)))
+                    Icon(CheckIcon24, contentDescription = stringResource(R.string.action_confirm), modifier = Modifier.size(dimensionResource(R.dimen.space300)))
                 }
             }
         }
@@ -713,6 +732,7 @@ fun AppPickerContent(
                                 dimmed = false,
                                 size = dimensionResource(R.dimen.space600),
                                 internalPadding = dimensionResource(R.dimen.space50),
+                                contentDescription = AppInfo(info.packageName).name,
                             )
                         }
                     },

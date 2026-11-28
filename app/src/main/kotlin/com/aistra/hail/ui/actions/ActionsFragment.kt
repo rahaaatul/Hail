@@ -95,10 +95,8 @@ class ActionsFragment : MainFragment() {
         )
 
     fun showEditor(existing: LaunchAction?) {
-        if (existing != null) {
-            ui.editorLaunch = existing.launchPackage
-            ui.editorUnfreeze = existing.unfreezePackages
-        }
+        ui.editorLaunch = existing?.launchPackage ?: ""
+        ui.editorUnfreeze = existing?.unfreezePackages ?: emptyList()
         ui.editorTarget = existing?.let { EditorTarget.Edit(it) } ?: EditorTarget.New
     }
 }

@@ -13,6 +13,9 @@
     <string name="action_create_shortcut">Create shortcut</string>
     <string name="action_duplicate">Duplicate</string>
     <string name="action_delete">Delete</string>
+    <string name="action_back">Back</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_confirm">Confirm</string>
     <string name="action_delete_title">Delete %1$s?</string>
     <string name="action_delete_prerequisites">Prerequisites</string>
     <string name="action_delete_main">Main</string>
