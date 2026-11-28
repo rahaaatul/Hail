@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,7 +51,6 @@ fun AppActionsSheet(
             pkg != BuildConfig.APPLICATION_ID
     HailBottomSheet(
         onDismissRequest = onDismissRequest,
-        dragHandle = null,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         AppActionsHeader(
@@ -99,6 +100,7 @@ private fun AppActionsHeader(
             info = info,
             dimmed = false,
             internalPadding = 0.dp,
+            contentDescription = name,
             modifier =
                 Modifier.combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -116,7 +118,7 @@ private fun AppActionsHeader(
                 modifier =
                     Modifier
                         .basicMarquee()
-                        .combinedClickable(onClick = {}, onLongClick = { onCopyText(name) }),
+                        .pointerInput(Unit) { detectTapGestures(onLongPress = { onCopyText(name) }) },
             )
             Text(
                 text = pkg,
@@ -126,7 +128,7 @@ private fun AppActionsHeader(
                 modifier =
                     Modifier
                         .basicMarquee()
-                        .combinedClickable(onClick = {}, onLongClick = { onCopyText(pkg) }),
+                        .pointerInput(Unit) { detectTapGestures(onLongPress = { onCopyText(pkg) }) },
             )
         }
     }
