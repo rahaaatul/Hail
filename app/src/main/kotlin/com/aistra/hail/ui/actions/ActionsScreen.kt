@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,6 +58,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -147,7 +147,6 @@ fun ActionsScreen(
                 },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 hideHandleOnExpand = ui.pickerTarget != null,
-                fillMaxHeight = if (ui.pickerTarget != null) 0.85f else null,
             ) {
                 val picker = ui.pickerTarget
                 if (picker != null) {
@@ -668,9 +667,7 @@ fun AppPickerContent(
                     top = dimensionResource(R.dimen.space200),
                     end = dimensionResource(R.dimen.space150),
                     bottom = dimensionResource(R.dimen.space300),
-                ).imePadding()
-                .navigationBarsPadding()
-                .fillMaxHeight(),
+                ).imePadding(),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TextField(
@@ -740,7 +737,7 @@ fun AppPickerContent(
                     .thenBy { AppInfo(it.packageName).name.lowercase() },
             )
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.6f).dp),
             contentPadding = PaddingValues(top = 0.dp, bottom = dimensionResource(R.dimen.space100)),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {

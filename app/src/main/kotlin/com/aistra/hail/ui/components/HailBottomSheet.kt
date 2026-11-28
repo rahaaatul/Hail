@@ -36,7 +36,7 @@ fun HailBottomSheet(
     onDismissRequest: () -> Unit,
     containerColor: Color = BottomSheetDefaults.ContainerColor,
     hideHandleOnExpand: Boolean = false,
-    fillMaxHeight: Float? = null,
+    fillMaxHeight: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val sheetState =
@@ -47,7 +47,7 @@ fun HailBottomSheet(
     val handleAlpha by animateFloatAsState(targetValue = if (hideHandleOnExpand && sheetState.currentValue == SheetValue.Expanded) 0f else 1f, label = "handleAlpha")
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        modifier = if (fillMaxHeight != null) Modifier.fillMaxHeight(fillMaxHeight) else Modifier,
+        modifier = if (fillMaxHeight) Modifier.fillMaxHeight() else Modifier,
         sheetState = sheetState,
         dragHandle = null,
         containerColor = containerColor,
