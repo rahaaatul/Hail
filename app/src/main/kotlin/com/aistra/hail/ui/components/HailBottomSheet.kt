@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
+import com.aistra.hail.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,25 +53,22 @@ fun HailBottomSheet(
         containerColor = containerColor,
         contentWindowInsets = { WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom) },
         content = {
-            HailDragHandle(modifier = Modifier.alpha(handleAlpha), fillMaxHeight = fillMaxHeight)
+            HailDragHandle(modifier = Modifier.alpha(handleAlpha))
             content()
         },
     )
 }
 
 @Composable
-private fun HailDragHandle(
-    modifier: Modifier = Modifier,
-    fillMaxHeight: Boolean = false,
-) {
+private fun HailDragHandle(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier.fillMaxWidth().padding(top = 22.dp, bottom = if (fillMaxHeight) 0.dp else 22.dp),
+        modifier = modifier.fillMaxWidth().padding(top = dimensionResource(R.dimen.space250), bottom = 0.dp),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(width = 32.dp, height = 4.dp)
+                    .size(width = dimensionResource(R.dimen.space400), height = dimensionResource(R.dimen.space50))
                     .clip(RoundedCornerShape(percent = 50))
                     .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
         )
