@@ -49,7 +49,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -116,17 +115,35 @@ fun ActionsScreen(
         ui.editorTarget?.let { target ->
             HailBottomSheet(
                 onDismissRequest = {
-                    when {
-                        ui.pickerTarget != null -> {
+                    val isCreate = ui.editorTarget?.existing == null
+                    val pickerOpen = ui.pickerTarget != null
+                    val shouldClear = shouldClearOnDismiss(isCreate, pickerOpen)
+                    val shouldCommit = shouldCommitDraftOnDismiss(isCreate, pickerOpen)
+                    if (pickerOpen) {
+                        if (shouldCommit) {
+                            val draft = ui.draftSelectedApps
+                            when (ui.pickerTarget) {
+                                is PickerTarget.Single -> ui.editorLaunch = draft.firstOrNull() ?: ""
+                                is PickerTarget.Multi -> ui.editorUnfreeze = draft.toList()
+                                null -> Unit
+                            }
+                            ui.draftSelectedApps.clear()
                             ui.pickerTarget = null
-                        }
-
-                        else -> {
+                        } else if (shouldClear) {
                             ui.editorLaunch = ""
                             ui.editorUnfreeze = emptyList()
-                            ui.editorTarget = null
+                            ui.draftSelectedApps.clear()
+                            ui.pickerTarget = null
+                        }
+                    } else {
+                        if (shouldClear) {
+                            ui.editorLaunch = ""
+                            ui.editorUnfreeze = emptyList()
+                            ui.draftSelectedApps.clear()
+                            ui.pickerTarget = null
                         }
                     }
+                    ui.editorTarget = null
                 },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 hideHandleOnExpand = ui.pickerTarget != null,
@@ -137,11 +154,25 @@ fun ActionsScreen(
                     AppPickerContent(
                         target = picker,
                         apps = ui.pickerApps,
+                        selected = ui.draftSelectedApps,
+                        onToggle = { pkg ->
+                            if (picker.multi) {
+                                if (pkg in ui.draftSelectedApps) {
+                                    ui.draftSelectedApps.remove(pkg)
+                                } else {
+                                    ui.draftSelectedApps.add(pkg)
+                                }
+                            } else {
+                                ui.draftSelectedApps.clear()
+                                ui.draftSelectedApps.add(pkg)
+                            }
+                        },
                         onConfirm = { selected ->
                             when (picker) {
                                 is PickerTarget.Single -> ui.editorLaunch = selected.firstOrNull() ?: ""
                                 is PickerTarget.Multi -> ui.editorUnfreeze = selected.toList()
                             }
+                            ui.draftSelectedApps.clear()
                             ui.pickerTarget = null
                         },
                     )
@@ -158,6 +189,8 @@ fun ActionsScreen(
                                 callbacks.onSaveAction(id, ui.editorLaunch, ui.editorUnfreeze)
                                 ui.editorLaunch = ""
                                 ui.editorUnfreeze = emptyList()
+                                ui.draftSelectedApps.clear()
+                                ui.pickerTarget = null
                                 ui.editorTarget = null
                             }
                         },
@@ -166,19 +199,35 @@ fun ActionsScreen(
                             if (existing != null) callbacks.onDelete(existing)
                             ui.editorLaunch = ""
                             ui.editorUnfreeze = emptyList()
+                            ui.draftSelectedApps.clear()
+                            ui.pickerTarget = null
                             ui.editorTarget = null
                         },
                         onPickUnfreeze = {
+                            val seed = seedDraftForPicker(ui.draftSelectedApps.toSet(), ui.editorUnfreeze)
+                            if (ui.draftSelectedApps.isEmpty()) {
+                                ui.draftSelectedApps.addAll(seed)
+                            }
                             ui.pickerTarget =
                                 PickerTarget.Multi(
-                                    selected = ui.editorUnfreeze.toSet(),
+                                    selected = seed,
                                     exclude = ui.editorLaunch?.let { setOf(it) } ?: emptySet(),
                                 )
                         },
                         onPickLaunch = {
+                            val committed =
+                                if (ui.editorLaunch.isNotEmpty()) {
+                                    listOf(ui.editorLaunch)
+                                } else {
+                                    emptyList()
+                                }
+                            val seed = seedDraftForPicker(ui.draftSelectedApps.toSet(), committed)
+                            if (ui.draftSelectedApps.isEmpty()) {
+                                ui.draftSelectedApps.addAll(seed)
+                            }
                             ui.pickerTarget =
                                 PickerTarget.Single(
-                                    selected = if (ui.editorLaunch.isNotEmpty()) setOf(ui.editorLaunch) else emptySet(),
+                                    selected = seed,
                                     exclude = ui.editorUnfreeze.toSet(),
                                 )
                         },
@@ -588,13 +637,14 @@ private fun CountBadge(count: Int) {
 fun AppPickerContent(
     target: PickerTarget,
     apps: List<ApplicationInfo>,
+    selected: Set<String>,
+    onToggle: (String) -> Unit,
     onConfirm: (Set<String>) -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var searchExpanded by remember { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
-    val selected = remember(target) { mutableStateSetOf<String>().apply { addAll(target.selected) } }
     val filtered by remember(apps, query, target.exclude) {
         derivedStateOf {
             val q = query.trim().lowercase()
@@ -686,7 +736,7 @@ fun AppPickerContent(
         Spacer(Modifier.height(dimensionResource(R.dimen.space150)))
         val sorted =
             filtered.sortedWith(
-                compareByDescending<ApplicationInfo> { it.packageName in target.selected }
+                compareByDescending<ApplicationInfo> { it.packageName in selected }
                     .thenBy { AppInfo(it.packageName).name.lowercase() },
             )
         LazyColumn(
@@ -697,18 +747,7 @@ fun AppPickerContent(
             itemsIndexed(sorted, key = { _, info -> info.packageName }) { index, info ->
                 val isSelected = info.packageName in selected
                 SegmentedListItem(
-                    onClick = {
-                        if (target.multi) {
-                            if (isSelected) {
-                                selected.remove(info.packageName)
-                            } else {
-                                selected.add(info.packageName)
-                            }
-                        } else {
-                            selected.clear()
-                            selected.add(info.packageName)
-                        }
-                    },
+                    onClick = { onToggle(info.packageName) },
                     selected = isSelected,
                     shapes = ListItemDefaults.segmentedShapes(index = index, count = sorted.size),
                     colors =

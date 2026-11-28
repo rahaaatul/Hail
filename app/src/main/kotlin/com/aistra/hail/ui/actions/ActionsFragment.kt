@@ -95,8 +95,26 @@ class ActionsFragment : MainFragment() {
         )
 
     fun showEditor(existing: LaunchAction?) {
-        ui.editorLaunch = existing?.launchPackage ?: ""
-        ui.editorUnfreeze = existing?.unfreezePackages ?: emptyList()
-        ui.editorTarget = existing?.let { EditorTarget.Edit(it) } ?: EditorTarget.New
+        if (existing != null) {
+            ui.editorLaunch = existing.launchPackage
+            ui.editorUnfreeze = existing.unfreezePackages
+            ui.draftSelectedApps.clear()
+            ui.draftSelectedApps.addAll(existing.unfreezePackages)
+            ui.pickerTarget = null
+            ui.editorTarget = EditorTarget.Edit(existing)
+        } else {
+            val draftInProgress =
+                ui.pickerTarget != null ||
+                    ui.draftSelectedApps.isNotEmpty() ||
+                    ui.editorLaunch.isNotEmpty() ||
+                    ui.editorUnfreeze.isNotEmpty()
+            if (!draftInProgress) {
+                ui.editorLaunch = ""
+                ui.editorUnfreeze = emptyList()
+                ui.draftSelectedApps.clear()
+                ui.pickerTarget = null
+            }
+            ui.editorTarget = EditorTarget.New
+        }
     }
 }

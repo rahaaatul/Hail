@@ -3,6 +3,7 @@ package com.aistra.hail.ui.actions
 import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.setValue
 import com.aistra.hail.utils.LaunchAction
 
@@ -33,6 +34,7 @@ class ActionsUiState {
     var editorUnfreeze by mutableStateOf(emptyList<String>())
     var editorTarget by mutableStateOf<EditorTarget?>(null)
     var pickerTarget by mutableStateOf<PickerTarget?>(null)
+    val draftSelectedApps = mutableStateSetOf<String>()
     var pickerApps by mutableStateOf<List<ApplicationInfo>>(emptyList())
     var menuTarget by mutableStateOf<LaunchAction?>(null)
     var deleteTarget by mutableStateOf<LaunchAction?>(null)
