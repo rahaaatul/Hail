@@ -236,7 +236,7 @@ private fun AppItem(
                 ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppIcon(info = info, dimmed = grayscale && disabled)
+        AppIcon(info = info, dimmed = grayscale && disabled, contentDescription = name)
         AppTexts(
             modifier = Modifier.weight(1f),
             name = name,
@@ -273,6 +273,7 @@ private suspend fun loadDefaultActivityIcon(context: Context): Bitmap? =
     }
 
 // TODO: Home migration — reuse HailBottomSheet + sheet styling; move AppIcon to ui/components at the second use case.
+@Suppress("LongParameterList")
 @Composable
 internal fun AppIcon(
     info: ApplicationInfo,
@@ -280,6 +281,7 @@ internal fun AppIcon(
     size: Dp? = null,
     internalPadding: Dp? = null,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
 ) {
     val context = LocalContext.current
     val iconSize = size ?: dimensionResource(R.dimen.app_icon_size)
@@ -306,7 +308,7 @@ internal fun AppIcon(
     if (displayedIcon != null) {
         Image(
             bitmap = displayedIcon.asImageBitmap(),
-            contentDescription = null,
+            contentDescription = contentDescription,
             modifier = iconModifier,
             colorFilter = if (dimmed) grayscaleColorFilter else null,
         )
