@@ -20,7 +20,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,7 +31,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.aistra.hail.R
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
+@Suppress("LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HailBottomSheet(
@@ -37,13 +42,21 @@ fun HailBottomSheet(
     containerColor: Color = BottomSheetDefaults.ContainerColor,
     hideHandleOnExpand: Boolean = false,
     fillMaxHeight: Boolean = false,
+    partialExpandKey: Any? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val sheetState =
         rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
+            initialValue = SheetValue.PartiallyExpanded,
             enabledValues = setOf(SheetValue.Hidden, SheetValue.PartiallyExpanded, SheetValue.Expanded),
         )
+    @Suppress("MagicNumber")
+    LaunchedEffect(partialExpandKey) {
+        if (partialExpandKey != null) {
+            withTimeoutOrNull(500L) { snapshotFlow { sheetState.hasPartiallyExpandedState }.first { it } }
+            if (sheetState.hasPartiallyExpandedState) sheetState.partialExpand()
+        }
+    }
     val handleAlpha by animateFloatAsState(targetValue = if (hideHandleOnExpand && sheetState.currentValue == SheetValue.Expanded) 0f else 1f, label = "handleAlpha")
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
