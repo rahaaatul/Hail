@@ -147,7 +147,7 @@ fun ActionsScreen(
                 },
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 hideHandleOnExpand = ui.pickerTarget != null,
-                fillMaxHeight = ui.pickerTarget != null,
+                fillMaxHeight = if (ui.pickerTarget != null) 0.85f else null,
             ) {
                 val picker = ui.pickerTarget
                 if (picker != null) {
