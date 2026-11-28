@@ -204,7 +204,7 @@ fun ActionsScreen(
                             ui.editorTarget = null
                         },
                         onPickUnfreeze = {
-                            val seed = seedDraftForPicker(ui.draftSelectedApps.toSet(), ui.editorUnfreeze)
+                            val seed = seedDraftForPicker(ui.draftSelectedApps, ui.editorUnfreeze)
                             if (ui.draftSelectedApps.isEmpty()) {
                                 ui.draftSelectedApps.addAll(seed)
                             }
@@ -221,7 +221,7 @@ fun ActionsScreen(
                                 } else {
                                     emptyList()
                                 }
-                            val seed = seedDraftForPicker(ui.draftSelectedApps.toSet(), committed)
+                            val seed = seedDraftForPicker(ui.draftSelectedApps, committed)
                             if (ui.draftSelectedApps.isEmpty()) {
                                 ui.draftSelectedApps.addAll(seed)
                             }
